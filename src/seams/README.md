@@ -23,6 +23,8 @@ Current local inspection helpers:
   packet.
 - `index-inspection-records.js`: lists local manifests, provider results, and
   inspection packets.
+- `index-provider-runs.js`: writes a local provider-run ledger across one
+  project.
 - `export-inspection-bundle.js`: copies an inspection packet, local records,
   and referenced artifacts into a local handoff-preview bundle.
 

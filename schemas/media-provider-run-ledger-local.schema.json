@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-provider-run-ledger-local.schema.json",
+  "title": "media.provider_run_ledger.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "ledgerId",
+    "projectId",
+    "createdAt",
+    "mode",
+    "runs",
+    "summary",
+    "warnings",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "providerTruth",
+    "localTruthLabel",
+    "truthStatus"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.provider_run_ledger.local.v1"
+    },
+    "ledgerId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "runs": {
+      "type": "array"
+    },
+    "summary": {
+      "type": "object"
+    },
+    "warnings": {
+      "type": "array"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    },
+    "providerTruth": {
+      "const": false
+    }
+  }
+}

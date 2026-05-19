@@ -25,6 +25,7 @@ Read in this order:
 17. [Provider Adapter Contracts](21-provider-adapter-contracts.md)
 18. [Local Image Metadata](22-local-image-metadata.md)
 19. [Adapter Runner And Export Bundles](23-adapter-runner-and-export-bundles.md)
+20. [Provider Run Ledger And References](24-provider-run-ledger-and-references.md)
 
 The first executable path is:
 
@@ -55,6 +56,7 @@ Summarize or index local inspection records with:
 ```bash
 npm run inspect:summary -- --project-dir examples/card-to-candidate --packet records/exports/local-run-edge-inspection-packet.local.json
 npm run inspect:index -- --project-dir examples/card-to-candidate
+npm run inspect:provider-runs -- --project-dir examples/card-to-candidate
 ```
 
 Create a local Edge-handoff preview bundle with:
@@ -80,6 +82,12 @@ Check committed fixture freshness with:
 npm run fixture:inspection:check
 ```
 
+Ingest a project-local reference asset with:
+
+```bash
+npm run reference:ingest -- --project-dir examples/card-to-candidate --source media/generated/candidate.txt --filename candidate-reference.txt
+```
+
 Phase 2 hardened the local wedge with a local run manifest, artifact-kind
 registry, and modest malformed-record checks. Phase 3 defines the local project
 layout, safe local refs, placement classes, and asset lifecycle states. Phase 4
@@ -89,6 +97,7 @@ promoting provider payloads into Studio canon. Phase 6 adds a Venice dry-run
 adapter with fixture-only response normalization. Phase 7 adds an explicit
 Venice live smoke gate for controlled provider testing. Phase 8 adds adapter-run
 receipts, local failure evidence, image metadata inspection, fixture freshness,
-and local export bundles. The wedge remains local-only. It creates local records
-and does not claim mesh truth, distributed proof, byte materialization proof,
-provider truth, causal truth, publication authorization, or ratifier authority.
+and local export bundles. Phase 9 adds the provider-run ledger and reference
+asset ingest. The wedge remains local-only. It creates local records and does
+not claim mesh truth, distributed proof, byte materialization proof, provider
+truth, causal truth, publication authorization, or ratifier authority.

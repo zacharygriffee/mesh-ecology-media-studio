@@ -164,6 +164,12 @@ npm run inspect:summary -- --project-dir examples/card-to-candidate --packet rec
 npm run inspect:index -- --project-dir examples/card-to-candidate
 ```
 
+Index provider attempts across a local project:
+
+```bash
+npm run inspect:provider-runs -- --project-dir examples/card-to-candidate
+```
+
 Create a local Edge-handoff preview bundle from an inspection packet:
 
 ```bash
@@ -174,6 +180,12 @@ Promote an existing local candidate without rerunning provider work:
 
 ```bash
 npm run promote:candidate -- --project-dir examples/card-to-candidate --decision accepted
+```
+
+Ingest a local reference asset into `media/references/`:
+
+```bash
+npm run reference:ingest -- --project-dir examples/card-to-candidate --source media/generated/candidate.txt --filename candidate-reference.txt
 ```
 
 Regenerate the committed inspection fixture:
@@ -194,6 +206,7 @@ that maps fixtures only and performs no network calls. Phase 7 adds the Venice
 live smoke gate without making provider APIs part of the default wedge. Phase 8
 adds the provider adapter runner receipt, provider failure evidence, image
 metadata inspection, fixture freshness checks, and local export bundles.
+Phase 9 adds a local provider-run ledger and local reference asset ingest.
 
 ## Start Here
 
@@ -214,3 +227,4 @@ metadata inspection, fixture freshness checks, and local export bundles.
 - [docs/21-provider-adapter-contracts.md](docs/21-provider-adapter-contracts.md)
 - [docs/22-local-image-metadata.md](docs/22-local-image-metadata.md)
 - [docs/23-adapter-runner-and-export-bundles.md](docs/23-adapter-runner-and-export-bundles.md)
+- [docs/24-provider-run-ledger-and-references.md](docs/24-provider-run-ledger-and-references.md)

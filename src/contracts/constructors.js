@@ -342,5 +342,7 @@ export function idForRecord(record) {
   if (record.metadataId) return record.metadataId
   if (record.adapterRunId) return record.adapterRunId
   if (record.bundleId) return record.bundleId
+  if (record.ledgerId) return record.ledgerId
+  if (record.ingestId) return record.ingestId
   return undefined
 }

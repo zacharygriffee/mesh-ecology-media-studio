@@ -23,7 +23,9 @@ export const artifactKinds = Object.freeze({
   mediaProviderFailureTaxonomy: 'media.provider_failure_taxonomy.v1',
   mediaImageMetadataLocal: 'media.image_metadata.local.v1',
   mediaProviderAdapterRunLocal: 'media.provider_adapter_run.local.v1',
-  mediaEdgeExportBundleLocal: 'media.edge_export_bundle.local.v1'
+  mediaEdgeExportBundleLocal: 'media.edge_export_bundle.local.v1',
+  mediaProviderRunLedgerLocal: 'media.provider_run_ledger.local.v1',
+  mediaReferenceIngestLocal: 'media.reference_ingest.local.v1'
 })
 
 export const knownArtifactKinds = Object.freeze(Object.values(artifactKinds))

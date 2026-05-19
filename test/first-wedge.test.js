@@ -7,6 +7,7 @@ import test from 'node:test'
 import { runFirstWedge } from '../src/local/run-first-wedge.js'
 import { promoteCandidate } from '../src/local/promote-candidate.js'
 import { readLocalImageMetadata } from '../src/assets/image-metadata.js'
+import { ingestReferenceAsset } from '../src/assets/ingest-reference.js'
 import { validateRequiredRecord } from '../src/contracts/schemas.js'
 import { executeProviderAdapter } from '../src/providers/adapter-runner.js'
 import {
@@ -48,6 +49,7 @@ import {
 import { inspectLocalRun } from '../src/seams/inspect-local-run.js'
 import { exportInspectionBundle } from '../src/seams/export-inspection-bundle.js'
 import { indexInspectionRecords } from '../src/seams/index-inspection-records.js'
+import { indexProviderRuns } from '../src/seams/index-provider-runs.js'
 import { inspectProviderFailure } from '../src/seams/inspect-provider-failure.js'
 import { inspectVeniceSmoke } from '../src/seams/inspect-venice-smoke.js'
 import { summarizeInspectionPacket } from '../src/seams/summarize-inspection-packet.js'
@@ -667,6 +669,65 @@ test('inspection packet summary and index commands report local records', async 
   assert.equal(index.manifests.length, 1)
   assert.equal(index.providerResults.length, 1)
   assert.equal(index.inspectionPackets.length, 1)
+})
+
+test('provider run ledger indexes local provider attempts without truth claims', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({ projectDir: dir })
+
+  const result = await indexProviderRuns({ projectDir: dir })
+
+  assert.equal(result.ledger.schema, 'media.provider_run_ledger.local.v1')
+  assert.equal(result.ledger.summary.total, 1)
+  assert.equal(result.ledger.summary.byStatus.succeeded, 1)
+  assert.equal(result.ledger.runs[0].providerId, 'local-placeholder-provider')
+  assert.equal(result.ledger.runs[0].providerTruth, false)
+  assert.equal(validateRequiredRecord(result.ledger), true)
+
+  const written = JSON.parse(
+    await readFile(path.join(dir, 'records', 'provider-results', 'media-provider-run-ledger.local.json'), 'utf8')
+  )
+  assert.equal(written.meshTruth, false)
+  assert.equal(written.runs[0].providerResultRef.path, 'records/provider-results/media-provider-result.local.json')
+})
+
+test('reference ingest writes asset descriptor and local ingest receipt', async () => {
+  const dir = await createFixtureProject()
+  await writeFile(path.join(dir, 'media', 'generated', 'reference.txt'), 'reference bytes')
+
+  const result = await ingestReferenceAsset({
+    projectDir: dir,
+    source: 'media/generated/reference.txt',
+    filename: 'reference.txt',
+    operatorRef: 'operator-test'
+  })
+
+  assert.equal(result.assetDescriptor.schema, 'media.asset.descriptor.v1')
+  assert.equal(result.assetDescriptor.localRef.placementClass, 'media-reference')
+  assert.equal(result.assetDescriptor.localRef.path, 'media/references/reference.txt')
+  assert.equal(result.assetDescriptor.source.apiCalled, false)
+  assert.equal(result.ingestRecord.schema, 'media.reference_ingest.local.v1')
+  assert.equal(result.ingestRecord.providerTruth, false)
+  assert.equal(result.ingestRecord.materializationProof, false)
+  assert.equal(validateRequiredRecord(result.assetDescriptor), true)
+  assert.equal(validateRequiredRecord(result.ingestRecord), true)
+
+  const written = JSON.parse(
+    await readFile(path.join(dir, result.ingestRecordRef), 'utf8')
+  )
+  assert.equal(written.assetRecordRef.path, result.assetRecordRef)
+})
+
+test('reference ingest blocks unsafe source refs', async () => {
+  const dir = await createFixtureProject()
+
+  await assert.rejects(
+    () => ingestReferenceAsset({
+      projectDir: dir,
+      source: '../outside.png'
+    }),
+    /Local ref path/
+  )
 })
 
 test('promote candidate copies placement and records local decision without provider work', async () => {

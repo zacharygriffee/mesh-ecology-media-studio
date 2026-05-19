@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-reference-ingest-local.schema.json",
+  "title": "media.reference_ingest.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "ingestId",
+    "projectId",
+    "sourceRef",
+    "assetRef",
+    "assetRecordRef",
+    "createdAt",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "providerTruth",
+    "byteAvailabilityProof",
+    "materializationProof",
+    "localTruthLabel",
+    "truthStatus"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.reference_ingest.local.v1"
+    },
+    "ingestId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceRef": {
+      "type": "object"
+    },
+    "assetRef": {
+      "type": "object"
+    },
+    "assetRecordRef": {
+      "type": "object"
+    },
+    "imageMetadataRef": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    },
+    "providerTruth": {
+      "const": false
+    },
+    "byteAvailabilityProof": {
+      "const": false
+    },
+    "materializationProof": {
+      "const": false
+    }
+  }
+}

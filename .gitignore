@@ -4,6 +4,7 @@ examples/**/records/exports/
 examples/**/media/accepted/
 examples/**/media/rejected/
 examples/**/media/generated/provider-smoke/
+examples/**/media/references/
 examples/**/media/proxies/
 examples/**/media/thumbnails/
 examples/**/media/exports/

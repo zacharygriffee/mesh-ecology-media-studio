@@ -42,7 +42,9 @@ export const schemaFiles = {
   'media.provider_failure_taxonomy.v1': 'schemas/media-provider-failure-taxonomy.schema.json',
   'media.image_metadata.local.v1': 'schemas/media-image-metadata-local.schema.json',
   'media.provider_adapter_run.local.v1': 'schemas/media-provider-adapter-run-local.schema.json',
-  'media.edge_export_bundle.local.v1': 'schemas/media-edge-export-bundle-local.schema.json'
+  'media.edge_export_bundle.local.v1': 'schemas/media-edge-export-bundle-local.schema.json',
+  'media.provider_run_ledger.local.v1': 'schemas/media-provider-run-ledger-local.schema.json',
+  'media.reference_ingest.local.v1': 'schemas/media-reference-ingest-local.schema.json'
 }
 
 export const requiredFields = {
@@ -388,6 +390,41 @@ export const requiredFields = {
     'publicationAuthorization',
     'localTruthLabel',
     'truthStatus'
+  ],
+  'media.provider_run_ledger.local.v1': [
+    'schema',
+    'ledgerId',
+    'projectId',
+    'createdAt',
+    'mode',
+    'runs',
+    'summary',
+    'warnings',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'providerTruth',
+    'localTruthLabel',
+    'truthStatus'
+  ],
+  'media.reference_ingest.local.v1': [
+    'schema',
+    'ingestId',
+    'projectId',
+    'sourceRef',
+    'assetRef',
+    'assetRecordRef',
+    'createdAt',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'providerTruth',
+    'byteAvailabilityProof',
+    'materializationProof',
+    'localTruthLabel',
+    'truthStatus'
   ]
 }
 
@@ -416,7 +453,9 @@ const idFields = {
   [artifactKinds.mediaProviderFailureTaxonomy]: 'taxonomyId',
   [artifactKinds.mediaImageMetadataLocal]: 'metadataId',
   [artifactKinds.mediaProviderAdapterRunLocal]: 'adapterRunId',
-  [artifactKinds.mediaEdgeExportBundleLocal]: 'bundleId'
+  [artifactKinds.mediaEdgeExportBundleLocal]: 'bundleId',
+  [artifactKinds.mediaProviderRunLedgerLocal]: 'ledgerId',
+  [artifactKinds.mediaReferenceIngestLocal]: 'ingestId'
 }
 
 const domainProjectSchemas = new Set([
@@ -427,7 +466,9 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaEvidence,
   artifactKinds.mediaProjectLayout,
   artifactKinds.mediaAssetLifecycle,
-  artifactKinds.mediaGenerationRequest
+  artifactKinds.mediaGenerationRequest,
+  artifactKinds.mediaProviderRunLedgerLocal,
+  artifactKinds.mediaReferenceIngestLocal
 ])
 
 const localGeneratedSchemas = new Set([
@@ -442,7 +483,9 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaByteReferencePreviewLocal,
   artifactKinds.mediaImageMetadataLocal,
   artifactKinds.mediaProviderAdapterRunLocal,
-  artifactKinds.mediaEdgeExportBundleLocal
+  artifactKinds.mediaEdgeExportBundleLocal,
+  artifactKinds.mediaProviderRunLedgerLocal,
+  artifactKinds.mediaReferenceIngestLocal
 ])
 
 const readinessStates = new Set(['draft', 'blocked', 'ready', 'caution', 'complete'])
@@ -700,6 +743,46 @@ export function validateRecordShape(record, schemaId = record.schema) {
     record.includedRecordRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.includedRecordRefs[${index}]`))
     record.includedArtifactRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.includedArtifactRefs[${index}]`))
     validateLocalFalseFlags(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaProviderRunLedgerLocal) {
+    if (record.mode !== 'standalone-local') {
+      throw new Error(`Record ${schemaId} has invalid mode: ${record.mode}`)
+    }
+
+    if (!Array.isArray(record.runs)) {
+      throw new Error(`Record ${schemaId} runs must be an array`)
+    }
+
+    for (const [index, run] of record.runs.entries()) {
+      if (!isNonEmptyString(run.providerId) || !isNonEmptyString(run.status)) {
+        throw new Error(`Record ${schemaId}.runs[${index}] must include providerId and status`)
+      }
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+
+    if (record.providerTruth !== false) {
+      throw new Error(`Record ${schemaId} must set providerTruth=false`)
+    }
+  }
+
+  if (schemaId === artifactKinds.mediaReferenceIngestLocal) {
+    validateInspectionRef(record.sourceRef, `${schemaId}.sourceRef`)
+    validateRef(record.assetRef, `${schemaId}.assetRef`)
+    validateInspectionRef(record.assetRecordRef, `${schemaId}.assetRecordRef`)
+
+    if (record.imageMetadataRef !== undefined && record.imageMetadataRef !== null) {
+      validateInspectionRef(record.imageMetadataRef, `${schemaId}.imageMetadataRef`)
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+
+    for (const flag of ['providerTruth', 'byteAvailabilityProof', 'materializationProof']) {
+      if (record[flag] !== false) {
+        throw new Error(`Record ${schemaId} must set ${flag}=false`)
+      }
+    }
   }
 
   if (localGeneratedSchemas.has(schemaId)) {

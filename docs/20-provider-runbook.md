@@ -73,6 +73,12 @@ Index inspection records in a project:
 npm run inspect:index -- --project-dir examples/card-to-candidate
 ```
 
+Index provider attempts in a project:
+
+```bash
+npm run inspect:provider-runs -- --project-dir examples/card-to-candidate
+```
+
 Promote an existing local candidate without rerunning provider work:
 
 ```bash
