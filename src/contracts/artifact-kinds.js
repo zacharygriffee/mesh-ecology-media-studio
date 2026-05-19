@@ -31,7 +31,11 @@ export const artifactKinds = Object.freeze({
   mediaContinuityEvidenceLocal: 'media.continuity_evidence.local.v1',
   mediaControlSurfaceProjectionLocal: 'media.control_surface_projection.local.v1',
   mediaEdgeReviewEvidenceLocal: 'media.edge_review_evidence.local.v1',
-  mediaEdgeCompatibilityBundleLocal: 'media.edge_compatibility_bundle.local.v1'
+  mediaEdgeCompatibilityBundleLocal: 'media.edge_compatibility_bundle.local.v1',
+  mediaProductionUnit: 'media.production_unit.v1',
+  mediaReferencePrimitive: 'media.reference_primitive.v1',
+  mediaContinuityBand: 'media.continuity_band.v1',
+  mediaRenderStrategy: 'media.render_strategy.v1'
 })
 
 export const knownArtifactKinds = Object.freeze(Object.values(artifactKinds))

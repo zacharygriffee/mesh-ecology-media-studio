@@ -50,7 +50,11 @@ export const schemaFiles = {
   'media.continuity_evidence.local.v1': 'schemas/media-continuity-evidence-local.schema.json',
   'media.control_surface_projection.local.v1': 'schemas/media-control-surface-projection-local.schema.json',
   'media.edge_review_evidence.local.v1': 'schemas/media-edge-review-evidence-local.schema.json',
-  'media.edge_compatibility_bundle.local.v1': 'schemas/media-edge-compatibility-bundle-local.schema.json'
+  'media.edge_compatibility_bundle.local.v1': 'schemas/media-edge-compatibility-bundle-local.schema.json',
+  'media.production_unit.v1': 'schemas/media-production-unit.schema.json',
+  'media.reference_primitive.v1': 'schemas/media-reference-primitive.schema.json',
+  'media.continuity_band.v1': 'schemas/media-continuity-band.schema.json',
+  'media.render_strategy.v1': 'schemas/media-render-strategy.schema.json'
 }
 
 export const requiredFields = {
@@ -563,6 +567,86 @@ export const requiredFields = {
     'edgeRuntimeVerified',
     'localTruthLabel',
     'truthStatus'
+  ],
+  'media.production_unit.v1': [
+    'schema',
+    'productionUnitId',
+    'projectId',
+    'unitKind',
+    'title',
+    'purpose',
+    'parentRefs',
+    'sourceRefs',
+    'continuityBandRefs',
+    'referencePrimitiveRefs',
+    'renderStrategyRefs',
+    'outputIntent',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'localTruthLabel',
+    'truthStatus',
+    'createdAt'
+  ],
+  'media.reference_primitive.v1': [
+    'schema',
+    'primitiveId',
+    'projectId',
+    'primitiveKind',
+    'name',
+    'descriptor',
+    'anchors',
+    'evidenceRefs',
+    'assetRefs',
+    'scope',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'localTruthLabel',
+    'truthStatus',
+    'createdAt'
+  ],
+  'media.continuity_band.v1': [
+    'schema',
+    'bandId',
+    'projectId',
+    'bandKind',
+    'label',
+    'subjectRefs',
+    'stateAnchors',
+    'riskLevel',
+    'locks',
+    'sourceRefs',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'localTruthLabel',
+    'truthStatus',
+    'createdAt'
+  ],
+  'media.render_strategy.v1': [
+    'schema',
+    'strategyId',
+    'projectId',
+    'strategyKind',
+    'productionUnitRef',
+    'inputModes',
+    'fallbackModes',
+    'continuityRisk',
+    'providerCapabilityPosture',
+    'referenceBurden',
+    'recoveryStrategy',
+    'guidanceOnly',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'localTruthLabel',
+    'truthStatus',
+    'createdAt'
   ]
 }
 
@@ -599,7 +683,11 @@ const idFields = {
   [artifactKinds.mediaContinuityEvidenceLocal]: 'continuityEvidenceId',
   [artifactKinds.mediaControlSurfaceProjectionLocal]: 'projectionId',
   [artifactKinds.mediaEdgeReviewEvidenceLocal]: 'edgeReviewEvidenceId',
-  [artifactKinds.mediaEdgeCompatibilityBundleLocal]: 'compatibilityBundleId'
+  [artifactKinds.mediaEdgeCompatibilityBundleLocal]: 'compatibilityBundleId',
+  [artifactKinds.mediaProductionUnit]: 'productionUnitId',
+  [artifactKinds.mediaReferencePrimitive]: 'primitiveId',
+  [artifactKinds.mediaContinuityBand]: 'bandId',
+  [artifactKinds.mediaRenderStrategy]: 'strategyId'
 }
 
 const domainProjectSchemas = new Set([
@@ -618,7 +706,11 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaContinuityEvidenceLocal,
   artifactKinds.mediaControlSurfaceProjectionLocal,
   artifactKinds.mediaEdgeReviewEvidenceLocal,
-  artifactKinds.mediaEdgeCompatibilityBundleLocal
+  artifactKinds.mediaEdgeCompatibilityBundleLocal,
+  artifactKinds.mediaProductionUnit,
+  artifactKinds.mediaReferencePrimitive,
+  artifactKinds.mediaContinuityBand,
+  artifactKinds.mediaRenderStrategy
 ])
 
 const localGeneratedSchemas = new Set([
@@ -641,11 +733,74 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaContinuityEvidenceLocal,
   artifactKinds.mediaControlSurfaceProjectionLocal,
   artifactKinds.mediaEdgeReviewEvidenceLocal,
-  artifactKinds.mediaEdgeCompatibilityBundleLocal
+  artifactKinds.mediaEdgeCompatibilityBundleLocal,
+  artifactKinds.mediaProductionUnit,
+  artifactKinds.mediaReferencePrimitive,
+  artifactKinds.mediaContinuityBand,
+  artifactKinds.mediaRenderStrategy
 ])
 
 const readinessStates = new Set(['draft', 'blocked', 'ready', 'caution', 'complete'])
 const decisionTypes = new Set(['accept', 'reject', 'request_changes', 'defer'])
+const productionUnitKinds = new Set([
+  'project',
+  'episode',
+  'sequence',
+  'scene',
+  'shot',
+  'clip',
+  'still',
+  'audio-take',
+  'reference-plate',
+  'world',
+  'panorama',
+  'entity-reference',
+  'look-variant',
+  'rough-cut',
+  'export'
+])
+const referencePrimitiveKinds = new Set([
+  'entity',
+  'character',
+  'prop',
+  'environment',
+  'space',
+  'world',
+  'panorama',
+  'look',
+  'plate',
+  'audio-voice',
+  'text-lock'
+])
+const continuityBandKinds = new Set([
+  'time',
+  'location',
+  'appearance',
+  'entity-state',
+  'world-state',
+  'audio-state',
+  'render-pass'
+])
+const continuityRiskLevels = new Set(['none', 'low', 'medium', 'high', 'critical'])
+const renderStrategyKinds = new Set([
+  'classic-scene-shot-clip',
+  'reference-first',
+  'frame-chain',
+  'world-panorama',
+  'entity-look',
+  'audio-first',
+  'rough-cut',
+  'export'
+])
+const renderInputModes = new Set([
+  'text-to-media',
+  'reference-to-media',
+  'frame-to-media',
+  'multi-reference-to-media',
+  'world-to-media',
+  'audio-to-media',
+  'media-transformation'
+])
 
 export async function readSchema(schemaId, options = {}) {
   const rootDir = options.rootDir ?? process.cwd()
@@ -1093,11 +1248,92 @@ export function validateRecordShape(record, schemaId = record.schema) {
     validateEdgeCandidate(record.edgeReturnSurfaceCandidate, 'edge_operator_return_surface', 'edge_operator_return_surface.v1', schemaId)
   }
 
+  if (schemaId === artifactKinds.mediaProductionUnit) {
+    if (!productionUnitKinds.has(record.unitKind)) {
+      throw new Error(`Record ${schemaId} has invalid production unit kind: ${record.unitKind}`)
+    }
+
+    for (const collection of ['parentRefs', 'sourceRefs', 'continuityBandRefs', 'referencePrimitiveRefs', 'renderStrategyRefs']) {
+      validateRefArray(record[collection], `${schemaId}.${collection}`)
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaReferencePrimitive) {
+    if (!referencePrimitiveKinds.has(record.primitiveKind)) {
+      throw new Error(`Record ${schemaId} has invalid reference primitive kind: ${record.primitiveKind}`)
+    }
+
+    if (!Array.isArray(record.anchors)) {
+      throw new Error(`Record ${schemaId}.anchors must be an array`)
+    }
+
+    validateRefArray(record.evidenceRefs, `${schemaId}.evidenceRefs`)
+    validateRefArray(record.assetRefs, `${schemaId}.assetRefs`)
+    validateLocalFalseFlags(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaContinuityBand) {
+    if (!continuityBandKinds.has(record.bandKind)) {
+      throw new Error(`Record ${schemaId} has invalid continuity band kind: ${record.bandKind}`)
+    }
+
+    if (!continuityRiskLevels.has(record.riskLevel)) {
+      throw new Error(`Record ${schemaId} has invalid continuity risk level: ${record.riskLevel}`)
+    }
+
+    validateRefArray(record.subjectRefs, `${schemaId}.subjectRefs`)
+    validateRefArray(record.sourceRefs, `${schemaId}.sourceRefs`)
+
+    for (const collection of ['stateAnchors', 'locks']) {
+      if (!Array.isArray(record[collection])) {
+        throw new Error(`Record ${schemaId}.${collection} must be an array`)
+      }
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaRenderStrategy) {
+    if (!renderStrategyKinds.has(record.strategyKind)) {
+      throw new Error(`Record ${schemaId} has invalid render strategy kind: ${record.strategyKind}`)
+    }
+
+    validateRef(record.productionUnitRef, `${schemaId}.productionUnitRef`)
+
+    for (const mode of record.inputModes) {
+      if (!renderInputModes.has(mode)) {
+        throw new Error(`Record ${schemaId} has invalid input mode: ${mode}`)
+      }
+    }
+
+    for (const mode of record.fallbackModes) {
+      if (!renderInputModes.has(mode)) {
+        throw new Error(`Record ${schemaId} has invalid fallback mode: ${mode}`)
+      }
+    }
+
+    if (record.guidanceOnly !== true) {
+      throw new Error(`Record ${schemaId} must set guidanceOnly=true`)
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+  }
+
   if (localGeneratedSchemas.has(schemaId)) {
     validateLocalDoctrineFlags(record, schemaId)
   }
 
   return true
+}
+
+function validateRefArray(refs, label) {
+  if (!Array.isArray(refs)) {
+    throw new Error(`${label} must be an array`)
+  }
+
+  refs.forEach((ref, index) => validateRef(ref, `${label}[${index}]`))
 }
 
 function validateLocalFalseFlags(record, schemaId) {

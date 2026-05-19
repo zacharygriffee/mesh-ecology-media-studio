@@ -244,7 +244,10 @@ provider attempts, and committed Edge bundle fixtures. Phase 12 adds a
 Packs-aligned control-surface projection for future inspection without defining
 UI, Edge runtime messages, or an authority surface. Phase 13 adds Studio-built
 Edge compatibility candidates for documented Edge review shapes without
-claiming Edge runtime verification.
+claiming Edge runtime verification. Phase 14 adds generalized production-unit,
+reference-primitive, continuity-band, and render-strategy records so
+scene/shot/clip stays available as one strategy without becoming the root
+ontology.
 
 ## Start Here
 
@@ -270,3 +273,4 @@ claiming Edge runtime verification.
 - [docs/26-narrow-slice-completion.md](docs/26-narrow-slice-completion.md)
 - [docs/27-packs-control-surface-alignment.md](docs/27-packs-control-surface-alignment.md)
 - [docs/28-edge-compatibility-candidates.md](docs/28-edge-compatibility-candidates.md)
+- [docs/29-production-strategy-posture.md](docs/29-production-strategy-posture.md)

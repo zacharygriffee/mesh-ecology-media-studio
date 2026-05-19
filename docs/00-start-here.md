@@ -30,6 +30,7 @@ Read in this order:
 22. [Narrow Slice Completion](26-narrow-slice-completion.md)
 23. [Packs Control Surface Alignment](27-packs-control-surface-alignment.md)
 24. [Edge Compatibility Candidates](28-edge-compatibility-candidates.md)
+25. [Production Strategy Posture](29-production-strategy-posture.md)
 
 The first executable path is:
 
@@ -129,7 +130,9 @@ card-grouped provider attempts, and committed Edge bundle fixtures. The wedge
 remains local-only. Phase 12 adds a Packs-aligned control-surface projection
 for future inspection without defining UI or Edge runtime messages. Phase 13
 adds Studio-built Edge compatibility candidates for documented Edge review
-shapes without claiming Edge runtime verification. It creates local records and
-does not claim mesh truth,
+shapes without claiming Edge runtime verification. Phase 14 adds generalized
+production-unit, reference-primitive, continuity-band, and render-strategy
+records so scene/shot/clip remains one strategy rather than the root ontology.
+It creates local records and does not claim mesh truth,
 distributed proof, byte materialization proof, provider truth, causal truth,
 publication authorization, or ratifier authority.

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-production-unit.schema.json",
+  "title": "media.production_unit.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "productionUnitId",
+    "projectId",
+    "unitKind",
+    "title",
+    "purpose",
+    "parentRefs",
+    "sourceRefs",
+    "continuityBandRefs",
+    "referencePrimitiveRefs",
+    "renderStrategyRefs",
+    "outputIntent",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "localTruthLabel",
+    "truthStatus",
+    "createdAt"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.production_unit.v1"
+    },
+    "productionUnitId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "unitKind": {
+      "type": "string"
+    },
+    "parentRefs": {
+      "type": "array"
+    },
+    "sourceRefs": {
+      "type": "array"
+    },
+    "continuityBandRefs": {
+      "type": "array"
+    },
+    "referencePrimitiveRefs": {
+      "type": "array"
+    },
+    "renderStrategyRefs": {
+      "type": "array"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    }
+  }
+}

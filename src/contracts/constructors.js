@@ -361,5 +361,9 @@ export function idForRecord(record) {
   if (record.projectionId) return record.projectionId
   if (record.edgeReviewEvidenceId) return record.edgeReviewEvidenceId
   if (record.compatibilityBundleId) return record.compatibilityBundleId
+  if (record.productionUnitId) return record.productionUnitId
+  if (record.primitiveId) return record.primitiveId
+  if (record.bandId) return record.bandId
+  if (record.strategyId) return record.strategyId
   return undefined
 }

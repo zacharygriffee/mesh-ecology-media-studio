@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-continuity-band.schema.json",
+  "title": "media.continuity_band.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "bandId",
+    "projectId",
+    "bandKind",
+    "label",
+    "subjectRefs",
+    "stateAnchors",
+    "riskLevel",
+    "locks",
+    "sourceRefs",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "localTruthLabel",
+    "truthStatus",
+    "createdAt"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.continuity_band.v1"
+    },
+    "bandId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "bandKind": {
+      "type": "string"
+    },
+    "subjectRefs": {
+      "type": "array"
+    },
+    "stateAnchors": {
+      "type": "array"
+    },
+    "locks": {
+      "type": "array"
+    },
+    "sourceRefs": {
+      "type": "array"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    }
+  }
+}

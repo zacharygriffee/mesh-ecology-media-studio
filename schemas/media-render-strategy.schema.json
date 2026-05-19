@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-render-strategy.schema.json",
+  "title": "media.render_strategy.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "strategyId",
+    "projectId",
+    "strategyKind",
+    "productionUnitRef",
+    "inputModes",
+    "fallbackModes",
+    "continuityRisk",
+    "providerCapabilityPosture",
+    "referenceBurden",
+    "recoveryStrategy",
+    "guidanceOnly",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "localTruthLabel",
+    "truthStatus",
+    "createdAt"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.render_strategy.v1"
+    },
+    "strategyId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "strategyKind": {
+      "type": "string"
+    },
+    "productionUnitRef": {
+      "type": "object"
+    },
+    "inputModes": {
+      "type": "array"
+    },
+    "fallbackModes": {
+      "type": "array"
+    },
+    "guidanceOnly": {
+      "const": true
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    }
+  }
+}

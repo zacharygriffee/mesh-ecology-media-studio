@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-reference-primitive.schema.json",
+  "title": "media.reference_primitive.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "primitiveId",
+    "projectId",
+    "primitiveKind",
+    "name",
+    "descriptor",
+    "anchors",
+    "evidenceRefs",
+    "assetRefs",
+    "scope",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "localTruthLabel",
+    "truthStatus",
+    "createdAt"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.reference_primitive.v1"
+    },
+    "primitiveId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "primitiveKind": {
+      "type": "string"
+    },
+    "anchors": {
+      "type": "array"
+    },
+    "evidenceRefs": {
+      "type": "array"
+    },
+    "assetRefs": {
+      "type": "array"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    }
+  }
+}
