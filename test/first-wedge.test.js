@@ -1094,7 +1094,7 @@ test('project status flags unresolved byte and resource coverage', async () => {
   assert.equal(validateRequiredRecord(result.status), true)
 })
 
-test('project status and readiness flag stale resource candidates', async () => {
+test('project status and readiness flag stale byte proposals and resource candidates', async () => {
   const dir = await createFixtureProject()
   await runFirstWedge({
     projectDir: dir,
@@ -1115,8 +1115,10 @@ test('project status and readiness flag stale resource candidates', async () => 
   const readiness = await writeEdgeReadinessGuidance({ projectDir: dir })
 
   assert.equal(status.status.assetResourceConsistency.readyForEdgeInspection, false)
+  assert.equal(status.status.assetResourceConsistency.staleByteDescriptorProposalIds.length, 1)
   assert.equal(status.status.assetResourceConsistency.staleResourceCandidateIds.length, 1)
   assert.equal(readiness.readiness.state, 'caution')
+  assert.equal(readiness.readiness.resolvabilitySummary.staleByteDescriptorProposalIds.length, 1)
   assert.equal(readiness.readiness.resolvabilitySummary.staleResourceCandidateIds.length, 1)
 })
 
@@ -1139,6 +1141,33 @@ test('project health combines status readiness and production validation', async
   assert.equal(result.health.productionValidation.valid, true)
   assert.equal(result.health.meshTruth, false)
   assert.equal(result.health.edgeRuntimeVerified, false)
+  assert.equal(validateRequiredRecord(result.health), true)
+})
+
+test('inspection summary and Edge bundle include project health records', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await writeByteDescriptorProposals({ projectDir: dir })
+  await writeLocalLayerResourceRefCandidates({ projectDir: dir })
+  await writeProductionRecordsFromCard({ projectDir: dir })
+  await writeProjectHealth({ projectDir: dir, summary: true })
+  await inspectLocalRun({ projectDir: dir })
+
+  const summary = await summarizeInspectionPacket({
+    projectDir: dir,
+    packet: 'records/exports/local-run-edge-inspection-packet.local.json'
+  })
+
+  assert.ok(summary.healthRows.some((row) => row[1] === 'ready-for-local-inspection' && row[3] === 'true'))
+
+  await writeControlSurfaceProjection({ projectDir: dir })
+  const { bundle } = await writeEdgeCompatibilityBundle({ projectDir: dir })
+  assert.ok(bundle.studioSourceRefs.some((ref) => ref.schema === 'media.project_health.local.v1'))
+  assert.equal(validateRequiredRecord(bundle), true)
 })
 
 test('promote candidate copies placement and records local decision without provider work', async () => {

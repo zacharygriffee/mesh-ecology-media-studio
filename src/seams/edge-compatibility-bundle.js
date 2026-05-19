@@ -25,6 +25,7 @@ const sourceRecordPaths = Object.freeze({
   inspectionPacket: 'records/exports/local-run-edge-inspection-packet.local.json',
   controlSurfaceProjection: 'records/exports/media-control-surface-projection.local.json',
   projectStatus: 'records/manifests/media-project-status.local.json',
+  projectHealth: 'records/manifests/media-project-health.local.json',
   edgeReadinessGuidance: 'records/readiness/media-edge-inspection-readiness.local.json',
   providerRunLedger: 'records/provider-results/media-provider-run-ledger.local.json'
 })
@@ -363,6 +364,7 @@ function createEdgeReadinessViewCandidate({ projectId, workPacketCandidate, evid
       studioReadinessState: readinessResourceSummary.edgeReadinessState,
       assetResourceReady: readinessResourceSummary.assetResourceReady,
       assetResourceWarnings: readinessResourceSummary.assetResourceWarnings,
+      staleByteDescriptorProposalIds: readinessResourceSummary.staleByteDescriptorProposalIds,
       staleResourceCandidateIds: readinessResourceSummary.staleResourceCandidateIds
     },
     consumerLabels: {
@@ -397,6 +399,7 @@ function createReadinessResourceSummary({ sources }) {
     missingResourceRefCandidateAssetIds: consistency?.missingResourceRefCandidateAssetIds ?? resolvability?.missingResourceRefCandidateAssetIds ?? [],
     unresolvedResourceCandidateIds: consistency?.unresolvedResourceCandidateIds ?? resolvability?.unresolvedResourceCandidateIds ?? [],
     staleResourceCandidateIds: consistency?.staleResourceCandidateIds ?? resolvability?.staleResourceCandidateIds ?? [],
+    staleByteDescriptorProposalIds: consistency?.staleByteDescriptorProposalIds ?? resolvability?.staleByteDescriptorProposalIds ?? [],
     operatorGuidanceOnly: true,
     localOnly: true,
     meshTruth: false,
@@ -539,6 +542,7 @@ function kindForSchema(schema) {
     [artifactKinds.mediaEdgeInspectionPacketLocal]: 'media-edge-inspection-packet',
     [artifactKinds.mediaControlSurfaceProjectionLocal]: 'media-control-surface-projection',
     [artifactKinds.mediaProjectStatusLocal]: 'media-project-status',
+    [artifactKinds.mediaProjectHealthLocal]: 'media-project-health',
     [artifactKinds.mediaReadiness]: 'media-readiness',
     [artifactKinds.mediaProviderRunLedgerLocal]: 'media-provider-run-ledger',
     [artifactKinds.mediaProductionUnit]: 'media-production-unit',
@@ -559,6 +563,7 @@ function idForRecord(record) {
     record.packetId ??
     record.projectionId ??
     record.statusId ??
+    record.healthId ??
     record.readinessId ??
     record.ledgerId ??
     record.productionUnitId ??

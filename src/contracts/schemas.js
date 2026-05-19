@@ -50,6 +50,7 @@ export const schemaFiles = {
   'media.reference_ingest.local.v1': 'schemas/media-reference-ingest-local.schema.json',
   'media.candidate_review.local.v1': 'schemas/media-candidate-review-local.schema.json',
   'media.project_status.local.v1': 'schemas/media-project-status-local.schema.json',
+  'media.project_health.local.v1': 'schemas/media-project-health-local.schema.json',
   'media.continuity_evidence.local.v1': 'schemas/media-continuity-evidence-local.schema.json',
   'media.control_surface_projection.local.v1': 'schemas/media-control-surface-projection-local.schema.json',
   'media.edge_review_evidence.local.v1': 'schemas/media-edge-review-evidence-local.schema.json',
@@ -481,6 +482,31 @@ export const requiredFields = {
     'localTruthLabel',
     'truthStatus'
   ],
+  'media.project_health.local.v1': [
+    'schema',
+    'healthId',
+    'projectId',
+    'createdAt',
+    'mode',
+    'healthState',
+    'blockingIssues',
+    'statusRef',
+    'readinessRef',
+    'assetResourceConsistency',
+    'edgeReadinessState',
+    'productionValidation',
+    'operatorGuidanceOnly',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'providerTruth',
+    'byteAvailabilityProof',
+    'materializationProof',
+    'edgeRuntimeVerified',
+    'localTruthLabel',
+    'truthStatus'
+  ],
   'media.continuity_evidence.local.v1': [
     'schema',
     'continuityEvidenceId',
@@ -778,6 +804,7 @@ const idFields = {
   [artifactKinds.mediaReferenceIngestLocal]: 'ingestId',
   [artifactKinds.mediaCandidateReviewLocal]: 'candidateReviewId',
   [artifactKinds.mediaProjectStatusLocal]: 'statusId',
+  [artifactKinds.mediaProjectHealthLocal]: 'healthId',
   [artifactKinds.mediaContinuityEvidenceLocal]: 'continuityEvidenceId',
   [artifactKinds.mediaControlSurfaceProjectionLocal]: 'projectionId',
   [artifactKinds.mediaEdgeReviewEvidenceLocal]: 'edgeReviewEvidenceId',
@@ -805,6 +832,7 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaReferenceIngestLocal,
   artifactKinds.mediaCandidateReviewLocal,
   artifactKinds.mediaProjectStatusLocal,
+  artifactKinds.mediaProjectHealthLocal,
   artifactKinds.mediaContinuityEvidenceLocal,
   artifactKinds.mediaControlSurfaceProjectionLocal,
   artifactKinds.mediaEdgeReviewEvidenceLocal,
@@ -836,6 +864,7 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaReferenceIngestLocal,
   artifactKinds.mediaCandidateReviewLocal,
   artifactKinds.mediaProjectStatusLocal,
+  artifactKinds.mediaProjectHealthLocal,
   artifactKinds.mediaContinuityEvidenceLocal,
   artifactKinds.mediaControlSurfaceProjectionLocal,
   artifactKinds.mediaEdgeReviewEvidenceLocal,
@@ -1242,6 +1271,43 @@ export function validateRecordShape(record, schemaId = record.schema) {
     validateLocalFalseFlags(record, schemaId)
 
     for (const flag of ['providerTruth', 'byteAvailabilityProof', 'materializationProof']) {
+      if (record[flag] !== false) {
+        throw new Error(`Record ${schemaId} must set ${flag}=false`)
+      }
+    }
+  }
+
+  if (schemaId === artifactKinds.mediaProjectHealthLocal) {
+    if (record.mode !== 'standalone-local') {
+      throw new Error(`Record ${schemaId} has invalid mode: ${record.mode}`)
+    }
+
+    if (!['ready-for-local-inspection', 'needs-local-attention'].includes(record.healthState)) {
+      throw new Error(`Record ${schemaId} has invalid healthState: ${record.healthState}`)
+    }
+
+    if (!Array.isArray(record.blockingIssues)) {
+      throw new Error(`Record ${schemaId}.blockingIssues must be an array`)
+    }
+
+    validateInspectionRef(record.statusRef, `${schemaId}.statusRef`)
+    validateInspectionRef(record.readinessRef, `${schemaId}.readinessRef`)
+
+    if (!record.assetResourceConsistency || typeof record.assetResourceConsistency !== 'object') {
+      throw new Error(`Record ${schemaId} must include assetResourceConsistency`)
+    }
+
+    if (!record.productionValidation || typeof record.productionValidation !== 'object') {
+      throw new Error(`Record ${schemaId} must include productionValidation`)
+    }
+
+    if (record.operatorGuidanceOnly !== true) {
+      throw new Error(`Record ${schemaId} must set operatorGuidanceOnly=true`)
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+
+    for (const flag of ['providerTruth', 'byteAvailabilityProof', 'materializationProof', 'edgeRuntimeVerified']) {
       if (record[flag] !== false) {
         throw new Error(`Record ${schemaId} must set ${flag}=false`)
       }

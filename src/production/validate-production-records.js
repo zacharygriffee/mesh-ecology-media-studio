@@ -34,7 +34,8 @@ function parseArgs(argv) {
 
 export async function validateProductionRecordsInProject({
   projectDir = defaultProjectDir,
-  inputDir = defaultInputDir
+  inputDir = defaultInputDir,
+  quiet = false
 } = {}) {
   assertSafeLocalPath(inputDir)
   const root = path.resolve(projectDir)
@@ -50,8 +51,10 @@ export async function validateProductionRecordsInProject({
 
   validateProductionDescriptorGraph(records)
 
-  console.log(`production graph valid: ${records.length}`)
-  console.log(`input: ${inputDir}`)
+  if (!quiet) {
+    console.log(`production graph valid: ${records.length}`)
+    console.log(`input: ${inputDir}`)
+  }
 
   return {
     valid: true,

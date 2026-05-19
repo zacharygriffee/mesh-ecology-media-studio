@@ -37,13 +37,15 @@ authority, local-layer resource admission, or materialization proof.
 
 The status record also includes `assetResourceConsistency`. It summarizes
 accepted/reference assets missing byte descriptor proposals, missing resource
-ref candidates, or unresolved byte/resource alignment. This is readiness
-guidance for later inspection only.
+ref candidates, unresolved byte/resource alignment, stale byte descriptor
+proposals, and stale resource-ref candidates. This is readiness guidance for
+later inspection only.
 
 For a combined local operator snapshot, run:
 
 ```bash
 npm run health:project -- --project-dir examples/card-to-candidate
+npm run health:summary -- --project-dir examples/card-to-candidate
 ```
 
 This writes `media.project_health.local.v1` under `records/manifests/`. It

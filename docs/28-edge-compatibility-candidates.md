@@ -90,8 +90,10 @@ edgeRuntimeVerified: false
 
 The bundle also carries `readinessResourceSummary`, copied from Studio's local
 status/readiness records. This lets Edge inspect missing byte proposals,
-missing resource candidates, unresolved candidates, and stale resource
-candidates without treating them as Edge runtime verification.
+missing resource candidates, unresolved candidates, stale byte descriptor
+proposals, and stale resource candidates without treating them as Edge runtime
+verification. If `media.project_health.local.v1` exists, the bundle includes it
+as another Studio source record for inspection.
 
 ## No Runtime Integration
 

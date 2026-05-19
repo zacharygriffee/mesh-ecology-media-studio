@@ -39,7 +39,8 @@ function parseArgs(argv) {
 export async function writeProjectStatus({
   projectDir = 'examples/card-to-candidate',
   output = defaultOutput,
-  print = false
+  print = false,
+  quiet = false
 } = {}) {
   assertSafeLocalPath(output)
   const root = path.resolve(projectDir)
@@ -88,7 +89,7 @@ export async function writeProjectStatus({
 
   if (print) {
     console.log(JSON.stringify(status, null, 2))
-  } else {
+  } else if (!quiet) {
     console.log(`project status: ${output}`)
     for (const [name, count] of Object.entries(counts)) {
       console.log(`${name}: ${count}`)
@@ -107,9 +108,9 @@ function summarizeAssetResourceConsistency(records) {
   const acceptedOrReferenceAssets = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaAssetDescriptor)
     .filter((entry) => isAcceptedOrReferenceAsset(entry.record))
-  const byteProposalAssetIds = new Set(records
+  const byteProposalByAssetId = new Map(records
     .filter((entry) => entry.record.schema === artifactKinds.mediaByteDescriptorProposalLocal)
-    .map((entry) => entry.record.sourceAssetRef.id))
+    .map((entry) => [entry.record.sourceAssetRef.id, entry.record]))
   const resourceCandidateByAssetId = new Map(records
     .filter((entry) => entry.record.schema === artifactKinds.mediaLocalLayerResourceRefCandidateLocal)
     .map((entry) => [entry.record.sourceRef.id, entry.record]))
@@ -117,14 +118,18 @@ function summarizeAssetResourceConsistency(records) {
   const missingResourceRefCandidateAssetIds = []
   const unresolvedResourceCandidateIds = []
   const alignedResourceCandidateIds = []
+  const staleByteDescriptorProposalIds = []
   const staleResourceCandidateIds = []
 
   for (const entry of acceptedOrReferenceAssets) {
     const assetId = entry.record.assetId
+    const byteProposal = byteProposalByAssetId.get(assetId)
     const resourceCandidate = resourceCandidateByAssetId.get(assetId)
 
-    if (!byteProposalAssetIds.has(assetId)) {
+    if (!byteProposal) {
       missingByteDescriptorProposalAssetIds.push(assetId)
+    } else if (!byteProposalMatchesAsset(byteProposal, entry.record)) {
+      staleByteDescriptorProposalIds.push(byteProposal.byteDescriptorProposalId)
     }
 
     if (!resourceCandidate) {
@@ -143,16 +148,18 @@ function summarizeAssetResourceConsistency(records) {
   const warningCount = missingByteDescriptorProposalAssetIds.length +
     missingResourceRefCandidateAssetIds.length +
     unresolvedResourceCandidateIds.length +
+    staleByteDescriptorProposalIds.length +
     staleResourceCandidateIds.length
 
   return {
     acceptedOrReferenceAssets: acceptedOrReferenceAssets.length,
-    byteDescriptorProposalCoverage: byteProposalAssetIds.size,
+    byteDescriptorProposalCoverage: byteProposalByAssetId.size,
     resourceRefCandidateCoverage: resourceCandidateByAssetId.size,
     alignedResourceCandidateIds,
     missingByteDescriptorProposalAssetIds,
     missingResourceRefCandidateAssetIds,
     unresolvedResourceCandidateIds,
+    staleByteDescriptorProposalIds,
     staleResourceCandidateIds,
     readyForEdgeInspection: acceptedOrReferenceAssets.length > 0 && warningCount === 0,
     warningCount,
@@ -163,6 +170,13 @@ function summarizeAssetResourceConsistency(records) {
     byteAvailabilityProof: false,
     materializationProof: false
   }
+}
+
+function byteProposalMatchesAsset(byteProposal, assetDescriptor) {
+  return JSON.stringify(byteProposal.hash ?? null) === JSON.stringify(assetDescriptor.hash ?? null) &&
+    JSON.stringify(byteProposal.localRef ?? null) === JSON.stringify(assetDescriptor.localRef ?? null) &&
+    JSON.stringify(byteProposal.proposedByteDescriptor?.digest ?? null) === JSON.stringify(assetDescriptor.hash ?? null) &&
+    JSON.stringify(byteProposal.proposedByteDescriptor?.localRef ?? null) === JSON.stringify(assetDescriptor.localRef ?? null)
 }
 
 function resourceCandidateMatchesAsset(resourceCandidate, assetDescriptor) {

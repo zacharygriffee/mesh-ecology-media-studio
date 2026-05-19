@@ -65,6 +65,7 @@ export async function summarizeInspectionPacket({
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([family, count]) => [family, String(count)])
   const readinessRows = await readinessPostureRows(root, record.recordRefs)
+  const healthRows = await healthRowsForPacket(root, record.recordRefs)
 
   printTable(['field', 'value'], rows)
   if (familyRows.length > 0) {
@@ -82,6 +83,11 @@ export async function summarizeInspectionPacket({
     printTable(['readiness', 'state', 'subject', 'resourcePosture'], readinessRows)
   }
 
+  if (healthRows.length > 0) {
+    console.log('')
+    printTable(['health', 'state', 'blockingIssues', 'assetResourceReady'], healthRows)
+  }
+
   if (artifactRows.length > 0) {
     console.log('')
     printTable(['artifact', 'contentType', 'path', 'bytePreview'], artifactRows)
@@ -93,6 +99,7 @@ export async function summarizeInspectionPacket({
     familyRows,
     schemaRows,
     readinessRows,
+    healthRows,
     artifactRows
   }
 }
@@ -125,16 +132,39 @@ async function readinessPostureRows(root, recordRefs) {
   return rows
 }
 
+async function healthRowsForPacket(root, recordRefs) {
+  const healthRefs = Object.values(recordRefs)
+    .filter((ref) => ref.schema === 'media.project_health.local.v1' && ref.path)
+    .sort((left, right) => left.path.localeCompare(right.path))
+  const rows = []
+
+  for (const ref of healthRefs) {
+    assertSafeLocalPath(ref.path)
+    const health = JSON.parse(await readFile(path.join(root, ref.path), 'utf8'))
+    validateRequiredRecord(health, 'media.project_health.local.v1')
+    rows.push([
+      health.healthId,
+      health.healthState,
+      String(health.blockingIssues.length),
+      String(health.assetResourceConsistency?.readyForEdgeInspection ?? false)
+    ])
+  }
+
+  return rows
+}
+
 function resourcePostureLabel(summary) {
   const missingByte = summary.missingByteDescriptorProposalAssetIds?.length ?? 0
   const missingResource = summary.missingResourceRefCandidateAssetIds?.length ?? 0
   const unresolved = summary.unresolvedResourceCandidateIds?.length ?? 0
+  const staleByte = summary.staleByteDescriptorProposalIds?.length ?? 0
+  const staleResource = summary.staleResourceCandidateIds?.length ?? 0
 
-  if (missingByte === 0 && missingResource === 0 && unresolved === 0) {
+  if (missingByte === 0 && missingResource === 0 && unresolved === 0 && staleByte === 0 && staleResource === 0) {
     return `${summary.currentCategory ?? 'unknown'}->${summary.targetCategory ?? 'unknown'} aligned`
   }
 
-  return `missing-byte:${missingByte} missing-resource:${missingResource} unresolved:${unresolved}`
+  return `missing-byte:${missingByte} missing-resource:${missingResource} unresolved:${unresolved} stale-byte:${staleByte} stale-resource:${staleResource}`
 }
 
 function countRecordSchemas(recordRefs) {
@@ -174,6 +204,7 @@ function familyForSchema(schema) {
   if (schema.includes('approval_proposal')) return 'approvals'
   if (schema.includes('byte_descriptor_proposal') || schema.includes('byte_reference')) return 'bytes'
   if (schema.includes('resource_ref_candidate')) return 'resources'
+  if (schema.includes('project_health')) return 'health'
   if (schema.includes('production_') || schema.includes('reference_primitive') || schema.includes('continuity_band') || schema.includes('render_strategy')) return 'production'
   if (schema.includes('continuity_evidence')) return 'continuity'
   if (schema.includes('candidate_review') || schema === 'media.evidence.v1' || schema === 'media.operator_decision.v1') return 'review'

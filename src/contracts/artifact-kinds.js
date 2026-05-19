@@ -28,6 +28,7 @@ export const artifactKinds = Object.freeze({
   mediaReferenceIngestLocal: 'media.reference_ingest.local.v1',
   mediaCandidateReviewLocal: 'media.candidate_review.local.v1',
   mediaProjectStatusLocal: 'media.project_status.local.v1',
+  mediaProjectHealthLocal: 'media.project_health.local.v1',
   mediaContinuityEvidenceLocal: 'media.continuity_evidence.local.v1',
   mediaControlSurfaceProjectionLocal: 'media.control_surface_projection.local.v1',
   mediaEdgeReviewEvidenceLocal: 'media.edge_review_evidence.local.v1',

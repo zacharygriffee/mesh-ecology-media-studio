@@ -2,6 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { artifactKinds } from '../contracts/artifact-kinds.js'
 import { nowIso } from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
@@ -18,7 +19,8 @@ function parseArgs(argv) {
   const args = {
     projectDir: defaultProjectDir,
     output: defaultOutput,
-    print: false
+    print: false,
+    summary: false
   }
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -33,6 +35,8 @@ function parseArgs(argv) {
       i += 1
     } else if (arg === '--print') {
       args.print = true
+    } else if (arg === '--summary') {
+      args.summary = true
     }
   }
 
@@ -42,13 +46,14 @@ function parseArgs(argv) {
 export async function writeProjectHealth({
   projectDir = defaultProjectDir,
   output = defaultOutput,
-  print = false
+  print = false,
+  summary = false
 } = {}) {
   assertSafeLocalPath(output)
   const root = path.resolve(projectDir)
-  const statusResult = await writeProjectStatus({ projectDir })
-  const readinessResult = await writeEdgeReadinessGuidance({ projectDir })
-  const productionValidation = await validateProductionRecordsInProject({ projectDir })
+  const statusResult = await writeProjectStatus({ projectDir, quiet: summary })
+  const readinessResult = await writeEdgeReadinessGuidance({ projectDir, quiet: summary })
+  const productionValidation = await validateProductionRecordsInProject({ projectDir, quiet: summary })
   const projectId = statusResult.status.projectId
   const blockingIssues = []
 
@@ -65,7 +70,7 @@ export async function writeProjectHealth({
   }
 
   const health = {
-    schema: 'media.project_health.local.v1',
+    schema: artifactKinds.mediaProjectHealthLocal,
     healthId: `project-health-${projectId}`,
     projectId,
     createdAt: nowIso(),
@@ -107,6 +112,7 @@ export async function writeProjectHealth({
   }
 
   validateProjectHealth(health)
+  validateRequiredRecord(health, artifactKinds.mediaProjectHealthLocal)
 
   const outputPath = path.join(root, output)
   await mkdir(path.dirname(outputPath), { recursive: true })
@@ -114,6 +120,8 @@ export async function writeProjectHealth({
 
   if (print) {
     console.log(JSON.stringify(health, null, 2))
+  } else if (summary) {
+    printHealthSummary(health, output)
   } else {
     console.log(`project health: ${output}`)
     console.log(`healthState: ${health.healthState}`)
@@ -126,8 +134,20 @@ export async function writeProjectHealth({
   }
 }
 
+function printHealthSummary(health, output) {
+  console.log(`project health: ${output}`)
+  console.log(`healthState: ${health.healthState}`)
+  console.log(`edgeReadinessState: ${health.edgeReadinessState}`)
+  console.log(`assetResourceReady: ${health.assetResourceConsistency.readyForEdgeInspection}`)
+  console.log(`assetResourceWarnings: ${health.assetResourceConsistency.warningCount}`)
+  console.log(`staleByteDescriptorProposals: ${health.assetResourceConsistency.staleByteDescriptorProposalIds.length}`)
+  console.log(`staleResourceCandidates: ${health.assetResourceConsistency.staleResourceCandidateIds.length}`)
+  console.log(`productionGraphValid: ${health.productionValidation.valid}`)
+  console.log(`blockingIssues: ${health.blockingIssues.length}`)
+}
+
 function validateProjectHealth(health) {
-  if (health.schema !== 'media.project_health.local.v1') {
+  if (health.schema !== artifactKinds.mediaProjectHealthLocal) {
     throw new Error('Project health must use media.project_health.local.v1')
   }
 

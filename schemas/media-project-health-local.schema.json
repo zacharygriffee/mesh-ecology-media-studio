@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-project-health-local.schema.json",
+  "title": "media.project_health.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "healthId",
+    "projectId",
+    "createdAt",
+    "mode",
+    "healthState",
+    "blockingIssues",
+    "statusRef",
+    "readinessRef",
+    "assetResourceConsistency",
+    "edgeReadinessState",
+    "productionValidation",
+    "operatorGuidanceOnly",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "providerTruth",
+    "byteAvailabilityProof",
+    "materializationProof",
+    "edgeRuntimeVerified",
+    "localTruthLabel",
+    "truthStatus"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.project_health.local.v1"
+    },
+    "healthId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "healthState": {
+      "enum": [
+        "ready-for-local-inspection",
+        "needs-local-attention"
+      ]
+    },
+    "blockingIssues": {
+      "type": "array"
+    },
+    "statusRef": {
+      "type": "object"
+    },
+    "readinessRef": {
+      "type": "object"
+    },
+    "assetResourceConsistency": {
+      "type": "object"
+    },
+    "productionValidation": {
+      "type": "object"
+    },
+    "operatorGuidanceOnly": {
+      "const": true
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    },
+    "providerTruth": {
+      "const": false
+    },
+    "byteAvailabilityProof": {
+      "const": false
+    },
+    "materializationProof": {
+      "const": false
+    },
+    "edgeRuntimeVerified": {
+      "const": false
+    }
+  }
+}
