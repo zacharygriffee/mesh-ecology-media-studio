@@ -42,6 +42,12 @@ The final command writes:
 records/exports/media-edge-compatibility-bundle.local.json
 ```
 
+If optional production strategy records exist under `records/production/`,
+local inspection and Edge compatibility bundles include them as Studio-owned
+source records. This lets Edge inspect scene/shot/clip, rough-cut, export,
+world, panorama, reference primitive, continuity band, and render strategy
+posture without requiring Edge to own those media semantics.
+
 ## Studio-Owned Evidence
 
 The bundle contains a nested Studio-owned evidence shape:

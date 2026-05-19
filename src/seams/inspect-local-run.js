@@ -15,6 +15,19 @@ const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
 const defaultManifest = 'records/manifests/media-local-run-manifest.local.json'
 const defaultOutput = 'records/exports/local-run-edge-inspection-packet.local.json'
+const extraInspectionRoots = Object.freeze([
+  'records/evidence',
+  'records/production'
+])
+const extraInspectionSchemas = new Set([
+  'media.candidate_review.local.v1',
+  'media.continuity_evidence.local.v1',
+  'media.production_unit.v1',
+  'media.reference_primitive.v1',
+  'media.continuity_band.v1',
+  'media.render_strategy.v1',
+  'media.production_descriptor.local.v1'
+])
 
 function parseArgs(argv) {
   const args = {
@@ -192,7 +205,12 @@ function nameForSchema(schema, relativePath) {
     'media.readiness.v1': 'readiness',
     'media.operator_decision.v1': 'operatorDecision',
     'media.candidate_review.local.v1': `candidateReview:${path.basename(relativePath, '.json')}`,
-    'media.continuity_evidence.local.v1': `continuityEvidence:${path.basename(relativePath, '.json')}`
+    'media.continuity_evidence.local.v1': `continuityEvidence:${path.basename(relativePath, '.json')}`,
+    'media.production_unit.v1': `productionUnit:${path.basename(relativePath, '.json')}`,
+    'media.reference_primitive.v1': `referencePrimitive:${path.basename(relativePath, '.json')}`,
+    'media.continuity_band.v1': `continuityBand:${path.basename(relativePath, '.json')}`,
+    'media.render_strategy.v1': `renderStrategy:${path.basename(relativePath, '.json')}`,
+    'media.production_descriptor.local.v1': `productionDescriptor:${path.basename(relativePath, '.json')}`
   }
 
   return schemaNames[schema] ?? path.basename(relativePath, '.json')
@@ -209,20 +227,29 @@ function kindForSchema(schema) {
     'media.readiness.v1': 'media-readiness',
     'media.operator_decision.v1': 'media-operator-decision',
     'media.candidate_review.local.v1': 'media-candidate-review',
-    'media.continuity_evidence.local.v1': 'media-continuity-evidence'
+    'media.continuity_evidence.local.v1': 'media-continuity-evidence',
+    'media.production_unit.v1': 'media-production-unit',
+    'media.reference_primitive.v1': 'media-reference-primitive',
+    'media.continuity_band.v1': 'media-continuity-band',
+    'media.render_strategy.v1': 'media-render-strategy',
+    'media.production_descriptor.local.v1': 'media-production-descriptor'
   }
 
   return schemaKinds[schema] ?? schema
 }
 
 async function readExtraInspectionRecords(root) {
-  const files = await listJsonFiles(path.join(root, 'records', 'evidence'))
+  const files = []
+  for (const relativeRoot of extraInspectionRoots) {
+    files.push(...await listJsonFiles(path.join(root, relativeRoot)))
+  }
+
   const records = []
 
   for (const file of files) {
     const relativePath = path.relative(root, file).split(path.sep).join('/')
     const record = JSON.parse(await readFile(file, 'utf8'))
-    if (!['media.candidate_review.local.v1', 'media.continuity_evidence.local.v1'].includes(record.schema)) continue
+    if (!extraInspectionSchemas.has(record.schema)) continue
     validateRequiredRecord(record)
     records.push({ path: relativePath, record })
   }

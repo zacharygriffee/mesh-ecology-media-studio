@@ -59,6 +59,11 @@ import { writeEdgeCompatibilityBundle } from '../src/seams/edge-compatibility-bu
 import { writeContinuityEvidence } from '../src/seams/continuity-evidence.js'
 import { summarizeInspectionPacket } from '../src/seams/summarize-inspection-packet.js'
 import { checkInspectionFixture } from '../src/local/generate-inspection-fixture.js'
+import {
+  createProductionUnit,
+  createSceneDescriptor,
+  refForProductionRecord
+} from '../src/production/strategy.js'
 
 const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 
@@ -1186,6 +1191,46 @@ test('edge compatibility bundle targets Edge review shapes without runtime claim
 
   const written = JSON.parse(await readFile(path.join(dir, output), 'utf8'))
   assert.equal(written.compatibilityBundleId, bundle.compatibilityBundleId)
+})
+
+test('Edge inspection includes production strategy records when present', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+
+  const productionDir = path.join(dir, 'records', 'production')
+  await mkdir(productionDir, { recursive: true })
+  const sceneUnit = createProductionUnit({
+    projectId: 'project-test',
+    unitKind: 'scene',
+    title: 'Inspection scene unit',
+    purpose: 'Optional production strategy inspection fixture.'
+  })
+  const sceneDescriptor = createSceneDescriptor({
+    projectId: 'project-test',
+    productionUnitRef: refForProductionRecord(sceneUnit),
+    title: 'Inspection scene descriptor',
+    scene: {
+      summary: 'Optional local scene descriptor for Edge inspection.'
+    }
+  })
+  await writeFile(path.join(productionDir, 'scene-unit.local.json'), `${JSON.stringify(sceneUnit, null, 2)}\n`)
+  await writeFile(path.join(productionDir, 'scene-descriptor.local.json'), `${JSON.stringify(sceneDescriptor, null, 2)}\n`)
+
+  const { packet } = await inspectLocalRun({ projectDir: dir })
+  assert.ok(Object.values(packet.recordRefs).some((ref) => ref.schema === 'media.production_unit.v1'))
+  assert.ok(Object.values(packet.recordRefs).some((ref) => ref.schema === 'media.production_descriptor.local.v1'))
+  assert.ok(packet.artifactKinds.includes('media.production_descriptor.local.v1'))
+
+  await writeProjectStatus({ projectDir: dir })
+  await writeControlSurfaceProjection({ projectDir: dir })
+  const { bundle } = await writeEdgeCompatibilityBundle({ projectDir: dir })
+  assert.ok(bundle.studioSourceRefs.some((ref) => ref.schema === 'media.production_unit.v1'))
+  assert.ok(bundle.studioSourceRefs.some((ref) => ref.schema === 'media.production_descriptor.local.v1'))
+  assert.equal(validateRequiredRecord(bundle), true)
 })
 
 test('validator rejects missing schema', async () => {

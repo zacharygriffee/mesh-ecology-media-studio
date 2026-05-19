@@ -69,3 +69,11 @@ ratifiedSharedState: false
 
 They do not claim provider truth, byte availability, materialization proof,
 causal truth, publication authority, or Edge runtime integration.
+
+## Edge Inspection
+
+When these records are present under `records/production/`, Studio's local
+inspection packet and Edge compatibility bundle can include them for later
+operator review. This is inspection posture only. Edge can see the records, but
+Studio still owns the media-domain meaning and Edge still owns any future
+operator-facing boundary.

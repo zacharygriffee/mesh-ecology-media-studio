@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -27,6 +27,13 @@ const sourceRecordPaths = Object.freeze({
   projectStatus: 'records/manifests/media-project-status.local.json',
   providerRunLedger: 'records/provider-results/media-provider-run-ledger.local.json'
 })
+const productionSourceSchemas = new Set([
+  artifactKinds.mediaProductionUnit,
+  artifactKinds.mediaReferencePrimitive,
+  artifactKinds.mediaContinuityBand,
+  artifactKinds.mediaRenderStrategy,
+  artifactKinds.mediaProductionDescriptorLocal
+])
 
 function parseArgs(argv) {
   const args = {
@@ -178,6 +185,10 @@ async function readSourceRecords(root) {
     if (!record?.schema) continue
     validateRequiredRecord(record)
     sources[name] = { record, relativePath }
+  }
+
+  for (const source of await readProductionSources(root)) {
+    sources[`production:${source.relativePath}`] = source
   }
 
   for (const required of ['inspectionPacket', 'controlSurfaceProjection']) {
@@ -467,7 +478,12 @@ function kindForSchema(schema) {
     [artifactKinds.mediaEdgeInspectionPacketLocal]: 'media-edge-inspection-packet',
     [artifactKinds.mediaControlSurfaceProjectionLocal]: 'media-control-surface-projection',
     [artifactKinds.mediaProjectStatusLocal]: 'media-project-status',
-    [artifactKinds.mediaProviderRunLedgerLocal]: 'media-provider-run-ledger'
+    [artifactKinds.mediaProviderRunLedgerLocal]: 'media-provider-run-ledger',
+    [artifactKinds.mediaProductionUnit]: 'media-production-unit',
+    [artifactKinds.mediaReferencePrimitive]: 'media-reference-primitive',
+    [artifactKinds.mediaContinuityBand]: 'media-continuity-band',
+    [artifactKinds.mediaRenderStrategy]: 'media-render-strategy',
+    [artifactKinds.mediaProductionDescriptorLocal]: 'media-production-descriptor'
   }
 
   return schemaKinds[schema] ?? schema
@@ -479,7 +495,49 @@ function idForRecord(record) {
     record.projectionId ??
     record.statusId ??
     record.ledgerId ??
+    record.productionUnitId ??
+    record.primitiveId ??
+    record.bandId ??
+    record.strategyId ??
+    record.descriptorId ??
     record.schema
+}
+
+async function readProductionSources(root) {
+  const files = await listJsonFiles(path.join(root, 'records', 'production'))
+  const sources = []
+
+  for (const file of files) {
+    const relativePath = path.relative(root, file).split(path.sep).join('/')
+    const record = JSON.parse(await readFile(file, 'utf8'))
+    if (!productionSourceSchemas.has(record.schema)) continue
+    validateRequiredRecord(record)
+    sources.push({ record, relativePath })
+  }
+
+  return sources
+}
+
+async function listJsonFiles(root) {
+  let dirents
+  try {
+    dirents = await readdir(root, { withFileTypes: true })
+  } catch (error) {
+    if (error.code === 'ENOENT') return []
+    throw error
+  }
+
+  const files = []
+  for (const dirent of dirents) {
+    const fullPath = path.join(root, dirent.name)
+    if (dirent.isDirectory()) {
+      files.push(...await listJsonFiles(fullPath))
+    } else if (dirent.isFile() && dirent.name.endsWith('.json')) {
+      files.push(fullPath)
+    }
+  }
+
+  return files.sort()
 }
 
 if (process.argv[1] === modulePath) {
