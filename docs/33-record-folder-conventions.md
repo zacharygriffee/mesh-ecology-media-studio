@@ -30,6 +30,12 @@ records/
 - `media.render_strategy.v1`
 - `media.production_descriptor.local.v1`
 
+Create a card-derived local production set with:
+
+```bash
+npm run production:from-card -- --project-dir examples/card-to-candidate
+```
+
 ## Approvals
 
 `records/approvals/` contains proposal-only approval records:

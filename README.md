@@ -206,6 +206,12 @@ Write local continuity evidence:
 npm run continuity:draft -- --project-dir examples/card-to-candidate
 ```
 
+Write local production records from the current card without UI:
+
+```bash
+npm run production:from-card -- --project-dir examples/card-to-candidate
+```
+
 Write a local approval proposal without granting approval authority:
 
 ```bash
@@ -267,7 +273,8 @@ authorization. Phase 17 adds byte descriptor proposal records for accepted and
 reference assets without claiming byte availability, materialization, or byte
 authority. Phase 18 documents local record folder conventions and extends
 local project status plus inspection summaries for production, approval, and
-byte proposal records.
+byte proposal records. Phase 19 adds a local production-from-card CLI without
+adding UI, provider calls, Edge calls, or mesh publication.
 
 ## Start Here
 

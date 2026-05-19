@@ -59,8 +59,17 @@ export async function summarizeInspectionPacket({
   const schemaRows = Object.entries(countRecordSchemas(record.recordRefs))
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([schema, count]) => [schema, String(count)])
+  const familyRows = Object.entries(countRecordFamilies(record.recordRefs))
+    .filter(([, count]) => count > 0)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([family, count]) => [family, String(count)])
 
   printTable(['field', 'value'], rows)
+  if (familyRows.length > 0) {
+    console.log('')
+    printTable(['recordFamily', 'count'], familyRows)
+  }
+
   if (schemaRows.length > 0) {
     console.log('')
     printTable(['recordSchema', 'count'], schemaRows)
@@ -74,6 +83,7 @@ export async function summarizeInspectionPacket({
   return {
     packet: record,
     rows,
+    familyRows,
     schemaRows,
     artifactRows
   }
@@ -88,6 +98,38 @@ function countRecordSchemas(recordRefs) {
   }
 
   return counts
+}
+
+function countRecordFamilies(recordRefs) {
+  const counts = {
+    approvals: 0,
+    assets: 0,
+    bytes: 0,
+    continuity: 0,
+    production: 0,
+    provider: 0,
+    review: 0,
+    wedge: 0
+  }
+
+  for (const ref of Object.values(recordRefs)) {
+    const schema = ref.schema ?? ''
+    const family = familyForSchema(schema)
+    counts[family] = (counts[family] ?? 0) + 1
+  }
+
+  return counts
+}
+
+function familyForSchema(schema) {
+  if (schema.includes('approval_proposal')) return 'approvals'
+  if (schema.includes('byte_descriptor_proposal') || schema.includes('byte_reference')) return 'bytes'
+  if (schema.includes('production_') || schema.includes('reference_primitive') || schema.includes('continuity_band') || schema.includes('render_strategy')) return 'production'
+  if (schema.includes('continuity_evidence')) return 'continuity'
+  if (schema.includes('candidate_review') || schema === 'media.evidence.v1' || schema === 'media.operator_decision.v1') return 'review'
+  if (schema.includes('provider_') || schema.includes('generation_request')) return 'provider'
+  if (schema.includes('asset.descriptor')) return 'assets'
+  return 'wedge'
 }
 
 function printTable(headers, rows) {

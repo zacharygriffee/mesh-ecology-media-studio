@@ -66,6 +66,7 @@ import {
   createSceneDescriptor,
   refForProductionRecord
 } from '../src/production/strategy.js'
+import { writeProductionRecordsFromCard } from '../src/production/create-production-records.js'
 
 const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 
@@ -681,6 +682,7 @@ test('inspection packet summary and index commands report local records', async 
   assert.equal(summary.packet.schema, 'media.edge_inspection_packet.local.v1')
   assert.equal(summary.artifactRows.length, 1)
   assert.ok(summary.schemaRows.some(([schema, count]) => schema === 'media.asset.descriptor.v1' && count === '1'))
+  assert.ok(summary.familyRows.some(([family, count]) => family === 'assets' && count === '1'))
   assert.equal(index.manifests.length, 1)
   assert.equal(index.providerResults.length, 1)
   assert.equal(index.inspectionPackets.length, 1)
@@ -1351,6 +1353,44 @@ test('Edge inspection includes production strategy records when present', async 
   assert.ok(bundle.studioSourceRefs.some((ref) => ref.schema === 'media.production_unit.v1'))
   assert.ok(bundle.studioSourceRefs.some((ref) => ref.schema === 'media.production_descriptor.local.v1'))
   assert.equal(validateRequiredRecord(bundle), true)
+})
+
+test('production from card writes local records without UI or provider work', async () => {
+  const dir = await createFixtureProject()
+
+  const result = await writeProductionRecordsFromCard({ projectDir: dir })
+
+  assert.equal(Object.keys(result.records).length, 8)
+  assert.equal(result.records.sceneUnit.schema, 'media.production_unit.v1')
+  assert.equal(result.records.shotUnit.schema, 'media.production_unit.v1')
+  assert.equal(result.records.clipUnit.schema, 'media.production_unit.v1')
+  assert.equal(result.records.continuityBand.schema, 'media.continuity_band.v1')
+  assert.equal(result.records.renderStrategy.schema, 'media.render_strategy.v1')
+  assert.equal(result.records.sceneDescriptor.schema, 'media.production_descriptor.local.v1')
+  assert.equal(result.records.clipDescriptor.descriptor.clip.candidateOnly, true)
+  assert.equal(result.records.renderStrategy.guidanceOnly, true)
+  assert.equal(result.records.renderStrategy.providerCapabilityPosture.providerSpecific, false)
+  assert.equal(result.records.sceneUnit.meshTruth, false)
+  assert.equal(result.outputs.length, 8)
+  assert.ok(result.outputs.every((entry) => entry.output.startsWith('records/production/')))
+  assert.equal(validateRequiredRecord(result.records.renderStrategy), true)
+
+  const status = await writeProjectStatus({ projectDir: dir })
+  assert.equal(status.status.counts.productionUnits, 3)
+  assert.equal(status.status.counts.productionDescriptors, 3)
+  assert.equal(status.status.counts.continuityBands, 1)
+  assert.equal(status.status.counts.renderStrategies, 1)
+
+  await runFirstWedge({ projectDir: dir })
+  const { packet } = await inspectLocalRun({ projectDir: dir })
+  assert.ok(packet.artifactKinds.includes('media.production_unit.v1'))
+  assert.ok(packet.artifactKinds.includes('media.render_strategy.v1'))
+
+  const summary = await summarizeInspectionPacket({
+    projectDir: dir,
+    packet: 'records/exports/local-run-edge-inspection-packet.local.json'
+  })
+  assert.ok(summary.familyRows.some(([family, count]) => family === 'production' && count === '8'))
 })
 
 test('Edge inspection includes approval proposal records when present', async () => {

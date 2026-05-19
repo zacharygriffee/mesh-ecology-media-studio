@@ -103,6 +103,7 @@ Record a local candidate comparison and project status snapshot with:
 npm run review:candidates -- --project-dir examples/card-to-candidate
 npm run status:project -- --project-dir examples/card-to-candidate
 npm run continuity:draft -- --project-dir examples/card-to-candidate
+npm run production:from-card -- --project-dir examples/card-to-candidate
 npm run approval:proposal -- --project-dir examples/card-to-candidate
 npm run bytes:proposal -- --project-dir examples/card-to-candidate
 ```
@@ -145,6 +146,7 @@ Phase 16 adds local approval proposals that require later authority without
 granting it. Phase 17 adds byte descriptor proposals for accepted/reference
 assets without claiming byte availability, materialization, or byte authority.
 Phase 18 documents the new local record folders and extends local status and
-inspection summaries around them. These records do not claim mesh truth,
+inspection summaries around them. Phase 19 adds a local production-from-card
+CLI without adding UI or provider work. These records do not claim mesh truth,
 distributed proof, byte materialization proof, provider truth, causal truth,
 publication authorization, or ratifier authority.

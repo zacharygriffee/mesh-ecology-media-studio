@@ -37,6 +37,15 @@ Their purpose is to keep story/video work usable without making future
 world-first, panorama-first, entity-first, audio-first, or transformation-first
 workflows second-class.
 
+Create a local scene/shot/render-pass set from the current card with:
+
+```bash
+npm run production:from-card -- --project-dir examples/card-to-candidate
+```
+
+The command writes local records under `records/production/`. It does not call
+providers, Edge, mesh publication, or ratifiers.
+
 ## Rough Cuts
 
 Rough-cut descriptors describe local assembly intent. They may reference source
