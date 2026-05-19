@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url'
 
 import {
   createAssetDescriptor,
+  createByteReferencePreview,
+  createEdgeInspectionPacket,
   createWorkPacket,
   makeRef
 } from '../contracts/constructors.js'
@@ -17,6 +19,7 @@ import {
   placementDirectory
 } from './project-layout.js'
 import { writeLocalAssetReview } from '../review/local-review.js'
+import { writeLocalImageMetadataRecord } from '../assets/image-metadata.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 
@@ -143,13 +146,121 @@ export async function promoteCandidate({
     recordPrefix,
     summary: `Local promotion recorded ${decision} for ${finalRelativePath}.`
   })
+  const imageMetadata = originalAsset.contentType?.startsWith('image/')
+    ? await maybeWriteImageMetadata({ root, promotedAsset, recordPrefix })
+    : undefined
+  const exportRecord = await writePromotionInspectionPacket({
+    root,
+    decision,
+    promotedAsset,
+    promotedAssetRecord,
+    review,
+    imageMetadata
+  })
 
   console.log(`Promoted candidate to ${decision}: ${finalRelativePath}`)
 
   return {
     assetDescriptor: promotedAsset,
     assetRecord: promotedAssetRecord,
-    review
+    review,
+    imageMetadata,
+    exportRecord
+  }
+}
+
+async function writePromotionInspectionPacket({
+  root,
+  decision,
+  promotedAsset,
+  promotedAssetRecord,
+  review,
+  imageMetadata
+}) {
+  const assetRef = makeRef('media-asset', promotedAsset.assetId, promotedAsset.schema)
+  const generatedArtifactRef = {
+    kind: 'media-promoted-asset',
+    id: promotedAsset.assetId,
+    schema: promotedAsset.schema,
+    path: promotedAsset.localRef.path,
+    hash: promotedAsset.hash,
+    contentType: promotedAsset.contentType,
+    byteRefPreview: createByteReferencePreview({
+      sourceRef: assetRef,
+      localRef: promotedAsset.localRef,
+      hash: promotedAsset.hash,
+      size: promotedAsset.size,
+      contentType: promotedAsset.contentType
+    }),
+    localOnly: true
+  }
+  const packet = createEdgeInspectionPacket({
+    packetId: `promotion-${decision}-${promotedAsset.assetId}`,
+    sourceRunRef: {
+      kind: 'media-asset',
+      id: promotedAsset.assetId,
+      schema: promotedAsset.schema,
+      path: promotedAssetRecord,
+      localOnly: true
+    },
+    recordRefs: {
+      assetDescriptor: localRecordRef('media-asset', promotedAssetRecord, promotedAsset.schema),
+      reviewEvidence: localRecordRef('media-evidence', review.recordRefs.reviewEvidence, review.reviewEvidence.schema),
+      readiness: localRecordRef('media-readiness', review.recordRefs.readiness, review.readiness.schema),
+      operatorDecision: localRecordRef('media-operator-decision', review.recordRefs.operatorDecision, review.operatorDecision.schema),
+      ...(imageMetadata ? {
+        imageMetadata: localRecordRef('media-image-metadata', imageMetadata.recordRef, imageMetadata.metadata.schema)
+      } : {})
+    },
+    artifactKinds: [
+      promotedAsset.schema,
+      review.reviewEvidence.schema,
+      review.readiness.schema,
+      review.operatorDecision.schema,
+      generatedArtifactRef.byteRefPreview.schema,
+      ...(imageMetadata ? [imageMetadata.metadata.schema] : []),
+      'media.edge_inspection_packet.local.v1'
+    ],
+    generatedArtifactRefs: [generatedArtifactRef],
+    warnings: [
+      'Promotion inspection packet only; not Edge integration.',
+      'Promotion records are local decisions and not ratifier authority.',
+      'Provider work was not rerun for this promotion.',
+      'Byte reference preview is not materialization proof.'
+    ]
+  })
+  validateRequiredRecord(packet)
+
+  const exportRef = `records/exports/promoted-candidate-${decision}-edge-inspection-packet.local.json`
+  const exportPath = path.join(root, exportRef)
+  await mkdir(path.dirname(exportPath), { recursive: true })
+  await writeFile(exportPath, `${JSON.stringify(packet, null, 2)}\n`)
+
+  return {
+    packet,
+    recordRef: exportRef
+  }
+}
+
+async function maybeWriteImageMetadata({ root, promotedAsset, recordPrefix }) {
+  try {
+    return await writeLocalImageMetadataRecord({
+      projectDir: root,
+      assetDescriptor: promotedAsset,
+      recordRef: `records/assets/${recordPrefix}-image-metadata.local.json`
+    })
+  } catch {
+    return undefined
+  }
+}
+
+function localRecordRef(kind, relativePath, schema) {
+  return {
+    kind,
+    id: relativePath,
+    schema,
+    path: relativePath,
+    localOnly: true
   }
 }
 

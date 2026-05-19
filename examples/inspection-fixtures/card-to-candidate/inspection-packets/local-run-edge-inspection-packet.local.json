@@ -1,7 +1,7 @@
 {
   "schema": "media.edge_inspection_packet.local.v1",
-  "packetId": "edge-inspection-3c677adf-4802-4496-8a1e-306c76f5cc18",
-  "createdAt": "2026-05-19T09:53:33.357Z",
+  "packetId": "edge-inspection-00000000-0000-4000-8000-000000000001",
+  "createdAt": "2026-05-19T00:00:00.000Z",
   "mode": "standalone-local",
   "seam": "media-edge-operator-seam",
   "sourceRunRef": {
@@ -139,7 +139,7 @@
         "ratifiedSharedState": false,
         "localTruthLabel": "local cache",
         "truthStatus": "not mesh truth; not distributed proof; not ratified shared state",
-        "createdAt": "2026-05-19T09:53:33.357Z"
+        "createdAt": "2026-05-19T00:00:00.000Z"
       },
       "localOnly": true
     }

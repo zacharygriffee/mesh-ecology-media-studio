@@ -1,6 +1,6 @@
 {
   "schema": "media.generation_request.v1",
-  "requestId": "request-8415aa24-1987-4833-823c-2fed2707a397",
+  "requestId": "request-00000000-0000-4000-8000-000000000006",
   "projectId": "studio-example-project",
   "cardRef": {
     "kind": "media-card",
@@ -25,5 +25,5 @@
   "meshTruth": false,
   "distributedProof": false,
   "ratifiedSharedState": false,
-  "createdAt": "2026-05-19T09:53:33.349Z"
+  "createdAt": "2026-05-19T00:00:00.000Z"
 }

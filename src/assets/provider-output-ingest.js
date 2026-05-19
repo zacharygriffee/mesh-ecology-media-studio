@@ -15,6 +15,7 @@ import {
   placementClasses,
   placementDirectory
 } from '../local/project-layout.js'
+import { writeLocalImageMetadataRecord } from './image-metadata.js'
 
 export async function writeProviderOutputAssets({
   projectDir,
@@ -102,17 +103,34 @@ export async function writeProviderOutputAssets({
     await mkdir(path.dirname(assetRecordPath), { recursive: true })
     await writeFile(assetRecordPath, `${JSON.stringify(assetDescriptor, null, 2)}\n`)
 
+    const imageMetadata = output.contentType?.startsWith('image/')
+      ? await maybeWriteImageMetadata({ projectDir, assetDescriptor, index, recordPrefix })
+      : undefined
+
     assets.push({
       index,
       localRef,
       assetDescriptor,
-      assetRecordRef
+      assetRecordRef,
+      imageMetadata
     })
   }
 
   return {
     workPacket,
     assets
+  }
+}
+
+async function maybeWriteImageMetadata({ projectDir, assetDescriptor, index, recordPrefix }) {
+  try {
+    return await writeLocalImageMetadataRecord({
+      projectDir,
+      assetDescriptor,
+      recordRef: `records/assets/${recordPrefix}-image-metadata-${index}.local.json`
+    })
+  } catch {
+    return undefined
   }
 }
 

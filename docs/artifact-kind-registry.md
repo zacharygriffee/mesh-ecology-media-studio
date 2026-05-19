@@ -22,6 +22,9 @@ Known Studio artifact kinds:
 - `media.provider_mapping.v1`
 - `media.edge_inspection_packet.local.v1`
 - `media.byte_reference.preview.local.v1`
+- `media.provider_adapter_contract.v1`
+- `media.provider_failure_taxonomy.v1`
+- `media.image_metadata.local.v1`
 
 This registry is intentionally small. It prevents naming drift while the local
 wedge remains standalone-local and Edge-compatible without implementing Edge

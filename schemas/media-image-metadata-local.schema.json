@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-image-metadata-local.schema.json",
+  "title": "media.image_metadata.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "metadataId",
+    "assetRef",
+    "localRef",
+    "contentType",
+    "width",
+    "height",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "localTruthLabel",
+    "truthStatus",
+    "createdAt"
+  ],
+  "properties": {
+    "schema": { "const": "media.image_metadata.local.v1" },
+    "metadataId": { "type": "string", "minLength": 1 },
+    "assetRef": { "type": "object" },
+    "localRef": { "type": "object" },
+    "contentType": { "type": "string" },
+    "width": { "type": "integer", "minimum": 1 },
+    "height": { "type": "integer", "minimum": 1 },
+    "localOnly": { "const": true },
+    "meshTruth": { "const": false },
+    "distributedProof": { "const": false },
+    "ratifiedSharedState": { "const": false },
+    "localTruthLabel": { "type": "string" },
+    "truthStatus": { "type": "string" },
+    "createdAt": { "type": "string", "format": "date-time" }
+  }
+}

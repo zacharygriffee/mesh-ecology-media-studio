@@ -1,6 +1,6 @@
 {
   "schema": "media.operator_decision.v1",
-  "decisionId": "decision-a266202b-5a2f-4e45-bad4-42b6d5c3148f",
+  "decisionId": "decision-00000000-0000-4000-8000-000000000003",
   "subjectRef": {
     "kind": "media-asset",
     "id": "asset-8fd840913d8f9778",
@@ -12,7 +12,7 @@
   "evidenceRefs": [
     {
       "kind": "media-evidence",
-      "id": "evidence-4473eca3-3231-45cb-a491-fe1aa983cc7b",
+      "id": "evidence-00000000-0000-4000-8000-000000000004",
       "schema": "media.evidence.v1"
     }
   ],
@@ -23,5 +23,5 @@
   "distributedProof": false,
   "ratifiedSharedState": false,
   "truthStatus": "not mesh truth; not distributed proof; not ratified shared state",
-  "createdAt": "2026-05-19T09:53:33.350Z"
+  "createdAt": "2026-05-19T00:00:00.000Z"
 }

@@ -22,6 +22,8 @@ Read in this order:
 14. [Venice Smoke Edge Inspection Preview](18-venice-smoke-edge-inspection-preview.md)
 15. [Local Inspection Export](19-local-inspection-export.md)
 16. [Provider Runbook](20-provider-runbook.md)
+17. [Provider Adapter Contracts](21-provider-adapter-contracts.md)
+18. [Local Image Metadata](22-local-image-metadata.md)
 
 The first executable path is:
 

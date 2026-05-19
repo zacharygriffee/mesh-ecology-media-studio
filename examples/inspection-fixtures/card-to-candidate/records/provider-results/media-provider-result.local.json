@@ -1,15 +1,15 @@
 {
   "schema": "media.provider_result.v1",
-  "resultId": "provider-result-a5b864df-b9a6-4aba-88f4-280985a6066e",
+  "resultId": "provider-result-00000000-0000-4000-8000-000000000008",
   "requestRef": {
     "kind": "media-generation-request",
-    "id": "request-8415aa24-1987-4833-823c-2fed2707a397",
+    "id": "request-00000000-0000-4000-8000-000000000006",
     "schema": "media.generation_request.v1"
   },
   "providerId": "local-placeholder-provider",
   "providerJobRef": {
     "kind": "local-synthetic-provider-job",
-    "id": "local-placeholder:request-8415aa24-1987-4833-823c-2fed2707a397",
+    "id": "local-placeholder:request-00000000-0000-4000-8000-000000000006",
     "localOnly": true
   },
   "status": "succeeded",
@@ -36,7 +36,7 @@
       }
     }
   ],
-  "createdAt": "2026-05-19T09:53:33.349Z",
+  "createdAt": "2026-05-19T00:00:00.000Z",
   "localOnly": true,
   "meshTruth": false,
   "distributedProof": false,

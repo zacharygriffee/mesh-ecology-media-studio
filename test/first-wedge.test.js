@@ -6,6 +6,7 @@ import test from 'node:test'
 
 import { runFirstWedge } from '../src/local/run-first-wedge.js'
 import { promoteCandidate } from '../src/local/promote-candidate.js'
+import { readLocalImageMetadata } from '../src/assets/image-metadata.js'
 import { validateRequiredRecord } from '../src/contracts/schemas.js'
 import {
   createGenerationRequestFromCard,
@@ -293,7 +294,9 @@ test('provider shape fixtures validate locally', async () => {
     'examples/provider-shapes/openai-image-shape.json',
     'examples/provider-shapes/venice-image-shape.json',
     'examples/provider-shapes/venice-image-mapping.json',
-    'examples/provider-shapes/venice-provider-profile.json'
+    'examples/provider-shapes/venice-provider-profile.json',
+    'examples/provider-shapes/venice-failure-taxonomy.json',
+    'examples/provider-shapes/venice-adapter-contract.json'
   ]) {
     const fixture = JSON.parse(await readFile(fixturePath, 'utf8'))
     assert.equal(validateRequiredRecord(fixture), true)
@@ -593,13 +596,41 @@ test('promote candidate copies placement and records local decision without prov
   assert.equal(result.assetDescriptor.localRef.path, 'media/rejected/candidate.txt')
   assert.equal(result.assetDescriptor.source.apiCalled, false)
   assert.equal(result.review.operatorDecision.decisionType, 'reject')
+  assert.equal(result.exportRecord.packet.schema, 'media.edge_inspection_packet.local.v1')
+  assert.equal(result.exportRecord.packet.generatedArtifactRefs[0].byteRefPreview.schema, 'media.byte_reference.preview.local.v1')
   assert.equal(validateRequiredRecord(result.assetDescriptor), true)
+  assert.equal(validateRequiredRecord(result.exportRecord.packet), true)
 
   const decision = JSON.parse(
     await readFile(path.join(dir, 'records', 'decisions', 'promoted-candidate-rejected-decision.local.json'), 'utf8')
   )
   assert.equal(decision.localDecisionOnly, true)
   assert.equal(decision.decisionType, 'reject')
+})
+
+test('local image metadata probes PNG dimensions without byte proof claims', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-image-metadata-'))
+  await mkdir(path.join(dir, 'media', 'generated'), { recursive: true })
+  await writeFile(
+    path.join(dir, 'media', 'generated', 'pixel.png'),
+    Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64')
+  )
+  const assetDescriptor = {
+    schema: 'media.asset.descriptor.v1',
+    assetId: 'asset-pixel',
+    contentType: 'image/png',
+    localRef: {
+      path: 'media/generated/pixel.png',
+      placementClass: 'media-generated'
+    }
+  }
+  const metadata = await readLocalImageMetadata({ projectDir: dir, assetDescriptor })
+
+  assert.equal(metadata.schema, 'media.image_metadata.local.v1')
+  assert.equal(metadata.width, 1)
+  assert.equal(metadata.height, 1)
+  assert.equal(metadata.meshTruth, false)
+  assert.equal(validateRequiredRecord(metadata), true)
 })
 
 test('committed local-run inspection fixture validates', async () => {

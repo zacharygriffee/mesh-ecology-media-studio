@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-provider-failure-taxonomy.schema.json",
+  "title": "media.provider_failure_taxonomy.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "taxonomyId",
+    "providerId",
+    "failureKinds",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "providerTruth",
+    "createdAt"
+  ],
+  "properties": {
+    "schema": { "const": "media.provider_failure_taxonomy.v1" },
+    "taxonomyId": { "type": "string", "minLength": 1 },
+    "providerId": { "type": "string", "minLength": 1 },
+    "failureKinds": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "localOnly": { "const": true },
+    "meshTruth": { "const": false },
+    "distributedProof": { "const": false },
+    "ratifiedSharedState": { "const": false },
+    "providerTruth": { "const": false },
+    "createdAt": { "type": "string", "format": "date-time" }
+  }
+}

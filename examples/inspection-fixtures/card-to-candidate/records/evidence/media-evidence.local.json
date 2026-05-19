@@ -1,6 +1,6 @@
 {
   "schema": "media.evidence.v1",
-  "evidenceId": "evidence-4473eca3-3231-45cb-a491-fe1aa983cc7b",
+  "evidenceId": "evidence-00000000-0000-4000-8000-000000000004",
   "evidenceKind": "local-review",
   "projectId": "studio-example-project",
   "subjectRef": {
@@ -32,5 +32,5 @@
   "distributedProof": false,
   "ratifiedSharedState": false,
   "truthStatus": "not mesh truth; not distributed proof; not ratified shared state",
-  "createdAt": "2026-05-19T09:53:33.349Z"
+  "createdAt": "2026-05-19T00:00:00.000Z"
 }

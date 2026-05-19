@@ -1,0 +1,20 @@
+{
+  "schema": "media.provider_adapter_contract.v1",
+  "adapterId": "venice-image-adapter-contract-v1",
+  "providerId": "venice",
+  "endpointId": "venice.image.generate",
+  "intentFamily": "image-generation",
+  "inputSchema": "media.generation_request.v1",
+  "outputSchema": "media.provider_result.v1",
+  "failureTaxonomyRef": {
+    "kind": "media-provider-failure-taxonomy",
+    "id": "venice-image-failure-taxonomy-v1",
+    "schema": "media.provider_failure_taxonomy.v1"
+  },
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "providerTruth": false,
+  "createdAt": "2026-05-19T00:00:00.000Z"
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-provider-adapter-contract.schema.json",
+  "title": "media.provider_adapter_contract.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "adapterId",
+    "providerId",
+    "endpointId",
+    "intentFamily",
+    "inputSchema",
+    "outputSchema",
+    "failureTaxonomyRef",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "providerTruth",
+    "createdAt"
+  ],
+  "properties": {
+    "schema": { "const": "media.provider_adapter_contract.v1" },
+    "adapterId": { "type": "string", "minLength": 1 },
+    "providerId": { "type": "string", "minLength": 1 },
+    "endpointId": { "type": "string", "minLength": 1 },
+    "intentFamily": { "type": "string" },
+    "inputSchema": { "type": "string" },
+    "outputSchema": { "type": "string" },
+    "failureTaxonomyRef": { "type": "object" },
+    "localOnly": { "const": true },
+    "meshTruth": { "const": false },
+    "distributedProof": { "const": false },
+    "ratifiedSharedState": { "const": false },
+    "providerTruth": { "const": false },
+    "createdAt": { "type": "string", "format": "date-time" }
+  }
+}

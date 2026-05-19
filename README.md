@@ -170,6 +170,12 @@ Promote an existing local candidate without rerunning provider work:
 npm run promote:candidate -- --project-dir examples/card-to-candidate --decision accepted
 ```
 
+Regenerate the committed inspection fixture:
+
+```bash
+npm run fixture:inspection
+```
+
 Phase 2 inspection hardening added the manifest, a small artifact-kind
 registry, and modest malformed-record checks. Phase 3 adds the local project
 layout, safe local refs, placement classes, and asset lifecycle states. Phase 4
@@ -196,3 +202,5 @@ live smoke gate without making provider APIs part of the default wedge.
 - [docs/18-venice-smoke-edge-inspection-preview.md](docs/18-venice-smoke-edge-inspection-preview.md)
 - [docs/19-local-inspection-export.md](docs/19-local-inspection-export.md)
 - [docs/20-provider-runbook.md](docs/20-provider-runbook.md)
+- [docs/21-provider-adapter-contracts.md](docs/21-provider-adapter-contracts.md)
+- [docs/22-local-image-metadata.md](docs/22-local-image-metadata.md)

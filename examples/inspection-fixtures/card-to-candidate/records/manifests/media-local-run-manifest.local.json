@@ -1,7 +1,7 @@
 {
   "schema": "media.local_run_manifest.v1",
-  "runId": "local-run-0f6f1d63-a24b-44de-bd62-6366891a1012",
-  "createdAt": "2026-05-19T09:53:33.350Z",
+  "runId": "local-run-00000000-0000-4000-8000-000000000005",
+  "createdAt": "2026-05-19T00:00:00.000Z",
   "mode": "standalone-local",
   "inputCardRef": {
     "kind": "media-card",
@@ -20,7 +20,7 @@
   "generatedRecordRefs": [
     {
       "kind": "media.work_packet.v1",
-      "id": "packet-baa26aa7-228b-437c-861c-f228707ca4fb",
+      "id": "packet-00000000-0000-4000-8000-000000000002",
       "path": "records/work-packets/media-work-packet.local.json",
       "localOnly": true
     },
@@ -32,7 +32,7 @@
     },
     {
       "kind": "media.generation_request.v1",
-      "id": "request-8415aa24-1987-4833-823c-2fed2707a397",
+      "id": "request-00000000-0000-4000-8000-000000000006",
       "path": "records/work-packets/media-generation-request.local.json",
       "localOnly": true
     },
@@ -50,19 +50,19 @@
     },
     {
       "kind": "media.evidence.v1",
-      "id": "evidence-4473eca3-3231-45cb-a491-fe1aa983cc7b",
+      "id": "evidence-00000000-0000-4000-8000-000000000004",
       "path": "records/evidence/media-evidence.local.json",
       "localOnly": true
     },
     {
       "kind": "media.readiness.v1",
-      "id": "readiness-4759d0d9-4b9c-4394-aa65-2c972bc764de",
+      "id": "readiness-00000000-0000-4000-8000-000000000007",
       "path": "records/readiness/media-readiness.local.json",
       "localOnly": true
     },
     {
       "kind": "media.operator_decision.v1",
-      "id": "decision-a266202b-5a2f-4e45-bad4-42b6d5c3148f",
+      "id": "decision-00000000-0000-4000-8000-000000000003",
       "path": "records/decisions/media-operator-decision.local.json",
       "localOnly": true
     }

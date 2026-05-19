@@ -37,7 +37,10 @@ export const schemaFiles = {
   'media.provider_endpoint_shape.v1': 'schemas/media-provider-endpoint-shape.schema.json',
   'media.provider_mapping.v1': 'schemas/media-provider-mapping.schema.json',
   'media.edge_inspection_packet.local.v1': 'schemas/media-edge-inspection-packet-local.schema.json',
-  'media.byte_reference.preview.local.v1': 'schemas/media-byte-reference-preview-local.schema.json'
+  'media.byte_reference.preview.local.v1': 'schemas/media-byte-reference-preview-local.schema.json',
+  'media.provider_adapter_contract.v1': 'schemas/media-provider-adapter-contract.schema.json',
+  'media.provider_failure_taxonomy.v1': 'schemas/media-provider-failure-taxonomy.schema.json',
+  'media.image_metadata.local.v1': 'schemas/media-image-metadata-local.schema.json'
 }
 
 export const requiredFields = {
@@ -294,6 +297,50 @@ export const requiredFields = {
     'distributedProof',
     'ratifiedSharedState',
     'createdAt'
+  ],
+  'media.provider_adapter_contract.v1': [
+    'schema',
+    'adapterId',
+    'providerId',
+    'endpointId',
+    'intentFamily',
+    'inputSchema',
+    'outputSchema',
+    'failureTaxonomyRef',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'providerTruth',
+    'createdAt'
+  ],
+  'media.provider_failure_taxonomy.v1': [
+    'schema',
+    'taxonomyId',
+    'providerId',
+    'failureKinds',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'providerTruth',
+    'createdAt'
+  ],
+  'media.image_metadata.local.v1': [
+    'schema',
+    'metadataId',
+    'assetRef',
+    'localRef',
+    'contentType',
+    'width',
+    'height',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'localTruthLabel',
+    'truthStatus',
+    'createdAt'
   ]
 }
 
@@ -317,7 +364,10 @@ const idFields = {
   [artifactKinds.mediaProviderEndpointShape]: 'endpointId',
   [artifactKinds.mediaProviderMapping]: 'mappingId',
   [artifactKinds.mediaEdgeInspectionPacketLocal]: 'packetId',
-  [artifactKinds.mediaByteReferencePreviewLocal]: 'byteRefPreviewId'
+  [artifactKinds.mediaByteReferencePreviewLocal]: 'byteRefPreviewId',
+  [artifactKinds.mediaProviderAdapterContract]: 'adapterId',
+  [artifactKinds.mediaProviderFailureTaxonomy]: 'taxonomyId',
+  [artifactKinds.mediaImageMetadataLocal]: 'metadataId'
 }
 
 const domainProjectSchemas = new Set([
@@ -340,7 +390,8 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaOperatorDecision,
   artifactKinds.mediaLocalRunManifest,
   artifactKinds.mediaEdgeInspectionPacketLocal,
-  artifactKinds.mediaByteReferencePreviewLocal
+  artifactKinds.mediaByteReferencePreviewLocal,
+  artifactKinds.mediaImageMetadataLocal
 ])
 
 const readinessStates = new Set(['draft', 'blocked', 'ready', 'caution', 'complete'])
@@ -544,6 +595,37 @@ export function validateRecordShape(record, schemaId = record.schema) {
 
     if (record.byteAvailabilityProof !== false || record.materializationProof !== false) {
       throw new Error(`Record ${schemaId} must not claim byte availability or materialization proof`)
+    }
+  }
+
+  if (schemaId === artifactKinds.mediaProviderAdapterContract) {
+    assertIntentFamily(record.intentFamily)
+    validateLocalFalseFlags(record, schemaId)
+
+    if (record.providerTruth !== false) {
+      throw new Error(`Record ${schemaId} must set providerTruth=false`)
+    }
+  }
+
+  if (schemaId === artifactKinds.mediaProviderFailureTaxonomy) {
+    if (!Array.isArray(record.failureKinds) || record.failureKinds.length === 0) {
+      throw new Error(`Record ${schemaId} must include failureKinds`)
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+
+    if (record.providerTruth !== false) {
+      throw new Error(`Record ${schemaId} must set providerTruth=false`)
+    }
+  }
+
+  if (schemaId === artifactKinds.mediaImageMetadataLocal) {
+    validateRef(record.assetRef, `${schemaId}.assetRef`)
+    assertSafeLocalPath(record.localRef.path)
+    validateLocalFalseFlags(record, schemaId)
+
+    if (!Number.isInteger(record.width) || record.width < 1 || !Number.isInteger(record.height) || record.height < 1) {
+      throw new Error(`Record ${schemaId} must include positive integer dimensions`)
     }
   }
 

@@ -1,0 +1,20 @@
+{
+  "schema": "media.provider_failure_taxonomy.v1",
+  "taxonomyId": "venice-image-failure-taxonomy-v1",
+  "providerId": "venice",
+  "failureKinds": [
+    "auth-failure",
+    "rate-limit",
+    "quota-exceeded",
+    "unsupported-model",
+    "malformed-response",
+    "provider-timeout",
+    "provider-failed"
+  ],
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "providerTruth": false,
+  "createdAt": "2026-05-19T00:00:00.000Z"
+}

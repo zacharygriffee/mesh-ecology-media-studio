@@ -18,7 +18,10 @@ export const artifactKinds = Object.freeze({
   mediaProviderEndpointShape: 'media.provider_endpoint_shape.v1',
   mediaProviderMapping: 'media.provider_mapping.v1',
   mediaEdgeInspectionPacketLocal: 'media.edge_inspection_packet.local.v1',
-  mediaByteReferencePreviewLocal: 'media.byte_reference.preview.local.v1'
+  mediaByteReferencePreviewLocal: 'media.byte_reference.preview.local.v1',
+  mediaProviderAdapterContract: 'media.provider_adapter_contract.v1',
+  mediaProviderFailureTaxonomy: 'media.provider_failure_taxonomy.v1',
+  mediaImageMetadataLocal: 'media.image_metadata.local.v1'
 })
 
 export const knownArtifactKinds = Object.freeze(Object.values(artifactKinds))

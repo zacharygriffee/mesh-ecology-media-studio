@@ -74,6 +74,12 @@ Promote an existing local candidate without rerunning provider work:
 npm run promote:candidate -- --project-dir examples/card-to-candidate --decision accepted
 ```
 
+Regenerate the committed inspection fixture deterministically:
+
+```bash
+npm run fixture:inspection
+```
+
 Inspection export creates local `media.edge_inspection_packet.local.v1` packets.
 It does not call Venice, Edge, Bytes, causal-substrate, or mesh publication.
 
@@ -83,3 +89,6 @@ Provider API responses are provenance, not authority. Local file existence,
 hashes, byte-preview fields, and operator decisions remain local-only until a
 future mesh-facing lane promotes them through the proper proposal, publication,
 ratification, and materialization flows.
+
+Provider adapter contracts and failure taxonomies are documented in
+[Provider Adapter Contracts](21-provider-adapter-contracts.md).
