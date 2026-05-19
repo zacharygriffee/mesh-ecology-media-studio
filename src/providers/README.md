@@ -17,3 +17,8 @@ making provider payloads Studio canon.
 `venice-dry-run.js` maps Studio generation requests to Venice-shaped image
 payloads and maps fixture responses back into `media.provider_result.v1`. It
 does not make network calls.
+
+`venice-live-smoke.js` is an explicit opt-in live test gate. It refuses to run
+unless `VENICE_LIVE=1` is set, reads `VENICE_INFERENCE_KEY` from the environment
+or ignored `.env`, constrains the request to a small allowed model shape, and
+writes only local non-truth-bearing provider result records.

@@ -18,4 +18,6 @@ The adapter does not:
 - claim byte availability
 - bypass local ingest, asset descriptor creation, evidence, review, or decision
 
-Live Venice testing should be added behind a separate explicit opt-in gate.
+Live Venice testing is handled by
+[`17-venice-live-smoke-gate.md`](17-venice-live-smoke-gate.md). It remains
+explicitly opt-in and separate from dry-run fixtures.

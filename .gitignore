@@ -2,6 +2,7 @@ examples/**/out/
 examples/**/records/
 examples/**/media/accepted/
 examples/**/media/rejected/
+examples/**/media/generated/provider-smoke/
 examples/**/media/proxies/
 examples/**/media/thumbnails/
 examples/**/media/exports/

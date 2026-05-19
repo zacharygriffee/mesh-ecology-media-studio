@@ -9,6 +9,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "provider:venice:smoke": "node src/providers/venice-live-smoke.js",
     "wedge:example": "node src/local/run-first-wedge.js --project-dir examples/card-to-candidate --decision accepted",
     "test": "node --test test/*.test.js"
   },

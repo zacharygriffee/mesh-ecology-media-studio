@@ -18,6 +18,7 @@ Read in this order:
 10. [Provider Adapter Boundary](14-provider-adapter-boundary.md)
 11. [Provider Shape Registry](15-provider-shape-registry.md)
 12. [Venice Dry-Run Adapter](16-venice-dry-run-adapter.md)
+13. [Venice Live Smoke Gate](17-venice-live-smoke-gate.md)
 
 The first executable path is:
 
@@ -31,13 +32,20 @@ Run tests with:
 npm test
 ```
 
+The optional Venice live smoke command is intentionally gated:
+
+```bash
+VENICE_LIVE=1 npm run provider:venice:smoke
+```
+
 Phase 2 hardened the local wedge with a local run manifest, artifact-kind
 registry, and modest malformed-record checks. Phase 3 defines the local project
 layout, safe local refs, placement classes, and asset lifecycle states. Phase 4
 adds provider-neutral request/profile/capability/result records without calling
 provider APIs. Phase 5 adds provider shape and mapping fixtures without
 promoting provider payloads into Studio canon. Phase 6 adds a Venice dry-run
-adapter with fixture-only response normalization. The wedge remains local-only.
-It creates local records and does not claim mesh truth, distributed proof, byte
-materialization proof, provider truth, causal truth, publication authorization,
-or ratifier authority.
+adapter with fixture-only response normalization. Phase 7 adds an explicit
+Venice live smoke gate for controlled provider testing. The wedge remains
+local-only. It creates local records and does not claim mesh truth, distributed
+proof, byte materialization proof, provider truth, causal truth, publication
+authorization, or ratifier authority.

@@ -32,6 +32,16 @@ import {
   mapGenerationRequestToVeniceImageRequest,
   runVeniceDryRun
 } from '../src/providers/venice-dry-run.js'
+import {
+  assertVeniceLiveGate,
+  assertVeniceSmokeBudget,
+  buildVeniceLiveSmokeProviderInput,
+  createVeniceSmokeGenerationRequest,
+  normalizeVeniceLiveImageResult,
+  parseEnvText,
+  resolveVeniceApiKey,
+  runVeniceLiveSmoke
+} from '../src/providers/venice-live-smoke.js'
 
 async function createFixtureProject() {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-wedge-'))
@@ -322,6 +332,113 @@ test('Venice dry-run adapter maps Studio request to provider payload without net
   assert.equal(dryRun.providerResult.providerId, 'venice')
   assert.equal(dryRun.providerResult.providerTruth, false)
   assert.equal(validateRequiredRecord(dryRun.providerResult), true)
+})
+
+test('Venice live smoke gate refuses without explicit opt-in', () => {
+  assert.throws(
+    () => assertVeniceLiveGate({}),
+    /VENICE_LIVE=1/
+  )
+
+  assert.equal(assertVeniceLiveGate({ VENICE_LIVE: '1' }), true)
+})
+
+test('Venice live smoke key resolution uses env or local env without exposing value', () => {
+  const parsed = parseEnvText(['VENICE_INFERENCE_KEY=test-key', 'VENICE_LIVE=1'].join('\n'))
+
+  assert.equal(parsed.VENICE_INFERENCE_KEY, 'test-key')
+  assert.equal(resolveVeniceApiKey({ env: {}, localEnv: parsed }), 'test-key')
+
+  assert.throws(
+    () => resolveVeniceApiKey({ env: {}, localEnv: {} }),
+    /missing VENICE_INFERENCE_KEY/
+  )
+})
+
+test('Venice live smoke budget rejects unsupported model and oversized requests', () => {
+  const request = createVeniceSmokeGenerationRequest({
+    createdAt: '2026-05-19T00:00:00.000Z'
+  })
+  const providerInput = buildVeniceLiveSmokeProviderInput(request)
+
+  assert.equal(providerInput.model, 'venice-sd35')
+  assert.equal(providerInput.width, 512)
+  assert.equal(providerInput.height, 512)
+  assert.equal(providerInput.variants, 1)
+  assert.equal(providerInput.return_binary, false)
+  assert.equal(assertVeniceSmokeBudget(providerInput), true)
+
+  assert.throws(
+    () => assertVeniceSmokeBudget({ ...providerInput, model: 'expensive-model' }),
+    /not allowed/
+  )
+
+  assert.throws(
+    () => assertVeniceSmokeBudget({ ...providerInput, width: 1024 }),
+    /width/
+  )
+})
+
+test('Venice live smoke result normalizes to provider-neutral result', () => {
+  const generationRequest = createVeniceSmokeGenerationRequest({
+    createdAt: '2026-05-19T00:00:00.000Z'
+  })
+  const result = normalizeVeniceLiveImageResult({
+    generationRequest,
+    responseJson: {
+      id: 'venice-live-test-response',
+      images: ['base64-image-placeholder'],
+      request: { format: 'png' },
+      timing: { providerElapsedMs: 10 }
+    },
+    httpStatus: 200
+  })
+
+  assert.equal(result.schema, 'media.provider_result.v1')
+  assert.equal(result.providerId, 'venice')
+  assert.equal(result.providerTruth, false)
+  assert.equal(result.outputRefs[0].outputDelivery, 'inline-base64')
+  assert.equal(validateRequiredRecord(result), true)
+})
+
+test('Venice live smoke command path can be tested without network by injected fetch', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-venice-smoke-'))
+  let fetchCalled = false
+
+  const result = await runVeniceLiveSmoke({
+    env: {
+      VENICE_LIVE: '1',
+      VENICE_INFERENCE_KEY: 'test-key'
+    },
+    envPath: path.join(dir, '.env-missing'),
+    projectDir: dir,
+    fetchImpl: async (_url, options) => {
+      fetchCalled = true
+      assert.match(options.headers.Authorization, /^Bearer /)
+      assert.doesNotMatch(options.body, /test-key/)
+
+      return {
+        status: 200,
+        async json() {
+          return {
+            id: 'venice-live-test-response',
+            images: ['base64-image-placeholder'],
+            request: { format: 'png' }
+          }
+        }
+      }
+    }
+  })
+
+  assert.equal(fetchCalled, true)
+  assert.equal(result.live, true)
+  assert.equal(result.providerResult.providerTruth, false)
+
+  const written = JSON.parse(
+    await readFile(path.join(dir, 'records', 'provider-results', 'venice-live-smoke-provider-result.local.json'), 'utf8')
+  )
+  assert.equal(written.providerInput.apiKeyPresent, true)
+  assert.equal(JSON.stringify(written).includes('test-key'), false)
 })
 
 test('local refs accept safe project-relative paths', () => {

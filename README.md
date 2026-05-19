@@ -126,6 +126,16 @@ Run local tests:
 npm test
 ```
 
+Optional Venice live smoke testing is gated and off by default:
+
+```bash
+VENICE_LIVE=1 npm run provider:venice:smoke
+```
+
+The command reads `VENICE_INFERENCE_KEY` from the environment or ignored `.env`,
+uses a constrained image request, and writes only local non-truth-bearing
+provider result records.
+
 Phase 2 inspection hardening added the manifest, a small artifact-kind
 registry, and modest malformed-record checks. Phase 3 adds the local project
 layout, safe local refs, placement classes, and asset lifecycle states. Phase 4
@@ -133,7 +143,8 @@ adds provider-neutral generation request, provider profile/capability, and
 normalized provider result records without calling provider APIs. Phase 5 adds
 a provider shape registry for endpoint quirks and mapping fixtures without
 making provider payloads Studio canon. Phase 6 adds a Venice dry-run adapter
-that maps fixtures only and performs no network calls.
+that maps fixtures only and performs no network calls. Phase 7 adds the Venice
+live smoke gate without making provider APIs part of the default wedge.
 
 ## Start Here
 
@@ -147,3 +158,4 @@ that maps fixtures only and performs no network calls.
 - [docs/14-provider-adapter-boundary.md](docs/14-provider-adapter-boundary.md)
 - [docs/15-provider-shape-registry.md](docs/15-provider-shape-registry.md)
 - [docs/16-venice-dry-run-adapter.md](docs/16-venice-dry-run-adapter.md)
+- [docs/17-venice-live-smoke-gate.md](docs/17-venice-live-smoke-gate.md)
