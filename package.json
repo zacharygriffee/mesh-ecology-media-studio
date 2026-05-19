@@ -1,0 +1,19 @@
+{
+  "name": "mesh-ecology-media-studio",
+  "version": "0.1.0",
+  "description": "Media-domain frontier for mesh ecology Studio workflows.",
+  "type": "module",
+  "private": false,
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "wedge:example": "node src/local/run-first-wedge.js --project-dir examples/card-to-candidate --decision accepted",
+    "test": "node --test test/*.test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com:zacharygriffee/mesh-ecology-media-studio.git"
+  }
+}

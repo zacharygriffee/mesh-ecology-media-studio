@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-card.schema.json",
+  "title": "media.card.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "cardId",
+    "projectId",
+    "kind",
+    "prompt",
+    "referenceAssetRefs",
+    "target",
+    "providerHints",
+    "acceptanceCriteria",
+    "createdAt"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.card.v1"
+    },
+    "cardId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sceneId": {
+      "type": "string"
+    },
+    "shotId": {
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "image",
+        "video",
+        "audio",
+        "reference",
+        "sequence",
+        "other"
+      ]
+    },
+    "prompt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "negativePrompt": {
+      "type": "string"
+    },
+    "referenceAssetRefs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "providerHints": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "acceptanceCriteria": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

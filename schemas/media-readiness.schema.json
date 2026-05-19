@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-readiness.schema.json",
+  "title": "media.readiness.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "readinessId",
+    "subjectRef",
+    "state",
+    "reasons",
+    "nextActions",
+    "operatorGuidanceOnly",
+    "createdAt"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.readiness.v1"
+    },
+    "readinessId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "subjectRef": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "state": {
+      "enum": [
+        "draft",
+        "blocked",
+        "ready",
+        "caution",
+        "complete"
+      ]
+    },
+    "reasons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "nextActions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "operatorGuidanceOnly": {
+      "type": "boolean"
+    },
+    "localTruthLabel": {
+      "const": "local receipt"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

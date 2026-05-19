@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-operator-decision.schema.json",
+  "title": "media.operator_decision.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "decisionId",
+    "subjectRef",
+    "decisionType",
+    "operatorRef",
+    "reason",
+    "evidenceRefs",
+    "createdAt"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.operator_decision.v1"
+    },
+    "decisionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "subjectRef": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "decisionType": {
+      "enum": [
+        "accept",
+        "reject",
+        "request_changes",
+        "defer"
+      ]
+    },
+    "operatorRef": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reason": {
+      "type": "string"
+    },
+    "evidenceRefs": {
+      "type": "array"
+    },
+    "localDecisionOnly": {
+      "type": "boolean"
+    },
+    "localTruthLabel": {
+      "const": "local decision"
+    },
+    "truthStatus": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-work-packet.schema.json",
+  "title": "media.work_packet.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "packetId",
+    "intentFamily",
+    "projectId",
+    "cardRef",
+    "inputs",
+    "requestedOutputs",
+    "operatorContext",
+    "readiness",
+    "createdAt"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.work_packet.v1"
+    },
+    "packetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "intentFamily": {
+      "enum": [
+        "image-generation",
+        "video-generation",
+        "audio-generation",
+        "media-transformation",
+        "media-evidence"
+      ]
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cardRef": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "inputs": {
+      "type": "array"
+    },
+    "requestedOutputs": {
+      "type": "array"
+    },
+    "operatorContext": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "readiness": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "localTruthLabel": {
+      "const": "local draft"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-asset-descriptor.schema.json",
+  "title": "media.asset.descriptor.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "assetId",
+    "projectId",
+    "contentType",
+    "hash",
+    "size",
+    "localRef",
+    "source",
+    "lineage",
+    "provenance",
+    "createdAt"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.asset.descriptor.v1"
+    },
+    "assetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contentType": {
+      "type": "string",
+      "minLength": 1
+    },
+    "hash": {
+      "type": "object",
+      "required": [
+        "algorithm",
+        "value"
+      ],
+      "properties": {
+        "algorithm": {
+          "const": "sha256"
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "size": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "localRef": {
+      "type": "object",
+      "required": [
+        "path",
+        "refKind"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "refKind": {
+          "enum": [
+            "local-file",
+            "local-cache",
+            "local-export"
+          ]
+        }
+      }
+    },
+    "byteRef": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "lineage": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "parentRefs": {
+          "type": "array"
+        },
+        "referents": {
+          "type": "array"
+        },
+        "branchId": {
+          "type": "string"
+        },
+        "contextId": {
+          "type": "string"
+        },
+        "observerRef": {
+          "type": "string"
+        },
+        "continuityClaims": {
+          "type": "array"
+        },
+        "transitionSummary": {
+          "type": "string"
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "localTruthLabel": {
+      "enum": [
+        "local receipt",
+        "local draft",
+        "local cache"
+      ]
+    },
+    "truthStatus": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}
