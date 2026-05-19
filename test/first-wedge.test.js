@@ -21,6 +21,13 @@ import {
   createLocalRef,
   placementClasses
 } from '../src/local/project-layout.js'
+import {
+  assertAsyncPattern,
+  assertOutputDelivery,
+  createProviderEndpointShape,
+  createProviderMapping,
+  createProviderShape
+} from '../src/providers/provider-shapes.js'
 
 async function createFixtureProject() {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-wedge-'))
@@ -194,6 +201,82 @@ test('provider result normalization creates non-truth-bearing provider result', 
   assert.equal(result.providerTruth, false)
   assert.equal(result.requestRef.id, 'request-test')
   assert.equal(validateRequiredRecord(result), true)
+})
+
+test('provider shape registry validates endpoint shape and provider shape', () => {
+  const endpoint = createProviderEndpointShape({
+    endpointId: 'venice.image.generate',
+    providerId: 'venice',
+    intentFamily: 'image-generation',
+    operationKind: 'generate-image',
+    requestShape: { style: 'provider-json-request' },
+    responseShape: { style: 'provider-image-response' },
+    asyncPattern: 'synchronous',
+    outputDelivery: 'inline-base64',
+    knownFailureModes: ['provider_failed']
+  })
+  const shape = createProviderShape({
+    providerId: 'venice',
+    providerFamily: 'venice-media',
+    authKind: 'api-key',
+    endpoints: [endpoint]
+  })
+
+  assert.equal(endpoint.schema, 'media.provider_endpoint_shape.v1')
+  assert.equal(shape.schema, 'media.provider_shape.v1')
+  assert.equal(validateRequiredRecord(endpoint), true)
+  assert.equal(validateRequiredRecord(shape), true)
+})
+
+test('provider shape registry rejects invalid async and output delivery values', () => {
+  assert.throws(
+    () => assertAsyncPattern('eventually'),
+    /Unsupported provider async pattern/
+  )
+
+  assert.throws(
+    () => assertOutputDelivery('magic-link'),
+    /Unsupported provider output delivery/
+  )
+})
+
+test('provider mapping validates Studio/provider field mapping without provider truth', () => {
+  const mapping = createProviderMapping({
+    providerId: 'venice',
+    endpointId: 'venice.image.generate',
+    studioInput: { schema: 'media.generation_request.v1' },
+    providerInput: { prompt: 'prompt' },
+    providerOutput: { status: 'status', outputRefs: 'images' },
+    studioOutput: { schema: 'media.provider_result.v1', providerTruth: false },
+    warnings: ['fixture only']
+  })
+
+  assert.equal(mapping.schema, 'media.provider_mapping.v1')
+  assert.equal(mapping.providerTruth, false)
+  assert.equal(validateRequiredRecord(mapping), true)
+
+  assert.throws(
+    () => createProviderMapping({
+      providerId: 'venice',
+      endpointId: 'venice.image.generate',
+      studioInput: { schema: 'media.generation_request.v1' },
+      providerInput: {},
+      providerOutput: {},
+      warnings: []
+    }),
+    /missing studioOutput/
+  )
+})
+
+test('provider shape fixtures validate locally', async () => {
+  for (const fixturePath of [
+    'examples/provider-shapes/openai-sora-video-shape.json',
+    'examples/provider-shapes/venice-image-shape.json',
+    'examples/provider-shapes/venice-image-mapping.json'
+  ]) {
+    const fixture = JSON.parse(await readFile(fixturePath, 'utf8'))
+    assert.equal(validateRequiredRecord(fixture), true)
+  }
 })
 
 test('local refs accept safe project-relative paths', () => {

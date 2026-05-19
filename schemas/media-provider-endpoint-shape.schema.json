@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-provider-endpoint-shape.schema.json",
+  "title": "media.provider_endpoint_shape.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "endpointId",
+    "providerId",
+    "intentFamily",
+    "operationKind",
+    "requestShape",
+    "responseShape",
+    "asyncPattern",
+    "outputDelivery",
+    "knownFailureModes",
+    "localOnly",
+    "meshTruth",
+    "providerTruth",
+    "createdAt"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.provider_endpoint_shape.v1"
+    },
+    "endpointId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "providerId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "intentFamily": {
+      "enum": [
+        "image-generation",
+        "video-generation",
+        "audio-generation",
+        "media-transformation",
+        "media-evidence"
+      ]
+    },
+    "operationKind": {
+      "type": "string"
+    },
+    "requestShape": {
+      "type": "object"
+    },
+    "responseShape": {
+      "type": "object"
+    },
+    "asyncPattern": {
+      "type": "string"
+    },
+    "outputDelivery": {
+      "type": "string"
+    },
+    "knownFailureModes": {
+      "type": "array"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "providerTruth": {
+      "const": false
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

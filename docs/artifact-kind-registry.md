@@ -17,6 +17,9 @@ Known Studio artifact kinds:
 - `media.provider_profile.v1`
 - `media.provider_capability.v1`
 - `media.provider_result.v1`
+- `media.provider_shape.v1`
+- `media.provider_endpoint_shape.v1`
+- `media.provider_mapping.v1`
 
 This registry is intentionally small. It prevents naming drift while the local
 wedge remains standalone-local and Edge-compatible without implementing Edge

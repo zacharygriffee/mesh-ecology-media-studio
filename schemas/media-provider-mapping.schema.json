@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-provider-mapping.schema.json",
+  "title": "media.provider_mapping.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "mappingId",
+    "providerId",
+    "endpointId",
+    "studioInput",
+    "providerInput",
+    "providerOutput",
+    "studioOutput",
+    "warnings",
+    "localOnly",
+    "meshTruth",
+    "providerTruth",
+    "createdAt"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.provider_mapping.v1"
+    },
+    "mappingId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "providerId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "endpointId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "studioInput": {
+      "type": "object"
+    },
+    "providerInput": {
+      "type": "object"
+    },
+    "providerOutput": {
+      "type": "object"
+    },
+    "studioOutput": {
+      "type": "object"
+    },
+    "warnings": {
+      "type": "array"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "providerTruth": {
+      "const": false
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

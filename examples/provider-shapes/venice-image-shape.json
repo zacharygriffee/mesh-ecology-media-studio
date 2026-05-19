@@ -1,0 +1,51 @@
+{
+  "schema": "media.provider_shape.v1",
+  "providerId": "venice",
+  "providerFamily": "venice-media",
+  "authKind": "api-key",
+  "endpoints": [
+    {
+      "schema": "media.provider_endpoint_shape.v1",
+      "endpointId": "venice.image.generate",
+      "providerId": "venice",
+      "intentFamily": "image-generation",
+      "operationKind": "generate-image",
+      "requestShape": {
+        "style": "provider-json-request",
+        "fields": [
+          "model",
+          "prompt",
+          "negative_prompt",
+          "width",
+          "height",
+          "seed"
+        ]
+      },
+      "responseShape": {
+        "style": "provider-image-response",
+        "fields": [
+          "id",
+          "status",
+          "images",
+          "timing"
+        ]
+      },
+      "asyncPattern": "synchronous",
+      "outputDelivery": "inline-base64",
+      "knownFailureModes": [
+        "policy_rejected",
+        "provider_failed",
+        "rate_limited",
+        "insufficient_credit"
+      ],
+      "localOnly": true,
+      "meshTruth": false,
+      "providerTruth": false,
+      "createdAt": "2026-05-19T00:00:00.000Z"
+    }
+  ],
+  "localOnly": true,
+  "meshTruth": false,
+  "providerTruth": false,
+  "createdAt": "2026-05-19T00:00:00.000Z"
+}

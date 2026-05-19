@@ -1,0 +1,40 @@
+{
+  "schema": "media.provider_mapping.v1",
+  "mappingId": "mapping-venice-image-generate-v1",
+  "providerId": "venice",
+  "endpointId": "venice.image.generate",
+  "studioInput": {
+    "schema": "media.generation_request.v1",
+    "fields": [
+      "prompt",
+      "negativePrompt",
+      "target",
+      "providerHints"
+    ]
+  },
+  "providerInput": {
+    "prompt": "prompt",
+    "negative_prompt": "negativePrompt",
+    "model": "providerHints.model",
+    "width": "target.width",
+    "height": "target.height"
+  },
+  "providerOutput": {
+    "providerJobRef": "id",
+    "status": "status",
+    "outputRefs": "images"
+  },
+  "studioOutput": {
+    "schema": "media.provider_result.v1",
+    "status": "succeeded-or-failed-after-normalization",
+    "providerTruth": false
+  },
+  "warnings": [
+    "Fixture only; no Venice API call is implemented.",
+    "Provider output is not Studio canon until normalized and locally ingested."
+  ],
+  "localOnly": true,
+  "meshTruth": false,
+  "providerTruth": false,
+  "createdAt": "2026-05-19T00:00:00.000Z"
+}

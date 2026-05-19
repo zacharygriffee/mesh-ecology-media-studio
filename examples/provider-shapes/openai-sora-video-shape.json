@@ -1,0 +1,52 @@
+{
+  "schema": "media.provider_shape.v1",
+  "providerId": "openai",
+  "providerFamily": "openai-media",
+  "authKind": "bearer-token",
+  "endpoints": [
+    {
+      "schema": "media.provider_endpoint_shape.v1",
+      "endpointId": "openai.sora.video.create",
+      "providerId": "openai",
+      "intentFamily": "video-generation",
+      "operationKind": "generate-video",
+      "requestShape": {
+        "style": "multipart-or-json-provider-request",
+        "fields": [
+          "model",
+          "prompt",
+          "size",
+          "seconds",
+          "input_reference"
+        ]
+      },
+      "responseShape": {
+        "style": "provider-job",
+        "fields": [
+          "id",
+          "status",
+          "progress",
+          "model",
+          "size",
+          "seconds"
+        ]
+      },
+      "asyncPattern": "async-job-poll",
+      "outputDelivery": "download-endpoint",
+      "knownFailureModes": [
+        "policy_rejected",
+        "provider_failed",
+        "timeout",
+        "temporary_download_expired"
+      ],
+      "localOnly": true,
+      "meshTruth": false,
+      "providerTruth": false,
+      "createdAt": "2026-05-19T00:00:00.000Z"
+    }
+  ],
+  "localOnly": true,
+  "meshTruth": false,
+  "providerTruth": false,
+  "createdAt": "2026-05-19T00:00:00.000Z"
+}

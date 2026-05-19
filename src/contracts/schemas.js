@@ -11,6 +11,11 @@ import {
   assertIntentFamily,
   validateProviderCapability
 } from '../providers/provider-neutral.js'
+import {
+  validateProviderEndpointShape,
+  validateProviderMapping,
+  validateProviderShape
+} from '../providers/provider-shapes.js'
 
 export const schemaFiles = {
   'media.card.v1': 'schemas/media-card.schema.json',
@@ -27,7 +32,10 @@ export const schemaFiles = {
   'media.generation_request.v1': 'schemas/media-generation-request.schema.json',
   'media.provider_profile.v1': 'schemas/media-provider-profile.schema.json',
   'media.provider_capability.v1': 'schemas/media-provider-capability.schema.json',
-  'media.provider_result.v1': 'schemas/media-provider-result.schema.json'
+  'media.provider_result.v1': 'schemas/media-provider-result.schema.json',
+  'media.provider_shape.v1': 'schemas/media-provider-shape.schema.json',
+  'media.provider_endpoint_shape.v1': 'schemas/media-provider-endpoint-shape.schema.json',
+  'media.provider_mapping.v1': 'schemas/media-provider-mapping.schema.json'
 }
 
 export const requiredFields = {
@@ -204,6 +212,48 @@ export const requiredFields = {
     'createdAt',
     'localOnly',
     'meshTruth'
+  ],
+  'media.provider_shape.v1': [
+    'schema',
+    'providerId',
+    'providerFamily',
+    'endpoints',
+    'authKind',
+    'localOnly',
+    'meshTruth',
+    'providerTruth',
+    'createdAt'
+  ],
+  'media.provider_endpoint_shape.v1': [
+    'schema',
+    'endpointId',
+    'providerId',
+    'intentFamily',
+    'operationKind',
+    'requestShape',
+    'responseShape',
+    'asyncPattern',
+    'outputDelivery',
+    'knownFailureModes',
+    'localOnly',
+    'meshTruth',
+    'providerTruth',
+    'createdAt'
+  ],
+  'media.provider_mapping.v1': [
+    'schema',
+    'mappingId',
+    'providerId',
+    'endpointId',
+    'studioInput',
+    'providerInput',
+    'providerOutput',
+    'studioOutput',
+    'warnings',
+    'localOnly',
+    'meshTruth',
+    'providerTruth',
+    'createdAt'
   ]
 }
 
@@ -222,7 +272,10 @@ const idFields = {
   [artifactKinds.mediaGenerationRequest]: 'requestId',
   [artifactKinds.mediaProviderProfile]: 'providerId',
   [artifactKinds.mediaProviderCapability]: 'capabilityId',
-  [artifactKinds.mediaProviderResult]: 'resultId'
+  [artifactKinds.mediaProviderResult]: 'resultId',
+  [artifactKinds.mediaProviderShape]: 'providerId',
+  [artifactKinds.mediaProviderEndpointShape]: 'endpointId',
+  [artifactKinds.mediaProviderMapping]: 'mappingId'
 }
 
 const domainProjectSchemas = new Set([
@@ -392,6 +445,18 @@ export function validateRecordShape(record, schemaId = record.schema) {
     if (record.providerTruth !== false) {
       throw new Error('Provider result must set providerTruth=false')
     }
+  }
+
+  if (schemaId === artifactKinds.mediaProviderShape) {
+    validateProviderShape(record)
+  }
+
+  if (schemaId === artifactKinds.mediaProviderEndpointShape) {
+    validateProviderEndpointShape(record)
+  }
+
+  if (schemaId === artifactKinds.mediaProviderMapping) {
+    validateProviderMapping(record)
   }
 
   if (localGeneratedSchemas.has(schemaId)) {
