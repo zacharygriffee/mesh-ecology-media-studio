@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-candidate-review-local.schema.json",
+  "title": "media.candidate_review.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "candidateReviewId",
+    "projectId",
+    "cardRef",
+    "candidateAssetRefs",
+    "selectedAssetRef",
+    "operatorRef",
+    "criteria",
+    "summary",
+    "createdAt",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "localTruthLabel",
+    "truthStatus"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.candidate_review.local.v1"
+    },
+    "candidateReviewId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidateAssetRefs": {
+      "type": "array",
+      "minItems": 1
+    },
+    "operatorRef": {
+      "type": "string",
+      "minLength": 1
+    },
+    "criteria": {
+      "type": "array"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    }
+  }
+}

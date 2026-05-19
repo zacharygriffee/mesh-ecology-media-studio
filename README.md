@@ -188,6 +188,18 @@ Ingest a local reference asset into `media/references/`:
 npm run reference:ingest -- --project-dir examples/card-to-candidate --source media/generated/candidate.txt --filename candidate-reference.txt
 ```
 
+Compare local candidate assets and record a local selection:
+
+```bash
+npm run review:candidates -- --project-dir examples/card-to-candidate
+```
+
+Write a local project status snapshot:
+
+```bash
+npm run status:project -- --project-dir examples/card-to-candidate
+```
+
 Regenerate the committed inspection fixture:
 
 ```bash
@@ -207,6 +219,7 @@ live smoke gate without making provider APIs part of the default wedge. Phase 8
 adds the provider adapter runner receipt, provider failure evidence, image
 metadata inspection, fixture freshness checks, and local export bundles.
 Phase 9 adds a local provider-run ledger and local reference asset ingest.
+Phase 10 adds local candidate comparison records and project status snapshots.
 
 ## Start Here
 
@@ -228,3 +241,4 @@ Phase 9 adds a local provider-run ledger and local reference asset ingest.
 - [docs/22-local-image-metadata.md](docs/22-local-image-metadata.md)
 - [docs/23-adapter-runner-and-export-bundles.md](docs/23-adapter-runner-and-export-bundles.md)
 - [docs/24-provider-run-ledger-and-references.md](docs/24-provider-run-ledger-and-references.md)
+- [docs/25-candidate-review-and-project-status.md](docs/25-candidate-review-and-project-status.md)

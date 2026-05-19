@@ -8,3 +8,7 @@ authority artifact.
 
 `local-review.js` writes local evidence, readiness, and operator decision
 records for generated assets. These records are local decisions only.
+
+`candidate-review.js` writes local comparison evidence across one or more
+candidate assets. It does not accept, reject, or authorize publication by
+itself.

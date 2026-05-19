@@ -344,5 +344,7 @@ export function idForRecord(record) {
   if (record.bundleId) return record.bundleId
   if (record.ledgerId) return record.ledgerId
   if (record.ingestId) return record.ingestId
+  if (record.candidateReviewId) return record.candidateReviewId
+  if (record.statusId) return record.statusId
   return undefined
 }

@@ -44,7 +44,9 @@ export const schemaFiles = {
   'media.provider_adapter_run.local.v1': 'schemas/media-provider-adapter-run-local.schema.json',
   'media.edge_export_bundle.local.v1': 'schemas/media-edge-export-bundle-local.schema.json',
   'media.provider_run_ledger.local.v1': 'schemas/media-provider-run-ledger-local.schema.json',
-  'media.reference_ingest.local.v1': 'schemas/media-reference-ingest-local.schema.json'
+  'media.reference_ingest.local.v1': 'schemas/media-reference-ingest-local.schema.json',
+  'media.candidate_review.local.v1': 'schemas/media-candidate-review-local.schema.json',
+  'media.project_status.local.v1': 'schemas/media-project-status-local.schema.json'
 }
 
 export const requiredFields = {
@@ -425,6 +427,43 @@ export const requiredFields = {
     'materializationProof',
     'localTruthLabel',
     'truthStatus'
+  ],
+  'media.candidate_review.local.v1': [
+    'schema',
+    'candidateReviewId',
+    'projectId',
+    'cardRef',
+    'candidateAssetRefs',
+    'selectedAssetRef',
+    'operatorRef',
+    'criteria',
+    'summary',
+    'createdAt',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'localTruthLabel',
+    'truthStatus'
+  ],
+  'media.project_status.local.v1': [
+    'schema',
+    'statusId',
+    'projectId',
+    'createdAt',
+    'mode',
+    'counts',
+    'latestRefs',
+    'warnings',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'providerTruth',
+    'byteAvailabilityProof',
+    'materializationProof',
+    'localTruthLabel',
+    'truthStatus'
   ]
 }
 
@@ -455,7 +494,9 @@ const idFields = {
   [artifactKinds.mediaProviderAdapterRunLocal]: 'adapterRunId',
   [artifactKinds.mediaEdgeExportBundleLocal]: 'bundleId',
   [artifactKinds.mediaProviderRunLedgerLocal]: 'ledgerId',
-  [artifactKinds.mediaReferenceIngestLocal]: 'ingestId'
+  [artifactKinds.mediaReferenceIngestLocal]: 'ingestId',
+  [artifactKinds.mediaCandidateReviewLocal]: 'candidateReviewId',
+  [artifactKinds.mediaProjectStatusLocal]: 'statusId'
 }
 
 const domainProjectSchemas = new Set([
@@ -468,7 +509,9 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaAssetLifecycle,
   artifactKinds.mediaGenerationRequest,
   artifactKinds.mediaProviderRunLedgerLocal,
-  artifactKinds.mediaReferenceIngestLocal
+  artifactKinds.mediaReferenceIngestLocal,
+  artifactKinds.mediaCandidateReviewLocal,
+  artifactKinds.mediaProjectStatusLocal
 ])
 
 const localGeneratedSchemas = new Set([
@@ -485,7 +528,9 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaProviderAdapterRunLocal,
   artifactKinds.mediaEdgeExportBundleLocal,
   artifactKinds.mediaProviderRunLedgerLocal,
-  artifactKinds.mediaReferenceIngestLocal
+  artifactKinds.mediaReferenceIngestLocal,
+  artifactKinds.mediaCandidateReviewLocal,
+  artifactKinds.mediaProjectStatusLocal
 ])
 
 const readinessStates = new Set(['draft', 'blocked', 'ready', 'caution', 'complete'])
@@ -774,6 +819,32 @@ export function validateRecordShape(record, schemaId = record.schema) {
 
     if (record.imageMetadataRef !== undefined && record.imageMetadataRef !== null) {
       validateInspectionRef(record.imageMetadataRef, `${schemaId}.imageMetadataRef`)
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+
+    for (const flag of ['providerTruth', 'byteAvailabilityProof', 'materializationProof']) {
+      if (record[flag] !== false) {
+        throw new Error(`Record ${schemaId} must set ${flag}=false`)
+      }
+    }
+  }
+
+  if (schemaId === artifactKinds.mediaCandidateReviewLocal) {
+    validateRef(record.cardRef, `${schemaId}.cardRef`)
+    validateRef(record.selectedAssetRef, `${schemaId}.selectedAssetRef`)
+
+    if (!Array.isArray(record.candidateAssetRefs) || record.candidateAssetRefs.length === 0) {
+      throw new Error(`Record ${schemaId} must include candidateAssetRefs`)
+    }
+
+    record.candidateAssetRefs.forEach((ref, index) => validateRef(ref, `${schemaId}.candidateAssetRefs[${index}]`))
+    validateLocalFalseFlags(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaProjectStatusLocal) {
+    if (record.mode !== 'standalone-local') {
+      throw new Error(`Record ${schemaId} has invalid mode: ${record.mode}`)
     }
 
     validateLocalFalseFlags(record, schemaId)

@@ -8,6 +8,7 @@ import { runFirstWedge } from '../src/local/run-first-wedge.js'
 import { promoteCandidate } from '../src/local/promote-candidate.js'
 import { readLocalImageMetadata } from '../src/assets/image-metadata.js'
 import { ingestReferenceAsset } from '../src/assets/ingest-reference.js'
+import { writeCandidateReview } from '../src/review/candidate-review.js'
 import { validateRequiredRecord } from '../src/contracts/schemas.js'
 import { executeProviderAdapter } from '../src/providers/adapter-runner.js'
 import {
@@ -52,6 +53,7 @@ import { indexInspectionRecords } from '../src/seams/index-inspection-records.js
 import { indexProviderRuns } from '../src/seams/index-provider-runs.js'
 import { inspectProviderFailure } from '../src/seams/inspect-provider-failure.js'
 import { inspectVeniceSmoke } from '../src/seams/inspect-venice-smoke.js'
+import { writeProjectStatus } from '../src/seams/project-status.js'
 import { summarizeInspectionPacket } from '../src/seams/summarize-inspection-packet.js'
 import { checkInspectionFixture } from '../src/local/generate-inspection-fixture.js'
 
@@ -728,6 +730,52 @@ test('reference ingest blocks unsafe source refs', async () => {
     }),
     /Local ref path/
   )
+})
+
+test('candidate review records local comparison without ratifier authority', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({ projectDir: dir })
+  await writeFile(path.join(dir, 'media', 'generated', 'reference.txt'), 'reference bytes')
+  const reference = await ingestReferenceAsset({
+    projectDir: dir,
+    source: 'media/generated/reference.txt',
+    filename: 'reference.txt',
+    operatorRef: 'operator-test'
+  })
+
+  const result = await writeCandidateReview({
+    projectDir: dir,
+    selectedAssetId: reference.assetDescriptor.assetId,
+    operatorRef: 'operator-test'
+  })
+
+  assert.equal(result.review.schema, 'media.candidate_review.local.v1')
+  assert.equal(result.review.candidateAssetRefs.length, 2)
+  assert.equal(result.review.selectedAssetRef.id, reference.assetDescriptor.assetId)
+  assert.equal(result.review.meshTruth, false)
+  assert.equal(validateRequiredRecord(result.review), true)
+
+  const written = JSON.parse(await readFile(path.join(dir, result.output), 'utf8'))
+  assert.equal(written.operatorRef, 'operator-test')
+})
+
+test('project status summarizes local records without truth claims', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({ projectDir: dir })
+  await inspectLocalRun({ projectDir: dir })
+  await indexProviderRuns({ projectDir: dir })
+  await writeCandidateReview({ projectDir: dir })
+
+  const result = await writeProjectStatus({ projectDir: dir })
+
+  assert.equal(result.status.schema, 'media.project_status.local.v1')
+  assert.equal(result.status.counts.cards, 1)
+  assert.equal(result.status.counts.providerResults, 1)
+  assert.equal(result.status.counts.assets, 1)
+  assert.equal(result.status.counts.candidateReviews, 1)
+  assert.equal(result.status.meshTruth, false)
+  assert.equal(result.status.providerTruth, false)
+  assert.equal(validateRequiredRecord(result.status), true)
 })
 
 test('promote candidate copies placement and records local decision without provider work', async () => {
