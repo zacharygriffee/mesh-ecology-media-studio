@@ -7,6 +7,8 @@ examples/**/media/generated/provider-smoke/
 examples/**/media/proxies/
 examples/**/media/thumbnails/
 examples/**/media/exports/
+!examples/inspection-fixtures/
+!examples/inspection-fixtures/**
 .env
 .env.*
 !.env.example

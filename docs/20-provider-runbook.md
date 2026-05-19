@@ -1,0 +1,67 @@
+# Provider Runbook
+
+This runbook covers the current Venice-only provider workflow.
+
+## Dry Run
+
+Dry-run tests map Studio generation requests to Venice-shaped payloads and
+fixture responses back to `media.provider_result.v1`.
+
+```bash
+npm test
+```
+
+Dry-run paths do not read provider keys and do not call Venice.
+
+## Live Smoke
+
+Live smoke is explicitly gated:
+
+```bash
+VENICE_LIVE=1 npm run provider:venice:smoke
+```
+
+The command reads `VENICE_INFERENCE_KEY` from the shell environment or ignored
+`.env`.
+
+The smoke gate constrains the request to:
+
+- `venice-sd35`
+- `512x512`
+- one variant
+- JSON/base64 output
+- no web search
+
+Successful smoke runs write local bytes, asset descriptors, review evidence,
+readiness, local operator decision, and a manifest under ignored
+`examples/venice-smoke/`.
+
+## Inspect Existing Runs
+
+Export a Venice smoke run:
+
+```bash
+npm run inspect:venice-smoke
+```
+
+Export any local manifest-backed run:
+
+```bash
+npm run inspect:local-run -- --project-dir examples/card-to-candidate
+```
+
+Export failed provider posture:
+
+```bash
+npm run inspect:provider-failure
+```
+
+Inspection export creates local `media.edge_inspection_packet.local.v1` packets.
+It does not call Venice, Edge, Bytes, causal-substrate, or mesh publication.
+
+## Boundaries
+
+Provider API responses are provenance, not authority. Local file existence,
+hashes, byte-preview fields, and operator decisions remain local-only until a
+future mesh-facing lane promotes them through the proper proposal, publication,
+ratification, and materialization flows.

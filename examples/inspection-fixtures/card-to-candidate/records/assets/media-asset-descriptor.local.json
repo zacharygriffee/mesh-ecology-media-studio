@@ -1,0 +1,91 @@
+{
+  "schema": "media.asset.descriptor.v1",
+  "assetId": "asset-8fd840913d8f9778",
+  "projectId": "studio-example-project",
+  "contentType": "text/plain",
+  "hash": {
+    "algorithm": "sha256",
+    "value": "8fd840913d8f977859aaaf33a2eec00e6818b484b5ff3ccaa7544a470cc188e9"
+  },
+  "size": 144,
+  "localRef": {
+    "schema": "media.local_ref.v1",
+    "refKind": "local-file",
+    "placementClass": "media-accepted",
+    "path": "media/accepted/candidate.txt",
+    "contentType": "text/plain",
+    "hash": {
+      "algorithm": "sha256",
+      "value": "8fd840913d8f977859aaaf33a2eec00e6818b484b5ff3ccaa7544a470cc188e9"
+    },
+    "size": 144,
+    "localOnly": true,
+    "meshTruth": false,
+    "distributedProof": false,
+    "ratifiedSharedState": false
+  },
+  "source": {
+    "sourceType": "provider-result",
+    "providerResultRef": {
+      "kind": "provider-result",
+      "id": "local-placeholder-provider",
+      "schema": "media.provider_result.v1"
+    },
+    "apiCalled": false
+  },
+  "lineage": {
+    "parentRefs": [
+      {
+        "kind": "media-card",
+        "id": "card-local-001",
+        "schema": "media.card.v1"
+      },
+      {
+        "kind": "media-work-packet",
+        "id": "packet-9c45e526-2ba8-4a22-b31f-b6f1b09e4406",
+        "schema": "media.work_packet.v1"
+      }
+    ],
+    "referents": [],
+    "branchId": "studio-example-project:local",
+    "contextId": "scene-opening",
+    "observerRef": "fixture-operator",
+    "continuityClaims": [],
+    "transitionSummary": "local candidate ingested from first wedge"
+  },
+  "provenance": {
+    "cardPromptHashScope": "prompt text retained on card record",
+    "providerId": "local-placeholder-provider",
+    "providerResultLocalOnly": true,
+    "lifecycle": {
+      "schema": "media.asset_lifecycle.v1",
+      "assetId": "asset-8fd840913d8f9778",
+      "projectId": "studio-example-project",
+      "state": "accepted",
+      "refs": [
+        {
+          "kind": "media-card",
+          "id": "card-local-001",
+          "schema": "media.card.v1"
+        },
+        {
+          "kind": "media-work-packet",
+          "id": "packet-9c45e526-2ba8-4a22-b31f-b6f1b09e4406",
+          "schema": "media.work_packet.v1"
+        }
+      ],
+      "reason": "local candidate accepted",
+      "localOnly": true,
+      "meshTruth": false,
+      "distributedProof": false,
+      "ratifiedSharedState": false
+    }
+  },
+  "localTruthLabel": "local receipt",
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "truthStatus": "not mesh truth; not distributed proof; not ratified shared state",
+  "createdAt": "2026-05-19T09:45:37.129Z"
+}

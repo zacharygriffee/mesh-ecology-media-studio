@@ -1,0 +1,45 @@
+{
+  "schema": "media.work_packet.v1",
+  "packetId": "packet-9c45e526-2ba8-4a22-b31f-b6f1b09e4406",
+  "intentFamily": "image-generation",
+  "projectId": "studio-example-project",
+  "cardRef": {
+    "kind": "media-card",
+    "id": "card-local-001",
+    "schema": "media.card.v1"
+  },
+  "inputs": [],
+  "requestedOutputs": [
+    {
+      "kind": "image",
+      "target": {
+        "contentType": "image/png",
+        "aspectRatio": "16:9",
+        "purpose": "candidate-frame"
+      },
+      "acceptanceCriteria": [
+        "candidate has a stable local descriptor",
+        "candidate hash is recorded",
+        "review decision is local-only and explicit"
+      ]
+    }
+  ],
+  "operatorContext": {
+    "operatorRef": "fixture-operator",
+    "mode": "standalone-local"
+  },
+  "readiness": {
+    "state": "ready",
+    "reasons": [
+      "card has prompt and target"
+    ],
+    "operatorGuidanceOnly": true
+  },
+  "localTruthLabel": "local draft",
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "truthStatus": "not mesh truth; not distributed proof; not ratified shared state",
+  "createdAt": "2026-05-19T09:45:37.128Z"
+}

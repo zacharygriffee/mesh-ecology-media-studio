@@ -1,0 +1,149 @@
+{
+  "schema": "media.edge_inspection_packet.local.v1",
+  "packetId": "edge-inspection-91236d04-d9a9-446f-8d13-ae0e7bfb55c2",
+  "createdAt": "2026-05-19T09:45:37.137Z",
+  "mode": "standalone-local",
+  "seam": "media-edge-operator-seam",
+  "sourceRunRef": {
+    "kind": "media-local-run-manifest",
+    "id": "records/manifests/media-local-run-manifest.local.json",
+    "schema": "media.local_run_manifest.v1",
+    "path": "records/manifests/media-local-run-manifest.local.json",
+    "localOnly": true
+  },
+  "recordRefs": {
+    "manifest": {
+      "kind": "media-local-run-manifest",
+      "id": "records/manifests/media-local-run-manifest.local.json",
+      "schema": "media.local_run_manifest.v1",
+      "path": "records/manifests/media-local-run-manifest.local.json",
+      "localOnly": true
+    },
+    "workPacket": {
+      "kind": "media-work-packet",
+      "id": "records/work-packets/media-work-packet.local.json",
+      "schema": "media.work_packet.v1",
+      "path": "records/work-packets/media-work-packet.local.json",
+      "localOnly": true
+    },
+    "providerProfile": {
+      "kind": "media-provider-profile",
+      "id": "records/provider-results/media-provider-profile.local.json",
+      "schema": "media.provider_profile.v1",
+      "path": "records/provider-results/media-provider-profile.local.json",
+      "localOnly": true
+    },
+    "generationRequest": {
+      "kind": "media-generation-request",
+      "id": "records/work-packets/media-generation-request.local.json",
+      "schema": "media.generation_request.v1",
+      "path": "records/work-packets/media-generation-request.local.json",
+      "localOnly": true
+    },
+    "providerResult": {
+      "kind": "media-provider-result",
+      "id": "records/provider-results/media-provider-result.local.json",
+      "schema": "media.provider_result.v1",
+      "path": "records/provider-results/media-provider-result.local.json",
+      "localOnly": true
+    },
+    "assetDescriptor": {
+      "kind": "media-asset",
+      "id": "records/assets/media-asset-descriptor.local.json",
+      "schema": "media.asset.descriptor.v1",
+      "path": "records/assets/media-asset-descriptor.local.json",
+      "localOnly": true
+    },
+    "reviewEvidence": {
+      "kind": "media-evidence",
+      "id": "records/evidence/media-evidence.local.json",
+      "schema": "media.evidence.v1",
+      "path": "records/evidence/media-evidence.local.json",
+      "localOnly": true
+    },
+    "readiness": {
+      "kind": "media-readiness",
+      "id": "records/readiness/media-readiness.local.json",
+      "schema": "media.readiness.v1",
+      "path": "records/readiness/media-readiness.local.json",
+      "localOnly": true
+    },
+    "operatorDecision": {
+      "kind": "media-operator-decision",
+      "id": "records/decisions/media-operator-decision.local.json",
+      "schema": "media.operator_decision.v1",
+      "path": "records/decisions/media-operator-decision.local.json",
+      "localOnly": true
+    }
+  },
+  "artifactKinds": [
+    "media.local_run_manifest.v1",
+    "media.work_packet.v1",
+    "media.provider_profile.v1",
+    "media.generation_request.v1",
+    "media.provider_result.v1",
+    "media.asset.descriptor.v1",
+    "media.evidence.v1",
+    "media.readiness.v1",
+    "media.operator_decision.v1",
+    "media.edge_inspection_packet.local.v1"
+  ],
+  "generatedArtifactRefs": [
+    {
+      "kind": "media-generated-asset",
+      "id": "asset-8fd840913d8f9778",
+      "schema": "media.asset.descriptor.v1",
+      "path": "media/accepted/candidate.txt",
+      "hash": {
+        "algorithm": "sha256",
+        "value": "8fd840913d8f977859aaaf33a2eec00e6818b484b5ff3ccaa7544a470cc188e9"
+      },
+      "contentType": "text/plain",
+      "byteRefPreview": {
+        "intendedSchema": "media.byte_reference.preview.local.v1",
+        "status": "not-materialized",
+        "localRef": {
+          "schema": "media.local_ref.v1",
+          "refKind": "local-file",
+          "placementClass": "media-accepted",
+          "path": "media/accepted/candidate.txt",
+          "contentType": "text/plain",
+          "hash": {
+            "algorithm": "sha256",
+            "value": "8fd840913d8f977859aaaf33a2eec00e6818b484b5ff3ccaa7544a470cc188e9"
+          },
+          "size": 144,
+          "localOnly": true,
+          "meshTruth": false,
+          "distributedProof": false,
+          "ratifiedSharedState": false
+        },
+        "hash": {
+          "algorithm": "sha256",
+          "value": "8fd840913d8f977859aaaf33a2eec00e6818b484b5ff3ccaa7544a470cc188e9"
+        },
+        "size": 144,
+        "byteAvailabilityProof": false,
+        "materializationProof": false
+      },
+      "localOnly": true
+    }
+  ],
+  "warnings": [
+    "Local inspection packet only; not Edge integration.",
+    "All refs are local paths and not mesh truth.",
+    "Byte reference fields are previews only and not materialization proof.",
+    "Local operator decisions are not ratifier authority."
+  ],
+  "operatorGuidanceOnly": true,
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "providerTruth": false,
+  "byteAvailabilityProof": false,
+  "materializationProof": false,
+  "publicationAuthorization": false,
+  "localTruthLabel": "local receipt",
+  "truthStatus": "not mesh truth; not distributed proof; not ratified shared state"
+}

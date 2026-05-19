@@ -9,6 +9,8 @@
     "node": ">=20"
   },
   "scripts": {
+    "inspect:local-run": "node src/seams/inspect-local-run.js",
+    "inspect:provider-failure": "node src/seams/inspect-provider-failure.js",
     "inspect:venice-smoke": "node src/seams/inspect-venice-smoke.js",
     "provider:venice:smoke": "node src/providers/venice-live-smoke.js",
     "wedge:example": "node src/local/run-first-wedge.js --project-dir examples/card-to-candidate --decision accepted",

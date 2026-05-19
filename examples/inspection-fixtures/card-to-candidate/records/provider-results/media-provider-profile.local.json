@@ -1,0 +1,29 @@
+{
+  "schema": "media.provider_profile.v1",
+  "providerId": "local-placeholder-provider",
+  "displayName": "local-placeholder-provider",
+  "capabilities": [
+    {
+      "schema": "media.provider_capability.v1",
+      "capabilityId": "capability-image-generation",
+      "intentFamily": "image-generation",
+      "outputKinds": [
+        "image"
+      ],
+      "constraints": {
+        "integration": "local-placeholder",
+        "apiCalled": false
+      },
+      "localOnly": true,
+      "meshTruth": false,
+      "distributedProof": false,
+      "ratifiedSharedState": false,
+      "createdAt": "2026-05-19T09:45:37.129Z"
+    }
+  ],
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "createdAt": "2026-05-19T09:45:37.129Z"
+}

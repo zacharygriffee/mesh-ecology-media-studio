@@ -1,0 +1,26 @@
+{
+  "schema": "media.card.v1",
+  "cardId": "card-local-001",
+  "projectId": "studio-example-project",
+  "sceneId": "scene-opening",
+  "shotId": "shot-001",
+  "kind": "image",
+  "prompt": "A quiet reference frame for a mesh ecology media studio workbench.",
+  "negativePrompt": "no logos, no UI text, no watermark",
+  "referenceAssetRefs": [],
+  "target": {
+    "contentType": "image/png",
+    "aspectRatio": "16:9",
+    "purpose": "candidate-frame"
+  },
+  "providerHints": {
+    "preferredFamily": "image-generation",
+    "provider": "local-placeholder-provider"
+  },
+  "acceptanceCriteria": [
+    "candidate has a stable local descriptor",
+    "candidate hash is recorded",
+    "review decision is local-only and explicit"
+  ],
+  "createdAt": "2026-05-19T00:00:00.000Z"
+}

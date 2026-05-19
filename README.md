@@ -145,6 +145,18 @@ calling Venice:
 npm run inspect:venice-smoke
 ```
 
+Export any manifest-backed local run:
+
+```bash
+npm run inspect:local-run -- --project-dir examples/card-to-candidate
+```
+
+Export failed provider posture from local failure records:
+
+```bash
+npm run inspect:provider-failure
+```
+
 Phase 2 inspection hardening added the manifest, a small artifact-kind
 registry, and modest malformed-record checks. Phase 3 adds the local project
 layout, safe local refs, placement classes, and asset lifecycle states. Phase 4
@@ -170,3 +182,4 @@ live smoke gate without making provider APIs part of the default wedge.
 - [docs/17-venice-live-smoke-gate.md](docs/17-venice-live-smoke-gate.md)
 - [docs/18-venice-smoke-edge-inspection-preview.md](docs/18-venice-smoke-edge-inspection-preview.md)
 - [docs/19-local-inspection-export.md](docs/19-local-inspection-export.md)
+- [docs/20-provider-runbook.md](docs/20-provider-runbook.md)

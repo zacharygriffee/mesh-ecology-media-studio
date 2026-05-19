@@ -21,6 +21,7 @@ Read in this order:
 13. [Venice Live Smoke Gate](17-venice-live-smoke-gate.md)
 14. [Venice Smoke Edge Inspection Preview](18-venice-smoke-edge-inspection-preview.md)
 15. [Local Inspection Export](19-local-inspection-export.md)
+16. [Provider Runbook](20-provider-runbook.md)
 
 The first executable path is:
 
@@ -38,6 +39,12 @@ Export an existing Venice smoke run for local Edge-readable inspection with:
 
 ```bash
 npm run inspect:venice-smoke
+```
+
+Export a generic manifest-backed local run with:
+
+```bash
+npm run inspect:local-run -- --project-dir examples/card-to-candidate
 ```
 
 The optional Venice live smoke command is intentionally gated:

@@ -1,0 +1,124 @@
+{
+  "schema": "media.local_run_manifest.v1",
+  "runId": "local-run-92420ab7-6891-40c4-9787-f4c1d20a5ea6",
+  "createdAt": "2026-05-19T09:45:37.130Z",
+  "mode": "standalone-local",
+  "inputCardRef": {
+    "kind": "media-card",
+    "id": "card-local-001",
+    "schema": "media.card.v1"
+  },
+  "candidateInputRef": {
+    "kind": "local-candidate-input",
+    "path": "media/generated/candidate.txt",
+    "hash": {
+      "algorithm": "sha256",
+      "value": "8fd840913d8f977859aaaf33a2eec00e6818b484b5ff3ccaa7544a470cc188e9"
+    },
+    "localOnly": true
+  },
+  "generatedRecordRefs": [
+    {
+      "kind": "media.work_packet.v1",
+      "id": "packet-9c45e526-2ba8-4a22-b31f-b6f1b09e4406",
+      "path": "records/work-packets/media-work-packet.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media.provider_profile.v1",
+      "id": "local-placeholder-provider",
+      "path": "records/provider-results/media-provider-profile.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media.generation_request.v1",
+      "id": "request-334dcf3e-a3f0-487c-a4da-c111d6d959e4",
+      "path": "records/work-packets/media-generation-request.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media.provider_result.v1",
+      "id": "local-placeholder-provider",
+      "path": "records/provider-results/media-provider-result.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media.asset.descriptor.v1",
+      "id": "asset-8fd840913d8f9778",
+      "path": "records/assets/media-asset-descriptor.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media.evidence.v1",
+      "id": "evidence-eecb9dc3-a44a-4eda-83a6-90fdcfca5950",
+      "path": "records/evidence/media-evidence.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media.readiness.v1",
+      "id": "readiness-15e848de-e24e-4775-913a-1b6677013515",
+      "path": "records/readiness/media-readiness.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media.operator_decision.v1",
+      "id": "decision-418c3f2e-6e8f-4fbf-b860-3543eb3c1078",
+      "path": "records/decisions/media-operator-decision.local.json",
+      "localOnly": true
+    }
+  ],
+  "artifactKinds": [
+    "media.card.v1",
+    "media.work_packet.v1",
+    "media.provider_profile.v1",
+    "media.generation_request.v1",
+    "media.provider_result.v1",
+    "media.asset.descriptor.v1",
+    "media.evidence.v1",
+    "media.readiness.v1",
+    "media.operator_decision.v1",
+    "media.provider_capability.v1",
+    "media.local_ref.v1",
+    "media.asset_lifecycle.v1",
+    "media.local_run_manifest.v1"
+  ],
+  "hashes": {
+    "candidate": {
+      "algorithm": "sha256",
+      "value": "8fd840913d8f977859aaaf33a2eec00e6818b484b5ff3ccaa7544a470cc188e9"
+    }
+  },
+  "doctrineLabels": [
+    "local draft",
+    "local receipt",
+    "local cache",
+    "local decision",
+    "local evidence",
+    "not mesh truth",
+    "not distributed proof",
+    "not ratified shared state",
+    "not provider truth",
+    "not byte availability proof",
+    "not materialization proof",
+    "not causal truth",
+    "not publication authorization"
+  ],
+  "warnings": [
+    "Mode 0 standalone-local output only.",
+    "Provider result is synthetic/local-placeholder and not provider truth.",
+    "Local file existence and local hashes are not byte availability or materialization proof.",
+    "Operator decision is local-only and is not mesh authorization."
+  ],
+  "operatorGuidanceOnly": true,
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "providerTruth": false,
+  "byteAvailabilityProof": false,
+  "materializationProof": false,
+  "causalTruth": false,
+  "publicationAuthorization": false,
+  "localTruthLabel": "local receipt",
+  "truthStatus": "not mesh truth; not distributed proof; not ratified shared state"
+}

@@ -42,6 +42,8 @@ import {
   resolveVeniceApiKey,
   runVeniceLiveSmoke
 } from '../src/providers/venice-live-smoke.js'
+import { inspectLocalRun } from '../src/seams/inspect-local-run.js'
+import { inspectProviderFailure } from '../src/seams/inspect-provider-failure.js'
 import { inspectVeniceSmoke } from '../src/seams/inspect-venice-smoke.js'
 
 async function createFixtureProject() {
@@ -532,6 +534,40 @@ test('Venice smoke inspection packet exports local refs without provider calls',
   assert.equal(written.recordRefs.providerResult.path, 'records/provider-results/venice-live-smoke-provider-result.local.json')
 })
 
+test('generic local-run inspection packet exports first-wedge records', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+
+  const result = await inspectLocalRun({ projectDir: dir })
+
+  assert.equal(result.packet.schema, 'media.edge_inspection_packet.local.v1')
+  assert.equal(result.packet.recordRefs.assetDescriptor.path, 'records/assets/media-asset-descriptor.local.json')
+  assert.equal(result.packet.generatedArtifactRefs[0].path, 'media/accepted/candidate.txt')
+  assert.equal(result.packet.generatedArtifactRefs[0].byteRefPreview.byteAvailabilityProof, false)
+  assert.equal(validateRequiredRecord(result.packet), true)
+
+  const written = JSON.parse(
+    await readFile(path.join(dir, 'records', 'exports', 'local-run-edge-inspection-packet.local.json'), 'utf8')
+  )
+  assert.equal(written.schema, 'media.edge_inspection_packet.local.v1')
+  assert.equal(written.materializationProof, false)
+})
+
+test('committed local-run inspection fixture validates', async () => {
+  const packet = JSON.parse(
+    await readFile('examples/inspection-fixtures/card-to-candidate/inspection-packets/local-run-edge-inspection-packet.local.json', 'utf8')
+  )
+
+  assert.equal(packet.schema, 'media.edge_inspection_packet.local.v1')
+  assert.equal(packet.recordRefs.assetDescriptor.path, 'records/assets/media-asset-descriptor.local.json')
+  assert.equal(packet.generatedArtifactRefs[0].byteRefPreview.materializationProof, false)
+  assert.equal(validateRequiredRecord(packet), true)
+})
+
 test('Venice smoke inspection packet fails on missing records', async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-venice-inspect-missing-'))
 
@@ -560,6 +596,44 @@ test('Venice smoke inspection packet fails on missing records', async () => {
     () => inspectVeniceSmoke({ projectDir: dir }),
     /Missing Venice smoke inspection record: records\/assets\/venice-live-smoke-asset-0.local.json/
   )
+})
+
+test('provider failure inspection packet exports failed provider posture', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-provider-failure-inspect-'))
+  const fixture = JSON.parse(
+    await readFile('examples/provider-fixtures/venice-image-auth-failure.fixture.json', 'utf8')
+  )
+
+  await assert.rejects(
+    () => runVeniceLiveSmoke({
+      env: {
+        VENICE_LIVE: '1',
+        VENICE_INFERENCE_KEY: 'test-key'
+      },
+      envPath: path.join(dir, '.env-missing'),
+      projectDir: dir,
+      fetchImpl: async () => ({
+        status: fixture.httpStatus,
+        async json() {
+          return fixture
+        }
+      })
+    }),
+    /failed with HTTP 401/
+  )
+
+  const result = await inspectProviderFailure({ projectDir: dir })
+
+  assert.equal(result.packet.schema, 'media.edge_inspection_packet.local.v1')
+  assert.equal(result.packet.generatedArtifactRefs.length, 0)
+  assert.equal(result.packet.recordRefs.providerResult.path, 'records/provider-results/venice-live-smoke-provider-result.local.json')
+  assert.equal(validateRequiredRecord(result.packet), true)
+
+  const written = JSON.parse(
+    await readFile(path.join(dir, 'records', 'exports', 'provider-failure-edge-inspection-packet.local.json'), 'utf8')
+  )
+  assert.equal(written.providerTruth, false)
+  assert.equal(written.generatedArtifactRefs.length, 0)
 })
 
 test('Venice live smoke normalizes failure fixtures without claiming provider truth', async () => {
