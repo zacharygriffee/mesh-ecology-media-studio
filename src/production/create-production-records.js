@@ -13,7 +13,8 @@ import {
   createRenderStrategy,
   createSceneDescriptor,
   createShotDescriptor,
-  refForProductionRecord
+  refForProductionRecord,
+  validateProductionDescriptorGraph
 } from './strategy.js'
 
 const modulePath = fileURLToPath(import.meta.url)
@@ -211,7 +212,7 @@ export function createProductionRecordsFromCard({ card }) {
     }
   })
 
-  return {
+  const records = {
     sceneUnit,
     shotUnit,
     clipUnit,
@@ -221,6 +222,9 @@ export function createProductionRecordsFromCard({ card }) {
     shotDescriptor,
     clipDescriptor
   }
+
+  validateProductionDescriptorGraph(Object.values(records))
+  return records
 }
 
 function inputModesForCard(card) {

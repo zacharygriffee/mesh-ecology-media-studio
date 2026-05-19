@@ -46,6 +46,12 @@ npm run production:from-card -- --project-dir examples/card-to-candidate
 The command writes local records under `records/production/`. It does not call
 providers, Edge, mesh publication, or ratifiers.
 
+The local constructor validates descriptor parentage before writing generated
+records. A descriptor must describe an existing production unit, parent unit
+refs must exist in the same local record set, and scene/shot/clip descriptor
+parent refs must match the parent refs on the production unit they specialize.
+This is consistency checking for local planning only, not an authority claim.
+
 ## Rough Cuts
 
 Rough-cut descriptors describe local assembly intent. They may reference source

@@ -56,6 +56,7 @@ import { indexProviderRuns } from '../src/seams/index-provider-runs.js'
 import { inspectProviderFailure } from '../src/seams/inspect-provider-failure.js'
 import { inspectVeniceSmoke } from '../src/seams/inspect-venice-smoke.js'
 import { writeProjectStatus } from '../src/seams/project-status.js'
+import { writeEdgeReadinessGuidance } from '../src/seams/edge-readiness-guidance.js'
 import { writeControlSurfaceProjection } from '../src/seams/control-surface-projection.js'
 import { writeEdgeCompatibilityBundle } from '../src/seams/edge-compatibility-bundle.js'
 import { writeContinuityEvidence } from '../src/seams/continuity-evidence.js'
@@ -860,6 +861,26 @@ test('byte descriptor proposal previews bytes without materialization proof', as
   assert.equal(validateRequiredRecord(proposal), true)
 })
 
+test('byte descriptor proposals dedupe duplicate asset descriptor records', async () => {
+  const dir = await createFixtureProject()
+  const result = await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  const duplicateDir = path.join(dir, 'records', 'assets', 'duplicate')
+  await mkdir(duplicateDir, { recursive: true })
+  await writeFile(
+    path.join(duplicateDir, 'media-asset-descriptor.local.json'),
+    `${JSON.stringify(result.outputs.assetDescriptor, null, 2)}\n`
+  )
+
+  const { proposals } = await writeByteDescriptorProposals({ projectDir: dir })
+
+  assert.equal(proposals.length, 1)
+  assert.equal(proposals[0].proposal.sourceAssetRef.id, result.outputs.assetDescriptor.assetId)
+})
+
 test('byte descriptor proposal rejects byte proof claims', async () => {
   const dir = await createFixtureProject()
   const result = await runFirstWedge({
@@ -898,7 +919,28 @@ test('resource ref candidate marks local asset refs as scaffold only', async () 
   assert.equal(candidate.localLayerResourceRef, false)
   assert.equal(candidate.replicatedPointerRef, false)
   assert.equal(candidate.causalReviewableRef, false)
+  assert.equal(candidate.byteDescriptorAlignment.status, 'missing-byte-descriptor-proposal')
+  assert.equal(candidate.byteDescriptorAlignment.requiredBeforePromotion, true)
   assert.equal(candidate.resolvabilityPosture.operatorFacingIdentityBoundary, false)
+  assert.equal(validateRequiredRecord(candidate), true)
+})
+
+test('resource ref candidate aligns with byte descriptor proposal when present', async () => {
+  const dir = await createFixtureProject()
+  const result = await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+
+  await writeByteDescriptorProposals({ projectDir: dir })
+  const { candidates } = await writeLocalLayerResourceRefCandidates({ projectDir: dir })
+  const candidate = candidates[0].candidate
+
+  assert.equal(candidate.sourceRef.id, result.outputs.assetDescriptor.assetId)
+  assert.equal(candidate.byteDescriptorAlignment.status, 'aligned')
+  assert.equal(candidate.byteDescriptorAlignment.byteDescriptorProposalRef.schema, 'media.byte_descriptor_proposal.local.v1')
+  assert.equal(candidate.proposedResourceRef.byteDescriptorProposalRef.id, `byte-descriptor-proposal-${result.outputs.assetDescriptor.assetId}`)
   assert.equal(validateRequiredRecord(candidate), true)
 })
 
@@ -920,6 +962,43 @@ test('resource ref candidate rejects promoted-resource claims', async () => {
     () => validateRequiredRecord(candidate),
     /localLayerResourceRef=false/
   )
+})
+
+test('edge readiness guidance flags unresolved resource prerequisites', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await writeLocalLayerResourceRefCandidates({ projectDir: dir })
+
+  const result = await writeEdgeReadinessGuidance({ projectDir: dir })
+
+  assert.equal(result.readiness.schema, 'media.readiness.v1')
+  assert.equal(result.readiness.state, 'caution')
+  assert.equal(result.readiness.resolvabilitySummary.missingByteDescriptorProposalAssetIds.length, 1)
+  assert.equal(result.readiness.resolvabilitySummary.unresolvedResourceCandidateIds.length, 1)
+  assert.equal(result.readiness.edgeInspectionGuidance.edgeRequired, false)
+  assert.equal(validateRequiredRecord(result.readiness), true)
+})
+
+test('edge readiness guidance is ready when byte proposals and resource refs align', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await writeByteDescriptorProposals({ projectDir: dir })
+  await writeLocalLayerResourceRefCandidates({ projectDir: dir })
+
+  const result = await writeEdgeReadinessGuidance({ projectDir: dir })
+
+  assert.equal(result.readiness.state, 'ready')
+  assert.equal(result.readiness.resolvabilitySummary.missingByteDescriptorProposalAssetIds.length, 0)
+  assert.equal(result.readiness.resolvabilitySummary.unresolvedResourceCandidateIds.length, 0)
+  assert.equal(validateRequiredRecord(result.readiness), true)
 })
 
 test('continuity evidence drafts local lineage without causal truth claims', async () => {

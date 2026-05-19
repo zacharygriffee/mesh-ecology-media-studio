@@ -14,7 +14,8 @@ import {
   createRoughCutDescriptor,
   createSceneDescriptor,
   createShotDescriptor,
-  refForProductionRecord
+  refForProductionRecord,
+  validateProductionDescriptorGraph
 } from '../src/production/strategy.js'
 
 test('production strategy supports classic scene shot clip as one strategy', () => {
@@ -217,6 +218,52 @@ test('production descriptors specialize scene shot clip without replacing produc
   assert.equal(scene.descriptorKind, 'scene')
   assert.equal(shot.descriptor.sceneShotClipProjectionOnly, true)
   assert.equal(clip.productionUnitRef.id, clipUnit.productionUnitId)
+  assert.equal(validateProductionDescriptorGraph([sceneUnit, shotUnit, clipUnit, scene, shot, clip]), true)
+})
+
+test('production descriptor graph rejects missing and mismatched parent units', () => {
+  const sceneUnit = createProductionUnit({
+    projectId: 'project-descriptors',
+    unitKind: 'scene',
+    title: 'Scene descriptor unit',
+    purpose: 'Scene planning as a production-unit specialization.'
+  })
+  const shotUnit = createProductionUnit({
+    projectId: 'project-descriptors',
+    unitKind: 'shot',
+    title: 'Shot descriptor unit',
+    purpose: 'Shot planning as a production-unit specialization.',
+    parentRefs: [refForProductionRecord(sceneUnit)]
+  })
+  const orphanShot = createShotDescriptor({
+    projectId: 'project-descriptors',
+    productionUnitRef: refForProductionRecord(shotUnit),
+    title: 'Orphan shot descriptor',
+    sceneRef: makeRef('media.production_unit.v1', 'missing-scene', 'media.production_unit.v1')
+  })
+
+  assert.throws(
+    () => validateProductionDescriptorGraph([sceneUnit, shotUnit, orphanShot]),
+    /references missing parent unit/
+  )
+
+  const otherSceneUnit = createProductionUnit({
+    projectId: 'project-descriptors',
+    unitKind: 'scene',
+    title: 'Other scene descriptor unit',
+    purpose: 'Mismatch fixture.'
+  })
+  const mismatchedShot = createShotDescriptor({
+    projectId: 'project-descriptors',
+    productionUnitRef: refForProductionRecord(shotUnit),
+    title: 'Mismatched shot descriptor',
+    sceneRef: refForProductionRecord(otherSceneUnit)
+  })
+
+  assert.throws(
+    () => validateProductionDescriptorGraph([sceneUnit, shotUnit, otherSceneUnit, mismatchedShot]),
+    /parentUnitRefs must match production unit parentRefs/
+  )
 })
 
 test('rough cut and export descriptors do not claim publication authority', () => {

@@ -66,6 +66,10 @@ These records classify current local JSON/path refs as
 `local_layer_resource_ref` posture. They are not admitted local-layer resources,
 replicated pointer refs, or causal-reviewable refs.
 
+When byte descriptor proposals exist, resource-ref candidates record alignment
+to those proposals. Missing alignment remains visible for later Edge inspection
+as local readiness guidance only.
+
 ## Inspection
 
 Local inspection packets and Edge compatibility bundles may include these

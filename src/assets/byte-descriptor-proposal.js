@@ -42,11 +42,14 @@ export async function writeByteDescriptorProposals({
   }
 
   const proposals = []
+  const seenProposalIds = new Set()
   for (const entry of eligibleAssets) {
     const proposal = createByteDescriptorProposal({
       assetDescriptor: entry.record,
       assetRecordPath: entry.path
     })
+    if (seenProposalIds.has(proposal.byteDescriptorProposalId)) continue
+    seenProposalIds.add(proposal.byteDescriptorProposalId)
     const output = `records/bytes/${proposal.byteDescriptorProposalId}.local.json`
     assertSafeLocalPath(output)
     await mkdir(path.dirname(path.join(root, output)), { recursive: true })

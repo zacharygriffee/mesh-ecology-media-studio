@@ -43,7 +43,9 @@ replicated.
 After a local asset exists, write candidates with:
 
 ```bash
+npm run bytes:proposal -- --project-dir examples/card-to-candidate
 npm run resource:refs -- --project-dir examples/card-to-candidate
+npm run readiness:edge -- --project-dir examples/card-to-candidate
 ```
 
 The command writes records under:
@@ -51,6 +53,17 @@ The command writes records under:
 ```text
 records/resources/
 ```
+
+When a matching `media.byte_descriptor_proposal.local.v1` exists, the
+resource-ref candidate records byte descriptor alignment. Missing alignment is
+kept visible as operator guidance and must be resolved before any future
+promotion to an admitted local-layer resource ref.
+
+`npm run readiness:edge` writes `media.readiness.v1` guidance under
+`records/readiness/`. It is only an Edge-inspection preview: it summarizes
+unresolved scaffold refs, missing byte descriptor proposals, and resource-ref
+candidate coverage without calling Edge or proving any resource exists outside
+the local project.
 
 ## Non-Claims
 

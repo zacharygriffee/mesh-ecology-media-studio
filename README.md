@@ -230,6 +230,12 @@ Write local-layer resource-ref candidates without claiming admitted resources:
 npm run resource:refs -- --project-dir examples/card-to-candidate
 ```
 
+Write local Edge-inspection readiness guidance from resolvability coverage:
+
+```bash
+npm run readiness:edge -- --project-dir examples/card-to-candidate
+```
+
 Write a local Packs-aligned control-surface projection without adding UI:
 
 ```bash
@@ -282,7 +288,10 @@ local project status plus inspection summaries for production, approval, and
 byte proposal records. Phase 19 adds a local production-from-card CLI without
 adding UI, provider calls, Edge calls, or mesh publication. Phase 20 adopts
 Spine's JSON-exit posture with scaffold resolvability labels and resource-ref
-candidates, without promoting a local-layer backend.
+candidates, without promoting a local-layer backend. Phase 21 adds readiness
+guidance for unresolved resource refs, aligns resource candidates with byte
+descriptor proposals when present, and validates production descriptor
+parentage without adding UI, Edge calls, or mesh publication.
 
 ## Start Here
 

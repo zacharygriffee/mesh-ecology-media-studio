@@ -36,6 +36,10 @@ export async function writeLocalLayerResourceRefCandidates({
 } = {}) {
   const root = path.resolve(projectDir)
   const assetEntries = await readAssetDescriptors(root)
+  const byteDescriptorProposalEntries = await readByteDescriptorProposals(root)
+  const byteDescriptorProposalByAssetId = new Map(
+    byteDescriptorProposalEntries.map((entry) => [entry.record.sourceAssetRef.id, entry])
+  )
   const eligibleAssets = assetEntries.filter(({ record }) => isEligibleAsset(record))
 
   if (eligibleAssets.length === 0) {
@@ -45,9 +49,11 @@ export async function writeLocalLayerResourceRefCandidates({
   const candidates = []
   const seenCandidateIds = new Set()
   for (const entry of eligibleAssets) {
+    const byteDescriptorProposalEntry = byteDescriptorProposalByAssetId.get(entry.record.assetId)
     const candidate = createLocalLayerResourceRefCandidate({
       assetDescriptor: entry.record,
-      assetRecordPath: entry.path
+      assetRecordPath: entry.path,
+      byteDescriptorProposalEntry
     })
     if (seenCandidateIds.has(candidate.resourceRefCandidateId)) continue
     seenCandidateIds.add(candidate.resourceRefCandidateId)
@@ -67,10 +73,22 @@ export async function writeLocalLayerResourceRefCandidates({
 export function createLocalLayerResourceRefCandidate({
   assetDescriptor,
   assetRecordPath,
+  byteDescriptorProposalEntry,
   createdAt = nowIso()
 }) {
   const sourceRef = makeRef('media-asset', assetDescriptor.assetId, assetDescriptor.schema)
   const hashValue = assetDescriptor.hash?.value ?? assetDescriptor.assetId
+  const byteDescriptorProposalRef = byteDescriptorProposalEntry
+    ? {
+        ...makeRef(
+          'media-byte-descriptor-proposal',
+          byteDescriptorProposalEntry.record.byteDescriptorProposalId,
+          byteDescriptorProposalEntry.record.schema
+        ),
+        path: byteDescriptorProposalEntry.path,
+        localOnly: true
+      }
+    : null
   const candidate = {
     schema: artifactKinds.mediaLocalLayerResourceRefCandidateLocal,
     resourceRefCandidateId: `resource-ref-candidate-${assetDescriptor.assetId}`,
@@ -86,8 +104,14 @@ export function createLocalLayerResourceRefCandidate({
       resourceKind: 'media-asset-by-hash',
       hash: assetDescriptor.hash,
       localRef: assetDescriptor.localRef,
+      byteDescriptorProposalRef,
       identitySeed: `sha256:${hashValue}`,
       candidateOnly: true
+    },
+    byteDescriptorAlignment: {
+      status: byteDescriptorProposalRef ? 'aligned' : 'missing-byte-descriptor-proposal',
+      byteDescriptorProposalRef,
+      requiredBeforePromotion: true
     },
     resolvabilityPosture: createScaffoldResolvabilityPosture({
       reason: 'Asset descriptor and local file path are Mode 0 scaffold inputs until a local-layer resource ref is admitted.'
@@ -116,6 +140,23 @@ async function readAssetDescriptors(root) {
   for (const file of files) {
     const record = JSON.parse(await readFile(file, 'utf8'))
     if (record.schema !== artifactKinds.mediaAssetDescriptor) continue
+    validateRequiredRecord(record)
+    entries.push({
+      path: path.relative(root, file).split(path.sep).join('/'),
+      record
+    })
+  }
+
+  return entries.sort((left, right) => left.path.localeCompare(right.path))
+}
+
+async function readByteDescriptorProposals(root) {
+  const files = await listJsonFiles(path.join(root, 'records', 'bytes'))
+  const entries = []
+
+  for (const file of files) {
+    const record = JSON.parse(await readFile(file, 'utf8'))
+    if (record.schema !== artifactKinds.mediaByteDescriptorProposalLocal) continue
     validateRequiredRecord(record)
     entries.push({
       path: path.relative(root, file).split(path.sep).join('/'),

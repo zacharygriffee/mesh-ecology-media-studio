@@ -732,6 +732,7 @@ export const requiredFields = {
     'currentRefCategory',
     'targetRefCategory',
     'proposedResourceRef',
+    'byteDescriptorAlignment',
     'resolvabilityPosture',
     'status',
     'localLayerResourceRef',
@@ -1538,6 +1539,8 @@ export function validateRecordShape(record, schemaId = record.schema) {
       throw new Error(`Record ${schemaId} must include proposedResourceRef`)
     }
 
+    validateByteDescriptorAlignment(record.byteDescriptorAlignment, `${schemaId}.byteDescriptorAlignment`)
+
     for (const flag of ['localLayerResourceRef', 'replicatedPointerRef', 'causalReviewableRef']) {
       if (record[flag] !== false) {
         throw new Error(`Record ${schemaId} must set ${flag}=false`)
@@ -1779,6 +1782,26 @@ function validateResolvabilityPosture(posture, label) {
 
   if (posture.operatorFacingIdentityBoundary !== false) {
     throw new Error(`${label} must not claim operator-facing identity boundary`)
+  }
+}
+
+function validateByteDescriptorAlignment(alignment, label) {
+  if (!alignment || typeof alignment !== 'object') {
+    throw new Error(`${label} must be an object`)
+  }
+
+  if (!['aligned', 'missing-byte-descriptor-proposal'].includes(alignment.status)) {
+    throw new Error(`${label} has invalid status: ${alignment.status}`)
+  }
+
+  if (alignment.requiredBeforePromotion !== true) {
+    throw new Error(`${label} must set requiredBeforePromotion=true`)
+  }
+
+  if (alignment.status === 'aligned') {
+    validateInspectionRef(alignment.byteDescriptorProposalRef, `${label}.byteDescriptorProposalRef`)
+  } else if (alignment.byteDescriptorProposalRef !== null && alignment.byteDescriptorProposalRef !== undefined) {
+    throw new Error(`${label}.byteDescriptorProposalRef must be null when missing`)
   }
 }
 

@@ -108,6 +108,7 @@ npm run production:from-card -- --project-dir examples/card-to-candidate
 npm run approval:proposal -- --project-dir examples/card-to-candidate
 npm run bytes:proposal -- --project-dir examples/card-to-candidate
 npm run resource:refs -- --project-dir examples/card-to-candidate
+npm run readiness:edge -- --project-dir examples/card-to-candidate
 ```
 
 Write a local Packs-aligned control-surface projection without adding UI:
@@ -151,6 +152,8 @@ Phase 18 documents the new local record folders and extends local status and
 inspection summaries around them. Phase 19 adds a local production-from-card
 CLI without adding UI or provider work. Phase 20 adopts Spine's JSON-exit
 posture by marking local JSON/path refs as scaffold and adding local-layer
-resource-ref candidates. These records do not claim mesh truth, distributed
-proof, byte materialization proof, provider truth, causal truth, publication
-authorization, or ratifier authority.
+resource-ref candidates. Phase 21 adds readiness guidance for unresolved
+resource refs, byte proposal alignment for resource candidates, and production
+descriptor parentage validation. These records do not claim mesh truth,
+distributed proof, byte materialization proof, provider truth, causal truth,
+publication authorization, or ratifier authority.

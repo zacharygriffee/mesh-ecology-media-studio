@@ -448,6 +448,61 @@ export function refForProductionRecord(record) {
   return makeRef(record.schema, idForProductionRecord(record), record.schema)
 }
 
+export function validateProductionDescriptorGraph(records) {
+  const productionUnits = new Map()
+  const descriptors = []
+
+  for (const record of records) {
+    validateRequiredRecord(record)
+    if (record.schema === artifactKinds.mediaProductionUnit) {
+      productionUnits.set(record.productionUnitId, record)
+    } else if (record.schema === artifactKinds.mediaProductionDescriptorLocal) {
+      descriptors.push(record)
+    }
+  }
+
+  for (const descriptor of descriptors) {
+    const productionUnit = productionUnits.get(descriptor.productionUnitRef.id)
+    if (!productionUnit) {
+      throw new Error(`Production descriptor ${descriptor.descriptorId} references missing production unit ${descriptor.productionUnitRef.id}`)
+    }
+
+    assertDescriptorUnitKind(descriptor, productionUnit)
+
+    for (const parentRef of descriptor.parentUnitRefs) {
+      if (!productionUnits.has(parentRef.id)) {
+        throw new Error(`Production descriptor ${descriptor.descriptorId} references missing parent unit ${parentRef.id}`)
+      }
+    }
+
+    if (['scene', 'shot', 'clip'].includes(descriptor.descriptorKind)) {
+      const productionUnitParentIds = new Set(productionUnit.parentRefs.map((ref) => ref.id))
+      for (const parentRef of descriptor.parentUnitRefs) {
+        if (!productionUnitParentIds.has(parentRef.id)) {
+          throw new Error(`Production descriptor ${descriptor.descriptorId} parentUnitRefs must match production unit parentRefs`)
+        }
+      }
+    }
+  }
+
+  return true
+}
+
+function assertDescriptorUnitKind(descriptor, productionUnit) {
+  const allowedUnitKindsByDescriptorKind = {
+    scene: ['scene'],
+    shot: ['shot'],
+    clip: ['clip', 'still', 'audio-take'],
+    'rough-cut': ['rough-cut'],
+    export: ['export']
+  }
+  const allowed = allowedUnitKindsByDescriptorKind[descriptor.descriptorKind] ?? []
+
+  if (!allowed.includes(productionUnit.unitKind)) {
+    throw new Error(`Production descriptor ${descriptor.descriptorId} kind ${descriptor.descriptorKind} cannot describe production unit kind ${productionUnit.unitKind}`)
+  }
+}
+
 function assertKnown(value, knownValues, label) {
   if (!knownValues.includes(value)) {
     throw new Error(`Invalid ${label}: ${value}`)

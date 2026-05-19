@@ -14,6 +14,7 @@
     "currentRefCategory",
     "targetRefCategory",
     "proposedResourceRef",
+    "byteDescriptorAlignment",
     "resolvabilityPosture",
     "status",
     "localLayerResourceRef",
@@ -56,6 +57,30 @@
     },
     "proposedResourceRef": {
       "type": "object"
+    },
+    "byteDescriptorAlignment": {
+      "type": "object",
+      "required": [
+        "status",
+        "requiredBeforePromotion"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "aligned",
+            "missing-byte-descriptor-proposal"
+          ]
+        },
+        "byteDescriptorProposalRef": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "requiredBeforePromotion": {
+          "const": true
+        }
+      }
     },
     "resolvabilityPosture": {
       "type": "object"
