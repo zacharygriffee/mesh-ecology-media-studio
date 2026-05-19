@@ -60,6 +60,8 @@ import { writeProjectHealth } from '../src/seams/project-health.js'
 import { writeEdgeReadinessGuidance } from '../src/seams/edge-readiness-guidance.js'
 import { writeControlSurfaceProjection } from '../src/seams/control-surface-projection.js'
 import { writeEdgeCompatibilityBundle } from '../src/seams/edge-compatibility-bundle.js'
+import { writeEdgeHandoffCandidate } from '../src/seams/edge-handoff-candidate.js'
+import { writeOperatorPacketIndex } from '../src/seams/operator-packet-index.js'
 import { writeContinuityEvidence } from '../src/seams/continuity-evidence.js'
 import { summarizeInspectionPacket } from '../src/seams/summarize-inspection-packet.js'
 import { checkInspectionFixture } from '../src/local/generate-inspection-fixture.js'
@@ -1168,6 +1170,48 @@ test('inspection summary and Edge bundle include project health records', async 
   const { bundle } = await writeEdgeCompatibilityBundle({ projectDir: dir })
   assert.ok(bundle.studioSourceRefs.some((ref) => ref.schema === 'media.project_health.local.v1'))
   assert.equal(validateRequiredRecord(bundle), true)
+})
+
+test('operator packet index and Edge handoff candidate stay local-only', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await writeByteDescriptorProposals({ projectDir: dir })
+  await writeLocalLayerResourceRefCandidates({ projectDir: dir })
+  await writeProductionRecordsFromCard({ projectDir: dir })
+  await writeProjectHealth({ projectDir: dir, summary: true })
+  await inspectLocalRun({ projectDir: dir })
+  await writeControlSurfaceProjection({ projectDir: dir })
+  await writeEdgeCompatibilityBundle({ projectDir: dir })
+
+  const firstIndex = await writeOperatorPacketIndex({ projectDir: dir })
+  const handoffResult = await writeEdgeHandoffCandidate({ projectDir: dir })
+  const secondIndex = await writeOperatorPacketIndex({ projectDir: dir })
+  await inspectLocalRun({ projectDir: dir })
+  const summary = await summarizeInspectionPacket({
+    projectDir: dir,
+    packet: 'records/exports/local-run-edge-inspection-packet.local.json'
+  })
+
+  assert.equal(firstIndex.index.schema, 'media.operator_packet_index.local.v1')
+  assert.equal(firstIndex.index.packetRefs.length, 1)
+  assert.ok(firstIndex.index.bundleRefs.some((ref) => ref.schema === 'media.edge_compatibility_bundle.local.v1'))
+  assert.equal(firstIndex.index.meshTruth, false)
+  assert.equal(validateRequiredRecord(firstIndex.index), true)
+
+  assert.equal(handoffResult.handoff.schema, 'media.edge_handoff_candidate.local.v1')
+  assert.equal(handoffResult.handoff.handoffState, 'ready-for-edge-inspection')
+  assert.equal(handoffResult.handoff.targetSurface, 'media-edge-operator-seam')
+  assert.equal(handoffResult.handoff.edgeRuntimeBuilt, false)
+  assert.equal(handoffResult.handoff.edgeRuntimeVerified, false)
+  assert.equal(handoffResult.handoff.providerTruth, false)
+  assert.equal(validateRequiredRecord(handoffResult.handoff), true)
+
+  assert.equal(secondIndex.index.handoffCandidateRefs.length, 1)
+  assert.ok(summary.familyRows.some((row) => row[0] === 'handoff' && Number(row[1]) >= 2))
 })
 
 test('promote candidate copies placement and records local decision without provider work', async () => {

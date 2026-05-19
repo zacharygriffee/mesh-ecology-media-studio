@@ -203,6 +203,7 @@ function countRecordFamilies(recordRefs) {
 function familyForSchema(schema) {
   if (schema.includes('approval_proposal')) return 'approvals'
   if (schema.includes('byte_descriptor_proposal') || schema.includes('byte_reference')) return 'bytes'
+  if (schema.includes('edge_handoff_candidate') || schema.includes('operator_packet_index')) return 'handoff'
   if (schema.includes('resource_ref_candidate')) return 'resources'
   if (schema.includes('project_health')) return 'health'
   if (schema.includes('production_') || schema.includes('reference_primitive') || schema.includes('continuity_band') || schema.includes('render_strategy')) return 'production'

@@ -18,6 +18,8 @@
     "status:project": "node src/seams/project-status.js",
     "health:project": "node src/seams/project-health.js",
     "health:summary": "node src/seams/project-health.js --summary",
+    "operator:index": "node src/seams/operator-packet-index.js",
+    "handoff:edge": "node src/seams/edge-handoff-candidate.js",
     "readiness:edge": "node src/seams/edge-readiness-guidance.js",
     "control:surface": "node src/seams/control-surface-projection.js",
     "edge:compat": "node src/seams/edge-compatibility-bundle.js",

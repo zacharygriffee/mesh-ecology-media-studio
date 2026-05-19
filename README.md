@@ -249,6 +249,8 @@ Write a local Edge compatibility bundle without calling Edge:
 
 ```bash
 npm run edge:compat -- --project-dir examples/card-to-candidate
+npm run operator:index -- --project-dir examples/card-to-candidate
+npm run handoff:edge -- --project-dir examples/card-to-candidate
 ```
 
 Regenerate the committed inspection fixture:
@@ -298,7 +300,9 @@ parentage without adding UI, Edge calls, or mesh publication. Phase 22 carries
 readiness/resource summaries into Edge compatibility bundles, adds stale byte
 descriptor detection, and adds a local project health snapshot while still
 keeping resource promotion, Edge runtime verification, and mesh publication
-deferred.
+deferred. Phase 23 adds local operator packet indexes and Edge handoff
+candidates so inspection artifacts are easier to scan without adding UI,
+calling Edge, or claiming authority.
 
 ## Start Here
 
@@ -330,3 +334,4 @@ deferred.
 - [docs/32-byte-descriptor-proposals.md](docs/32-byte-descriptor-proposals.md)
 - [docs/33-record-folder-conventions.md](docs/33-record-folder-conventions.md)
 - [docs/34-json-exit-and-resolvability-posture.md](docs/34-json-exit-and-resolvability-posture.md)
+- [docs/35-operator-packet-index-and-handoff.md](docs/35-operator-packet-index-and-handoff.md)

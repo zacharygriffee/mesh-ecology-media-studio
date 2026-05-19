@@ -30,7 +30,9 @@ const sourceRecordPaths = Object.freeze({
   providerRunLedger: 'records/provider-results/media-provider-run-ledger.local.json'
 })
 const optionalSourceRecordPaths = Object.freeze({
-  approvalProposal: 'records/approvals/media-approval-proposal.local.json'
+  approvalProposal: 'records/approvals/media-approval-proposal.local.json',
+  operatorPacketIndex: 'records/exports/media-operator-packet-index.local.json',
+  edgeHandoffCandidate: 'records/exports/media-edge-handoff-candidate.local.json'
 })
 const optionalSourceRoots = Object.freeze([
   'records/bytes',
@@ -543,6 +545,8 @@ function kindForSchema(schema) {
     [artifactKinds.mediaControlSurfaceProjectionLocal]: 'media-control-surface-projection',
     [artifactKinds.mediaProjectStatusLocal]: 'media-project-status',
     [artifactKinds.mediaProjectHealthLocal]: 'media-project-health',
+    [artifactKinds.mediaOperatorPacketIndexLocal]: 'media-operator-packet-index',
+    [artifactKinds.mediaEdgeHandoffCandidateLocal]: 'media-edge-handoff-candidate',
     [artifactKinds.mediaReadiness]: 'media-readiness',
     [artifactKinds.mediaProviderRunLedgerLocal]: 'media-provider-run-ledger',
     [artifactKinds.mediaProductionUnit]: 'media-production-unit',
@@ -564,6 +568,8 @@ function idForRecord(record) {
     record.projectionId ??
     record.statusId ??
     record.healthId ??
+    record.indexId ??
+    record.handoffCandidateId ??
     record.readinessId ??
     record.ledgerId ??
     record.productionUnitId ??

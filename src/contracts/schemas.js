@@ -55,6 +55,8 @@ export const schemaFiles = {
   'media.control_surface_projection.local.v1': 'schemas/media-control-surface-projection-local.schema.json',
   'media.edge_review_evidence.local.v1': 'schemas/media-edge-review-evidence-local.schema.json',
   'media.edge_compatibility_bundle.local.v1': 'schemas/media-edge-compatibility-bundle-local.schema.json',
+  'media.operator_packet_index.local.v1': 'schemas/media-operator-packet-index-local.schema.json',
+  'media.edge_handoff_candidate.local.v1': 'schemas/media-edge-handoff-candidate-local.schema.json',
   'media.production_unit.v1': 'schemas/media-production-unit.schema.json',
   'media.reference_primitive.v1': 'schemas/media-reference-primitive.schema.json',
   'media.continuity_band.v1': 'schemas/media-continuity-band.schema.json',
@@ -601,6 +603,57 @@ export const requiredFields = {
     'localTruthLabel',
     'truthStatus'
   ],
+  'media.operator_packet_index.local.v1': [
+    'schema',
+    'indexId',
+    'projectId',
+    'createdAt',
+    'mode',
+    'indexedRootRef',
+    'packetRefs',
+    'bundleRefs',
+    'healthRefs',
+    'handoffCandidateRefs',
+    'summary',
+    'warnings',
+    'operatorGuidanceOnly',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'providerTruth',
+    'edgeRuntimeVerified',
+    'localTruthLabel',
+    'truthStatus'
+  ],
+  'media.edge_handoff_candidate.local.v1': [
+    'schema',
+    'handoffCandidateId',
+    'projectId',
+    'createdAt',
+    'mode',
+    'targetSurface',
+    'targetSeams',
+    'sourceRefs',
+    'inspectionPacketRef',
+    'compatibilityBundleRef',
+    'projectHealthRef',
+    'operatorPacketIndexRef',
+    'readinessState',
+    'handoffState',
+    'edgeShapeTargets',
+    'warnings',
+    'operatorGuidanceOnly',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'providerTruth',
+    'edgeRuntimeBuilt',
+    'edgeRuntimeVerified',
+    'localTruthLabel',
+    'truthStatus'
+  ],
   'media.production_unit.v1': [
     'schema',
     'productionUnitId',
@@ -809,6 +862,8 @@ const idFields = {
   [artifactKinds.mediaControlSurfaceProjectionLocal]: 'projectionId',
   [artifactKinds.mediaEdgeReviewEvidenceLocal]: 'edgeReviewEvidenceId',
   [artifactKinds.mediaEdgeCompatibilityBundleLocal]: 'compatibilityBundleId',
+  [artifactKinds.mediaOperatorPacketIndexLocal]: 'indexId',
+  [artifactKinds.mediaEdgeHandoffCandidateLocal]: 'handoffCandidateId',
   [artifactKinds.mediaProductionUnit]: 'productionUnitId',
   [artifactKinds.mediaReferencePrimitive]: 'primitiveId',
   [artifactKinds.mediaContinuityBand]: 'bandId',
@@ -837,6 +892,8 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaControlSurfaceProjectionLocal,
   artifactKinds.mediaEdgeReviewEvidenceLocal,
   artifactKinds.mediaEdgeCompatibilityBundleLocal,
+  artifactKinds.mediaOperatorPacketIndexLocal,
+  artifactKinds.mediaEdgeHandoffCandidateLocal,
   artifactKinds.mediaProductionUnit,
   artifactKinds.mediaReferencePrimitive,
   artifactKinds.mediaContinuityBand,
@@ -869,6 +926,8 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaControlSurfaceProjectionLocal,
   artifactKinds.mediaEdgeReviewEvidenceLocal,
   artifactKinds.mediaEdgeCompatibilityBundleLocal,
+  artifactKinds.mediaOperatorPacketIndexLocal,
+  artifactKinds.mediaEdgeHandoffCandidateLocal,
   artifactKinds.mediaProductionUnit,
   artifactKinds.mediaReferencePrimitive,
   artifactKinds.mediaContinuityBand,
@@ -1432,6 +1491,86 @@ export function validateRecordShape(record, schemaId = record.schema) {
     validateEdgeCandidate(record.edgeEvidenceImportCandidate, 'edge_cross_project_evidence_import', 'edge_cross_project_evidence_import.v1', schemaId)
     validateEdgeCandidate(record.edgeReadinessViewCandidate, 'edge_cross_project_readiness_view', 'edge_cross_project_readiness_view.v1', schemaId)
     validateEdgeCandidate(record.edgeReturnSurfaceCandidate, 'edge_operator_return_surface', 'edge_operator_return_surface.v1', schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaOperatorPacketIndexLocal) {
+    if (record.mode !== 'standalone-local') {
+      throw new Error(`Record ${schemaId} has invalid mode: ${record.mode}`)
+    }
+
+    validateInspectionRef(record.indexedRootRef, `${schemaId}.indexedRootRef`)
+
+    for (const collection of ['packetRefs', 'bundleRefs', 'healthRefs', 'handoffCandidateRefs', 'warnings']) {
+      if (!Array.isArray(record[collection])) {
+        throw new Error(`Record ${schemaId}.${collection} must be an array`)
+      }
+    }
+
+    record.packetRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.packetRefs[${index}]`))
+    record.bundleRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.bundleRefs[${index}]`))
+    record.healthRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.healthRefs[${index}]`))
+    record.handoffCandidateRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.handoffCandidateRefs[${index}]`))
+
+    if (!record.summary || typeof record.summary !== 'object') {
+      throw new Error(`Record ${schemaId}.summary must be an object`)
+    }
+
+    if (record.operatorGuidanceOnly !== true) {
+      throw new Error(`Record ${schemaId} must set operatorGuidanceOnly=true`)
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+
+    for (const flag of ['providerTruth', 'edgeRuntimeVerified']) {
+      if (record[flag] !== false) {
+        throw new Error(`Record ${schemaId} must set ${flag}=false`)
+      }
+    }
+  }
+
+  if (schemaId === artifactKinds.mediaEdgeHandoffCandidateLocal) {
+    if (record.mode !== 'standalone-local') {
+      throw new Error(`Record ${schemaId} has invalid mode: ${record.mode}`)
+    }
+
+    if (record.targetSurface !== 'media-edge-operator-seam') {
+      throw new Error(`Record ${schemaId} must target media-edge-operator-seam`)
+    }
+
+    if (!['ready-for-edge-inspection', 'needs-local-attention'].includes(record.handoffState)) {
+      throw new Error(`Record ${schemaId} has invalid handoffState: ${record.handoffState}`)
+    }
+
+    for (const collection of ['targetSeams', 'sourceRefs', 'edgeShapeTargets', 'warnings']) {
+      if (!Array.isArray(record[collection])) {
+        throw new Error(`Record ${schemaId}.${collection} must be an array`)
+      }
+    }
+
+    record.sourceRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.sourceRefs[${index}]`))
+    record.edgeShapeTargets.forEach((target, index) => {
+      if (!target || typeof target !== 'object' || !isNonEmptyString(target.edgeArtifactKind) || !isNonEmptyString(target.edgeSchemaVersion)) {
+        throw new Error(`Record ${schemaId}.edgeShapeTargets[${index}] must include Edge artifact kind and schema version`)
+      }
+    })
+
+    validateInspectionRef(record.inspectionPacketRef, `${schemaId}.inspectionPacketRef`)
+    validateInspectionRef(record.compatibilityBundleRef, `${schemaId}.compatibilityBundleRef`)
+    validateInspectionRef(record.projectHealthRef, `${schemaId}.projectHealthRef`)
+    validateInspectionRef(record.operatorPacketIndexRef, `${schemaId}.operatorPacketIndexRef`)
+
+    if (record.operatorGuidanceOnly !== true) {
+      throw new Error(`Record ${schemaId} must set operatorGuidanceOnly=true`)
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+    validateEdgeRuntimeFlags(record, schemaId)
+
+    for (const flag of ['providerTruth']) {
+      if (record[flag] !== false) {
+        throw new Error(`Record ${schemaId} must set ${flag}=false`)
+      }
+    }
   }
 
   if (schemaId === artifactKinds.mediaProductionUnit) {

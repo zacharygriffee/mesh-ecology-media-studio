@@ -36,6 +36,8 @@ Known Studio artifact kinds:
 - `media.control_surface_projection.local.v1`
 - `media.edge_review_evidence.local.v1`
 - `media.edge_compatibility_bundle.local.v1`
+- `media.operator_packet_index.local.v1`
+- `media.edge_handoff_candidate.local.v1`
 - `media.production_unit.v1`
 - `media.reference_primitive.v1`
 - `media.continuity_band.v1`

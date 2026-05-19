@@ -36,6 +36,7 @@ Read in this order:
 28. [Byte Descriptor Proposals](32-byte-descriptor-proposals.md)
 29. [Record Folder Conventions](33-record-folder-conventions.md)
 30. [JSON Exit And Resolvability Posture](34-json-exit-and-resolvability-posture.md)
+31. [Operator Packet Index And Handoff](35-operator-packet-index-and-handoff.md)
 
 The first executable path is:
 
@@ -67,6 +68,7 @@ Summarize or index local inspection records with:
 npm run inspect:summary -- --project-dir examples/card-to-candidate --packet records/exports/local-run-edge-inspection-packet.local.json
 npm run inspect:index -- --project-dir examples/card-to-candidate
 npm run inspect:provider-runs -- --project-dir examples/card-to-candidate
+npm run operator:index -- --project-dir examples/card-to-candidate
 ```
 
 Create a local Edge-handoff preview bundle with:
@@ -124,6 +126,8 @@ Write a local Edge compatibility bundle without calling Edge:
 
 ```bash
 npm run edge:compat -- --project-dir examples/card-to-candidate
+npm run operator:index -- --project-dir examples/card-to-candidate
+npm run handoff:edge -- --project-dir examples/card-to-candidate
 ```
 
 Phase 2 hardened the local wedge with a local run manifest, artifact-kind
@@ -159,6 +163,8 @@ resource-ref candidates. Phase 21 adds readiness guidance for unresolved
 resource refs, byte proposal alignment for resource candidates, and production
 descriptor parentage validation. Phase 22 carries readiness/resource summaries
 into Edge compatibility bundles, adds stale byte descriptor detection, and adds
-a local project health snapshot. These records do not claim mesh truth,
+a local project health snapshot. Phase 23 adds local operator packet indexes
+and Edge handoff candidates so the same records are easier to scan without
+adding UI or Edge runtime calls. These records do not claim mesh truth,
 distributed proof, byte materialization proof, provider truth, causal truth,
 publication authorization, or ratifier authority.
