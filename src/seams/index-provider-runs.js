@@ -130,6 +130,8 @@ function runEntry({
     status: providerResult.status,
     intentFamily: generationRequest?.intentFamily,
     projectId: generationRequest?.projectId,
+    cardRef: generationRequest?.cardRef,
+    cardId: generationRequest?.cardRef?.id,
     requestRef: generationRequest
       ? localRef('media-generation-request', generationRequestEntry.path, generationRequest.schema)
       : providerResult.requestRef,
@@ -149,16 +151,19 @@ function runEntry({
 function summarizeRuns(runs) {
   const byStatus = {}
   const byProvider = {}
+  const byCard = {}
 
   for (const run of runs) {
     byStatus[run.status] = (byStatus[run.status] ?? 0) + 1
     byProvider[run.providerId] = (byProvider[run.providerId] ?? 0) + 1
+    if (run.cardId) byCard[run.cardId] = (byCard[run.cardId] ?? 0) + 1
   }
 
   return {
     total: runs.length,
     byStatus,
-    byProvider
+    byProvider,
+    byCard
   }
 }
 

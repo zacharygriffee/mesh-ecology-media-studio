@@ -31,6 +31,7 @@ Known Studio artifact kinds:
 - `media.reference_ingest.local.v1`
 - `media.candidate_review.local.v1`
 - `media.project_status.local.v1`
+- `media.continuity_evidence.local.v1`
 
 This registry is intentionally small. It prevents naming drift while the local
 wedge remains standalone-local and Edge-compatible without implementing Edge

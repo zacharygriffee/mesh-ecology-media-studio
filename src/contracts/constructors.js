@@ -304,6 +304,17 @@ export function createByteReferencePreview({
     hash,
     size,
     contentType,
+    byteDescriptorPreview: {
+      intendedSchema: 'media.byte_descriptor.v1',
+      descriptorKind: 'sha256-local-file-preview',
+      digest: hash,
+      size,
+      contentType,
+      localRef,
+      materializationRequired: true,
+      byteAvailabilityProof: false,
+      materializationProof: false
+    },
     status: 'not-materialized',
     byteAvailabilityProof: false,
     materializationProof: false,
@@ -346,5 +357,6 @@ export function idForRecord(record) {
   if (record.ingestId) return record.ingestId
   if (record.candidateReviewId) return record.candidateReviewId
   if (record.statusId) return record.statusId
+  if (record.continuityEvidenceId) return record.continuityEvidenceId
   return undefined
 }

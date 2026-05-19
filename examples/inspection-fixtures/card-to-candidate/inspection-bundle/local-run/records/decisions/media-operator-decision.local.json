@@ -1,0 +1,27 @@
+{
+  "schema": "media.operator_decision.v1",
+  "decisionId": "decision-00000000-0000-4000-8000-000000000003",
+  "subjectRef": {
+    "kind": "media-asset",
+    "id": "asset-8fd840913d8f9778",
+    "schema": "media.asset.descriptor.v1"
+  },
+  "decisionType": "accept",
+  "operatorRef": "fixture-operator",
+  "reason": "Local operator marked candidate accepted.",
+  "evidenceRefs": [
+    {
+      "kind": "media-evidence",
+      "id": "evidence-00000000-0000-4000-8000-000000000004",
+      "schema": "media.evidence.v1"
+    }
+  ],
+  "localDecisionOnly": true,
+  "localTruthLabel": "local decision",
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "truthStatus": "not mesh truth; not distributed proof; not ratified shared state",
+  "createdAt": "2026-05-19T00:00:00.000Z"
+}

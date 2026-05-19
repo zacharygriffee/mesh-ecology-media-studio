@@ -29,5 +29,7 @@ Current local inspection helpers:
   and referenced artifacts into a local handoff-preview bundle.
 - `project-status.js`: writes a local project status snapshot for cards,
   references, provider runs, assets, reviews, and exports.
+- `continuity-evidence.js`: writes local continuity evidence drafts for an
+  asset's card, branch, context, and lineage fields.
 
 These helpers do not call Edge or publish to mesh.

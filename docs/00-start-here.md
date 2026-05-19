@@ -27,6 +27,7 @@ Read in this order:
 19. [Adapter Runner And Export Bundles](23-adapter-runner-and-export-bundles.md)
 20. [Provider Run Ledger And References](24-provider-run-ledger-and-references.md)
 21. [Candidate Review And Project Status](25-candidate-review-and-project-status.md)
+22. [Narrow Slice Completion](26-narrow-slice-completion.md)
 
 The first executable path is:
 
@@ -94,6 +95,7 @@ Record a local candidate comparison and project status snapshot with:
 ```bash
 npm run review:candidates -- --project-dir examples/card-to-candidate
 npm run status:project -- --project-dir examples/card-to-candidate
+npm run continuity:draft -- --project-dir examples/card-to-candidate
 ```
 
 Phase 2 hardened the local wedge with a local run manifest, artifact-kind
@@ -107,6 +109,9 @@ Venice live smoke gate for controlled provider testing. Phase 8 adds adapter-run
 receipts, local failure evidence, image metadata inspection, fixture freshness,
 and local export bundles. Phase 9 adds the provider-run ledger and reference
 asset ingest. Phase 10 adds candidate comparison records and project status
-snapshots. The wedge remains local-only. It creates local records and does not
-claim mesh truth, distributed proof, byte materialization proof, provider truth,
-causal truth, publication authorization, or ratifier authority.
+snapshots. Phase 11 completes the narrow Mode 0 slice with continuity drafts,
+byte descriptor preview alignment, candidate-review inspection export,
+card-grouped provider attempts, and committed Edge bundle fixtures. The wedge
+remains local-only. It creates local records and does not claim mesh truth,
+distributed proof, byte materialization proof, provider truth, causal truth,
+publication authorization, or ratifier authority.

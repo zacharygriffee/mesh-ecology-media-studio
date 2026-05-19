@@ -12,6 +12,7 @@
     "hash",
     "size",
     "contentType",
+    "byteDescriptorPreview",
     "status",
     "byteAvailabilityProof",
     "materializationProof",
@@ -44,6 +45,20 @@
     },
     "contentType": {
       "type": "string"
+    },
+    "byteDescriptorPreview": {
+      "type": "object",
+      "required": [
+        "intendedSchema",
+        "descriptorKind",
+        "digest",
+        "size",
+        "contentType",
+        "localRef",
+        "materializationRequired",
+        "byteAvailabilityProof",
+        "materializationProof"
+      ]
     },
     "status": {
       "const": "not-materialized"

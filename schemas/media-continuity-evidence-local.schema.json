@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-continuity-evidence-local.schema.json",
+  "title": "media.continuity_evidence.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "continuityEvidenceId",
+    "projectId",
+    "subjectRef",
+    "parentRefs",
+    "referents",
+    "branchId",
+    "contextId",
+    "observerRef",
+    "continuityClaims",
+    "transitionSummary",
+    "createdAt",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "causalTruth",
+    "localTruthLabel",
+    "truthStatus"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.continuity_evidence.local.v1"
+    },
+    "continuityEvidenceId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "parentRefs": {
+      "type": "array"
+    },
+    "referents": {
+      "type": "array"
+    },
+    "continuityClaims": {
+      "type": "array"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    },
+    "causalTruth": {
+      "const": false
+    }
+  }
+}

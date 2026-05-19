@@ -27,7 +27,8 @@ export const artifactKinds = Object.freeze({
   mediaProviderRunLedgerLocal: 'media.provider_run_ledger.local.v1',
   mediaReferenceIngestLocal: 'media.reference_ingest.local.v1',
   mediaCandidateReviewLocal: 'media.candidate_review.local.v1',
-  mediaProjectStatusLocal: 'media.project_status.local.v1'
+  mediaProjectStatusLocal: 'media.project_status.local.v1',
+  mediaContinuityEvidenceLocal: 'media.continuity_evidence.local.v1'
 })
 
 export const knownArtifactKinds = Object.freeze(Object.values(artifactKinds))

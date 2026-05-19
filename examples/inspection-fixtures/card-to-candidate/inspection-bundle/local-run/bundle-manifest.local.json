@@ -1,0 +1,144 @@
+{
+  "schema": "media.edge_export_bundle.local.v1",
+  "bundleId": "edge-export-bundle-edge-inspection-00000000-0000-4000-8000-000000000001",
+  "createdAt": "2026-05-19T00:00:00.000Z",
+  "mode": "standalone-local",
+  "sourcePacketRef": {
+    "kind": "media-edge-inspection-packet",
+    "id": "edge-inspection-00000000-0000-4000-8000-000000000001",
+    "schema": "media.edge_inspection_packet.local.v1",
+    "path": "inspection-packets/local-run-edge-inspection-packet.local.json",
+    "localOnly": true
+  },
+  "bundleRootRef": {
+    "kind": "local-directory",
+    "id": "inspection-bundle/local-run",
+    "schema": "media.local_ref.v1",
+    "path": "inspection-bundle/local-run",
+    "localOnly": true
+  },
+  "includedRecordRefs": [
+    {
+      "kind": "edge-inspection-packet",
+      "id": "inspection-bundle/local-run/inspection-packet.local.json",
+      "schema": "media.edge_inspection_packet.local.v1",
+      "path": "inspection-bundle/local-run/inspection-packet.local.json",
+      "sourcePath": "inspection-packets/local-run-edge-inspection-packet.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-local-run-manifest",
+      "id": "inspection-bundle/local-run/records/manifests/media-local-run-manifest.local.json",
+      "schema": "media.local_run_manifest.v1",
+      "path": "inspection-bundle/local-run/records/manifests/media-local-run-manifest.local.json",
+      "sourcePath": "records/manifests/media-local-run-manifest.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-work-packet",
+      "id": "inspection-bundle/local-run/records/work-packets/media-work-packet.local.json",
+      "schema": "media.work_packet.v1",
+      "path": "inspection-bundle/local-run/records/work-packets/media-work-packet.local.json",
+      "sourcePath": "records/work-packets/media-work-packet.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-provider-profile",
+      "id": "inspection-bundle/local-run/records/provider-results/media-provider-profile.local.json",
+      "schema": "media.provider_profile.v1",
+      "path": "inspection-bundle/local-run/records/provider-results/media-provider-profile.local.json",
+      "sourcePath": "records/provider-results/media-provider-profile.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-generation-request",
+      "id": "inspection-bundle/local-run/records/work-packets/media-generation-request.local.json",
+      "schema": "media.generation_request.v1",
+      "path": "inspection-bundle/local-run/records/work-packets/media-generation-request.local.json",
+      "sourcePath": "records/work-packets/media-generation-request.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-provider-result",
+      "id": "inspection-bundle/local-run/records/provider-results/media-provider-result.local.json",
+      "schema": "media.provider_result.v1",
+      "path": "inspection-bundle/local-run/records/provider-results/media-provider-result.local.json",
+      "sourcePath": "records/provider-results/media-provider-result.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-asset",
+      "id": "inspection-bundle/local-run/records/assets/media-asset-descriptor.local.json",
+      "schema": "media.asset.descriptor.v1",
+      "path": "inspection-bundle/local-run/records/assets/media-asset-descriptor.local.json",
+      "sourcePath": "records/assets/media-asset-descriptor.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-evidence",
+      "id": "inspection-bundle/local-run/records/evidence/media-evidence.local.json",
+      "schema": "media.evidence.v1",
+      "path": "inspection-bundle/local-run/records/evidence/media-evidence.local.json",
+      "sourcePath": "records/evidence/media-evidence.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-readiness",
+      "id": "inspection-bundle/local-run/records/readiness/media-readiness.local.json",
+      "schema": "media.readiness.v1",
+      "path": "inspection-bundle/local-run/records/readiness/media-readiness.local.json",
+      "sourcePath": "records/readiness/media-readiness.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-operator-decision",
+      "id": "inspection-bundle/local-run/records/decisions/media-operator-decision.local.json",
+      "schema": "media.operator_decision.v1",
+      "path": "inspection-bundle/local-run/records/decisions/media-operator-decision.local.json",
+      "sourcePath": "records/decisions/media-operator-decision.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-candidate-review",
+      "id": "inspection-bundle/local-run/records/evidence/candidate-review-card-local-001-asset-8fd840913d8f9778.local.json",
+      "schema": "media.candidate_review.local.v1",
+      "path": "inspection-bundle/local-run/records/evidence/candidate-review-card-local-001-asset-8fd840913d8f9778.local.json",
+      "sourcePath": "records/evidence/candidate-review-card-local-001-asset-8fd840913d8f9778.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-continuity-evidence",
+      "id": "inspection-bundle/local-run/records/evidence/continuity-asset-8fd840913d8f9778.local.json",
+      "schema": "media.continuity_evidence.local.v1",
+      "path": "inspection-bundle/local-run/records/evidence/continuity-asset-8fd840913d8f9778.local.json",
+      "sourcePath": "records/evidence/continuity-asset-8fd840913d8f9778.local.json",
+      "localOnly": true
+    }
+  ],
+  "includedArtifactRefs": [
+    {
+      "kind": "media-generated-asset",
+      "id": "inspection-bundle/local-run/artifacts/media/accepted/candidate.txt",
+      "schema": "media.asset.descriptor.v1",
+      "path": "inspection-bundle/local-run/artifacts/media/accepted/candidate.txt",
+      "sourcePath": "media/accepted/candidate.txt",
+      "localOnly": true
+    }
+  ],
+  "warnings": [
+    "Local export bundle only; not Edge integration.",
+    "Copied bytes are local cache copies, not byte availability proof.",
+    "Bundle presence is not mesh truth, distributed proof, or ratifier authority."
+  ],
+  "operatorGuidanceOnly": true,
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "providerTruth": false,
+  "byteAvailabilityProof": false,
+  "materializationProof": false,
+  "publicationAuthorization": false,
+  "localTruthLabel": "local cache",
+  "truthStatus": "not mesh truth; not distributed proof; not ratified shared state"
+}

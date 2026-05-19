@@ -137,6 +137,7 @@ function countRecords(records) {
     assets: assetRecords.length,
     reviewEvidence: records.filter((entry) => entry.record.schema === artifactKinds.mediaEvidence && entry.record.evidenceKind === 'local-review').length,
     candidateReviews: bySchema(artifactKinds.mediaCandidateReviewLocal),
+    continuityEvidence: bySchema(artifactKinds.mediaContinuityEvidenceLocal),
     decisions: bySchema(artifactKinds.mediaOperatorDecision),
     manifests: bySchema(artifactKinds.mediaLocalRunManifest),
     inspectionPackets: bySchema(artifactKinds.mediaEdgeInspectionPacketLocal),

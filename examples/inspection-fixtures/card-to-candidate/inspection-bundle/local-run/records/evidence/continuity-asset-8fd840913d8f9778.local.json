@@ -1,0 +1,41 @@
+{
+  "schema": "media.continuity_evidence.local.v1",
+  "continuityEvidenceId": "continuity-asset-8fd840913d8f9778",
+  "projectId": "studio-example-project",
+  "subjectRef": {
+    "kind": "media-asset",
+    "id": "asset-8fd840913d8f9778",
+    "schema": "media.asset.descriptor.v1"
+  },
+  "parentRefs": [
+    {
+      "kind": "media-card",
+      "id": "card-local-001",
+      "schema": "media.card.v1"
+    },
+    {
+      "kind": "media-card",
+      "id": "card-local-001",
+      "schema": "media.card.v1"
+    },
+    {
+      "kind": "media-work-packet",
+      "id": "packet-00000000-0000-4000-8000-000000000002",
+      "schema": "media.work_packet.v1"
+    }
+  ],
+  "referents": [],
+  "branchId": "studio-example-project:local",
+  "contextId": "scene-opening",
+  "observerRef": "fixture-operator",
+  "continuityClaims": [],
+  "transitionSummary": "local candidate ingested from first wedge",
+  "createdAt": "2026-05-19T00:00:00.000Z",
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "causalTruth": false,
+  "localTruthLabel": "local evidence",
+  "truthStatus": "not mesh truth; not distributed proof; not ratified shared state"
+}

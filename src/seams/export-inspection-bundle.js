@@ -68,7 +68,7 @@ export async function exportInspectionBundle({
 
   for (const ref of Object.values(inspectionPacket.recordRefs)) {
     if (!ref?.path || copiedRecords.has(ref.path)) continue
-    const bundledPath = path.posix.join(bundleRoot, 'records', ref.path)
+    const bundledPath = path.posix.join(bundleRoot, ref.path)
     await copyLocalFile(root, ref.path, bundledPath)
     copiedRecords.add(ref.path)
     includedRecordRefs.push(bundleRef(ref.kind, ref.path, bundledPath, ref.schema))

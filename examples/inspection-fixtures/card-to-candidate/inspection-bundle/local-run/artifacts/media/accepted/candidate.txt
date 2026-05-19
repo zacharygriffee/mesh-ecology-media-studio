@@ -1,0 +1,3 @@
+This placeholder stands in for a generated local media candidate.
+
+The first wedge hashes and ingests this file without calling a provider API.

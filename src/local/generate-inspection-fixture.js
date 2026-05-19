@@ -5,6 +5,9 @@ import { fileURLToPath } from 'node:url'
 
 import { runFirstWedge } from './run-first-wedge.js'
 import { inspectLocalRun } from '../seams/inspect-local-run.js'
+import { exportInspectionBundle } from '../seams/export-inspection-bundle.js'
+import { writeContinuityEvidence } from '../seams/continuity-evidence.js'
+import { writeCandidateReview } from '../review/candidate-review.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const fixedTimestamp = '2026-05-19T00:00:00.000Z'
@@ -48,9 +51,21 @@ export async function generateInspectionFixture({
     decision: 'accepted',
     operatorRef: 'fixture-operator'
   })
+  await writeCandidateReview({
+    projectDir: root,
+    operatorRef: 'fixture-operator'
+  })
+  await writeContinuityEvidence({
+    projectDir: root
+  })
   await inspectLocalRun({
     projectDir: root,
     output: 'inspection-packets/local-run-edge-inspection-packet.local.json'
+  })
+  await exportInspectionBundle({
+    projectDir: root,
+    packet: 'inspection-packets/local-run-edge-inspection-packet.local.json',
+    outputDir: 'inspection-bundle/local-run'
   })
   await normalizeFixture(root)
 
@@ -132,11 +147,13 @@ function fixtureReadme() {
 
 This fixture is a committed local-only inspection example.
 
-It contains a completed first-wedge run and a generated
-\`media.edge_inspection_packet.local.v1\` packet under:
+It contains a completed first-wedge run, local candidate review, local
+continuity evidence, a generated \`media.edge_inspection_packet.local.v1\`
+packet, and a local export bundle under:
 
 \`\`\`text
 inspection-packets/local-run-edge-inspection-packet.local.json
+inspection-bundle/local-run/
 \`\`\`
 
 The fixture is for deterministic inspection/export examples. It is not mesh

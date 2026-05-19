@@ -200,6 +200,12 @@ Write a local project status snapshot:
 npm run status:project -- --project-dir examples/card-to-candidate
 ```
 
+Write local continuity evidence:
+
+```bash
+npm run continuity:draft -- --project-dir examples/card-to-candidate
+```
+
 Regenerate the committed inspection fixture:
 
 ```bash
@@ -220,6 +226,9 @@ adds the provider adapter runner receipt, provider failure evidence, image
 metadata inspection, fixture freshness checks, and local export bundles.
 Phase 9 adds a local provider-run ledger and local reference asset ingest.
 Phase 10 adds local candidate comparison records and project status snapshots.
+Phase 11 completes the narrow Mode 0 slice with continuity drafts, byte
+descriptor preview alignment, candidate-review inspection export, card-grouped
+provider attempts, and committed Edge bundle fixtures.
 
 ## Start Here
 
@@ -242,3 +251,4 @@ Phase 10 adds local candidate comparison records and project status snapshots.
 - [docs/23-adapter-runner-and-export-bundles.md](docs/23-adapter-runner-and-export-bundles.md)
 - [docs/24-provider-run-ledger-and-references.md](docs/24-provider-run-ledger-and-references.md)
 - [docs/25-candidate-review-and-project-status.md](docs/25-candidate-review-and-project-status.md)
+- [docs/26-narrow-slice-completion.md](docs/26-narrow-slice-completion.md)

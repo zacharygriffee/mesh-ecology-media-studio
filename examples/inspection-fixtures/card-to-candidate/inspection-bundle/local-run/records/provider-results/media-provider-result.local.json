@@ -1,0 +1,50 @@
+{
+  "schema": "media.provider_result.v1",
+  "resultId": "provider-result-00000000-0000-4000-8000-000000000008",
+  "requestRef": {
+    "kind": "media-generation-request",
+    "id": "request-00000000-0000-4000-8000-000000000006",
+    "schema": "media.generation_request.v1"
+  },
+  "providerId": "local-placeholder-provider",
+  "providerJobRef": {
+    "kind": "local-synthetic-provider-job",
+    "id": "local-placeholder:request-00000000-0000-4000-8000-000000000006",
+    "localOnly": true
+  },
+  "status": "succeeded",
+  "outputRefs": [
+    {
+      "kind": "media-local-ref",
+      "id": "media/accepted/candidate.txt",
+      "schema": "media.local_ref.v1",
+      "localRef": {
+        "schema": "media.local_ref.v1",
+        "refKind": "local-file",
+        "placementClass": "media-accepted",
+        "path": "media/accepted/candidate.txt",
+        "contentType": "text/plain",
+        "hash": {
+          "algorithm": "sha256",
+          "value": "8fd840913d8f977859aaaf33a2eec00e6818b484b5ff3ccaa7544a470cc188e9"
+        },
+        "size": 144,
+        "localOnly": true,
+        "meshTruth": false,
+        "distributedProof": false,
+        "ratifiedSharedState": false
+      }
+    }
+  ],
+  "createdAt": "2026-05-19T00:00:00.000Z",
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "providerTruth": false,
+  "rawProviderRef": {
+    "kind": "local-placeholder",
+    "apiCalled": false,
+    "candidateLocalPath": "media/accepted/candidate.txt"
+  }
+}

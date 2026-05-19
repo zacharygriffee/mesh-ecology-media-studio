@@ -54,6 +54,7 @@ import { indexProviderRuns } from '../src/seams/index-provider-runs.js'
 import { inspectProviderFailure } from '../src/seams/inspect-provider-failure.js'
 import { inspectVeniceSmoke } from '../src/seams/inspect-venice-smoke.js'
 import { writeProjectStatus } from '../src/seams/project-status.js'
+import { writeContinuityEvidence } from '../src/seams/continuity-evidence.js'
 import { summarizeInspectionPacket } from '../src/seams/summarize-inspection-packet.js'
 import { checkInspectionFixture } from '../src/local/generate-inspection-fixture.js'
 
@@ -621,6 +622,8 @@ test('generic local-run inspection packet exports first-wedge records', async ()
   assert.equal(result.packet.generatedArtifactRefs[0].path, 'media/accepted/candidate.txt')
   assert.equal(result.packet.generatedArtifactRefs[0].byteRefPreview.schema, 'media.byte_reference.preview.local.v1')
   assert.equal(result.packet.generatedArtifactRefs[0].byteRefPreview.byteAvailabilityProof, false)
+  assert.equal(result.packet.generatedArtifactRefs[0].byteRefPreview.byteDescriptorPreview.intendedSchema, 'media.byte_descriptor.v1')
+  assert.equal(result.packet.generatedArtifactRefs[0].byteRefPreview.byteDescriptorPreview.materializationProof, false)
   assert.equal(validateRequiredRecord(result.packet.generatedArtifactRefs[0].byteRefPreview), true)
   assert.equal(validateRequiredRecord(result.packet), true)
 
@@ -682,7 +685,9 @@ test('provider run ledger indexes local provider attempts without truth claims',
   assert.equal(result.ledger.schema, 'media.provider_run_ledger.local.v1')
   assert.equal(result.ledger.summary.total, 1)
   assert.equal(result.ledger.summary.byStatus.succeeded, 1)
+  assert.equal(result.ledger.summary.byCard['card-test'], 1)
   assert.equal(result.ledger.runs[0].providerId, 'local-placeholder-provider')
+  assert.equal(result.ledger.runs[0].cardId, 'card-test')
   assert.equal(result.ledger.runs[0].providerTruth, false)
   assert.equal(validateRequiredRecord(result.ledger), true)
 
@@ -757,6 +762,33 @@ test('candidate review records local comparison without ratifier authority', asy
 
   const written = JSON.parse(await readFile(path.join(dir, result.output), 'utf8'))
   assert.equal(written.operatorRef, 'operator-test')
+})
+
+test('continuity evidence drafts local lineage without causal truth claims', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({ projectDir: dir })
+
+  const result = await writeContinuityEvidence({ projectDir: dir })
+
+  assert.equal(result.continuity.schema, 'media.continuity_evidence.local.v1')
+  assert.equal(result.continuity.causalTruth, false)
+  assert.equal(result.continuity.parentRefs.some((ref) => ref.kind === 'media-card'), true)
+  assert.equal(validateRequiredRecord(result.continuity), true)
+})
+
+test('local inspection packet includes candidate review and continuity evidence when present', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({ projectDir: dir })
+  await writeCandidateReview({ projectDir: dir })
+  await writeContinuityEvidence({ projectDir: dir })
+
+  const result = await inspectLocalRun({ projectDir: dir })
+  const schemas = Object.values(result.packet.recordRefs).map((ref) => ref.schema)
+
+  assert.ok(schemas.includes('media.candidate_review.local.v1'))
+  assert.ok(schemas.includes('media.continuity_evidence.local.v1'))
+  assert.ok(result.packet.artifactKinds.includes('media.candidate_review.local.v1'))
+  assert.ok(result.packet.artifactKinds.includes('media.continuity_evidence.local.v1'))
 })
 
 test('project status summarizes local records without truth claims', async () => {
@@ -837,7 +869,17 @@ test('committed local-run inspection fixture validates', async () => {
   assert.equal(packet.recordRefs.assetDescriptor.path, 'records/assets/media-asset-descriptor.local.json')
   assert.equal(packet.generatedArtifactRefs[0].byteRefPreview.schema, 'media.byte_reference.preview.local.v1')
   assert.equal(packet.generatedArtifactRefs[0].byteRefPreview.materializationProof, false)
+  assert.equal(packet.generatedArtifactRefs[0].byteRefPreview.byteDescriptorPreview.intendedSchema, 'media.byte_descriptor.v1')
+  assert.ok(Object.values(packet.recordRefs).some((ref) => ref.schema === 'media.candidate_review.local.v1'))
+  assert.ok(Object.values(packet.recordRefs).some((ref) => ref.schema === 'media.continuity_evidence.local.v1'))
   assert.equal(validateRequiredRecord(packet), true)
+
+  const bundleManifest = JSON.parse(
+    await readFile('examples/inspection-fixtures/card-to-candidate/inspection-bundle/local-run/bundle-manifest.local.json', 'utf8')
+  )
+  assert.equal(bundleManifest.schema, 'media.edge_export_bundle.local.v1')
+  assert.equal(bundleManifest.materializationProof, false)
+  assert.equal(validateRequiredRecord(bundleManifest), true)
 })
 
 test('committed local-run inspection fixture freshness check passes', async () => {

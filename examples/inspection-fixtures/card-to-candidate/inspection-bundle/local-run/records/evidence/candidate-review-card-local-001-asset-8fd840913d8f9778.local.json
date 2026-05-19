@@ -1,0 +1,56 @@
+{
+  "schema": "media.candidate_review.local.v1",
+  "candidateReviewId": "candidate-review-card-local-001-asset-8fd840913d8f9778",
+  "projectId": "studio-example-project",
+  "cardRef": {
+    "kind": "media-card",
+    "id": "card-local-001",
+    "schema": "media.card.v1"
+  },
+  "candidateAssetRefs": [
+    {
+      "kind": "media-asset",
+      "id": "asset-8fd840913d8f9778",
+      "schema": "media.asset.descriptor.v1",
+      "path": "records/assets/media-asset-descriptor.local.json",
+      "localRef": {
+        "schema": "media.local_ref.v1",
+        "refKind": "local-file",
+        "placementClass": "media-accepted",
+        "path": "media/accepted/candidate.txt",
+        "contentType": "text/plain",
+        "hash": {
+          "algorithm": "sha256",
+          "value": "8fd840913d8f977859aaaf33a2eec00e6818b484b5ff3ccaa7544a470cc188e9"
+        },
+        "size": 144,
+        "localOnly": true,
+        "meshTruth": false,
+        "distributedProof": false,
+        "ratifiedSharedState": false
+      },
+      "contentType": "text/plain",
+      "lifecycleState": "accepted",
+      "localOnly": true
+    }
+  ],
+  "selectedAssetRef": {
+    "kind": "media-asset",
+    "id": "asset-8fd840913d8f9778",
+    "schema": "media.asset.descriptor.v1"
+  },
+  "operatorRef": "fixture-operator",
+  "criteria": [
+    "candidate has a stable local descriptor",
+    "candidate hash is recorded",
+    "review decision is local-only and explicit"
+  ],
+  "summary": "Local comparison selected asset-8fd840913d8f9778 from 1 candidate asset(s).",
+  "createdAt": "2026-05-19T00:00:00.000Z",
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "localTruthLabel": "local evidence",
+  "truthStatus": "not mesh truth; not distributed proof; not ratified shared state"
+}

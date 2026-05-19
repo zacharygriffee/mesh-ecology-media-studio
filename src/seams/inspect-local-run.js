@@ -1,4 +1,4 @@
-import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { access, mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -72,6 +72,13 @@ export async function inspectLocalRun({
     const name = nameForSchema(ref.kind, ref.path)
     records[name] = record
     recordRefs[name] = localRecordRef(kindForSchema(ref.kind), ref.path, ref.kind)
+  }
+
+  const extraRecords = await readExtraInspectionRecords(root)
+  for (const extra of extraRecords) {
+    const name = nameForSchema(extra.record.schema, extra.path)
+    records[name] = extra.record
+    recordRefs[name] = localRecordRef(kindForSchema(extra.record.schema), extra.path, extra.record.schema)
   }
 
   const generatedArtifactRefs = []
@@ -183,7 +190,9 @@ function nameForSchema(schema, relativePath) {
     'media.asset.descriptor.v1': 'assetDescriptor',
     'media.evidence.v1': 'reviewEvidence',
     'media.readiness.v1': 'readiness',
-    'media.operator_decision.v1': 'operatorDecision'
+    'media.operator_decision.v1': 'operatorDecision',
+    'media.candidate_review.local.v1': `candidateReview:${path.basename(relativePath, '.json')}`,
+    'media.continuity_evidence.local.v1': `continuityEvidence:${path.basename(relativePath, '.json')}`
   }
 
   return schemaNames[schema] ?? path.basename(relativePath, '.json')
@@ -198,10 +207,49 @@ function kindForSchema(schema) {
     'media.asset.descriptor.v1': 'media-asset',
     'media.evidence.v1': 'media-evidence',
     'media.readiness.v1': 'media-readiness',
-    'media.operator_decision.v1': 'media-operator-decision'
+    'media.operator_decision.v1': 'media-operator-decision',
+    'media.candidate_review.local.v1': 'media-candidate-review',
+    'media.continuity_evidence.local.v1': 'media-continuity-evidence'
   }
 
   return schemaKinds[schema] ?? schema
+}
+
+async function readExtraInspectionRecords(root) {
+  const files = await listJsonFiles(path.join(root, 'records', 'evidence'))
+  const records = []
+
+  for (const file of files) {
+    const relativePath = path.relative(root, file).split(path.sep).join('/')
+    const record = JSON.parse(await readFile(file, 'utf8'))
+    if (!['media.candidate_review.local.v1', 'media.continuity_evidence.local.v1'].includes(record.schema)) continue
+    validateRequiredRecord(record)
+    records.push({ path: relativePath, record })
+  }
+
+  return records
+}
+
+async function listJsonFiles(root) {
+  let dirents
+  try {
+    dirents = await readdir(root, { withFileTypes: true })
+  } catch (error) {
+    if (error.code === 'ENOENT') return []
+    throw error
+  }
+
+  const files = []
+  for (const dirent of dirents) {
+    const fullPath = path.join(root, dirent.name)
+    if (dirent.isDirectory()) {
+      files.push(...await listJsonFiles(fullPath))
+    } else if (dirent.isFile() && dirent.name.endsWith('.json')) {
+      files.push(fullPath)
+    }
+  }
+
+  return files.sort()
 }
 
 function localRecordRef(kind, relativePath, schema) {

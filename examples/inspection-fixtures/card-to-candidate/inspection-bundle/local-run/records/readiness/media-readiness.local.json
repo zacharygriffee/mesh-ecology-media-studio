@@ -1,0 +1,24 @@
+{
+  "schema": "media.readiness.v1",
+  "readinessId": "readiness-00000000-0000-4000-8000-000000000007",
+  "subjectRef": {
+    "kind": "media-asset",
+    "id": "asset-8fd840913d8f9778",
+    "schema": "media.asset.descriptor.v1"
+  },
+  "state": "complete",
+  "reasons": [
+    "candidate locally accepted"
+  ],
+  "nextActions": [
+    "prepare edge-inspectable work packet when Mode 1 is needed"
+  ],
+  "operatorGuidanceOnly": true,
+  "localTruthLabel": "local receipt",
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "truthStatus": "not mesh truth; not distributed proof; not ratified shared state",
+  "createdAt": "2026-05-19T00:00:00.000Z"
+}

@@ -46,7 +46,8 @@ export const schemaFiles = {
   'media.provider_run_ledger.local.v1': 'schemas/media-provider-run-ledger-local.schema.json',
   'media.reference_ingest.local.v1': 'schemas/media-reference-ingest-local.schema.json',
   'media.candidate_review.local.v1': 'schemas/media-candidate-review-local.schema.json',
-  'media.project_status.local.v1': 'schemas/media-project-status-local.schema.json'
+  'media.project_status.local.v1': 'schemas/media-project-status-local.schema.json',
+  'media.continuity_evidence.local.v1': 'schemas/media-continuity-evidence-local.schema.json'
 }
 
 export const requiredFields = {
@@ -295,6 +296,7 @@ export const requiredFields = {
     'hash',
     'size',
     'contentType',
+    'byteDescriptorPreview',
     'status',
     'byteAvailabilityProof',
     'materializationProof',
@@ -464,6 +466,27 @@ export const requiredFields = {
     'materializationProof',
     'localTruthLabel',
     'truthStatus'
+  ],
+  'media.continuity_evidence.local.v1': [
+    'schema',
+    'continuityEvidenceId',
+    'projectId',
+    'subjectRef',
+    'parentRefs',
+    'referents',
+    'branchId',
+    'contextId',
+    'observerRef',
+    'continuityClaims',
+    'transitionSummary',
+    'createdAt',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'causalTruth',
+    'localTruthLabel',
+    'truthStatus'
   ]
 }
 
@@ -496,7 +519,8 @@ const idFields = {
   [artifactKinds.mediaProviderRunLedgerLocal]: 'ledgerId',
   [artifactKinds.mediaReferenceIngestLocal]: 'ingestId',
   [artifactKinds.mediaCandidateReviewLocal]: 'candidateReviewId',
-  [artifactKinds.mediaProjectStatusLocal]: 'statusId'
+  [artifactKinds.mediaProjectStatusLocal]: 'statusId',
+  [artifactKinds.mediaContinuityEvidenceLocal]: 'continuityEvidenceId'
 }
 
 const domainProjectSchemas = new Set([
@@ -511,7 +535,8 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaProviderRunLedgerLocal,
   artifactKinds.mediaReferenceIngestLocal,
   artifactKinds.mediaCandidateReviewLocal,
-  artifactKinds.mediaProjectStatusLocal
+  artifactKinds.mediaProjectStatusLocal,
+  artifactKinds.mediaContinuityEvidenceLocal
 ])
 
 const localGeneratedSchemas = new Set([
@@ -530,7 +555,8 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaProviderRunLedgerLocal,
   artifactKinds.mediaReferenceIngestLocal,
   artifactKinds.mediaCandidateReviewLocal,
-  artifactKinds.mediaProjectStatusLocal
+  artifactKinds.mediaProjectStatusLocal,
+  artifactKinds.mediaContinuityEvidenceLocal
 ])
 
 const readinessStates = new Set(['draft', 'blocked', 'ready', 'caution', 'complete'])
@@ -735,6 +761,14 @@ export function validateRecordShape(record, schemaId = record.schema) {
     if (record.byteAvailabilityProof !== false || record.materializationProof !== false) {
       throw new Error(`Record ${schemaId} must not claim byte availability or materialization proof`)
     }
+
+    if (record.byteDescriptorPreview.intendedSchema !== 'media.byte_descriptor.v1') {
+      throw new Error(`Record ${schemaId} must preview media.byte_descriptor.v1`)
+    }
+
+    if (record.byteDescriptorPreview.byteAvailabilityProof !== false || record.byteDescriptorPreview.materializationProof !== false) {
+      throw new Error(`Record ${schemaId} byteDescriptorPreview must not claim byte proof`)
+    }
   }
 
   if (schemaId === artifactKinds.mediaProviderAdapterContract) {
@@ -853,6 +887,16 @@ export function validateRecordShape(record, schemaId = record.schema) {
       if (record[flag] !== false) {
         throw new Error(`Record ${schemaId} must set ${flag}=false`)
       }
+    }
+  }
+
+  if (schemaId === artifactKinds.mediaContinuityEvidenceLocal) {
+    validateRef(record.subjectRef, `${schemaId}.subjectRef`)
+    record.parentRefs.forEach((ref, index) => validateRef(ref, `${schemaId}.parentRefs[${index}]`))
+    validateLocalFalseFlags(record, schemaId)
+
+    if (record.causalTruth !== false) {
+      throw new Error(`Record ${schemaId} must set causalTruth=false`)
     }
   }
 
