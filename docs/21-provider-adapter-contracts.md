@@ -34,3 +34,12 @@ media.provider_failure_taxonomy.v1
 
 The taxonomy is descriptive. A provider error classification is evidence for
 operator inspection, not authority and not mesh truth.
+
+Adapter execution receipts use:
+
+```text
+media.provider_adapter_run.local.v1
+```
+
+They identify the adapter, endpoint, request, normalized provider result, and
+any local failure evidence refs. They are local receipts only.

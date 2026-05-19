@@ -13,6 +13,11 @@ import {
   assertSafeLocalPath
 } from '../local/project-layout.js'
 import { writeLocalAssetReview } from '../review/local-review.js'
+import { executeProviderAdapter } from './adapter-runner.js'
+import {
+  classifyProviderFailure,
+  writeProviderFailureEvidenceRecord
+} from './provider-failures.js'
 import { createGenerationRequestFromCard, normalizeProviderResult } from './provider-neutral.js'
 import { mapGenerationRequestToVeniceImageRequest } from './venice-dry-run.js'
 
@@ -163,6 +168,56 @@ export function buildVeniceLiveSmokeProviderInput(generationRequest) {
   return providerInput
 }
 
+export function createVeniceLiveSmokeAdapter({ apiKey, fetchImpl }) {
+  if (!apiKey) throw new Error('Venice live smoke adapter is missing apiKey')
+  if (typeof fetchImpl !== 'function') throw new Error('Venice live smoke adapter requires fetchImpl')
+
+  return {
+    adapterId: 'venice-image-live-smoke-adapter',
+    providerId: veniceLiveSmokeConfig.providerId,
+    endpointId: veniceLiveSmokeConfig.endpointId,
+    supportedIntentFamilies: ['image-generation'],
+    mapInput: buildVeniceLiveSmokeProviderInput,
+    async execute(providerInput) {
+      const response = await fetchImpl(veniceLiveSmokeConfig.endpoint, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(providerInput)
+      })
+
+      return {
+        httpStatus: response.status,
+        responseJson: await response.json()
+      }
+    },
+    normalizeResult({ generationRequest, rawProviderOutput }) {
+      return normalizeVeniceLiveImageResult({
+        generationRequest,
+        responseJson: rawProviderOutput.responseJson,
+        httpStatus: rawProviderOutput.httpStatus
+      })
+    },
+    summarizeProviderInput(providerInput) {
+      return {
+        model: providerInput.model,
+        width: providerInput.width,
+        height: providerInput.height,
+        variants: providerInput.variants,
+        format: providerInput.format,
+        returnBinary: providerInput.return_binary,
+        safeMode: providerInput.safe_mode,
+        webSearch: providerInput.enable_web_search,
+        promptPresent: typeof providerInput.prompt === 'string',
+        negativePromptPresent: typeof providerInput.negative_prompt === 'string',
+        apiKeyPresent: true
+      }
+    }
+  }
+}
+
 export function normalizeVeniceLiveImageResult({ generationRequest, responseJson, httpStatus = 200 }) {
   if (!responseJson || typeof responseJson !== 'object') {
     throw new Error('Venice live response must be an object')
@@ -170,6 +225,13 @@ export function normalizeVeniceLiveImageResult({ generationRequest, responseJson
 
   const images = Array.isArray(responseJson.images) ? responseJson.images : []
   const status = httpStatus >= 200 && httpStatus < 300 ? 'succeeded' : 'failed'
+  const failure = status === 'failed'
+    ? classifyProviderFailure({
+      providerId: veniceLiveSmokeConfig.providerId,
+      httpStatus,
+      responseJson
+    })
+    : undefined
 
   return normalizeProviderResult({
     generationRequest,
@@ -194,6 +256,7 @@ export function normalizeVeniceLiveImageResult({ generationRequest, responseJson
       ratifiedSharedState: false
     })),
     timing: responseJson.timing,
+    failure,
     rawProviderRef: {
       kind: 'venice-live-response',
       responseId: responseJson.id,
@@ -308,6 +371,7 @@ export async function writeVeniceSmokeManifest({
     generationRequest,
     providerResult,
     assetDescriptor: firstAsset.assetDescriptor,
+    ...(firstAsset.imageMetadata ? { imageMetadata: firstAsset.imageMetadata.metadata } : {}),
     reviewEvidence: firstReview.reviewEvidence,
     readiness: firstReview.readiness,
     operatorDecision: firstReview.operatorDecision
@@ -317,6 +381,7 @@ export async function writeVeniceSmokeManifest({
     generationRequest: recordRefs.generationRequest,
     providerResult: recordRefs.providerResult,
     assetDescriptor: firstAsset.assetRecordRef,
+    ...(firstAsset.imageMetadata ? { imageMetadata: firstAsset.imageMetadata.recordRef } : {}),
     reviewEvidence: firstReview.recordRefs.reviewEvidence,
     readiness: firstReview.recordRefs.readiness,
     operatorDecision: firstReview.recordRefs.operatorDecision
@@ -366,23 +431,13 @@ export async function runVeniceLiveSmoke({
   const card = createVeniceSmokeCard()
   const workPacket = createWorkPacket({ card })
   const generationRequest = createGenerationRequestFromCard({ card })
-  const providerInput = buildVeniceLiveSmokeProviderInput(generationRequest)
-
-  const response = await fetchImpl(veniceLiveSmokeConfig.endpoint, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(providerInput)
-  })
-
-  const responseJson = await response.json()
-  const providerResult = normalizeVeniceLiveImageResult({
+  const adapterResult = await executeProviderAdapter({
+    adapter: createVeniceLiveSmokeAdapter({ apiKey, fetchImpl }),
     generationRequest,
-    responseJson,
-    httpStatus: response.status
+    mode: 'live-smoke'
   })
+  const { providerInput, providerResult, adapterRun } = adapterResult
+  const { responseJson, httpStatus } = adapterResult.rawProviderOutput
 
   validateRequiredRecord(generationRequest)
   validateRequiredRecord(providerResult)
@@ -406,19 +461,44 @@ export async function runVeniceLiveSmoke({
     : []
 
   const resultRef = 'records/provider-results/venice-live-smoke-provider-result.local.json'
+  const adapterRunRef = 'records/provider-results/venice-live-smoke-adapter-run.local.json'
+  const failureEvidenceRef = 'records/evidence/venice-live-smoke-provider-failure-evidence.local.json'
   const workPacketRef = 'records/work-packets/venice-live-smoke-work-packet.local.json'
   const generationRequestRef = 'records/work-packets/venice-live-smoke-generation-request.local.json'
   assertSafeLocalPath(resultRef)
+  assertSafeLocalPath(adapterRunRef)
+  assertSafeLocalPath(failureEvidenceRef)
   assertSafeLocalPath(workPacketRef)
   assertSafeLocalPath(generationRequestRef)
   const outputPath = path.join(projectDir, resultRef)
+  const adapterRunPath = path.join(projectDir, adapterRunRef)
   const workPacketPath = path.join(projectDir, workPacketRef)
   const generationRequestPath = path.join(projectDir, generationRequestRef)
+  const failureEvidenceRecord = providerResult.status === 'failed'
+    ? await writeProviderFailureEvidenceRecord({
+      projectDir,
+      generationRequest,
+      providerResult,
+      classification: providerResult.failure,
+      recordRef: failureEvidenceRef
+    })
+    : undefined
+  const finalAdapterRun = failureEvidenceRecord
+    ? {
+      ...adapterRun,
+      failureEvidenceRefs: [
+        makeRef('media-evidence', failureEvidenceRecord.recordRef, failureEvidenceRecord.evidence.schema)
+      ]
+    }
+    : adapterRun
 
   validateRequiredRecord(workPacket)
+  validateRequiredRecord(finalAdapterRun)
   await mkdir(path.dirname(workPacketPath), { recursive: true })
   await writeFile(workPacketPath, `${JSON.stringify(workPacket, null, 2)}\n`)
   await writeFile(generationRequestPath, `${JSON.stringify(generationRequest, null, 2)}\n`)
+  await mkdir(path.dirname(adapterRunPath), { recursive: true })
+  await writeFile(adapterRunPath, `${JSON.stringify(finalAdapterRun, null, 2)}\n`)
   const manifestRecord = providerResult.status === 'succeeded'
     ? await writeVeniceSmokeManifest({
       projectDir,
@@ -443,14 +523,22 @@ export async function runVeniceLiveSmoke({
       apiKeyPresent: true
     },
     providerResult,
+    adapterRun: finalAdapterRun,
     generatedRecordRefs: [
       makeRef('media-work-packet', workPacketRef, workPacket.schema),
-      makeRef('media-generation-request', generationRequestRef, generationRequest.schema)
+      makeRef('media-generation-request', generationRequestRef, generationRequest.schema),
+      makeRef('media-provider-adapter-run', adapterRunRef, finalAdapterRun.schema),
+      ...(failureEvidenceRecord
+        ? [makeRef('media-evidence', failureEvidenceRecord.recordRef, failureEvidenceRecord.evidence.schema)]
+        : [])
     ],
     generatedAssets: generatedAssets.assets.map((asset) => ({
       localRef: asset.localRef,
       assetRef: makeRef('media-asset', asset.assetDescriptor.assetId, asset.assetDescriptor.schema),
-      assetRecordRef: asset.assetRecordRef
+      assetRecordRef: asset.assetRecordRef,
+      imageMetadataRef: asset.imageMetadata
+        ? makeRef('media-image-metadata', asset.imageMetadata.recordRef, asset.imageMetadata.metadata.schema)
+        : undefined
     })),
     reviewRecords: reviews.map((review) => ({
       evidenceRef: makeRef('media-evidence', review.reviewEvidence.evidenceId, review.reviewEvidence.schema),
@@ -459,6 +547,9 @@ export async function runVeniceLiveSmoke({
       recordRefs: review.recordRefs,
       localDecisionOnly: true
     })),
+    failureEvidenceRef: failureEvidenceRecord
+      ? makeRef('media-evidence', failureEvidenceRecord.recordRef, failureEvidenceRecord.evidence.schema)
+      : undefined,
     manifestRef: manifestRecord
       ? makeRef('media-local-run-manifest', manifestRecord.manifestRef, manifestRecord.manifest.schema)
       : undefined,
@@ -474,7 +565,7 @@ export async function runVeniceLiveSmoke({
   }, null, 2))
 
   if (providerResult.status !== 'succeeded') {
-    throw new Error(`Venice live smoke failed with HTTP ${response.status}; wrote local provider result to ${resultRef}`)
+    throw new Error(`Venice live smoke failed with HTTP ${httpStatus}; wrote local provider result to ${resultRef}`)
   }
 
   return {
@@ -484,9 +575,11 @@ export async function runVeniceLiveSmoke({
     generationRequest,
     providerInput,
     providerResult,
+    adapterRun: finalAdapterRun,
     generatedAssets,
     reviews,
     manifestRecord,
+    failureEvidenceRecord,
     outputPath: makeRef('local-file', resultRef, 'media.local_ref.v1')
   }
 }

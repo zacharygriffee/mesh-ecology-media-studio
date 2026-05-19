@@ -24,6 +24,7 @@ Read in this order:
 16. [Provider Runbook](20-provider-runbook.md)
 17. [Provider Adapter Contracts](21-provider-adapter-contracts.md)
 18. [Local Image Metadata](22-local-image-metadata.md)
+19. [Adapter Runner And Export Bundles](23-adapter-runner-and-export-bundles.md)
 
 The first executable path is:
 
@@ -56,6 +57,12 @@ npm run inspect:summary -- --project-dir examples/card-to-candidate --packet rec
 npm run inspect:index -- --project-dir examples/card-to-candidate
 ```
 
+Create a local Edge-handoff preview bundle with:
+
+```bash
+npm run export:inspection-bundle -- --project-dir examples/card-to-candidate
+```
+
 The optional Venice live smoke command is intentionally gated:
 
 ```bash
@@ -67,6 +74,12 @@ That command writes ignored local smoke artifacts under
 provider capability and failure fixtures are local-only and validate without
 calling the provider.
 
+Check committed fixture freshness with:
+
+```bash
+npm run fixture:inspection:check
+```
+
 Phase 2 hardened the local wedge with a local run manifest, artifact-kind
 registry, and modest malformed-record checks. Phase 3 defines the local project
 layout, safe local refs, placement classes, and asset lifecycle states. Phase 4
@@ -74,7 +87,8 @@ adds provider-neutral request/profile/capability/result records without calling
 provider APIs. Phase 5 adds provider shape and mapping fixtures without
 promoting provider payloads into Studio canon. Phase 6 adds a Venice dry-run
 adapter with fixture-only response normalization. Phase 7 adds an explicit
-Venice live smoke gate for controlled provider testing. The wedge remains
-local-only. It creates local records and does not claim mesh truth, distributed
-proof, byte materialization proof, provider truth, causal truth, publication
-authorization, or ratifier authority.
+Venice live smoke gate for controlled provider testing. Phase 8 adds adapter-run
+receipts, local failure evidence, image metadata inspection, fixture freshness,
+and local export bundles. The wedge remains local-only. It creates local records
+and does not claim mesh truth, distributed proof, byte materialization proof,
+provider truth, causal truth, publication authorization, or ratifier authority.

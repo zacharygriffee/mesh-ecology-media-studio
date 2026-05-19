@@ -1,4 +1,5 @@
-import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -12,7 +13,8 @@ const timestampPattern = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/g
 
 function parseArgs(argv) {
   const args = {
-    projectDir: 'examples/inspection-fixtures/card-to-candidate'
+    projectDir: 'examples/inspection-fixtures/card-to-candidate',
+    check: false
   }
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -22,6 +24,8 @@ function parseArgs(argv) {
     if (arg === '--project-dir') {
       args.projectDir = next
       i += 1
+    } else if (arg === '--check') {
+      args.check = true
     }
   }
 
@@ -51,6 +55,34 @@ export async function generateInspectionFixture({
   await normalizeFixture(root)
 
   console.log(`Generated deterministic inspection fixture: ${projectDir}`)
+}
+
+export async function checkInspectionFixture({
+  projectDir = 'examples/inspection-fixtures/card-to-candidate'
+} = {}) {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'media-studio-fixture-check-'))
+  const tempFixture = path.join(tempRoot, 'card-to-candidate')
+
+  await generateInspectionFixture({ projectDir: tempFixture })
+
+  const expectedRoot = path.resolve(projectDir)
+  const expectedFiles = (await listFiles(expectedRoot)).map((file) => path.relative(expectedRoot, file)).sort()
+  const actualFiles = (await listFiles(tempFixture)).map((file) => path.relative(tempFixture, file)).sort()
+
+  if (expectedFiles.join('\n') !== actualFiles.join('\n')) {
+    throw new Error('Inspection fixture file list is stale; run npm run fixture:inspection')
+  }
+
+  for (const relativePath of expectedFiles) {
+    const expected = await readFile(path.join(expectedRoot, relativePath), 'utf8')
+    const actual = await readFile(path.join(tempFixture, relativePath), 'utf8')
+    if (expected !== actual) {
+      throw new Error(`Inspection fixture is stale at ${relativePath}; run npm run fixture:inspection`)
+    }
+  }
+
+  await rm(tempRoot, { recursive: true, force: true })
+  console.log(`Inspection fixture is fresh: ${projectDir}`)
 }
 
 async function normalizeFixture(root) {
@@ -114,5 +146,10 @@ ratifier authority.
 }
 
 if (process.argv[1] === modulePath) {
-  await generateInspectionFixture(parseArgs(process.argv.slice(2)))
+  const args = parseArgs(process.argv.slice(2))
+  if (args.check) {
+    await checkInspectionFixture(args)
+  } else {
+    await generateInspectionFixture(args)
+  }
 }

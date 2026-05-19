@@ -20,7 +20,9 @@ const recordPaths = Object.freeze({
   workPacket: 'records/work-packets/venice-live-smoke-work-packet.local.json',
   generationRequest: 'records/work-packets/venice-live-smoke-generation-request.local.json',
   providerResult: 'records/provider-results/venice-live-smoke-provider-result.local.json',
+  adapterRun: 'records/provider-results/venice-live-smoke-adapter-run.local.json',
   assetDescriptor: 'records/assets/venice-live-smoke-asset-0.local.json',
+  imageMetadata: 'records/assets/venice-live-smoke-image-metadata-0.local.json',
   reviewEvidence: 'records/evidence/venice-live-smoke-0-evidence.local.json',
   readiness: 'records/readiness/venice-live-smoke-0-readiness.local.json',
   operatorDecision: 'records/decisions/venice-live-smoke-0-decision.local.json'
@@ -63,7 +65,10 @@ export async function inspectVeniceSmoke({
 
   for (const [name, relativePath] of Object.entries(recordPaths)) {
     assertSafeLocalPath(relativePath)
-    const rawRecord = await readRequiredJson(root, relativePath)
+    const rawRecord = name === 'imageMetadata'
+      ? await readOptionalJson(root, relativePath)
+      : await readRequiredJson(root, relativePath)
+    if (!rawRecord) continue
     records[name] = name === 'providerResult' ? rawRecord.providerResult : rawRecord
     validateRequiredRecord(records[name])
   }
@@ -83,7 +88,11 @@ export async function inspectVeniceSmoke({
       workPacket: localRecordRef('media-work-packet', recordPaths.workPacket, records.workPacket.schema),
       generationRequest: localRecordRef('media-generation-request', recordPaths.generationRequest, records.generationRequest.schema),
       providerResult: localRecordRef('media-provider-result', recordPaths.providerResult, records.providerResult.schema),
+      adapterRun: localRecordRef('media-provider-adapter-run', recordPaths.adapterRun, records.adapterRun.schema),
       assetDescriptor: localRecordRef('media-asset', recordPaths.assetDescriptor, records.assetDescriptor.schema),
+      ...(records.imageMetadata ? {
+        imageMetadata: localRecordRef('media-image-metadata', recordPaths.imageMetadata, records.imageMetadata.schema)
+      } : {}),
       reviewEvidence: localRecordRef('media-evidence', recordPaths.reviewEvidence, records.reviewEvidence.schema),
       readiness: localRecordRef('media-readiness', recordPaths.readiness, records.readiness.schema),
       operatorDecision: localRecordRef('media-operator-decision', recordPaths.operatorDecision, records.operatorDecision.schema)
@@ -93,13 +102,15 @@ export async function inspectVeniceSmoke({
       records.workPacket.schema,
       records.generationRequest.schema,
       records.providerResult.schema,
+      records.adapterRun.schema,
       records.assetDescriptor.schema,
+      records.imageMetadata?.schema,
       records.reviewEvidence.schema,
       records.readiness.schema,
       records.operatorDecision.schema,
       'media.byte_reference.preview.local.v1',
       'media.edge_inspection_packet.local.v1'
-    ],
+    ].filter(Boolean),
     generatedArtifactRefs: [
       {
         kind: 'media-generated-asset',
@@ -115,6 +126,9 @@ export async function inspectVeniceSmoke({
           size: records.assetDescriptor.size,
           contentType: records.assetDescriptor.contentType
         }),
+        imageMetadataRef: records.imageMetadata
+          ? localRecordRef('media-image-metadata', recordPaths.imageMetadata, records.imageMetadata.schema)
+          : undefined,
         localOnly: true
       }
     ],
@@ -152,6 +166,15 @@ async function readRequiredJson(root, relativePath) {
       throw new Error(`Missing Venice smoke inspection record: ${relativePath}`)
     }
 
+    throw error
+  }
+}
+
+async function readOptionalJson(root, relativePath) {
+  try {
+    return JSON.parse(await readFile(path.join(root, relativePath), 'utf8'))
+  } catch (error) {
+    if (error.code === 'ENOENT') return undefined
     throw error
   }
 }

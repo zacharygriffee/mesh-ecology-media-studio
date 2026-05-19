@@ -40,7 +40,9 @@ export const schemaFiles = {
   'media.byte_reference.preview.local.v1': 'schemas/media-byte-reference-preview-local.schema.json',
   'media.provider_adapter_contract.v1': 'schemas/media-provider-adapter-contract.schema.json',
   'media.provider_failure_taxonomy.v1': 'schemas/media-provider-failure-taxonomy.schema.json',
-  'media.image_metadata.local.v1': 'schemas/media-image-metadata-local.schema.json'
+  'media.image_metadata.local.v1': 'schemas/media-image-metadata-local.schema.json',
+  'media.provider_adapter_run.local.v1': 'schemas/media-provider-adapter-run-local.schema.json',
+  'media.edge_export_bundle.local.v1': 'schemas/media-edge-export-bundle-local.schema.json'
 }
 
 export const requiredFields = {
@@ -341,6 +343,51 @@ export const requiredFields = {
     'localTruthLabel',
     'truthStatus',
     'createdAt'
+  ],
+  'media.provider_adapter_run.local.v1': [
+    'schema',
+    'adapterRunId',
+    'adapterId',
+    'providerId',
+    'endpointId',
+    'requestRef',
+    'mode',
+    'providerInputSummary',
+    'providerResultRef',
+    'status',
+    'failureEvidenceRefs',
+    'startedAt',
+    'completedAt',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'providerTruth',
+    'localTruthLabel',
+    'truthStatus',
+    'createdAt'
+  ],
+  'media.edge_export_bundle.local.v1': [
+    'schema',
+    'bundleId',
+    'createdAt',
+    'mode',
+    'sourcePacketRef',
+    'bundleRootRef',
+    'includedRecordRefs',
+    'includedArtifactRefs',
+    'warnings',
+    'operatorGuidanceOnly',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'providerTruth',
+    'byteAvailabilityProof',
+    'materializationProof',
+    'publicationAuthorization',
+    'localTruthLabel',
+    'truthStatus'
   ]
 }
 
@@ -367,7 +414,9 @@ const idFields = {
   [artifactKinds.mediaByteReferencePreviewLocal]: 'byteRefPreviewId',
   [artifactKinds.mediaProviderAdapterContract]: 'adapterId',
   [artifactKinds.mediaProviderFailureTaxonomy]: 'taxonomyId',
-  [artifactKinds.mediaImageMetadataLocal]: 'metadataId'
+  [artifactKinds.mediaImageMetadataLocal]: 'metadataId',
+  [artifactKinds.mediaProviderAdapterRunLocal]: 'adapterRunId',
+  [artifactKinds.mediaEdgeExportBundleLocal]: 'bundleId'
 }
 
 const domainProjectSchemas = new Set([
@@ -391,7 +440,9 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaLocalRunManifest,
   artifactKinds.mediaEdgeInspectionPacketLocal,
   artifactKinds.mediaByteReferencePreviewLocal,
-  artifactKinds.mediaImageMetadataLocal
+  artifactKinds.mediaImageMetadataLocal,
+  artifactKinds.mediaProviderAdapterRunLocal,
+  artifactKinds.mediaEdgeExportBundleLocal
 ])
 
 const readinessStates = new Set(['draft', 'blocked', 'ready', 'caution', 'complete'])
@@ -629,6 +680,28 @@ export function validateRecordShape(record, schemaId = record.schema) {
     }
   }
 
+  if (schemaId === artifactKinds.mediaProviderAdapterRunLocal) {
+    validateRef(record.requestRef, `${schemaId}.requestRef`)
+    validateRef(record.providerResultRef, `${schemaId}.providerResultRef`)
+    validateLocalFalseFlags(record, schemaId)
+
+    if (!['dry-run', 'live-smoke'].includes(record.mode)) {
+      throw new Error(`Record ${schemaId} has invalid mode: ${record.mode}`)
+    }
+
+    if (record.providerTruth !== false) {
+      throw new Error(`Record ${schemaId} must set providerTruth=false`)
+    }
+  }
+
+  if (schemaId === artifactKinds.mediaEdgeExportBundleLocal) {
+    validateInspectionRef(record.sourcePacketRef, `${schemaId}.sourcePacketRef`)
+    validateInspectionRef(record.bundleRootRef, `${schemaId}.bundleRootRef`)
+    record.includedRecordRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.includedRecordRefs[${index}]`))
+    record.includedArtifactRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.includedArtifactRefs[${index}]`))
+    validateLocalFalseFlags(record, schemaId)
+  }
+
   if (localGeneratedSchemas.has(schemaId)) {
     validateLocalDoctrineFlags(record, schemaId)
   }
@@ -688,7 +761,7 @@ function validateLocalDoctrineFlags(record, schemaId) {
     }
   }
 
-  if (schemaId === artifactKinds.mediaEdgeInspectionPacketLocal) {
+  if (schemaId === artifactKinds.mediaEdgeInspectionPacketLocal || schemaId === artifactKinds.mediaEdgeExportBundleLocal) {
     const requiredFalseFlags = [
       'meshTruth',
       'distributedProof',

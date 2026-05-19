@@ -8,6 +8,7 @@ import { runFirstWedge } from '../src/local/run-first-wedge.js'
 import { promoteCandidate } from '../src/local/promote-candidate.js'
 import { readLocalImageMetadata } from '../src/assets/image-metadata.js'
 import { validateRequiredRecord } from '../src/contracts/schemas.js'
+import { executeProviderAdapter } from '../src/providers/adapter-runner.js'
 import {
   createGenerationRequestFromCard,
   createProviderCapability,
@@ -45,10 +46,14 @@ import {
   runVeniceLiveSmoke
 } from '../src/providers/venice-live-smoke.js'
 import { inspectLocalRun } from '../src/seams/inspect-local-run.js'
+import { exportInspectionBundle } from '../src/seams/export-inspection-bundle.js'
 import { indexInspectionRecords } from '../src/seams/index-inspection-records.js'
 import { inspectProviderFailure } from '../src/seams/inspect-provider-failure.js'
 import { inspectVeniceSmoke } from '../src/seams/inspect-venice-smoke.js'
 import { summarizeInspectionPacket } from '../src/seams/summarize-inspection-packet.js'
+import { checkInspectionFixture } from '../src/local/generate-inspection-fixture.js'
+
+const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 
 async function createFixtureProject() {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-wedge-'))
@@ -224,6 +229,46 @@ test('provider result normalization creates non-truth-bearing provider result', 
   assert.equal(validateRequiredRecord(result), true)
 })
 
+test('provider adapter runner wraps replaceable providers without provider truth', async () => {
+  const generationRequest = {
+    schema: 'media.generation_request.v1',
+    requestId: 'request-runner-test',
+    intentFamily: 'image-generation'
+  }
+  const result = await executeProviderAdapter({
+    generationRequest,
+    mode: 'dry-run',
+    adapter: {
+      adapterId: 'local-test-adapter',
+      providerId: 'local-test-provider',
+      endpointId: 'local.test.generate',
+      supportedIntentFamilies: ['image-generation'],
+      mapInput: (request) => ({ promptPresent: Boolean(request.requestId) }),
+      async execute(providerInput) {
+        return { providerInput, providerJobId: 'job-test' }
+      },
+      normalizeResult({ generationRequest: request, rawProviderOutput }) {
+        return normalizeProviderResult({
+          generationRequest: request,
+          providerId: 'local-test-provider',
+          providerJobRef: {
+            kind: 'local-test-job',
+            id: rawProviderOutput.providerJobId,
+            localOnly: true
+          },
+          status: 'succeeded',
+          outputRefs: []
+        })
+      }
+    }
+  })
+
+  assert.equal(result.adapterRun.schema, 'media.provider_adapter_run.local.v1')
+  assert.equal(result.adapterRun.providerTruth, false)
+  assert.equal(result.adapterRun.mode, 'dry-run')
+  assert.equal(validateRequiredRecord(result.adapterRun), true)
+})
+
 test('provider shape registry validates endpoint shape and provider shape', () => {
   const endpoint = createProviderEndpointShape({
     endpointId: 'venice.image.generate',
@@ -341,7 +386,10 @@ test('Venice dry-run adapter maps Studio request to provider payload without net
   assert.equal(dryRun.providerResult.schema, 'media.provider_result.v1')
   assert.equal(dryRun.providerResult.providerId, 'venice')
   assert.equal(dryRun.providerResult.providerTruth, false)
+  assert.equal(dryRun.adapterRun.schema, 'media.provider_adapter_run.local.v1')
+  assert.equal(dryRun.adapterRun.providerId, 'venice')
   assert.equal(validateRequiredRecord(dryRun.providerResult), true)
+  assert.equal(validateRequiredRecord(dryRun.adapterRun), true)
 })
 
 test('Venice live smoke gate refuses without explicit opt-in', () => {
@@ -432,7 +480,7 @@ test('Venice live smoke command path can be tested without network by injected f
         async json() {
           return {
             id: 'venice-live-test-response',
-            images: ['base64-image-placeholder'],
+            images: [onePixelPngBase64],
             request: { format: 'png' }
           }
         }
@@ -443,9 +491,14 @@ test('Venice live smoke command path can be tested without network by injected f
   assert.equal(fetchCalled, true)
   assert.equal(result.live, true)
   assert.equal(result.providerResult.providerTruth, false)
+  assert.equal(result.adapterRun.schema, 'media.provider_adapter_run.local.v1')
+  assert.equal(result.adapterRun.providerTruth, false)
   assert.equal(result.generatedAssets.assets.length, 1)
   assert.equal(result.generatedAssets.assets[0].localRef.path, 'media/generated/provider-smoke/venice-live-smoke-0.png')
+  assert.equal(result.generatedAssets.assets[0].imageMetadata.metadata.schema, 'media.image_metadata.local.v1')
+  assert.equal(result.generatedAssets.assets[0].imageMetadata.metadata.width, 1)
   assert.equal(validateRequiredRecord(result.generatedAssets.assets[0].assetDescriptor), true)
+  assert.equal(validateRequiredRecord(result.generatedAssets.assets[0].imageMetadata.metadata), true)
   assert.equal(result.reviews.length, 1)
   assert.equal(result.reviews[0].operatorDecision.decisionType, 'accept')
   assert.equal(validateRequiredRecord(result.reviews[0].operatorDecision), true)
@@ -457,8 +510,9 @@ test('Venice live smoke command path can be tested without network by injected f
   )
   assert.equal(written.providerInput.apiKeyPresent, true)
   assert.equal(JSON.stringify(written).includes('test-key'), false)
-  assert.equal(written.generatedRecordRefs.length, 2)
+  assert.equal(written.generatedRecordRefs.length, 3)
   assert.equal(written.generatedAssets[0].localRef.path, 'media/generated/provider-smoke/venice-live-smoke-0.png')
+  assert.equal(written.generatedAssets[0].imageMetadataRef.schema, 'media.image_metadata.local.v1')
   assert.equal(written.reviewRecords.length, 1)
   assert.equal(written.reviewRecords[0].localDecisionOnly, true)
   assert.equal(written.manifestRef.id, 'records/manifests/venice-live-smoke-manifest.local.json')
@@ -475,10 +529,15 @@ test('Venice live smoke command path can be tested without network by injected f
   const assetRecord = JSON.parse(
     await readFile(path.join(dir, 'records', 'assets', 'venice-live-smoke-asset-0.local.json'), 'utf8')
   )
+  const imageMetadata = JSON.parse(
+    await readFile(path.join(dir, 'records', 'assets', 'venice-live-smoke-image-metadata-0.local.json'), 'utf8')
+  )
   assert.equal(assetRecord.schema, 'media.asset.descriptor.v1')
   assert.equal(assetRecord.source.apiCalled, true)
   assert.equal(assetRecord.localRef.placementClass, 'media-generated')
   assert.equal(assetRecord.meshTruth, false)
+  assert.equal(imageMetadata.width, 1)
+  assert.equal(validateRequiredRecord(imageMetadata), true)
 
   const evidenceRecord = JSON.parse(
     await readFile(path.join(dir, 'records', 'evidence', 'venice-live-smoke-0-evidence.local.json'), 'utf8')
@@ -499,6 +558,7 @@ test('Venice live smoke command path can be tested without network by injected f
   )
   assert.equal(validateRequiredRecord(manifestRecord), true)
   assert.equal(manifestRecord.candidateInputRef.path, 'media/generated/provider-smoke/venice-live-smoke-0.png')
+  assert.ok(manifestRecord.artifactKinds.includes('media.image_metadata.local.v1'))
   assert.ok(manifestRecord.warnings.some((warning) => warning.includes('live Venice smoke call')))
 })
 
@@ -517,7 +577,7 @@ test('Venice smoke inspection packet exports local refs without provider calls',
       async json() {
         return {
           id: 'venice-live-test-response',
-          images: ['base64-image-placeholder'],
+          images: [onePixelPngBase64],
           request: { format: 'png' }
         }
       }
@@ -531,6 +591,8 @@ test('Venice smoke inspection packet exports local refs without provider calls',
   assert.equal(result.packet.operatorGuidanceOnly, true)
   assert.equal(result.packet.meshTruth, false)
   assert.equal(result.packet.generatedArtifactRefs[0].path, 'media/generated/provider-smoke/venice-live-smoke-0.png')
+  assert.equal(result.packet.recordRefs.imageMetadata.schema, 'media.image_metadata.local.v1')
+  assert.equal(result.packet.generatedArtifactRefs[0].imageMetadataRef.path, 'records/assets/venice-live-smoke-image-metadata-0.local.json')
   assert.equal(validateRequiredRecord(result.packet), true)
 
   const written = JSON.parse(
@@ -563,6 +625,30 @@ test('generic local-run inspection packet exports first-wedge records', async ()
   )
   assert.equal(written.schema, 'media.edge_inspection_packet.local.v1')
   assert.equal(written.materializationProof, false)
+})
+
+test('local inspection bundle copies packet records and artifacts without proof claims', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({ projectDir: dir })
+  await inspectLocalRun({ projectDir: dir })
+
+  const result = await exportInspectionBundle({
+    projectDir: dir,
+    packet: 'records/exports/local-run-edge-inspection-packet.local.json',
+    outputDir: 'records/exports/bundles/test-bundle'
+  })
+
+  assert.equal(result.manifest.schema, 'media.edge_export_bundle.local.v1')
+  assert.equal(result.manifest.meshTruth, false)
+  assert.equal(result.manifest.materializationProof, false)
+  assert.ok(result.manifest.includedRecordRefs.some((ref) => ref.sourcePath === 'records/assets/media-asset-descriptor.local.json'))
+  assert.ok(result.manifest.includedArtifactRefs.some((ref) => ref.sourcePath === 'media/accepted/candidate.txt'))
+  assert.equal(validateRequiredRecord(result.manifest), true)
+
+  const copiedPacket = JSON.parse(
+    await readFile(path.join(dir, 'records', 'exports', 'bundles', 'test-bundle', 'inspection-packet.local.json'), 'utf8')
+  )
+  assert.equal(copiedPacket.schema, 'media.edge_inspection_packet.local.v1')
 })
 
 test('inspection packet summary and index commands report local records', async () => {
@@ -613,7 +699,7 @@ test('local image metadata probes PNG dimensions without byte proof claims', asy
   await mkdir(path.join(dir, 'media', 'generated'), { recursive: true })
   await writeFile(
     path.join(dir, 'media', 'generated', 'pixel.png'),
-    Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64')
+    Buffer.from(onePixelPngBase64, 'base64')
   )
   const assetDescriptor = {
     schema: 'media.asset.descriptor.v1',
@@ -643,6 +729,12 @@ test('committed local-run inspection fixture validates', async () => {
   assert.equal(packet.generatedArtifactRefs[0].byteRefPreview.schema, 'media.byte_reference.preview.local.v1')
   assert.equal(packet.generatedArtifactRefs[0].byteRefPreview.materializationProof, false)
   assert.equal(validateRequiredRecord(packet), true)
+})
+
+test('committed local-run inspection fixture freshness check passes', async () => {
+  await checkInspectionFixture({
+    projectDir: 'examples/inspection-fixtures/card-to-candidate'
+  })
 })
 
 test('Venice smoke inspection packet fails on missing records', async () => {
@@ -704,6 +796,7 @@ test('provider failure inspection packet exports failed provider posture', async
   assert.equal(result.packet.schema, 'media.edge_inspection_packet.local.v1')
   assert.equal(result.packet.generatedArtifactRefs.length, 0)
   assert.equal(result.packet.recordRefs.providerResult.path, 'records/provider-results/venice-live-smoke-provider-result.local.json')
+  assert.equal(result.packet.recordRefs.failureEvidence.path, 'records/evidence/venice-live-smoke-provider-failure-evidence.local.json')
   assert.equal(validateRequiredRecord(result.packet), true)
 
   const written = JSON.parse(
@@ -711,6 +804,7 @@ test('provider failure inspection packet exports failed provider posture', async
   )
   assert.equal(written.providerTruth, false)
   assert.equal(written.generatedArtifactRefs.length, 0)
+  assert.equal(written.recordRefs.adapterRun.schema, 'media.provider_adapter_run.local.v1')
 })
 
 test('Venice live smoke normalizes failure fixtures without claiming provider truth', async () => {
@@ -764,9 +858,24 @@ test('Venice live smoke persists failed provider result without creating assets'
   )
   assert.equal(written.providerResult.status, 'failed')
   assert.equal(written.providerResult.providerTruth, false)
+  assert.equal(written.providerResult.failure.failureKind, 'auth-failure')
   assert.deepEqual(written.generatedAssets, [])
   assert.deepEqual(written.reviewRecords, [])
+  assert.equal(written.failureEvidenceRef.schema, 'media.evidence.v1')
   assert.equal(written.manifestRef, undefined)
+
+  const adapterRun = JSON.parse(
+    await readFile(path.join(dir, 'records', 'provider-results', 'venice-live-smoke-adapter-run.local.json'), 'utf8')
+  )
+  const failureEvidence = JSON.parse(
+    await readFile(path.join(dir, 'records', 'evidence', 'venice-live-smoke-provider-failure-evidence.local.json'), 'utf8')
+  )
+  assert.equal(adapterRun.failureEvidenceRefs.length, 1)
+  assert.equal(adapterRun.providerTruth, false)
+  assert.equal(failureEvidence.evidenceKind, 'provider-failure-classification')
+  assert.equal(failureEvidence.source.classification.failureKind, 'auth-failure')
+  assert.equal(validateRequiredRecord(adapterRun), true)
+  assert.equal(validateRequiredRecord(failureEvidence), true)
 })
 
 test('Venice live smoke rejects malformed image payload fixtures', async () => {

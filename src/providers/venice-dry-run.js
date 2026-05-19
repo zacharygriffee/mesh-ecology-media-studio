@@ -1,8 +1,11 @@
 import { readFile } from 'node:fs/promises'
 
+import { executeProviderAdapter } from './adapter-runner.js'
 import { normalizeProviderResult } from './provider-neutral.js'
 
 const defaultModel = 'venice-sd35'
+const veniceDryRunAdapterId = 'venice-image-dry-run-adapter'
+const veniceEndpointId = 'venice.image.generate'
 
 export function mapGenerationRequestToVeniceImageRequest(generationRequest) {
   if (generationRequest.schema !== 'media.generation_request.v1') {
@@ -60,15 +63,31 @@ export function normalizeVeniceImageFixtureResult({ generationRequest, fixture }
 }
 
 export async function runVeniceDryRun({ generationRequest, fixturePath }) {
-  const providerInput = mapGenerationRequestToVeniceImageRequest(generationRequest)
-  const fixture = JSON.parse(await readFile(fixturePath, 'utf8'))
-  const providerResult = normalizeVeniceImageFixtureResult({ generationRequest, fixture })
+  return executeProviderAdapter({
+    adapter: createVeniceDryRunAdapter({ fixturePath }),
+    generationRequest,
+    mode: 'dry-run'
+  }).then((result) => ({
+    ...result,
+    dryRun: true
+  }))
+}
 
+export function createVeniceDryRunAdapter({ fixturePath }) {
   return {
+    adapterId: veniceDryRunAdapterId,
     providerId: 'venice',
-    endpointId: 'venice.image.generate',
-    dryRun: true,
-    providerInput,
-    providerResult
+    endpointId: veniceEndpointId,
+    supportedIntentFamilies: ['image-generation'],
+    mapInput: mapGenerationRequestToVeniceImageRequest,
+    async execute() {
+      return JSON.parse(await readFile(fixturePath, 'utf8'))
+    },
+    normalizeResult({ generationRequest, rawProviderOutput }) {
+      return normalizeVeniceImageFixtureResult({
+        generationRequest,
+        fixture: rawProviderOutput
+      })
+    }
   }
 }

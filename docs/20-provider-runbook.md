@@ -34,7 +34,12 @@ The smoke gate constrains the request to:
 
 Successful smoke runs write local bytes, asset descriptors, review evidence,
 readiness, local operator decision, and a manifest under ignored
-`examples/venice-smoke/`.
+`examples/venice-smoke/`. They also write a local adapter-run receipt and image
+metadata when PNG dimensions can be read.
+
+Failed smoke runs write the normalized provider result, adapter-run receipt,
+and local provider-failure evidence. They do not create generated assets or
+review decisions.
 
 ## Inspect Existing Runs
 
@@ -78,6 +83,13 @@ Regenerate the committed inspection fixture deterministically:
 
 ```bash
 npm run fixture:inspection
+npm run fixture:inspection:check
+```
+
+Create a local export bundle from an inspection packet:
+
+```bash
+npm run export:inspection-bundle -- --project-dir examples/card-to-candidate
 ```
 
 Inspection export creates local `media.edge_inspection_packet.local.v1` packets.

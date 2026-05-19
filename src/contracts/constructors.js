@@ -339,5 +339,8 @@ export function idForRecord(record) {
   if (record.capabilityId) return record.capabilityId
   if (record.resultId) return record.resultId
   if (record.byteRefPreviewId) return record.byteRefPreviewId
+  if (record.metadataId) return record.metadataId
+  if (record.adapterRunId) return record.adapterRunId
+  if (record.bundleId) return record.bundleId
   return undefined
 }

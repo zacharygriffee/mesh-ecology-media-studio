@@ -164,6 +164,12 @@ npm run inspect:summary -- --project-dir examples/card-to-candidate --packet rec
 npm run inspect:index -- --project-dir examples/card-to-candidate
 ```
 
+Create a local Edge-handoff preview bundle from an inspection packet:
+
+```bash
+npm run export:inspection-bundle -- --project-dir examples/card-to-candidate
+```
+
 Promote an existing local candidate without rerunning provider work:
 
 ```bash
@@ -174,6 +180,7 @@ Regenerate the committed inspection fixture:
 
 ```bash
 npm run fixture:inspection
+npm run fixture:inspection:check
 ```
 
 Phase 2 inspection hardening added the manifest, a small artifact-kind
@@ -184,7 +191,9 @@ normalized provider result records without calling provider APIs. Phase 5 adds
 a provider shape registry for endpoint quirks and mapping fixtures without
 making provider payloads Studio canon. Phase 6 adds a Venice dry-run adapter
 that maps fixtures only and performs no network calls. Phase 7 adds the Venice
-live smoke gate without making provider APIs part of the default wedge.
+live smoke gate without making provider APIs part of the default wedge. Phase 8
+adds the provider adapter runner receipt, provider failure evidence, image
+metadata inspection, fixture freshness checks, and local export bundles.
 
 ## Start Here
 
@@ -204,3 +213,4 @@ live smoke gate without making provider APIs part of the default wedge.
 - [docs/20-provider-runbook.md](docs/20-provider-runbook.md)
 - [docs/21-provider-adapter-contracts.md](docs/21-provider-adapter-contracts.md)
 - [docs/22-local-image-metadata.md](docs/22-local-image-metadata.md)
+- [docs/23-adapter-runner-and-export-bundles.md](docs/23-adapter-runner-and-export-bundles.md)

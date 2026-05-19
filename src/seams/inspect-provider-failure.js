@@ -14,7 +14,9 @@ const defaultOutput = 'records/exports/provider-failure-edge-inspection-packet.l
 const defaultRecordPaths = Object.freeze({
   workPacket: 'records/work-packets/venice-live-smoke-work-packet.local.json',
   generationRequest: 'records/work-packets/venice-live-smoke-generation-request.local.json',
-  providerResult: 'records/provider-results/venice-live-smoke-provider-result.local.json'
+  providerResult: 'records/provider-results/venice-live-smoke-provider-result.local.json',
+  adapterRun: 'records/provider-results/venice-live-smoke-adapter-run.local.json',
+  failureEvidence: 'records/evidence/venice-live-smoke-provider-failure-evidence.local.json'
 })
 
 function parseArgs(argv) {
@@ -55,10 +57,14 @@ export async function inspectProviderFailure({
   const providerResult = rawProviderResult.providerResult ?? rawProviderResult
   const workPacket = await readRequiredJson(root, recordPaths.workPacket)
   const generationRequest = await readRequiredJson(root, recordPaths.generationRequest)
+  const adapterRun = await readRequiredJson(root, recordPaths.adapterRun)
+  const failureEvidence = await readRequiredJson(root, recordPaths.failureEvidence)
 
   validateRequiredRecord(workPacket)
   validateRequiredRecord(generationRequest)
   validateRequiredRecord(providerResult, 'media.provider_result.v1')
+  validateRequiredRecord(adapterRun)
+  validateRequiredRecord(failureEvidence)
 
   if (providerResult.status !== 'failed') {
     throw new Error(`Provider failure inspection requires failed provider result, received ${providerResult.status}`)
@@ -70,12 +76,16 @@ export async function inspectProviderFailure({
     recordRefs: {
       workPacket: localRecordRef('media-work-packet', recordPaths.workPacket, workPacket.schema),
       generationRequest: localRecordRef('media-generation-request', recordPaths.generationRequest, generationRequest.schema),
-      providerResult: localRecordRef('media-provider-result', recordPaths.providerResult, providerResult.schema)
+      providerResult: localRecordRef('media-provider-result', recordPaths.providerResult, providerResult.schema),
+      adapterRun: localRecordRef('media-provider-adapter-run', recordPaths.adapterRun, adapterRun.schema),
+      failureEvidence: localRecordRef('media-evidence', recordPaths.failureEvidence, failureEvidence.schema)
     },
     artifactKinds: [
       workPacket.schema,
       generationRequest.schema,
       providerResult.schema,
+      adapterRun.schema,
+      failureEvidence.schema,
       'media.edge_inspection_packet.local.v1'
     ],
     generatedArtifactRefs: [],

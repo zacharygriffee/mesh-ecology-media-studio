@@ -145,6 +145,7 @@ export function normalizeProviderResult({
   outputRefs,
   costEstimate,
   timing,
+  failure,
   rawProviderRef,
   createdAt = nowIso()
 }) {
@@ -182,6 +183,7 @@ export function normalizeProviderResult({
 
   if (costEstimate !== undefined) result.costEstimate = costEstimate
   if (timing !== undefined) result.timing = timing
+  if (failure !== undefined) result.failure = failure
   if (rawProviderRef !== undefined) result.rawProviderRef = rawProviderRef
 
   return result

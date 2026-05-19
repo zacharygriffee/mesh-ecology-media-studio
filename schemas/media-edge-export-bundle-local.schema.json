@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-edge-export-bundle-local.schema.json",
+  "title": "media.edge_export_bundle.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "bundleId",
+    "createdAt",
+    "mode",
+    "sourcePacketRef",
+    "bundleRootRef",
+    "includedRecordRefs",
+    "includedArtifactRefs",
+    "warnings",
+    "operatorGuidanceOnly",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "providerTruth",
+    "byteAvailabilityProof",
+    "materializationProof",
+    "publicationAuthorization",
+    "localTruthLabel",
+    "truthStatus"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.edge_export_bundle.local.v1"
+    },
+    "bundleId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "sourcePacketRef": {
+      "type": "object"
+    },
+    "bundleRootRef": {
+      "type": "object"
+    },
+    "includedRecordRefs": {
+      "type": "array"
+    },
+    "includedArtifactRefs": {
+      "type": "array"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "operatorGuidanceOnly": {
+      "const": true
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    },
+    "providerTruth": {
+      "const": false
+    },
+    "byteAvailabilityProof": {
+      "const": false
+    },
+    "materializationProof": {
+      "const": false
+    },
+    "publicationAuthorization": {
+      "const": false
+    }
+  }
+}

@@ -10,6 +10,10 @@ Phase 4 defines provider-neutral helpers in `provider-neutral.js`. Provider-
 specific adapters should map into those shapes before Studio records ingest,
 evidence, review, or decisions.
 
+`adapter-runner.js` defines the local runner interface. It creates
+`media.provider_adapter_run.local.v1` receipts that identify the adapter and
+normalized result without claiming provider truth.
+
 Phase 5 defines provider shape registry helpers in `provider-shapes.js`. These
 describe provider endpoint shapes and mappings without calling provider APIs or
 making provider payloads Studio canon.
