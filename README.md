@@ -132,7 +132,8 @@ layout, safe local refs, placement classes, and asset lifecycle states. Phase 4
 adds provider-neutral generation request, provider profile/capability, and
 normalized provider result records without calling provider APIs. Phase 5 adds
 a provider shape registry for endpoint quirks and mapping fixtures without
-making provider payloads Studio canon.
+making provider payloads Studio canon. Phase 6 adds a Venice dry-run adapter
+that maps fixtures only and performs no network calls.
 
 ## Start Here
 
@@ -145,3 +146,4 @@ making provider payloads Studio canon.
 - [docs/13-provider-neutral-job-contract.md](docs/13-provider-neutral-job-contract.md)
 - [docs/14-provider-adapter-boundary.md](docs/14-provider-adapter-boundary.md)
 - [docs/15-provider-shape-registry.md](docs/15-provider-shape-registry.md)
+- [docs/16-venice-dry-run-adapter.md](docs/16-venice-dry-run-adapter.md)

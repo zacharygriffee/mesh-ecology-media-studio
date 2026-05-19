@@ -17,6 +17,7 @@ Read in this order:
 9. [Provider-Neutral Job Contract](13-provider-neutral-job-contract.md)
 10. [Provider Adapter Boundary](14-provider-adapter-boundary.md)
 11. [Provider Shape Registry](15-provider-shape-registry.md)
+12. [Venice Dry-Run Adapter](16-venice-dry-run-adapter.md)
 
 The first executable path is:
 
@@ -35,7 +36,8 @@ registry, and modest malformed-record checks. Phase 3 defines the local project
 layout, safe local refs, placement classes, and asset lifecycle states. Phase 4
 adds provider-neutral request/profile/capability/result records without calling
 provider APIs. Phase 5 adds provider shape and mapping fixtures without
-promoting provider payloads into Studio canon. The wedge remains local-only. It
-creates local records and does not claim mesh truth, distributed proof, byte
+promoting provider payloads into Studio canon. Phase 6 adds a Venice dry-run
+adapter with fixture-only response normalization. The wedge remains local-only.
+It creates local records and does not claim mesh truth, distributed proof, byte
 materialization proof, provider truth, causal truth, publication authorization,
 or ratifier authority.

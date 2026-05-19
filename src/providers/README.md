@@ -13,3 +13,7 @@ evidence, review, or decisions.
 Phase 5 defines provider shape registry helpers in `provider-shapes.js`. These
 describe provider endpoint shapes and mappings without calling provider APIs or
 making provider payloads Studio canon.
+
+`venice-dry-run.js` maps Studio generation requests to Venice-shaped image
+payloads and maps fixture responses back into `media.provider_result.v1`. It
+does not make network calls.

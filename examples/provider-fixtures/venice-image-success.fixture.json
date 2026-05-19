@@ -1,0 +1,15 @@
+{
+  "id": "venice-fixture-image-001",
+  "status": "succeeded",
+  "images": [
+    {
+      "id": "venice-fixture-image-001-output-0",
+      "outputDelivery": "inline-base64",
+      "contentType": "image/png"
+    }
+  ],
+  "timing": {
+    "providerElapsedMs": 1200,
+    "fixtureOnly": true
+  }
+}

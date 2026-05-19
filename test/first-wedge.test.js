@@ -28,6 +28,10 @@ import {
   createProviderMapping,
   createProviderShape
 } from '../src/providers/provider-shapes.js'
+import {
+  mapGenerationRequestToVeniceImageRequest,
+  runVeniceDryRun
+} from '../src/providers/venice-dry-run.js'
 
 async function createFixtureProject() {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-wedge-'))
@@ -270,13 +274,54 @@ test('provider mapping validates Studio/provider field mapping without provider 
 
 test('provider shape fixtures validate locally', async () => {
   for (const fixturePath of [
-    'examples/provider-shapes/openai-sora-video-shape.json',
+    'examples/provider-shapes/openai-image-shape.json',
     'examples/provider-shapes/venice-image-shape.json',
     'examples/provider-shapes/venice-image-mapping.json'
   ]) {
     const fixture = JSON.parse(await readFile(fixturePath, 'utf8'))
     assert.equal(validateRequiredRecord(fixture), true)
   }
+})
+
+test('Venice dry-run adapter maps Studio request to provider payload without network', async () => {
+  const card = {
+    schema: 'media.card.v1',
+    cardId: 'card-venice-test',
+    projectId: 'project-test',
+    kind: 'image',
+    prompt: 'test prompt',
+    negativePrompt: 'none',
+    referenceAssetRefs: [],
+    target: {
+      width: 512,
+      height: 512,
+      contentType: 'image/png'
+    },
+    providerHints: {
+      model: 'venice-sd35',
+      seed: 123
+    },
+    acceptanceCriteria: [],
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }
+  const generationRequest = createGenerationRequestFromCard({ card })
+  const providerInput = mapGenerationRequestToVeniceImageRequest(generationRequest)
+
+  assert.equal(providerInput.model, 'venice-sd35')
+  assert.equal(providerInput.prompt, 'test prompt')
+  assert.equal(providerInput.width, 512)
+  assert.equal(providerInput.dryRun, true)
+
+  const dryRun = await runVeniceDryRun({
+    generationRequest,
+    fixturePath: 'examples/provider-fixtures/venice-image-success.fixture.json'
+  })
+
+  assert.equal(dryRun.dryRun, true)
+  assert.equal(dryRun.providerResult.schema, 'media.provider_result.v1')
+  assert.equal(dryRun.providerResult.providerId, 'venice')
+  assert.equal(dryRun.providerResult.providerTruth, false)
+  assert.equal(validateRequiredRecord(dryRun.providerResult), true)
 })
 
 test('local refs accept safe project-relative paths', () => {

@@ -6,38 +6,38 @@
   "endpoints": [
     {
       "schema": "media.provider_endpoint_shape.v1",
-      "endpointId": "openai.sora.video.create",
+      "endpointId": "openai.image.generate",
       "providerId": "openai",
-      "intentFamily": "video-generation",
-      "operationKind": "generate-video",
+      "intentFamily": "image-generation",
+      "operationKind": "generate-image",
       "requestShape": {
-        "style": "multipart-or-json-provider-request",
+        "style": "provider-json-request",
         "fields": [
           "model",
           "prompt",
           "size",
-          "seconds",
-          "input_reference"
+          "quality",
+          "background",
+          "output_format"
         ]
       },
       "responseShape": {
-        "style": "provider-job",
+        "style": "provider-image-response",
         "fields": [
-          "id",
-          "status",
-          "progress",
-          "model",
-          "size",
-          "seconds"
+          "created",
+          "data",
+          "b64_json",
+          "url",
+          "revised_prompt"
         ]
       },
-      "asyncPattern": "async-job-poll",
-      "outputDelivery": "download-endpoint",
+      "asyncPattern": "synchronous",
+      "outputDelivery": "inline-base64",
       "knownFailureModes": [
         "policy_rejected",
         "provider_failed",
-        "timeout",
-        "temporary_download_expired"
+        "rate_limited",
+        "organization_verification_required"
       ],
       "localOnly": true,
       "meshTruth": false,
