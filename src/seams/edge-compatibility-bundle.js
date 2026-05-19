@@ -30,6 +30,12 @@ const sourceRecordPaths = Object.freeze({
 const optionalSourceRecordPaths = Object.freeze({
   approvalProposal: 'records/approvals/media-approval-proposal.local.json'
 })
+const optionalSourceRoots = Object.freeze([
+  'records/bytes'
+])
+const optionalSourceSchemas = new Set([
+  artifactKinds.mediaByteDescriptorProposalLocal
+])
 const productionSourceSchemas = new Set([
   artifactKinds.mediaProductionUnit,
   artifactKinds.mediaReferencePrimitive,
@@ -199,6 +205,10 @@ async function readSourceRecords(root) {
 
   for (const source of await readProductionSources(root)) {
     sources[`production:${source.relativePath}`] = source
+  }
+
+  for (const source of await readOptionalSourceRecords(root)) {
+    sources[`optional:${source.relativePath}`] = source
   }
 
   for (const required of ['inspectionPacket', 'controlSurfaceProjection']) {
@@ -494,7 +504,8 @@ function kindForSchema(schema) {
     [artifactKinds.mediaContinuityBand]: 'media-continuity-band',
     [artifactKinds.mediaRenderStrategy]: 'media-render-strategy',
     [artifactKinds.mediaProductionDescriptorLocal]: 'media-production-descriptor',
-    [artifactKinds.mediaApprovalProposalLocal]: 'media-approval-proposal'
+    [artifactKinds.mediaApprovalProposalLocal]: 'media-approval-proposal',
+    [artifactKinds.mediaByteDescriptorProposalLocal]: 'media-byte-descriptor-proposal'
   }
 
   return schemaKinds[schema] ?? schema
@@ -512,6 +523,7 @@ function idForRecord(record) {
     record.strategyId ??
     record.descriptorId ??
     record.proposalId ??
+    record.byteDescriptorProposalId ??
     record.schema
 }
 
@@ -523,6 +535,24 @@ async function readProductionSources(root) {
     const relativePath = path.relative(root, file).split(path.sep).join('/')
     const record = JSON.parse(await readFile(file, 'utf8'))
     if (!productionSourceSchemas.has(record.schema)) continue
+    validateRequiredRecord(record)
+    sources.push({ record, relativePath })
+  }
+
+  return sources
+}
+
+async function readOptionalSourceRecords(root) {
+  const files = []
+  for (const relativeRoot of optionalSourceRoots) {
+    files.push(...await listJsonFiles(path.join(root, relativeRoot)))
+  }
+
+  const sources = []
+  for (const file of files) {
+    const relativePath = path.relative(root, file).split(path.sep).join('/')
+    const record = JSON.parse(await readFile(file, 'utf8'))
+    if (!optionalSourceSchemas.has(record.schema)) continue
     validateRequiredRecord(record)
     sources.push({ record, relativePath })
   }

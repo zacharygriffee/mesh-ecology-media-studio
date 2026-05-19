@@ -367,5 +367,6 @@ export function idForRecord(record) {
   if (record.strategyId) return record.strategyId
   if (record.descriptorId) return record.descriptorId
   if (record.proposalId) return record.proposalId
+  if (record.byteDescriptorProposalId) return record.byteDescriptorProposalId
   return undefined
 }

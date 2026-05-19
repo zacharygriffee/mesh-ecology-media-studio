@@ -8,6 +8,7 @@ import { runFirstWedge } from '../src/local/run-first-wedge.js'
 import { promoteCandidate } from '../src/local/promote-candidate.js'
 import { readLocalImageMetadata } from '../src/assets/image-metadata.js'
 import { ingestReferenceAsset } from '../src/assets/ingest-reference.js'
+import { createByteDescriptorProposal, writeByteDescriptorProposals } from '../src/assets/byte-descriptor-proposal.js'
 import { writeCandidateReview } from '../src/review/candidate-review.js'
 import { createApprovalProposal, writeApprovalProposal } from '../src/review/approval-proposal.js'
 import { validateRequiredRecord } from '../src/contracts/schemas.js'
@@ -827,6 +828,46 @@ test('approval proposal rejects authority claims', () => {
   )
 })
 
+test('byte descriptor proposal previews bytes without materialization proof', async () => {
+  const dir = await createFixtureProject()
+  const result = await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+
+  const { proposals } = await writeByteDescriptorProposals({ projectDir: dir })
+  assert.equal(proposals.length, 1)
+  const proposal = proposals[0].proposal
+  assert.equal(proposal.schema, 'media.byte_descriptor_proposal.local.v1')
+  assert.equal(proposal.sourceAssetRef.id, result.outputs.assetDescriptor.assetId)
+  assert.equal(proposal.proposedByteDescriptor.intendedSchema, 'media.byte_descriptor.v1')
+  assert.equal(proposal.byteAvailabilityProof, false)
+  assert.equal(proposal.materializationProof, false)
+  assert.equal(proposal.byteAuthority, false)
+  assert.equal(validateRequiredRecord(proposal), true)
+})
+
+test('byte descriptor proposal rejects byte proof claims', async () => {
+  const dir = await createFixtureProject()
+  const result = await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  const proposal = createByteDescriptorProposal({
+    assetDescriptor: result.outputs.assetDescriptor,
+    assetRecordPath: 'records/assets/media-asset-descriptor.local.json'
+  })
+
+  proposal.byteAvailabilityProof = true
+
+  assert.throws(
+    () => validateRequiredRecord(proposal),
+    /byteAvailabilityProof=false/
+  )
+})
+
 test('continuity evidence drafts local lineage without causal truth claims', async () => {
   const dir = await createFixtureProject()
   await runFirstWedge({ projectDir: dir })
@@ -1306,6 +1347,26 @@ test('Edge inspection includes approval proposal records when present', async ()
   await writeControlSurfaceProjection({ projectDir: dir })
   const { bundle } = await writeEdgeCompatibilityBundle({ projectDir: dir })
   assert.ok(bundle.studioSourceRefs.some((ref) => ref.schema === 'media.approval_proposal.local.v1'))
+  assert.equal(validateRequiredRecord(bundle), true)
+})
+
+test('Edge inspection includes byte descriptor proposal records when present', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await writeByteDescriptorProposals({ projectDir: dir })
+
+  const { packet } = await inspectLocalRun({ projectDir: dir })
+  assert.ok(Object.values(packet.recordRefs).some((ref) => ref.schema === 'media.byte_descriptor_proposal.local.v1'))
+  assert.ok(packet.artifactKinds.includes('media.byte_descriptor_proposal.local.v1'))
+
+  await writeProjectStatus({ projectDir: dir })
+  await writeControlSurfaceProjection({ projectDir: dir })
+  const { bundle } = await writeEdgeCompatibilityBundle({ projectDir: dir })
+  assert.ok(bundle.studioSourceRefs.some((ref) => ref.schema === 'media.byte_descriptor_proposal.local.v1'))
   assert.equal(validateRequiredRecord(bundle), true)
 })
 

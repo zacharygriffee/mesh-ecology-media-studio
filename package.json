@@ -24,6 +24,7 @@
     "promote:candidate": "node src/local/promote-candidate.js",
     "review:candidates": "node src/review/candidate-review.js",
     "approval:proposal": "node src/review/approval-proposal.js",
+    "bytes:proposal": "node src/assets/byte-descriptor-proposal.js",
     "reference:ingest": "node src/assets/ingest-reference.js",
     "fixture:inspection": "node src/local/generate-inspection-fixture.js",
     "fixture:inspection:check": "node src/local/generate-inspection-fixture.js --check",

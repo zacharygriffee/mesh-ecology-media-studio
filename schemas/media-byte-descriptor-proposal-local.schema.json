@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-byte-descriptor-proposal-local.schema.json",
+  "title": "media.byte_descriptor_proposal.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "byteDescriptorProposalId",
+    "projectId",
+    "sourceAssetRef",
+    "assetRecordRef",
+    "localRef",
+    "hash",
+    "size",
+    "contentType",
+    "proposedByteDescriptor",
+    "status",
+    "byteAvailabilityProof",
+    "materializationProof",
+    "byteAuthority",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "localTruthLabel",
+    "truthStatus",
+    "createdAt"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.byte_descriptor_proposal.local.v1"
+    },
+    "byteDescriptorProposalId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceAssetRef": {
+      "type": "object"
+    },
+    "assetRecordRef": {
+      "type": "object"
+    },
+    "localRef": {
+      "type": "object"
+    },
+    "hash": {
+      "type": "object"
+    },
+    "size": {
+      "type": "number",
+      "minimum": 0
+    },
+    "contentType": {
+      "type": "string"
+    },
+    "proposedByteDescriptor": {
+      "type": "object",
+      "required": [
+        "intendedSchema",
+        "descriptorKind",
+        "digest",
+        "size",
+        "contentType",
+        "localRef",
+        "materializationRequired",
+        "byteAvailabilityProof",
+        "materializationProof"
+      ]
+    },
+    "status": {
+      "const": "proposed"
+    },
+    "byteAvailabilityProof": {
+      "const": false
+    },
+    "materializationProof": {
+      "const": false
+    },
+    "byteAuthority": {
+      "const": false
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    }
+  }
+}

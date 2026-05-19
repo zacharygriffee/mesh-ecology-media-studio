@@ -56,7 +56,8 @@ export const schemaFiles = {
   'media.continuity_band.v1': 'schemas/media-continuity-band.schema.json',
   'media.render_strategy.v1': 'schemas/media-render-strategy.schema.json',
   'media.production_descriptor.local.v1': 'schemas/media-production-descriptor-local.schema.json',
-  'media.approval_proposal.local.v1': 'schemas/media-approval-proposal-local.schema.json'
+  'media.approval_proposal.local.v1': 'schemas/media-approval-proposal-local.schema.json',
+  'media.byte_descriptor_proposal.local.v1': 'schemas/media-byte-descriptor-proposal-local.schema.json'
 }
 
 export const requiredFields = {
@@ -693,6 +694,29 @@ export const requiredFields = {
     'localTruthLabel',
     'truthStatus',
     'createdAt'
+  ],
+  'media.byte_descriptor_proposal.local.v1': [
+    'schema',
+    'byteDescriptorProposalId',
+    'projectId',
+    'sourceAssetRef',
+    'assetRecordRef',
+    'localRef',
+    'hash',
+    'size',
+    'contentType',
+    'proposedByteDescriptor',
+    'status',
+    'byteAvailabilityProof',
+    'materializationProof',
+    'byteAuthority',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'localTruthLabel',
+    'truthStatus',
+    'createdAt'
   ]
 }
 
@@ -735,7 +759,8 @@ const idFields = {
   [artifactKinds.mediaContinuityBand]: 'bandId',
   [artifactKinds.mediaRenderStrategy]: 'strategyId',
   [artifactKinds.mediaProductionDescriptorLocal]: 'descriptorId',
-  [artifactKinds.mediaApprovalProposalLocal]: 'proposalId'
+  [artifactKinds.mediaApprovalProposalLocal]: 'proposalId',
+  [artifactKinds.mediaByteDescriptorProposalLocal]: 'byteDescriptorProposalId'
 }
 
 const domainProjectSchemas = new Set([
@@ -760,7 +785,8 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaContinuityBand,
   artifactKinds.mediaRenderStrategy,
   artifactKinds.mediaProductionDescriptorLocal,
-  artifactKinds.mediaApprovalProposalLocal
+  artifactKinds.mediaApprovalProposalLocal,
+  artifactKinds.mediaByteDescriptorProposalLocal
 ])
 
 const localGeneratedSchemas = new Set([
@@ -789,7 +815,8 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaContinuityBand,
   artifactKinds.mediaRenderStrategy,
   artifactKinds.mediaProductionDescriptorLocal,
-  artifactKinds.mediaApprovalProposalLocal
+  artifactKinds.mediaApprovalProposalLocal,
+  artifactKinds.mediaByteDescriptorProposalLocal
 ])
 
 const readinessStates = new Set(['draft', 'blocked', 'ready', 'caution', 'complete'])
@@ -1427,6 +1454,39 @@ export function validateRecordShape(record, schemaId = record.schema) {
     for (const flag of ['approvalAuthority', 'ratifierAuthority', 'publicationAuthorization']) {
       if (record[flag] !== false) {
         throw new Error(`Record ${schemaId} must set ${flag}=false`)
+      }
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaByteDescriptorProposalLocal) {
+    validateRef(record.sourceAssetRef, `${schemaId}.sourceAssetRef`)
+    validateInspectionRef(record.assetRecordRef, `${schemaId}.assetRecordRef`)
+
+    if (!record.localRef || typeof record.localRef !== 'object') {
+      throw new Error(`Record ${schemaId} must include localRef`)
+    }
+
+    assertSafeLocalPath(record.localRef.path)
+
+    if (record.status !== 'proposed') {
+      throw new Error(`Record ${schemaId} must set status=proposed`)
+    }
+
+    if (!record.proposedByteDescriptor || record.proposedByteDescriptor.intendedSchema !== 'media.byte_descriptor.v1') {
+      throw new Error(`Record ${schemaId} must propose media.byte_descriptor.v1`)
+    }
+
+    for (const flag of ['byteAvailabilityProof', 'materializationProof', 'byteAuthority']) {
+      if (record[flag] !== false) {
+        throw new Error(`Record ${schemaId} must set ${flag}=false`)
+      }
+    }
+
+    for (const flag of ['byteAvailabilityProof', 'materializationProof']) {
+      if (record.proposedByteDescriptor[flag] !== false) {
+        throw new Error(`Record ${schemaId}.proposedByteDescriptor must set ${flag}=false`)
       }
     }
 
