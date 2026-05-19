@@ -17,7 +17,8 @@ const defaultManifest = 'records/manifests/media-local-run-manifest.local.json'
 const defaultOutput = 'records/exports/local-run-edge-inspection-packet.local.json'
 const extraInspectionRoots = Object.freeze([
   'records/evidence',
-  'records/production'
+  'records/production',
+  'records/approvals'
 ])
 const extraInspectionSchemas = new Set([
   'media.candidate_review.local.v1',
@@ -26,7 +27,8 @@ const extraInspectionSchemas = new Set([
   'media.reference_primitive.v1',
   'media.continuity_band.v1',
   'media.render_strategy.v1',
-  'media.production_descriptor.local.v1'
+  'media.production_descriptor.local.v1',
+  'media.approval_proposal.local.v1'
 ])
 
 function parseArgs(argv) {
@@ -210,7 +212,8 @@ function nameForSchema(schema, relativePath) {
     'media.reference_primitive.v1': `referencePrimitive:${path.basename(relativePath, '.json')}`,
     'media.continuity_band.v1': `continuityBand:${path.basename(relativePath, '.json')}`,
     'media.render_strategy.v1': `renderStrategy:${path.basename(relativePath, '.json')}`,
-    'media.production_descriptor.local.v1': `productionDescriptor:${path.basename(relativePath, '.json')}`
+    'media.production_descriptor.local.v1': `productionDescriptor:${path.basename(relativePath, '.json')}`,
+    'media.approval_proposal.local.v1': `approvalProposal:${path.basename(relativePath, '.json')}`
   }
 
   return schemaNames[schema] ?? path.basename(relativePath, '.json')
@@ -232,7 +235,8 @@ function kindForSchema(schema) {
     'media.reference_primitive.v1': 'media-reference-primitive',
     'media.continuity_band.v1': 'media-continuity-band',
     'media.render_strategy.v1': 'media-render-strategy',
-    'media.production_descriptor.local.v1': 'media-production-descriptor'
+    'media.production_descriptor.local.v1': 'media-production-descriptor',
+    'media.approval_proposal.local.v1': 'media-approval-proposal'
   }
 
   return schemaKinds[schema] ?? schema

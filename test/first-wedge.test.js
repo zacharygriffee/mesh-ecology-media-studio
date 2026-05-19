@@ -9,6 +9,7 @@ import { promoteCandidate } from '../src/local/promote-candidate.js'
 import { readLocalImageMetadata } from '../src/assets/image-metadata.js'
 import { ingestReferenceAsset } from '../src/assets/ingest-reference.js'
 import { writeCandidateReview } from '../src/review/candidate-review.js'
+import { createApprovalProposal, writeApprovalProposal } from '../src/review/approval-proposal.js'
 import { validateRequiredRecord } from '../src/contracts/schemas.js'
 import { executeProviderAdapter } from '../src/providers/adapter-runner.js'
 import {
@@ -771,6 +772,61 @@ test('candidate review records local comparison without ratifier authority', asy
   assert.equal(written.operatorRef, 'operator-test')
 })
 
+test('approval proposal records local request without granting authority', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+
+  const { proposal, output } = await writeApprovalProposal({ projectDir: dir })
+
+  assert.equal(proposal.schema, 'media.approval_proposal.local.v1')
+  assert.equal(proposal.proposalType, 'acceptance-approval')
+  assert.equal(proposal.proposedDecision, 'accept')
+  assert.equal(proposal.authorityRequired, true)
+  assert.equal(proposal.proposalOnly, true)
+  assert.equal(proposal.approvalAuthority, false)
+  assert.equal(proposal.ratifierAuthority, false)
+  assert.equal(proposal.publicationAuthorization, false)
+  assert.equal(validateRequiredRecord(proposal), true)
+
+  const written = JSON.parse(await readFile(path.join(dir, output), 'utf8'))
+  assert.equal(written.proposalId, proposal.proposalId)
+})
+
+test('approval proposal rejects authority claims', () => {
+  const localDecision = {
+    schema: 'media.operator_decision.v1',
+    decisionId: 'decision-test',
+    subjectRef: {
+      kind: 'media-asset',
+      id: 'asset-test',
+      schema: 'media.asset.descriptor.v1'
+    },
+    decisionType: 'accept'
+  }
+  const proposal = createApprovalProposal({
+    projectId: 'project-test',
+    subjectRef: localDecision.subjectRef,
+    localDecision,
+    localDecisionPath: 'records/decisions/decision.local.json',
+    evidenceRefs: [{
+      kind: 'media-evidence',
+      id: 'evidence-test',
+      schema: 'media.evidence.v1'
+    }]
+  })
+
+  proposal.ratifierAuthority = true
+
+  assert.throws(
+    () => validateRequiredRecord(proposal),
+    /ratifierAuthority=false/
+  )
+})
+
 test('continuity evidence drafts local lineage without causal truth claims', async () => {
   const dir = await createFixtureProject()
   await runFirstWedge({ projectDir: dir })
@@ -1230,6 +1286,26 @@ test('Edge inspection includes production strategy records when present', async 
   const { bundle } = await writeEdgeCompatibilityBundle({ projectDir: dir })
   assert.ok(bundle.studioSourceRefs.some((ref) => ref.schema === 'media.production_unit.v1'))
   assert.ok(bundle.studioSourceRefs.some((ref) => ref.schema === 'media.production_descriptor.local.v1'))
+  assert.equal(validateRequiredRecord(bundle), true)
+})
+
+test('Edge inspection includes approval proposal records when present', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await writeApprovalProposal({ projectDir: dir })
+
+  const { packet } = await inspectLocalRun({ projectDir: dir })
+  assert.ok(Object.values(packet.recordRefs).some((ref) => ref.schema === 'media.approval_proposal.local.v1'))
+  assert.ok(packet.artifactKinds.includes('media.approval_proposal.local.v1'))
+
+  await writeProjectStatus({ projectDir: dir })
+  await writeControlSurfaceProjection({ projectDir: dir })
+  const { bundle } = await writeEdgeCompatibilityBundle({ projectDir: dir })
+  assert.ok(bundle.studioSourceRefs.some((ref) => ref.schema === 'media.approval_proposal.local.v1'))
   assert.equal(validateRequiredRecord(bundle), true)
 })
 

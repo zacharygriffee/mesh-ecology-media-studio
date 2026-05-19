@@ -206,6 +206,12 @@ Write local continuity evidence:
 npm run continuity:draft -- --project-dir examples/card-to-candidate
 ```
 
+Write a local approval proposal without granting approval authority:
+
+```bash
+npm run approval:proposal -- --project-dir examples/card-to-candidate
+```
+
 Write a local Packs-aligned control-surface projection without adding UI:
 
 ```bash
@@ -249,7 +255,9 @@ reference-primitive, continuity-band, and render-strategy records so
 scene/shot/clip stays available as one strategy without becoming the root
 ontology. Phase 15 adds local production descriptors for scene, shot, clip,
 rough-cut, and export specializations without making them mesh truth or
-publication authority.
+publication authority. Phase 16 adds approval proposal records that can be
+inspected later without claiming ratifier authority or publication
+authorization.
 
 ## Start Here
 
@@ -277,3 +285,4 @@ publication authority.
 - [docs/28-edge-compatibility-candidates.md](docs/28-edge-compatibility-candidates.md)
 - [docs/29-production-strategy-posture.md](docs/29-production-strategy-posture.md)
 - [docs/30-production-descriptors.md](docs/30-production-descriptors.md)
+- [docs/31-approval-proposals.md](docs/31-approval-proposals.md)

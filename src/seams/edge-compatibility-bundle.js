@@ -27,6 +27,9 @@ const sourceRecordPaths = Object.freeze({
   projectStatus: 'records/manifests/media-project-status.local.json',
   providerRunLedger: 'records/provider-results/media-provider-run-ledger.local.json'
 })
+const optionalSourceRecordPaths = Object.freeze({
+  approvalProposal: 'records/approvals/media-approval-proposal.local.json'
+})
 const productionSourceSchemas = new Set([
   artifactKinds.mediaProductionUnit,
   artifactKinds.mediaReferencePrimitive,
@@ -181,6 +184,13 @@ async function readSourceRecords(root) {
   const sources = {}
 
   for (const [name, relativePath] of Object.entries(sourceRecordPaths)) {
+    const record = await readOptionalJson(root, relativePath)
+    if (!record?.schema) continue
+    validateRequiredRecord(record)
+    sources[name] = { record, relativePath }
+  }
+
+  for (const [name, relativePath] of Object.entries(optionalSourceRecordPaths)) {
     const record = await readOptionalJson(root, relativePath)
     if (!record?.schema) continue
     validateRequiredRecord(record)
@@ -483,7 +493,8 @@ function kindForSchema(schema) {
     [artifactKinds.mediaReferencePrimitive]: 'media-reference-primitive',
     [artifactKinds.mediaContinuityBand]: 'media-continuity-band',
     [artifactKinds.mediaRenderStrategy]: 'media-render-strategy',
-    [artifactKinds.mediaProductionDescriptorLocal]: 'media-production-descriptor'
+    [artifactKinds.mediaProductionDescriptorLocal]: 'media-production-descriptor',
+    [artifactKinds.mediaApprovalProposalLocal]: 'media-approval-proposal'
   }
 
   return schemaKinds[schema] ?? schema
@@ -500,6 +511,7 @@ function idForRecord(record) {
     record.bandId ??
     record.strategyId ??
     record.descriptorId ??
+    record.proposalId ??
     record.schema
 }
 

@@ -366,5 +366,6 @@ export function idForRecord(record) {
   if (record.bandId) return record.bandId
   if (record.strategyId) return record.strategyId
   if (record.descriptorId) return record.descriptorId
+  if (record.proposalId) return record.proposalId
   return undefined
 }

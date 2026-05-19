@@ -55,7 +55,8 @@ export const schemaFiles = {
   'media.reference_primitive.v1': 'schemas/media-reference-primitive.schema.json',
   'media.continuity_band.v1': 'schemas/media-continuity-band.schema.json',
   'media.render_strategy.v1': 'schemas/media-render-strategy.schema.json',
-  'media.production_descriptor.local.v1': 'schemas/media-production-descriptor-local.schema.json'
+  'media.production_descriptor.local.v1': 'schemas/media-production-descriptor-local.schema.json',
+  'media.approval_proposal.local.v1': 'schemas/media-approval-proposal-local.schema.json'
 }
 
 export const requiredFields = {
@@ -668,6 +669,30 @@ export const requiredFields = {
     'localTruthLabel',
     'truthStatus',
     'createdAt'
+  ],
+  'media.approval_proposal.local.v1': [
+    'schema',
+    'proposalId',
+    'projectId',
+    'subjectRef',
+    'proposalType',
+    'proposedDecision',
+    'status',
+    'localDecisionRef',
+    'evidenceRefs',
+    'authorityRequired',
+    'proposalOnly',
+    'operatorGuidanceOnly',
+    'approvalAuthority',
+    'ratifierAuthority',
+    'publicationAuthorization',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'localTruthLabel',
+    'truthStatus',
+    'createdAt'
   ]
 }
 
@@ -709,7 +734,8 @@ const idFields = {
   [artifactKinds.mediaReferencePrimitive]: 'primitiveId',
   [artifactKinds.mediaContinuityBand]: 'bandId',
   [artifactKinds.mediaRenderStrategy]: 'strategyId',
-  [artifactKinds.mediaProductionDescriptorLocal]: 'descriptorId'
+  [artifactKinds.mediaProductionDescriptorLocal]: 'descriptorId',
+  [artifactKinds.mediaApprovalProposalLocal]: 'proposalId'
 }
 
 const domainProjectSchemas = new Set([
@@ -733,7 +759,8 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaReferencePrimitive,
   artifactKinds.mediaContinuityBand,
   artifactKinds.mediaRenderStrategy,
-  artifactKinds.mediaProductionDescriptorLocal
+  artifactKinds.mediaProductionDescriptorLocal,
+  artifactKinds.mediaApprovalProposalLocal
 ])
 
 const localGeneratedSchemas = new Set([
@@ -761,7 +788,8 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaReferencePrimitive,
   artifactKinds.mediaContinuityBand,
   artifactKinds.mediaRenderStrategy,
-  artifactKinds.mediaProductionDescriptorLocal
+  artifactKinds.mediaProductionDescriptorLocal,
+  artifactKinds.mediaApprovalProposalLocal
 ])
 
 const readinessStates = new Set(['draft', 'blocked', 'ready', 'caution', 'complete'])
@@ -826,6 +854,13 @@ const renderInputModes = new Set([
   'media-transformation'
 ])
 const productionDescriptorKinds = new Set(['scene', 'shot', 'clip', 'rough-cut', 'export'])
+const approvalProposalTypes = new Set([
+  'acceptance-approval',
+  'rejection-approval',
+  'export-approval',
+  'publication-approval'
+])
+const approvalProposalStatuses = new Set(['proposed', 'withdrawn', 'superseded'])
 
 export async function readSchema(schemaId, options = {}) {
   const rootDir = options.rootDir ?? process.cwd()
@@ -1367,6 +1402,32 @@ export function validateRecordShape(record, schemaId = record.schema) {
 
     if (record.descriptorKind === 'export' && record.descriptor.publicationAuthorization !== false) {
       throw new Error(`Record ${schemaId} export descriptor must not claim publication authorization`)
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaApprovalProposalLocal) {
+    if (!approvalProposalTypes.has(record.proposalType)) {
+      throw new Error(`Record ${schemaId} has invalid proposal type: ${record.proposalType}`)
+    }
+
+    if (!approvalProposalStatuses.has(record.status)) {
+      throw new Error(`Record ${schemaId} has invalid proposal status: ${record.status}`)
+    }
+
+    validateRef(record.subjectRef, `${schemaId}.subjectRef`)
+    validateRef(record.localDecisionRef, `${schemaId}.localDecisionRef`)
+    validateRefArray(record.evidenceRefs, `${schemaId}.evidenceRefs`)
+
+    if (record.authorityRequired !== true || record.proposalOnly !== true || record.operatorGuidanceOnly !== true) {
+      throw new Error(`Record ${schemaId} must remain proposal-only operator guidance requiring authority`)
+    }
+
+    for (const flag of ['approvalAuthority', 'ratifierAuthority', 'publicationAuthorization']) {
+      if (record[flag] !== false) {
+        throw new Error(`Record ${schemaId} must set ${flag}=false`)
+      }
     }
 
     validateLocalFalseFlags(record, schemaId)

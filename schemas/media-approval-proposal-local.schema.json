@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-approval-proposal-local.schema.json",
+  "title": "media.approval_proposal.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "proposalId",
+    "projectId",
+    "subjectRef",
+    "proposalType",
+    "proposedDecision",
+    "status",
+    "localDecisionRef",
+    "evidenceRefs",
+    "authorityRequired",
+    "proposalOnly",
+    "operatorGuidanceOnly",
+    "approvalAuthority",
+    "ratifierAuthority",
+    "publicationAuthorization",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "localTruthLabel",
+    "truthStatus",
+    "createdAt"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.approval_proposal.local.v1"
+    },
+    "proposalId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "subjectRef": {
+      "type": "object"
+    },
+    "proposalType": {
+      "enum": [
+        "acceptance-approval",
+        "rejection-approval",
+        "export-approval",
+        "publication-approval"
+      ]
+    },
+    "status": {
+      "enum": [
+        "proposed",
+        "withdrawn",
+        "superseded"
+      ]
+    },
+    "localDecisionRef": {
+      "type": "object"
+    },
+    "evidenceRefs": {
+      "type": "array"
+    },
+    "authorityRequired": {
+      "const": true
+    },
+    "proposalOnly": {
+      "const": true
+    },
+    "operatorGuidanceOnly": {
+      "const": true
+    },
+    "approvalAuthority": {
+      "const": false
+    },
+    "ratifierAuthority": {
+      "const": false
+    },
+    "publicationAuthorization": {
+      "const": false
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    }
+  }
+}
