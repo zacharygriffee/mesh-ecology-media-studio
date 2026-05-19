@@ -29,6 +29,8 @@ Current local inspection helpers:
   and referenced artifacts into a local handoff-preview bundle.
 - `project-status.js`: writes a local project status snapshot for cards,
   references, provider runs, assets, reviews, and exports.
+- `control-surface-projection.js`: writes a local Packs-aligned control
+  surface projection for future Edge inspection without defining UI contracts.
 - `continuity-evidence.js`: writes local continuity evidence drafts for an
   asset's card, branch, context, and lineage fields.
 

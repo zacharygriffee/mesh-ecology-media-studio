@@ -16,6 +16,7 @@
     "inspect:summary": "node src/seams/summarize-inspection-packet.js",
     "inspect:venice-smoke": "node src/seams/inspect-venice-smoke.js",
     "status:project": "node src/seams/project-status.js",
+    "control:surface": "node src/seams/control-surface-projection.js",
     "continuity:draft": "node src/seams/continuity-evidence.js",
     "export:inspection-bundle": "node src/seams/export-inspection-bundle.js",
     "provider:venice:smoke": "node src/providers/venice-live-smoke.js",

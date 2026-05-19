@@ -47,7 +47,8 @@ export const schemaFiles = {
   'media.reference_ingest.local.v1': 'schemas/media-reference-ingest-local.schema.json',
   'media.candidate_review.local.v1': 'schemas/media-candidate-review-local.schema.json',
   'media.project_status.local.v1': 'schemas/media-project-status-local.schema.json',
-  'media.continuity_evidence.local.v1': 'schemas/media-continuity-evidence-local.schema.json'
+  'media.continuity_evidence.local.v1': 'schemas/media-continuity-evidence-local.schema.json',
+  'media.control_surface_projection.local.v1': 'schemas/media-control-surface-projection-local.schema.json'
 }
 
 export const requiredFields = {
@@ -487,6 +488,29 @@ export const requiredFields = {
     'causalTruth',
     'localTruthLabel',
     'truthStatus'
+  ],
+  'media.control_surface_projection.local.v1': [
+    'schema',
+    'projectionId',
+    'projectId',
+    'createdAt',
+    'mode',
+    'packsDoctrineRefs',
+    'posture',
+    'planes',
+    'views',
+    'actions',
+    'observationRefs',
+    'warnings',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'providerTruth',
+    'authoritySurface',
+    'rendererContract',
+    'localTruthLabel',
+    'truthStatus'
   ]
 }
 
@@ -520,7 +544,8 @@ const idFields = {
   [artifactKinds.mediaReferenceIngestLocal]: 'ingestId',
   [artifactKinds.mediaCandidateReviewLocal]: 'candidateReviewId',
   [artifactKinds.mediaProjectStatusLocal]: 'statusId',
-  [artifactKinds.mediaContinuityEvidenceLocal]: 'continuityEvidenceId'
+  [artifactKinds.mediaContinuityEvidenceLocal]: 'continuityEvidenceId',
+  [artifactKinds.mediaControlSurfaceProjectionLocal]: 'projectionId'
 }
 
 const domainProjectSchemas = new Set([
@@ -536,7 +561,8 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaReferenceIngestLocal,
   artifactKinds.mediaCandidateReviewLocal,
   artifactKinds.mediaProjectStatusLocal,
-  artifactKinds.mediaContinuityEvidenceLocal
+  artifactKinds.mediaContinuityEvidenceLocal,
+  artifactKinds.mediaControlSurfaceProjectionLocal
 ])
 
 const localGeneratedSchemas = new Set([
@@ -556,7 +582,8 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaReferenceIngestLocal,
   artifactKinds.mediaCandidateReviewLocal,
   artifactKinds.mediaProjectStatusLocal,
-  artifactKinds.mediaContinuityEvidenceLocal
+  artifactKinds.mediaContinuityEvidenceLocal,
+  artifactKinds.mediaControlSurfaceProjectionLocal
 ])
 
 const readinessStates = new Set(['draft', 'blocked', 'ready', 'caution', 'complete'])
@@ -897,6 +924,46 @@ export function validateRecordShape(record, schemaId = record.schema) {
 
     if (record.causalTruth !== false) {
       throw new Error(`Record ${schemaId} must set causalTruth=false`)
+    }
+  }
+
+  if (schemaId === artifactKinds.mediaControlSurfaceProjectionLocal) {
+    if (record.mode !== 'standalone-local') {
+      throw new Error(`Record ${schemaId} has invalid mode: ${record.mode}`)
+    }
+
+    if (record.posture?.readonlyFirst !== true) {
+      throw new Error(`Record ${schemaId} must set posture.readonlyFirst=true`)
+    }
+
+    if (record.posture?.authorityPosture !== 'observer') {
+      throw new Error(`Record ${schemaId} must set posture.authorityPosture=observer`)
+    }
+
+    for (const collection of ['packsDoctrineRefs', 'planes', 'views', 'actions', 'warnings']) {
+      if (!Array.isArray(record[collection])) {
+        throw new Error(`Record ${schemaId}.${collection} must be an array`)
+      }
+    }
+
+    if (!record.observationRefs || typeof record.observationRefs !== 'object') {
+      throw new Error(`Record ${schemaId} must include observationRefs`)
+    }
+
+    for (const [name, ref] of Object.entries(record.observationRefs)) {
+      if (Array.isArray(ref)) {
+        ref.forEach((entry, index) => validateInspectionRef(entry, `${schemaId}.observationRefs.${name}[${index}]`))
+      } else if (ref !== null && ref !== undefined) {
+        validateInspectionRef(ref, `${schemaId}.observationRefs.${name}`)
+      }
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+
+    for (const flag of ['providerTruth', 'authoritySurface', 'rendererContract']) {
+      if (record[flag] !== false) {
+        throw new Error(`Record ${schemaId} must set ${flag}=false`)
+      }
     }
   }
 

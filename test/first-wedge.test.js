@@ -54,6 +54,7 @@ import { indexProviderRuns } from '../src/seams/index-provider-runs.js'
 import { inspectProviderFailure } from '../src/seams/inspect-provider-failure.js'
 import { inspectVeniceSmoke } from '../src/seams/inspect-venice-smoke.js'
 import { writeProjectStatus } from '../src/seams/project-status.js'
+import { writeControlSurfaceProjection } from '../src/seams/control-surface-projection.js'
 import { writeContinuityEvidence } from '../src/seams/continuity-evidence.js'
 import { summarizeInspectionPacket } from '../src/seams/summarize-inspection-packet.js'
 import { checkInspectionFixture } from '../src/local/generate-inspection-fixture.js'
@@ -1115,6 +1116,41 @@ test('asset lifecycle helper creates local-only lifecycle records', () => {
   assert.equal(lifecycle.localOnly, true)
   assert.equal(lifecycle.meshTruth, false)
   assert.equal(validateRequiredRecord(lifecycle), true)
+})
+
+test('control surface projection maps Packs planes without UI contract', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await writeCandidateReview({ projectDir: dir, operatorRef: 'operator-test' })
+  await writeContinuityEvidence({ projectDir: dir })
+  await inspectLocalRun({ projectDir: dir })
+  await indexProviderRuns({ projectDir: dir })
+  await writeProjectStatus({ projectDir: dir })
+
+  const { projection, output } = await writeControlSurfaceProjection({ projectDir: dir })
+
+  assert.equal(projection.schema, 'media.control_surface_projection.local.v1')
+  assert.equal(projection.mode, 'standalone-local')
+  assert.equal(projection.posture.controlPlaneOwner, 'mesh-ecology-packs')
+  assert.equal(projection.posture.authorityPosture, 'observer')
+  assert.equal(projection.posture.readonlyFirst, true)
+  assert.equal(projection.authoritySurface, false)
+  assert.equal(projection.rendererContract, false)
+  assert.deepEqual(projection.planes.map((entry) => entry.plane), ['presentation', 'operational', 'authoring'])
+  assert.ok(projection.actions.some((entry) => entry.actionId === 'review-candidates'))
+  assert.ok(projection.observationRefs.inspectionPacket)
+  assert.ok(projection.observationRefs.projectStatus)
+  assert.ok(projection.observationRefs.providerRunLedger)
+  assert.ok(projection.observationRefs.candidateReviews.length > 0)
+  assert.ok(projection.observationRefs.continuityEvidence.length > 0)
+  assert.equal(validateRequiredRecord(projection), true)
+
+  const written = JSON.parse(await readFile(path.join(dir, output), 'utf8'))
+  assert.equal(written.projectionId, projection.projectionId)
 })
 
 test('validator rejects missing schema', async () => {

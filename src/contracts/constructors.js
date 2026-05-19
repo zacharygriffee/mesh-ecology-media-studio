@@ -358,5 +358,6 @@ export function idForRecord(record) {
   if (record.candidateReviewId) return record.candidateReviewId
   if (record.statusId) return record.statusId
   if (record.continuityEvidenceId) return record.continuityEvidenceId
+  if (record.projectionId) return record.projectionId
   return undefined
 }

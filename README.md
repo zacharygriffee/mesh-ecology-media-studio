@@ -206,6 +206,12 @@ Write local continuity evidence:
 npm run continuity:draft -- --project-dir examples/card-to-candidate
 ```
 
+Write a local Packs-aligned control-surface projection without adding UI:
+
+```bash
+npm run control:surface -- --project-dir examples/card-to-candidate
+```
+
 Regenerate the committed inspection fixture:
 
 ```bash
@@ -228,7 +234,9 @@ Phase 9 adds a local provider-run ledger and local reference asset ingest.
 Phase 10 adds local candidate comparison records and project status snapshots.
 Phase 11 completes the narrow Mode 0 slice with continuity drafts, byte
 descriptor preview alignment, candidate-review inspection export, card-grouped
-provider attempts, and committed Edge bundle fixtures.
+provider attempts, and committed Edge bundle fixtures. Phase 12 adds a
+Packs-aligned control-surface projection for future inspection without defining
+UI, Edge runtime messages, or an authority surface.
 
 ## Start Here
 
@@ -252,3 +260,4 @@ provider attempts, and committed Edge bundle fixtures.
 - [docs/24-provider-run-ledger-and-references.md](docs/24-provider-run-ledger-and-references.md)
 - [docs/25-candidate-review-and-project-status.md](docs/25-candidate-review-and-project-status.md)
 - [docs/26-narrow-slice-completion.md](docs/26-narrow-slice-completion.md)
+- [docs/27-packs-control-surface-alignment.md](docs/27-packs-control-surface-alignment.md)

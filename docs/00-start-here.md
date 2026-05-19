@@ -28,6 +28,7 @@ Read in this order:
 20. [Provider Run Ledger And References](24-provider-run-ledger-and-references.md)
 21. [Candidate Review And Project Status](25-candidate-review-and-project-status.md)
 22. [Narrow Slice Completion](26-narrow-slice-completion.md)
+23. [Packs Control Surface Alignment](27-packs-control-surface-alignment.md)
 
 The first executable path is:
 
@@ -98,6 +99,12 @@ npm run status:project -- --project-dir examples/card-to-candidate
 npm run continuity:draft -- --project-dir examples/card-to-candidate
 ```
 
+Write a local Packs-aligned control-surface projection without adding UI:
+
+```bash
+npm run control:surface -- --project-dir examples/card-to-candidate
+```
+
 Phase 2 hardened the local wedge with a local run manifest, artifact-kind
 registry, and modest malformed-record checks. Phase 3 defines the local project
 layout, safe local refs, placement classes, and asset lifecycle states. Phase 4
@@ -112,6 +119,8 @@ asset ingest. Phase 10 adds candidate comparison records and project status
 snapshots. Phase 11 completes the narrow Mode 0 slice with continuity drafts,
 byte descriptor preview alignment, candidate-review inspection export,
 card-grouped provider attempts, and committed Edge bundle fixtures. The wedge
-remains local-only. It creates local records and does not claim mesh truth,
+remains local-only. Phase 12 adds a Packs-aligned control-surface projection
+for future inspection without defining UI or Edge runtime messages. It creates
+local records and does not claim mesh truth,
 distributed proof, byte materialization proof, provider truth, causal truth,
 publication authorization, or ratifier authority.
