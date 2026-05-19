@@ -21,22 +21,24 @@ npm run wedge:example
 
 The example uses:
 
-- input card: `examples/card-to-candidate/input/card.json`
-- local generated candidate: `examples/card-to-candidate/local-media/candidate.txt`
-- output records: `examples/card-to-candidate/out/`
+- input card: `examples/card-to-candidate/cards/card.json`
+- local generated candidate: `examples/card-to-candidate/media/generated/candidate.txt`
+- accepted/rejected media: `examples/card-to-candidate/media/accepted/` or
+  `examples/card-to-candidate/media/rejected/`
+- output records: `examples/card-to-candidate/records/`
 
 The provider job result descriptor is local and synthetic in this first pass.
 No provider API is called.
 
 Generated outputs are local-only:
 
-- `media-work-packet.local.json`
-- `provider-job-result.local.json`
-- `media-asset-descriptor.local.json`
-- `media-evidence.local.json`
-- `media-readiness.local.json`
-- `media-operator-decision.local.json`
-- `media-local-run-manifest.local.json`
+- `records/work-packets/media-work-packet.local.json`
+- `records/provider-results/provider-job-result.local.json`
+- `records/assets/media-asset-descriptor.local.json`
+- `records/evidence/media-evidence.local.json`
+- `records/readiness/media-readiness.local.json`
+- `records/decisions/media-operator-decision.local.json`
+- `records/manifests/media-local-run-manifest.local.json`
 
 These are local drafts, local receipts, local caches, or local decisions. They
 are not mesh truth, distributed proof, or ratified shared state.

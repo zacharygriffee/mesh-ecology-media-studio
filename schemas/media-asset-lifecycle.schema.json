@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-asset-lifecycle.schema.json",
+  "title": "media.asset_lifecycle.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "assetId",
+    "projectId",
+    "state",
+    "refs",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.asset_lifecycle.v1"
+    },
+    "assetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "state": {
+      "enum": [
+        "source",
+        "generated",
+        "ingested",
+        "under-review",
+        "accepted",
+        "rejected",
+        "proxied",
+        "exported"
+      ]
+    },
+    "refs": {
+      "type": "array"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    }
+  }
+}

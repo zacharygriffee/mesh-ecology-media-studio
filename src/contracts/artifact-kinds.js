@@ -6,7 +6,10 @@ export const artifactKinds = Object.freeze({
   mediaEvidence: 'media.evidence.v1',
   mediaReadiness: 'media.readiness.v1',
   mediaOperatorDecision: 'media.operator_decision.v1',
-  mediaLocalRunManifest: 'media.local_run_manifest.v1'
+  mediaLocalRunManifest: 'media.local_run_manifest.v1',
+  mediaProjectLayout: 'media.project_layout.v1',
+  mediaLocalRef: 'media.local_ref.v1',
+  mediaAssetLifecycle: 'media.asset_lifecycle.v1'
 })
 
 export const knownArtifactKinds = Object.freeze(Object.values(artifactKinds))

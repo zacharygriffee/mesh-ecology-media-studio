@@ -3,6 +3,12 @@ import { randomUUID } from 'node:crypto'
 import { artifactKinds } from './artifact-kinds.js'
 
 const truthStatus = 'not mesh truth; not distributed proof; not ratified shared state'
+const localFalseFlags = Object.freeze({
+  localOnly: true,
+  meshTruth: false,
+  distributedProof: false,
+  ratifiedSharedState: false
+})
 
 export function nowIso() {
   return new Date().toISOString()
@@ -48,7 +54,7 @@ export function createWorkPacket({ card, operatorRef = 'local-operator', created
       operatorGuidanceOnly: true
     },
     localTruthLabel: 'local draft',
-    localOnly: true,
+    ...localFalseFlags,
     truthStatus,
     createdAt
   }
@@ -71,7 +77,7 @@ export function createProviderJobResult({ card, workPacket, providerName, candid
       status: 'available-local'
     },
     localTruthLabel: 'local receipt',
-    localOnly: true,
+    ...localFalseFlags,
     truthStatus,
     createdAt
   }
@@ -85,6 +91,8 @@ export function createAssetDescriptor({
   size,
   contentType,
   localPath,
+  localRef,
+  lifecycle,
   createdAt = nowIso()
 }) {
   return {
@@ -94,7 +102,7 @@ export function createAssetDescriptor({
     contentType,
     hash,
     size,
-    localRef: {
+    localRef: localRef ?? {
       refKind: 'local-file',
       path: localPath
     },
@@ -122,10 +130,11 @@ export function createAssetDescriptor({
     provenance: {
       cardPromptHashScope: 'prompt text retained on card record',
       providerName: providerJobResult.provider.name,
-      providerResultLocalOnly: true
+      providerResultLocalOnly: true,
+      lifecycle
     },
     localTruthLabel: 'local receipt',
-    localOnly: true,
+    ...localFalseFlags,
     truthStatus,
     createdAt
   }
@@ -149,7 +158,7 @@ export function createReviewEvidence({ card, assetDescriptor, summary, createdAt
     ],
     classificationOnly: true,
     localTruthLabel: 'local receipt',
-    localOnly: true,
+    ...localFalseFlags,
     truthStatus,
     createdAt
   }
@@ -165,7 +174,7 @@ export function createReadiness({ subjectRef, state, reasons, nextActions, creat
     nextActions,
     operatorGuidanceOnly: true,
     localTruthLabel: 'local receipt',
-    localOnly: true,
+    ...localFalseFlags,
     truthStatus,
     createdAt
   }
@@ -193,7 +202,7 @@ export function createOperatorDecision({
     ],
     localDecisionOnly: true,
     localTruthLabel: 'local decision',
-    localOnly: true,
+    ...localFalseFlags,
     truthStatus,
     createdAt
   }
@@ -231,8 +240,10 @@ export function createLocalRunManifest({
     artifactKinds: [
       card.schema,
       ...recordEntries.map(([, record]) => record.schema),
+      generatedRecords.assetDescriptor?.localRef?.schema,
+      generatedRecords.assetDescriptor?.provenance?.lifecycle?.schema,
       artifactKinds.mediaLocalRunManifest
-    ],
+    ].filter(Boolean),
     hashes: {
       candidate: candidateHash
     },
@@ -258,10 +269,7 @@ export function createLocalRunManifest({
       'Operator decision is local-only and is not mesh authorization.'
     ],
     operatorGuidanceOnly: true,
-    localOnly: true,
-    meshTruth: false,
-    distributedProof: false,
-    ratifiedSharedState: false,
+    ...localFalseFlags,
     providerTruth: false,
     byteAvailabilityProof: false,
     materializationProof: false,

@@ -6,13 +6,21 @@ import test from 'node:test'
 
 import { runFirstWedge } from '../src/local/run-first-wedge.js'
 import { validateRequiredRecord } from '../src/contracts/schemas.js'
+import {
+  assertLifecycleState,
+  assertPlacementClass,
+  assertSafeLocalPath,
+  createAssetLifecycle,
+  createLocalRef,
+  placementClasses
+} from '../src/local/project-layout.js'
 
 async function createFixtureProject() {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-wedge-'))
-  await mkdir(path.join(dir, 'input'), { recursive: true })
-  await mkdir(path.join(dir, 'local-media'), { recursive: true })
+  await mkdir(path.join(dir, 'cards'), { recursive: true })
+  await mkdir(path.join(dir, 'media', 'generated'), { recursive: true })
 
-  await writeFile(path.join(dir, 'input', 'card.json'), JSON.stringify({
+  await writeFile(path.join(dir, 'cards', 'card.json'), JSON.stringify({
     schema: 'media.card.v1',
     cardId: 'card-test',
     projectId: 'project-test',
@@ -26,7 +34,7 @@ async function createFixtureProject() {
     acceptanceCriteria: ['hash recorded'],
     createdAt: '2026-05-19T00:00:00.000Z'
   }, null, 2))
-  await writeFile(path.join(dir, 'local-media', 'candidate.txt'), 'candidate bytes')
+  await writeFile(path.join(dir, 'media', 'generated', 'candidate.txt'), 'candidate bytes')
 
   return dir
 }
@@ -51,18 +59,93 @@ test('first wedge creates local records without claiming mesh truth', async () =
   assert.equal(result.outputs.localRunManifest.meshTruth, false)
   assert.equal(result.outputs.localRunManifest.distributedProof, false)
   assert.equal(result.outputs.localRunManifest.ratifiedSharedState, false)
+  assert.equal(result.outputs.assetDescriptor.localRef.schema, 'media.local_ref.v1')
+  assert.equal(result.outputs.assetDescriptor.localRef.placementClass, 'media-accepted')
+  assert.equal(result.outputs.assetDescriptor.localRef.path, 'media/accepted/candidate.txt')
+  assert.equal(result.outputs.workPacket.meshTruth, false)
+  assert.equal(result.outputs.providerJobResult.distributedProof, false)
+  assert.equal(result.outputs.operatorDecision.ratifiedSharedState, false)
+  assert.equal(result.outputs.assetDescriptor.provenance.lifecycle.schema, 'media.asset_lifecycle.v1')
+  assert.equal(result.projectLayout.schema, 'media.project_layout.v1')
+  assert.equal(validateRequiredRecord(result.projectLayout), true)
 
   const decision = JSON.parse(
-    await readFile(path.join(dir, 'out', 'media-operator-decision.local.json'), 'utf8')
+    await readFile(path.join(dir, 'records', 'decisions', 'media-operator-decision.local.json'), 'utf8')
   )
   assert.equal(decision.decisionType, 'accept')
 
   const manifest = JSON.parse(
-    await readFile(path.join(dir, 'out', 'media-local-run-manifest.local.json'), 'utf8')
+    await readFile(path.join(dir, 'records', 'manifests', 'media-local-run-manifest.local.json'), 'utf8')
   )
   assert.equal(manifest.hashes.candidate.algorithm, 'sha256')
   assert.ok(manifest.artifactKinds.includes('media.provider_job_result.local.v1'))
+  assert.ok(manifest.artifactKinds.includes('media.local_ref.v1'))
+  assert.ok(manifest.artifactKinds.includes('media.asset_lifecycle.v1'))
   assert.ok(manifest.doctrineLabels.includes('not provider truth'))
+  assert.equal(manifest.generatedRecordRefs[0].path, 'records/work-packets/media-work-packet.local.json')
+})
+
+test('local refs accept safe project-relative paths', () => {
+  const localRef = createLocalRef({
+    placementClass: placementClasses.mediaAccepted,
+    relativePath: 'media/accepted/candidate.txt',
+    contentType: 'text/plain'
+  })
+
+  assert.equal(localRef.schema, 'media.local_ref.v1')
+  assert.equal(localRef.localOnly, true)
+  assert.equal(localRef.meshTruth, false)
+  assert.equal(validateRequiredRecord(localRef), true)
+})
+
+test('local refs block unsafe paths', () => {
+  for (const unsafePath of [
+    '/tmp/candidate.txt',
+    '../candidate.txt',
+    'media/../candidate.txt',
+    '~/candidate.txt',
+    'https://example.com/candidate.txt',
+    'file:///tmp/candidate.txt',
+    'media\\accepted\\candidate.txt'
+  ]) {
+    assert.throws(
+      () => assertSafeLocalPath(unsafePath),
+      /Local ref path/
+    )
+  }
+})
+
+test('placement class validation rejects unknown classes', () => {
+  assert.equal(assertPlacementClass(placementClasses.mediaGenerated), true)
+
+  assert.throws(
+    () => assertPlacementClass('media-final'),
+    /Invalid placement class/
+  )
+})
+
+test('lifecycle state validation rejects unknown states', () => {
+  assert.equal(assertLifecycleState('accepted'), true)
+
+  assert.throws(
+    () => assertLifecycleState('approved'),
+    /Invalid asset lifecycle state/
+  )
+})
+
+test('asset lifecycle helper creates local-only lifecycle records', () => {
+  const lifecycle = createAssetLifecycle({
+    assetId: 'asset-test',
+    projectId: 'project-test',
+    state: 'accepted',
+    refs: [],
+    reason: 'test'
+  })
+
+  assert.equal(lifecycle.schema, 'media.asset_lifecycle.v1')
+  assert.equal(lifecycle.localOnly, true)
+  assert.equal(lifecycle.meshTruth, false)
+  assert.equal(validateRequiredRecord(lifecycle), true)
 })
 
 test('validator rejects missing schema', async () => {

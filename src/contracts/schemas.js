@@ -2,6 +2,11 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import { artifactKinds, assertKnownArtifactKind } from './artifact-kinds.js'
+import {
+  assertLifecycleState,
+  assertPlacementClass,
+  assertSafeLocalPath
+} from '../local/project-layout.js'
 
 export const schemaFiles = {
   'media.card.v1': 'schemas/media-card.schema.json',
@@ -11,7 +16,10 @@ export const schemaFiles = {
   'media.evidence.v1': 'schemas/media-evidence.schema.json',
   'media.readiness.v1': 'schemas/media-readiness.schema.json',
   'media.operator_decision.v1': 'schemas/media-operator-decision.schema.json',
-  'media.local_run_manifest.v1': 'schemas/media-local-run-manifest.schema.json'
+  'media.local_run_manifest.v1': 'schemas/media-local-run-manifest.schema.json',
+  'media.project_layout.v1': 'schemas/media-project-layout.schema.json',
+  'media.local_ref.v1': 'schemas/media-local-ref.schema.json',
+  'media.asset_lifecycle.v1': 'schemas/media-asset-lifecycle.schema.json'
 }
 
 export const requiredFields = {
@@ -112,6 +120,37 @@ export const requiredFields = {
     'meshTruth',
     'distributedProof',
     'ratifiedSharedState'
+  ],
+  'media.project_layout.v1': [
+    'schema',
+    'projectId',
+    'mode',
+    'directories',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState'
+  ],
+  'media.local_ref.v1': [
+    'schema',
+    'refKind',
+    'placementClass',
+    'path',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState'
+  ],
+  'media.asset_lifecycle.v1': [
+    'schema',
+    'assetId',
+    'projectId',
+    'state',
+    'refs',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState'
   ]
 }
 
@@ -123,7 +162,10 @@ const idFields = {
   [artifactKinds.mediaEvidence]: 'evidenceId',
   [artifactKinds.mediaReadiness]: 'readinessId',
   [artifactKinds.mediaOperatorDecision]: 'decisionId',
-  [artifactKinds.mediaLocalRunManifest]: 'runId'
+  [artifactKinds.mediaLocalRunManifest]: 'runId',
+  [artifactKinds.mediaProjectLayout]: 'projectId',
+  [artifactKinds.mediaLocalRef]: 'path',
+  [artifactKinds.mediaAssetLifecycle]: 'assetId'
 }
 
 const domainProjectSchemas = new Set([
@@ -131,7 +173,9 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaWorkPacket,
   artifactKinds.mediaProviderJobResultLocal,
   artifactKinds.mediaAssetDescriptor,
-  artifactKinds.mediaEvidence
+  artifactKinds.mediaEvidence,
+  artifactKinds.mediaProjectLayout,
+  artifactKinds.mediaAssetLifecycle
 ])
 
 const localGeneratedSchemas = new Set([
@@ -233,6 +277,26 @@ export function validateRecordShape(record, schemaId = record.schema) {
     throw new Error(`Record ${schemaId} has invalid decision type: ${record.decisionType}`)
   }
 
+  if (schemaId === artifactKinds.mediaLocalRef) {
+    assertPlacementClass(record.placementClass)
+    assertSafeLocalPath(record.path)
+    validateLocalFalseFlags(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaProjectLayout) {
+    validateLocalFalseFlags(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaAssetLifecycle) {
+    assertLifecycleState(record.state)
+    validateLocalFalseFlags(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaAssetDescriptor && record.localRef?.schema === artifactKinds.mediaLocalRef) {
+    assertPlacementClass(record.localRef.placementClass)
+    assertSafeLocalPath(record.localRef.path)
+  }
+
   if (localGeneratedSchemas.has(schemaId)) {
     validateLocalDoctrineFlags(record, schemaId)
   }
@@ -240,10 +304,22 @@ export function validateRecordShape(record, schemaId = record.schema) {
   return true
 }
 
-function validateLocalDoctrineFlags(record, schemaId) {
+function validateLocalFalseFlags(record, schemaId) {
+  const falseFlags = ['meshTruth', 'distributedProof', 'ratifiedSharedState']
+
   if (record.localOnly !== true) {
     throw new Error(`Record ${schemaId} must set localOnly=true`)
   }
+
+  for (const flag of falseFlags) {
+    if (record[flag] !== false) {
+      throw new Error(`Record ${schemaId} must set ${flag}=false`)
+    }
+  }
+}
+
+function validateLocalDoctrineFlags(record, schemaId) {
+  validateLocalFalseFlags(record, schemaId)
 
   if (!isNonEmptyString(record.localTruthLabel)) {
     throw new Error(`Record ${schemaId} is missing localTruthLabel`)

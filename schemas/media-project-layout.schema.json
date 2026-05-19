@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-project-layout.schema.json",
+  "title": "media.project_layout.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "projectId",
+    "mode",
+    "directories",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.project_layout.v1"
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "directories": {
+      "type": "object"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    }
+  }
+}

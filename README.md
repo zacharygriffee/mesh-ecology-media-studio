@@ -111,12 +111,11 @@ Run the local-only example:
 npm run wedge:example
 ```
 
-This reads `examples/card-to-candidate/input/card.json`, treats
-`examples/card-to-candidate/local-media/candidate.txt` as the local generated
-candidate, hashes it, writes a local work packet, provider result descriptor,
-asset descriptor, review evidence, readiness record, and local operator
-decision under `examples/card-to-candidate/out/`. Phase 2 also writes a local
-run manifest: `media-local-run-manifest.local.json`.
+This reads `examples/card-to-candidate/cards/card.json`, treats
+`examples/card-to-candidate/media/generated/candidate.txt` as the local
+generated candidate, hashes it, copies it into `media/accepted/` or
+`media/rejected/`, and writes local records under `records/`. The run also
+writes a local manifest under `records/manifests/`.
 
 All generated records are local drafts, local receipts, local caches, or local
 decisions. They are not mesh truth, distributed proof, or ratified shared state.
@@ -127,9 +126,9 @@ Run local tests:
 npm test
 ```
 
-Phase 2 inspection hardening adds the manifest, a small artifact-kind registry,
-and modest malformed-record checks so Edge can inspect later without being
-required now.
+Phase 2 inspection hardening added the manifest, a small artifact-kind
+registry, and modest malformed-record checks. Phase 3 adds the local project
+layout, safe local refs, placement classes, and asset lifecycle states.
 
 ## Start Here
 
@@ -137,3 +136,5 @@ required now.
 - [docs/01-charter.md](docs/01-charter.md)
 - [docs/09-first-wedge.md](docs/09-first-wedge.md)
 - [docs/10-edge-inspection-preview.md](docs/10-edge-inspection-preview.md)
+- [docs/11-local-project-layout.md](docs/11-local-project-layout.md)
+- [docs/12-asset-lifecycle.md](docs/12-asset-lifecycle.md)

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-local-ref.schema.json",
+  "title": "media.local_ref.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "refKind",
+    "placementClass",
+    "path",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.local_ref.v1"
+    },
+    "refKind": {
+      "const": "local-file"
+    },
+    "placementClass": {
+      "type": "string"
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contentType": {
+      "type": "string"
+    },
+    "hash": {
+      "type": "object"
+    },
+    "size": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    }
+  }
+}

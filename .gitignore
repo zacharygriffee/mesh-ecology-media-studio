@@ -1,3 +1,9 @@
 examples/**/out/
+examples/**/records/
+examples/**/media/accepted/
+examples/**/media/rejected/
+examples/**/media/proxies/
+examples/**/media/thumbnails/
+examples/**/media/exports/
 node_modules/
 npm-debug.log*

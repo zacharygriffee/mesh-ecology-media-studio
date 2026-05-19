@@ -15,6 +15,14 @@ import {
   makeRef
 } from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
+import {
+  createAssetLifecycle,
+  createLocalRef,
+  createProjectLayout,
+  placementClasses,
+  placementDirectory,
+  projectRelativePath
+} from './project-layout.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 
@@ -92,15 +100,17 @@ export async function runFirstWedge(options = {}) {
     throw new Error('decision must be accepted or rejected')
   }
 
-  const inputDir = path.join(projectDir, 'input')
-  const localMediaDir = path.join(projectDir, 'local-media')
-  const outDir = path.join(projectDir, 'out')
-  const binDir = path.join(outDir, decision)
-  const cardPath = path.join(inputDir, 'card.json')
-  const sourceCandidatePath = path.join(localMediaDir, 'candidate.txt')
-  const ingestedCandidatePath = path.join(binDir, 'candidate.txt')
+  const accepted = decision === 'accepted'
+  const cardsDir = path.join(projectDir, placementDirectory(placementClasses.card))
+  const generatedDir = path.join(projectDir, placementDirectory(placementClasses.mediaGenerated))
+  const finalPlacementClass = accepted ? placementClasses.mediaAccepted : placementClasses.mediaRejected
+  const finalMediaDir = path.join(projectDir, placementDirectory(finalPlacementClass))
+  const cardPath = path.join(cardsDir, 'card.json')
+  const sourceCandidatePath = path.join(generatedDir, 'candidate.txt')
+  const ingestedCandidateRelativePath = projectRelativePath(finalPlacementClass, 'candidate.txt')
+  const ingestedCandidatePath = path.join(projectDir, ingestedCandidateRelativePath)
 
-  await mkdir(binDir, { recursive: true })
+  await mkdir(finalMediaDir, { recursive: true })
 
   const card = JSON.parse(await readFile(cardPath, 'utf8'))
   validateRequiredRecord(card, 'media.card.v1')
@@ -109,9 +119,17 @@ export async function runFirstWedge(options = {}) {
 
   const fileStat = await stat(ingestedCandidatePath)
   const hash = await sha256File(ingestedCandidatePath)
-  const localPath = path.relative(projectDir, ingestedCandidatePath)
-  const candidateInputPath = path.relative(projectDir, sourceCandidatePath)
+  const localPath = ingestedCandidateRelativePath
+  const candidateInputPath = projectRelativePath(placementClasses.mediaGenerated, 'candidate.txt')
   const contentType = contentTypeFor(ingestedCandidatePath)
+  const projectLayout = createProjectLayout(card.projectId)
+  const localRef = createLocalRef({
+    placementClass: finalPlacementClass,
+    relativePath: localPath,
+    contentType,
+    hash,
+    size: fileStat.size
+  })
 
   const workPacket = createWorkPacket({ card, operatorRef })
   const providerJobResult = createProviderJobResult({
@@ -127,7 +145,18 @@ export async function runFirstWedge(options = {}) {
     hash,
     size: fileStat.size,
     contentType,
-    localPath
+    localPath,
+    localRef,
+    lifecycle: createAssetLifecycle({
+      assetId: `asset-${hash.value.slice(0, 16)}`,
+      projectId: card.projectId,
+      state: accepted ? 'accepted' : 'rejected',
+      refs: [
+        makeRef('media-card', card.cardId, card.schema),
+        makeRef('media-work-packet', workPacket.packetId, workPacket.schema)
+      ],
+      reason: `local candidate ${decision}`
+    })
   })
   const reviewEvidence = createReviewEvidence({
     card,
@@ -158,12 +187,12 @@ export async function runFirstWedge(options = {}) {
     operatorDecision
   }
   const generatedRecordPaths = {
-    workPacket: 'out/media-work-packet.local.json',
-    providerJobResult: 'out/provider-job-result.local.json',
-    assetDescriptor: 'out/media-asset-descriptor.local.json',
-    reviewEvidence: 'out/media-evidence.local.json',
-    readiness: 'out/media-readiness.local.json',
-    operatorDecision: 'out/media-operator-decision.local.json'
+    workPacket: 'records/work-packets/media-work-packet.local.json',
+    providerJobResult: 'records/provider-results/provider-job-result.local.json',
+    assetDescriptor: 'records/assets/media-asset-descriptor.local.json',
+    reviewEvidence: 'records/evidence/media-evidence.local.json',
+    readiness: 'records/readiness/media-readiness.local.json',
+    operatorDecision: 'records/decisions/media-operator-decision.local.json'
   }
   const localRunManifest = createLocalRunManifest({
     card,
@@ -181,17 +210,27 @@ export async function runFirstWedge(options = {}) {
   validateRequiredRecord(operatorDecision)
   validateRequiredRecord(localRunManifest)
 
-  await mkdir(outDir, { recursive: true })
-  await writeJson(path.join(outDir, 'media-work-packet.local.json'), workPacket)
-  await writeJson(path.join(outDir, 'provider-job-result.local.json'), providerJobResult)
-  await writeJson(path.join(outDir, 'media-asset-descriptor.local.json'), assetDescriptor)
-  await writeJson(path.join(outDir, 'media-evidence.local.json'), reviewEvidence)
-  await writeJson(path.join(outDir, 'media-readiness.local.json'), readiness)
-  await writeJson(path.join(outDir, 'media-operator-decision.local.json'), operatorDecision)
-  await writeJson(path.join(outDir, 'media-local-run-manifest.local.json'), localRunManifest)
+  const manifestPath = 'records/manifests/media-local-run-manifest.local.json'
+  const allRecordPaths = {
+    ...generatedRecordPaths,
+    localRunManifest: manifestPath
+  }
+
+  for (const recordPath of Object.values(allRecordPaths)) {
+    await mkdir(path.dirname(path.join(projectDir, recordPath)), { recursive: true })
+  }
+
+  await writeJson(path.join(projectDir, generatedRecordPaths.workPacket), workPacket)
+  await writeJson(path.join(projectDir, generatedRecordPaths.providerJobResult), providerJobResult)
+  await writeJson(path.join(projectDir, generatedRecordPaths.assetDescriptor), assetDescriptor)
+  await writeJson(path.join(projectDir, generatedRecordPaths.reviewEvidence), reviewEvidence)
+  await writeJson(path.join(projectDir, generatedRecordPaths.readiness), readiness)
+  await writeJson(path.join(projectDir, generatedRecordPaths.operatorDecision), operatorDecision)
+  await writeJson(path.join(projectDir, manifestPath), localRunManifest)
 
   return {
     projectDir,
+    projectLayout,
     outputs: {
       workPacket,
       providerJobResult,
