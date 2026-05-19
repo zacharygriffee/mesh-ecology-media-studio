@@ -29,6 +29,7 @@ media.project_status.local.v1
 ```
 
 It summarizes cards, references, provider results, adapter runs, assets,
-reviews, candidate reviews, decisions, manifests, inspection packets, bundles,
-and provider ledgers. Counts and refs are local cache state only, not mesh
-truth, provider truth, byte proof, or materialization proof.
+reviews, candidate reviews, continuity evidence, production records, approval
+proposals, byte descriptor proposals, decisions, manifests, inspection packets,
+bundles, and provider ledgers. Counts and refs are local cache state only, not
+mesh truth, provider truth, byte proof, authority, or materialization proof.

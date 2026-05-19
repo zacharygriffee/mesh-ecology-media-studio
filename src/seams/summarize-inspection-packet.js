@@ -56,8 +56,16 @@ export async function summarizeInspectionPacket({
     artifact.path,
     artifact.byteRefPreview?.status ?? 'none'
   ])
+  const schemaRows = Object.entries(countRecordSchemas(record.recordRefs))
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([schema, count]) => [schema, String(count)])
 
   printTable(['field', 'value'], rows)
+  if (schemaRows.length > 0) {
+    console.log('')
+    printTable(['recordSchema', 'count'], schemaRows)
+  }
+
   if (artifactRows.length > 0) {
     console.log('')
     printTable(['artifact', 'contentType', 'path', 'bytePreview'], artifactRows)
@@ -66,8 +74,20 @@ export async function summarizeInspectionPacket({
   return {
     packet: record,
     rows,
+    schemaRows,
     artifactRows
   }
+}
+
+function countRecordSchemas(recordRefs) {
+  const counts = {}
+
+  for (const ref of Object.values(recordRefs)) {
+    const schema = ref.schema ?? 'unknown'
+    counts[schema] = (counts[schema] ?? 0) + 1
+  }
+
+  return counts
 }
 
 function printTable(headers, rows) {

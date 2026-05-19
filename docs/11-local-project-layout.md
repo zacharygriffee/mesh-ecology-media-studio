@@ -24,6 +24,9 @@ project/
     evidence/
     readiness/
     decisions/
+    production/
+    approvals/
+    bytes/
     manifests/
 ```
 
@@ -48,3 +51,15 @@ Local refs must be safe relative refs only. Reject:
 
 Local refs may help Edge inspect later, but they do not prove byte
 availability, materialization, authority, or mesh truth.
+
+## Record Folder Conventions
+
+- `records/production/`: local production units, reference primitives,
+  continuity bands, render strategies, and production descriptors.
+- `records/approvals/`: local approval proposals. These require later
+  authority and do not grant ratifier authority or publication authorization.
+- `records/bytes/`: local byte descriptor proposals. These preview future byte
+  descriptors and do not prove byte availability or materialization.
+
+Inspection commands may include these folders when records are present. The
+folders remain local cache/receipt/proposal space, not shared truth.

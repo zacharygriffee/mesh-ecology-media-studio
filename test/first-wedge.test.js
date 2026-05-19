@@ -680,6 +680,7 @@ test('inspection packet summary and index commands report local records', async 
 
   assert.equal(summary.packet.schema, 'media.edge_inspection_packet.local.v1')
   assert.equal(summary.artifactRows.length, 1)
+  assert.ok(summary.schemaRows.some(([schema, count]) => schema === 'media.asset.descriptor.v1' && count === '1'))
   assert.equal(index.manifests.length, 1)
   assert.equal(index.providerResults.length, 1)
   assert.equal(index.inspectionPackets.length, 1)
@@ -901,6 +902,24 @@ test('project status summarizes local records without truth claims', async () =>
   await inspectLocalRun({ projectDir: dir })
   await indexProviderRuns({ projectDir: dir })
   await writeCandidateReview({ projectDir: dir })
+  await writeApprovalProposal({ projectDir: dir })
+  await writeByteDescriptorProposals({ projectDir: dir })
+
+  const productionDir = path.join(dir, 'records', 'production')
+  await mkdir(productionDir, { recursive: true })
+  const sceneUnit = createProductionUnit({
+    projectId: 'project-test',
+    unitKind: 'scene',
+    title: 'Status scene unit',
+    purpose: 'Project status production count fixture.'
+  })
+  const sceneDescriptor = createSceneDescriptor({
+    projectId: 'project-test',
+    productionUnitRef: refForProductionRecord(sceneUnit),
+    title: 'Status scene descriptor'
+  })
+  await writeFile(path.join(productionDir, 'scene-unit.local.json'), `${JSON.stringify(sceneUnit, null, 2)}\n`)
+  await writeFile(path.join(productionDir, 'scene-descriptor.local.json'), `${JSON.stringify(sceneDescriptor, null, 2)}\n`)
 
   const result = await writeProjectStatus({ projectDir: dir })
 
@@ -909,6 +928,10 @@ test('project status summarizes local records without truth claims', async () =>
   assert.equal(result.status.counts.providerResults, 1)
   assert.equal(result.status.counts.assets, 1)
   assert.equal(result.status.counts.candidateReviews, 1)
+  assert.equal(result.status.counts.productionUnits, 1)
+  assert.equal(result.status.counts.productionDescriptors, 1)
+  assert.equal(result.status.counts.approvalProposals, 1)
+  assert.equal(result.status.counts.byteDescriptorProposals, 1)
   assert.equal(result.status.meshTruth, false)
   assert.equal(result.status.providerTruth, false)
   assert.equal(validateRequiredRecord(result.status), true)

@@ -265,7 +265,9 @@ publication authority. Phase 16 adds approval proposal records that can be
 inspected later without claiming ratifier authority or publication
 authorization. Phase 17 adds byte descriptor proposal records for accepted and
 reference assets without claiming byte availability, materialization, or byte
-authority.
+authority. Phase 18 documents local record folder conventions and extends
+local project status plus inspection summaries for production, approval, and
+byte proposal records.
 
 ## Start Here
 
@@ -295,3 +297,4 @@ authority.
 - [docs/30-production-descriptors.md](docs/30-production-descriptors.md)
 - [docs/31-approval-proposals.md](docs/31-approval-proposals.md)
 - [docs/32-byte-descriptor-proposals.md](docs/32-byte-descriptor-proposals.md)
+- [docs/33-record-folder-conventions.md](docs/33-record-folder-conventions.md)
