@@ -5,6 +5,7 @@ import path from 'node:path'
 import test from 'node:test'
 
 import { runFirstWedge } from '../src/local/run-first-wedge.js'
+import { promoteCandidate } from '../src/local/promote-candidate.js'
 import { validateRequiredRecord } from '../src/contracts/schemas.js'
 import {
   createGenerationRequestFromCard,
@@ -43,8 +44,10 @@ import {
   runVeniceLiveSmoke
 } from '../src/providers/venice-live-smoke.js'
 import { inspectLocalRun } from '../src/seams/inspect-local-run.js'
+import { indexInspectionRecords } from '../src/seams/index-inspection-records.js'
 import { inspectProviderFailure } from '../src/seams/inspect-provider-failure.js'
 import { inspectVeniceSmoke } from '../src/seams/inspect-venice-smoke.js'
+import { summarizeInspectionPacket } from '../src/seams/summarize-inspection-packet.js'
 
 async function createFixtureProject() {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-wedge-'))
@@ -547,7 +550,9 @@ test('generic local-run inspection packet exports first-wedge records', async ()
   assert.equal(result.packet.schema, 'media.edge_inspection_packet.local.v1')
   assert.equal(result.packet.recordRefs.assetDescriptor.path, 'records/assets/media-asset-descriptor.local.json')
   assert.equal(result.packet.generatedArtifactRefs[0].path, 'media/accepted/candidate.txt')
+  assert.equal(result.packet.generatedArtifactRefs[0].byteRefPreview.schema, 'media.byte_reference.preview.local.v1')
   assert.equal(result.packet.generatedArtifactRefs[0].byteRefPreview.byteAvailabilityProof, false)
+  assert.equal(validateRequiredRecord(result.packet.generatedArtifactRefs[0].byteRefPreview), true)
   assert.equal(validateRequiredRecord(result.packet), true)
 
   const written = JSON.parse(
@@ -557,6 +562,46 @@ test('generic local-run inspection packet exports first-wedge records', async ()
   assert.equal(written.materializationProof, false)
 })
 
+test('inspection packet summary and index commands report local records', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({ projectDir: dir })
+  await inspectLocalRun({ projectDir: dir })
+
+  const summary = await summarizeInspectionPacket({
+    projectDir: dir,
+    packet: 'records/exports/local-run-edge-inspection-packet.local.json'
+  })
+  const index = await indexInspectionRecords({ projectDir: dir, json: false })
+
+  assert.equal(summary.packet.schema, 'media.edge_inspection_packet.local.v1')
+  assert.equal(summary.artifactRows.length, 1)
+  assert.equal(index.manifests.length, 1)
+  assert.equal(index.providerResults.length, 1)
+  assert.equal(index.inspectionPackets.length, 1)
+})
+
+test('promote candidate copies placement and records local decision without provider work', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({ projectDir: dir })
+
+  const result = await promoteCandidate({
+    projectDir: dir,
+    decision: 'rejected',
+    operatorRef: 'operator-test'
+  })
+
+  assert.equal(result.assetDescriptor.localRef.path, 'media/rejected/candidate.txt')
+  assert.equal(result.assetDescriptor.source.apiCalled, false)
+  assert.equal(result.review.operatorDecision.decisionType, 'reject')
+  assert.equal(validateRequiredRecord(result.assetDescriptor), true)
+
+  const decision = JSON.parse(
+    await readFile(path.join(dir, 'records', 'decisions', 'promoted-candidate-rejected-decision.local.json'), 'utf8')
+  )
+  assert.equal(decision.localDecisionOnly, true)
+  assert.equal(decision.decisionType, 'reject')
+})
+
 test('committed local-run inspection fixture validates', async () => {
   const packet = JSON.parse(
     await readFile('examples/inspection-fixtures/card-to-candidate/inspection-packets/local-run-edge-inspection-packet.local.json', 'utf8')
@@ -564,6 +609,7 @@ test('committed local-run inspection fixture validates', async () => {
 
   assert.equal(packet.schema, 'media.edge_inspection_packet.local.v1')
   assert.equal(packet.recordRefs.assetDescriptor.path, 'records/assets/media-asset-descriptor.local.json')
+  assert.equal(packet.generatedArtifactRefs[0].byteRefPreview.schema, 'media.byte_reference.preview.local.v1')
   assert.equal(packet.generatedArtifactRefs[0].byteRefPreview.materializationProof, false)
   assert.equal(validateRequiredRecord(packet), true)
 })

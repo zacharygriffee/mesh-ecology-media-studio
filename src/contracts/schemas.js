@@ -36,7 +36,8 @@ export const schemaFiles = {
   'media.provider_shape.v1': 'schemas/media-provider-shape.schema.json',
   'media.provider_endpoint_shape.v1': 'schemas/media-provider-endpoint-shape.schema.json',
   'media.provider_mapping.v1': 'schemas/media-provider-mapping.schema.json',
-  'media.edge_inspection_packet.local.v1': 'schemas/media-edge-inspection-packet-local.schema.json'
+  'media.edge_inspection_packet.local.v1': 'schemas/media-edge-inspection-packet-local.schema.json',
+  'media.byte_reference.preview.local.v1': 'schemas/media-byte-reference-preview-local.schema.json'
 }
 
 export const requiredFields = {
@@ -276,6 +277,23 @@ export const requiredFields = {
     'byteAvailabilityProof',
     'materializationProof',
     'publicationAuthorization'
+  ],
+  'media.byte_reference.preview.local.v1': [
+    'schema',
+    'byteRefPreviewId',
+    'sourceRef',
+    'localRef',
+    'hash',
+    'size',
+    'contentType',
+    'status',
+    'byteAvailabilityProof',
+    'materializationProof',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'createdAt'
   ]
 }
 
@@ -298,7 +316,8 @@ const idFields = {
   [artifactKinds.mediaProviderShape]: 'providerId',
   [artifactKinds.mediaProviderEndpointShape]: 'endpointId',
   [artifactKinds.mediaProviderMapping]: 'mappingId',
-  [artifactKinds.mediaEdgeInspectionPacketLocal]: 'packetId'
+  [artifactKinds.mediaEdgeInspectionPacketLocal]: 'packetId',
+  [artifactKinds.mediaByteReferencePreviewLocal]: 'byteRefPreviewId'
 }
 
 const domainProjectSchemas = new Set([
@@ -320,7 +339,8 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaReadiness,
   artifactKinds.mediaOperatorDecision,
   artifactKinds.mediaLocalRunManifest,
-  artifactKinds.mediaEdgeInspectionPacketLocal
+  artifactKinds.mediaEdgeInspectionPacketLocal,
+  artifactKinds.mediaByteReferencePreviewLocal
 ])
 
 const readinessStates = new Set(['draft', 'blocked', 'ready', 'caution', 'complete'])
@@ -507,6 +527,26 @@ export function validateRecordShape(record, schemaId = record.schema) {
     record.generatedArtifactRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.generatedArtifactRefs[${index}]`))
   }
 
+  if (schemaId === artifactKinds.mediaByteReferencePreviewLocal) {
+    validateRef(record.sourceRef, `${schemaId}.sourceRef`)
+
+    if (!record.localRef || typeof record.localRef !== 'object') {
+      throw new Error(`Record ${schemaId} must include localRef`)
+    }
+
+    assertSafeLocalPath(record.localRef.path)
+
+    if (record.status !== 'not-materialized') {
+      throw new Error(`Record ${schemaId} must set status=not-materialized`)
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+
+    if (record.byteAvailabilityProof !== false || record.materializationProof !== false) {
+      throw new Error(`Record ${schemaId} must not claim byte availability or materialization proof`)
+    }
+  }
+
   if (localGeneratedSchemas.has(schemaId)) {
     validateLocalDoctrineFlags(record, schemaId)
   }
@@ -583,6 +623,14 @@ function validateLocalDoctrineFlags(record, schemaId) {
       }
     }
   }
+
+  if (schemaId === artifactKinds.mediaByteReferencePreviewLocal) {
+    for (const flag of ['byteAvailabilityProof', 'materializationProof']) {
+      if (record[flag] !== false) {
+        throw new Error(`Record ${schemaId} must set ${flag}=false`)
+      }
+    }
+  }
 }
 
 function validateRef(ref, label) {
@@ -612,6 +660,10 @@ function validateGeneratedRecordRef(ref, label) {
 
   if (ref.localOnly !== true) {
     throw new Error(`${label}.localOnly must be true`)
+  }
+
+  if (ref.byteRefPreview !== undefined) {
+    validateRequiredRecord(ref.byteRefPreview, artifactKinds.mediaByteReferencePreviewLocal)
   }
 }
 

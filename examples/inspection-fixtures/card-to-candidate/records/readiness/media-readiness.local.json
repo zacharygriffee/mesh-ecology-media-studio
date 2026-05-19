@@ -1,6 +1,6 @@
 {
   "schema": "media.readiness.v1",
-  "readinessId": "readiness-15e848de-e24e-4775-913a-1b6677013515",
+  "readinessId": "readiness-4759d0d9-4b9c-4394-aa65-2c972bc764de",
   "subjectRef": {
     "kind": "media-asset",
     "id": "asset-8fd840913d8f9778",
@@ -20,5 +20,5 @@
   "distributedProof": false,
   "ratifiedSharedState": false,
   "truthStatus": "not mesh truth; not distributed proof; not ratified shared state",
-  "createdAt": "2026-05-19T09:45:37.129Z"
+  "createdAt": "2026-05-19T09:53:33.349Z"
 }

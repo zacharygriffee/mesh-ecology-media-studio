@@ -42,7 +42,7 @@
       },
       {
         "kind": "media-work-packet",
-        "id": "packet-9c45e526-2ba8-4a22-b31f-b6f1b09e4406",
+        "id": "packet-baa26aa7-228b-437c-861c-f228707ca4fb",
         "schema": "media.work_packet.v1"
       }
     ],
@@ -70,7 +70,7 @@
         },
         {
           "kind": "media-work-packet",
-          "id": "packet-9c45e526-2ba8-4a22-b31f-b6f1b09e4406",
+          "id": "packet-baa26aa7-228b-437c-861c-f228707ca4fb",
           "schema": "media.work_packet.v1"
         }
       ],
@@ -87,5 +87,5 @@
   "distributedProof": false,
   "ratifiedSharedState": false,
   "truthStatus": "not mesh truth; not distributed proof; not ratified shared state",
-  "createdAt": "2026-05-19T09:45:37.129Z"
+  "createdAt": "2026-05-19T09:53:33.349Z"
 }

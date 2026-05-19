@@ -2,7 +2,11 @@ import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { createEdgeInspectionPacket, makeRef } from '../contracts/constructors.js'
+import {
+  createByteReferencePreview,
+  createEdgeInspectionPacket,
+  makeRef
+} from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
 
@@ -80,6 +84,7 @@ export async function inspectLocalRun({
     }
 
     await assertLocalFileExists(root, localRef.path)
+    const assetRef = makeRef('media-asset', record.assetId, record.schema)
     generatedArtifactRefs.push({
       kind: 'media-generated-asset',
       id: record.assetId,
@@ -87,15 +92,13 @@ export async function inspectLocalRun({
       path: localRef.path,
       hash: record.hash,
       contentType: record.contentType,
-      byteRefPreview: {
-        intendedSchema: 'media.byte_reference.preview.local.v1',
-        status: 'not-materialized',
+      byteRefPreview: createByteReferencePreview({
+        sourceRef: assetRef,
         localRef,
         hash: record.hash,
         size: record.size,
-        byteAvailabilityProof: false,
-        materializationProof: false
-      },
+        contentType: record.contentType
+      }),
       localOnly: true
     })
   }
@@ -106,6 +109,7 @@ export async function inspectLocalRun({
     artifactKinds: Array.from(new Set([
       manifestRecord.schema,
       ...Object.values(records).map((record) => record.schema),
+      ...generatedArtifactRefs.map((ref) => ref.byteRefPreview?.schema).filter(Boolean),
       'media.edge_inspection_packet.local.v1'
     ])),
     generatedArtifactRefs,

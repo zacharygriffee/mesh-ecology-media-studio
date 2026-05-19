@@ -10,9 +10,12 @@
   },
   "scripts": {
     "inspect:local-run": "node src/seams/inspect-local-run.js",
+    "inspect:index": "node src/seams/index-inspection-records.js",
     "inspect:provider-failure": "node src/seams/inspect-provider-failure.js",
+    "inspect:summary": "node src/seams/summarize-inspection-packet.js",
     "inspect:venice-smoke": "node src/seams/inspect-venice-smoke.js",
     "provider:venice:smoke": "node src/providers/venice-live-smoke.js",
+    "promote:candidate": "node src/local/promote-candidate.js",
     "wedge:example": "node src/local/run-first-wedge.js --project-dir examples/card-to-candidate --decision accepted",
     "test": "node --test test/*.test.js"
   },

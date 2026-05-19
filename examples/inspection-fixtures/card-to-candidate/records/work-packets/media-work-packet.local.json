@@ -1,6 +1,6 @@
 {
   "schema": "media.work_packet.v1",
-  "packetId": "packet-9c45e526-2ba8-4a22-b31f-b6f1b09e4406",
+  "packetId": "packet-baa26aa7-228b-437c-861c-f228707ca4fb",
   "intentFamily": "image-generation",
   "projectId": "studio-example-project",
   "cardRef": {
@@ -41,5 +41,5 @@
   "distributedProof": false,
   "ratifiedSharedState": false,
   "truthStatus": "not mesh truth; not distributed proof; not ratified shared state",
-  "createdAt": "2026-05-19T09:45:37.128Z"
+  "createdAt": "2026-05-19T09:53:33.348Z"
 }

@@ -2,7 +2,11 @@ import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { createEdgeInspectionPacket, makeRef } from '../contracts/constructors.js'
+import {
+  createByteReferencePreview,
+  createEdgeInspectionPacket,
+  makeRef
+} from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
 
@@ -70,6 +74,7 @@ export async function inspectVeniceSmoke({
   }
 
   await assertLocalFileExists(root, assetLocalRef.path)
+  const assetRef = makeRef('media-asset', records.assetDescriptor.assetId, records.assetDescriptor.schema)
 
   const packet = createEdgeInspectionPacket({
     sourceRunRef: localRecordRef('media-local-run-manifest', recordPaths.manifest, records.manifest.schema),
@@ -92,6 +97,7 @@ export async function inspectVeniceSmoke({
       records.reviewEvidence.schema,
       records.readiness.schema,
       records.operatorDecision.schema,
+      'media.byte_reference.preview.local.v1',
       'media.edge_inspection_packet.local.v1'
     ],
     generatedArtifactRefs: [
@@ -102,6 +108,13 @@ export async function inspectVeniceSmoke({
         path: assetLocalRef.path,
         hash: records.assetDescriptor.hash,
         contentType: records.assetDescriptor.contentType,
+        byteRefPreview: createByteReferencePreview({
+          sourceRef: assetRef,
+          localRef: assetLocalRef,
+          hash: records.assetDescriptor.hash,
+          size: records.assetDescriptor.size,
+          contentType: records.assetDescriptor.contentType
+        }),
         localOnly: true
       }
     ],

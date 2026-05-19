@@ -288,6 +288,35 @@ export function createEdgeInspectionPacket({
   }
 }
 
+export function createByteReferencePreview({
+  sourceRef,
+  localRef,
+  hash,
+  size,
+  contentType,
+  createdAt = nowIso()
+}) {
+  return {
+    schema: artifactKinds.mediaByteReferencePreviewLocal,
+    byteRefPreviewId: `byte-ref-preview-${hash.value.slice(0, 16)}`,
+    sourceRef,
+    localRef,
+    hash,
+    size,
+    contentType,
+    status: 'not-materialized',
+    byteAvailabilityProof: false,
+    materializationProof: false,
+    localOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    localTruthLabel: 'local cache',
+    truthStatus,
+    createdAt
+  }
+}
+
 function extractNestedCapabilitySchemas(providerProfile) {
   if (!providerProfile || !Array.isArray(providerProfile.capabilities)) {
     return []
@@ -309,5 +338,6 @@ export function idForRecord(record) {
   if (record.providerId) return record.providerId
   if (record.capabilityId) return record.capabilityId
   if (record.resultId) return record.resultId
+  if (record.byteRefPreviewId) return record.byteRefPreviewId
   return undefined
 }

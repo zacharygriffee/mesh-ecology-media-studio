@@ -48,6 +48,18 @@ npm run inspect:local-run -- --project-dir examples/card-to-candidate
 The generic command reads `records/manifests/media-local-run-manifest.local.json`
 by default and follows the manifest's generated record refs.
 
+Summarize an inspection packet in a compact table:
+
+```bash
+npm run inspect:summary -- --project-dir examples/card-to-candidate --packet records/exports/local-run-edge-inspection-packet.local.json
+```
+
+Index available inspection inputs and outputs:
+
+```bash
+npm run inspect:index -- --project-dir examples/card-to-candidate
+```
+
 ## Provider Failure Command
 
 Export a failed provider result posture without requiring generated assets:
@@ -78,7 +90,13 @@ authorization.
 
 Generated artifact refs may include `byteRefPreview`. These fields describe how
 a future byte reference could be derived from local hash/size/content-type
-metadata. They are previews only and are not byte materialization proof.
+metadata. The preview schema is:
+
+```text
+media.byte_reference.preview.local.v1
+```
+
+Byte previews are local-only and are not byte materialization proof.
 
 ## Committed Fixture
 

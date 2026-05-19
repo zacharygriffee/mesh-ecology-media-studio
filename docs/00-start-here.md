@@ -47,6 +47,13 @@ Export a generic manifest-backed local run with:
 npm run inspect:local-run -- --project-dir examples/card-to-candidate
 ```
 
+Summarize or index local inspection records with:
+
+```bash
+npm run inspect:summary -- --project-dir examples/card-to-candidate --packet records/exports/local-run-edge-inspection-packet.local.json
+npm run inspect:index -- --project-dir examples/card-to-candidate
+```
+
 The optional Venice live smoke command is intentionally gated:
 
 ```bash

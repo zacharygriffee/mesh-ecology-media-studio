@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-byte-reference-preview-local.schema.json",
+  "title": "media.byte_reference.preview.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "byteRefPreviewId",
+    "sourceRef",
+    "localRef",
+    "hash",
+    "size",
+    "contentType",
+    "status",
+    "byteAvailabilityProof",
+    "materializationProof",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "createdAt"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.byte_reference.preview.local.v1"
+    },
+    "byteRefPreviewId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceRef": {
+      "type": "object"
+    },
+    "localRef": {
+      "type": "object"
+    },
+    "hash": {
+      "type": "object"
+    },
+    "size": {
+      "type": "number",
+      "minimum": 0
+    },
+    "contentType": {
+      "type": "string"
+    },
+    "status": {
+      "const": "not-materialized"
+    },
+    "byteAvailabilityProof": {
+      "const": false
+    },
+    "materializationProof": {
+      "const": false
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

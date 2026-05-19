@@ -157,6 +157,19 @@ Export failed provider posture from local failure records:
 npm run inspect:provider-failure
 ```
 
+Summarize or index inspection records:
+
+```bash
+npm run inspect:summary -- --project-dir examples/card-to-candidate --packet records/exports/local-run-edge-inspection-packet.local.json
+npm run inspect:index -- --project-dir examples/card-to-candidate
+```
+
+Promote an existing local candidate without rerunning provider work:
+
+```bash
+npm run promote:candidate -- --project-dir examples/card-to-candidate --decision accepted
+```
+
 Phase 2 inspection hardening added the manifest, a small artifact-kind
 registry, and modest malformed-record checks. Phase 3 adds the local project
 layout, safe local refs, placement classes, and asset lifecycle states. Phase 4

@@ -19,5 +19,9 @@ Current local inspection helpers:
 - `inspect-venice-smoke.js`: exports a successful Venice smoke run.
 - `inspect-provider-failure.js`: exports a failed provider result posture
   without generated assets.
+- `summarize-inspection-packet.js`: prints a compact table for an inspection
+  packet.
+- `index-inspection-records.js`: lists local manifests, provider results, and
+  inspection packets.
 
 These helpers do not call Edge or publish to mesh.

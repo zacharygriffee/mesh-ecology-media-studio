@@ -56,6 +56,24 @@ Export failed provider posture:
 npm run inspect:provider-failure
 ```
 
+Summarize an inspection packet:
+
+```bash
+npm run inspect:summary -- --project-dir examples/card-to-candidate --packet records/exports/local-run-edge-inspection-packet.local.json
+```
+
+Index inspection records in a project:
+
+```bash
+npm run inspect:index -- --project-dir examples/card-to-candidate
+```
+
+Promote an existing local candidate without rerunning provider work:
+
+```bash
+npm run promote:candidate -- --project-dir examples/card-to-candidate --decision accepted
+```
+
 Inspection export creates local `media.edge_inspection_packet.local.v1` packets.
 It does not call Venice, Edge, Bytes, causal-substrate, or mesh publication.
 
