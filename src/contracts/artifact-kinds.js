@@ -35,7 +35,8 @@ export const artifactKinds = Object.freeze({
   mediaProductionUnit: 'media.production_unit.v1',
   mediaReferencePrimitive: 'media.reference_primitive.v1',
   mediaContinuityBand: 'media.continuity_band.v1',
-  mediaRenderStrategy: 'media.render_strategy.v1'
+  mediaRenderStrategy: 'media.render_strategy.v1',
+  mediaProductionDescriptorLocal: 'media.production_descriptor.local.v1'
 })
 
 export const knownArtifactKinds = Object.freeze(Object.values(artifactKinds))

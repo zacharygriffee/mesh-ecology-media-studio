@@ -171,8 +171,8 @@ sequence -> scene -> shot -> clip
 ```
 
 But Studio should treat that as a strategy projection over production units.
-Future work can add scene/shot/rough-cut descriptors as specializations after
-the generalized records exist.
+Local production descriptors provide scene, shot, clip, rough-cut, and export
+specializations after the generalized records exist.
 
 ## Local-Only Status
 

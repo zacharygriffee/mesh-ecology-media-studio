@@ -39,6 +39,7 @@ Known Studio artifact kinds:
 - `media.reference_primitive.v1`
 - `media.continuity_band.v1`
 - `media.render_strategy.v1`
+- `media.production_descriptor.local.v1`
 
 This registry is intentionally small. It prevents naming drift while the local
 wedge remains standalone-local and Edge-compatible without implementing Edge

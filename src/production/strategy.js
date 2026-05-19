@@ -83,6 +83,14 @@ export const renderInputModes = Object.freeze([
   'media-transformation'
 ])
 
+export const productionDescriptorKinds = Object.freeze([
+  'scene',
+  'shot',
+  'clip',
+  'rough-cut',
+  'export'
+])
+
 export function assertProductionUnitKind(kind) {
   assertKnown(kind, productionUnitKinds, 'production unit kind')
   return true
@@ -110,6 +118,11 @@ export function assertRenderStrategyKind(kind) {
 
 export function assertRenderInputMode(mode) {
   assertKnown(mode, renderInputModes, 'render input mode')
+  return true
+}
+
+export function assertProductionDescriptorKind(kind) {
+  assertKnown(kind, productionDescriptorKinds, 'production descriptor kind')
   return true
 }
 
@@ -255,6 +268,182 @@ export function createRenderStrategy({
   return strategy
 }
 
+export function createProductionDescriptor({
+  projectId,
+  descriptorKind,
+  productionUnitRef,
+  title,
+  parentUnitRefs = [],
+  continuityBandRefs = [],
+  referencePrimitiveRefs = [],
+  renderStrategyRefs = [],
+  descriptor = {},
+  createdAt = nowIso()
+}) {
+  assertProductionDescriptorKind(descriptorKind)
+  const productionDescriptor = {
+    schema: artifactKinds.mediaProductionDescriptorLocal,
+    descriptorId: `production-descriptor-${descriptorKind}-${randomUUID()}`,
+    projectId,
+    descriptorKind,
+    productionUnitRef,
+    title,
+    parentUnitRefs,
+    continuityBandRefs,
+    referencePrimitiveRefs,
+    renderStrategyRefs,
+    descriptor,
+    localTruthLabel: 'local draft',
+    ...localFalseFlags,
+    truthStatus,
+    createdAt
+  }
+
+  validateRequiredRecord(productionDescriptor)
+  return productionDescriptor
+}
+
+export function createSceneDescriptor({
+  projectId,
+  productionUnitRef,
+  title,
+  sequenceRef,
+  continuityBandRefs = [],
+  referencePrimitiveRefs = [],
+  renderStrategyRefs = [],
+  scene = {},
+  createdAt = nowIso()
+}) {
+  return createProductionDescriptor({
+    projectId,
+    descriptorKind: 'scene',
+    productionUnitRef,
+    title,
+    parentUnitRefs: compactRefs([sequenceRef]),
+    continuityBandRefs,
+    referencePrimitiveRefs,
+    renderStrategyRefs,
+    descriptor: {
+      scene,
+      role: 'classic video planning specialization',
+      sceneShotClipProjectionOnly: true
+    },
+    createdAt
+  })
+}
+
+export function createShotDescriptor({
+  projectId,
+  productionUnitRef,
+  title,
+  sceneRef,
+  continuityBandRefs = [],
+  referencePrimitiveRefs = [],
+  renderStrategyRefs = [],
+  shot = {},
+  createdAt = nowIso()
+}) {
+  return createProductionDescriptor({
+    projectId,
+    descriptorKind: 'shot',
+    productionUnitRef,
+    title,
+    parentUnitRefs: compactRefs([sceneRef]),
+    continuityBandRefs,
+    referencePrimitiveRefs,
+    renderStrategyRefs,
+    descriptor: {
+      shot,
+      role: 'classic video planning specialization',
+      sceneShotClipProjectionOnly: true
+    },
+    createdAt
+  })
+}
+
+export function createClipDescriptor({
+  projectId,
+  productionUnitRef,
+  title,
+  shotRef,
+  continuityBandRefs = [],
+  referencePrimitiveRefs = [],
+  renderStrategyRefs = [],
+  clip = {},
+  createdAt = nowIso()
+}) {
+  return createProductionDescriptor({
+    projectId,
+    descriptorKind: 'clip',
+    productionUnitRef,
+    title,
+    parentUnitRefs: compactRefs([shotRef]),
+    continuityBandRefs,
+    referencePrimitiveRefs,
+    renderStrategyRefs,
+    descriptor: {
+      clip,
+      role: 'classic video planning specialization',
+      sceneShotClipProjectionOnly: true
+    },
+    createdAt
+  })
+}
+
+export function createRoughCutDescriptor({
+  projectId,
+  productionUnitRef,
+  title,
+  sourceUnitRefs = [],
+  assetRefs = [],
+  timeline = {},
+  notes = [],
+  createdAt = nowIso()
+}) {
+  return createProductionDescriptor({
+    projectId,
+    descriptorKind: 'rough-cut',
+    productionUnitRef,
+    title,
+    parentUnitRefs: sourceUnitRefs,
+    descriptor: {
+      timeline,
+      assetRefs,
+      notes,
+      assemblyOnly: true,
+      publicationAuthorization: false
+    },
+    createdAt
+  })
+}
+
+export function createExportDescriptor({
+  projectId,
+  productionUnitRef,
+  title,
+  sourceUnitRefs = [],
+  sourceAssetRefs = [],
+  target = {},
+  delivery = {},
+  createdAt = nowIso()
+}) {
+  return createProductionDescriptor({
+    projectId,
+    descriptorKind: 'export',
+    productionUnitRef,
+    title,
+    parentUnitRefs: sourceUnitRefs,
+    descriptor: {
+      target,
+      delivery,
+      sourceAssetRefs,
+      exportReceiptOnly: true,
+      publicationAuthorization: false
+    },
+    createdAt
+  })
+}
+
 export function refForProductionRecord(record) {
   return makeRef(record.schema, idForProductionRecord(record), record.schema)
 }
@@ -269,5 +458,10 @@ function idForProductionRecord(record) {
   return record.productionUnitId ??
     record.primitiveId ??
     record.bandId ??
-    record.strategyId
+    record.strategyId ??
+    record.descriptorId
+}
+
+function compactRefs(refs) {
+  return refs.filter((ref) => ref !== undefined && ref !== null)
 }

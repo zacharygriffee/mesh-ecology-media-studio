@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-production-descriptor-local.schema.json",
+  "title": "media.production_descriptor.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "descriptorId",
+    "projectId",
+    "descriptorKind",
+    "productionUnitRef",
+    "title",
+    "parentUnitRefs",
+    "continuityBandRefs",
+    "referencePrimitiveRefs",
+    "renderStrategyRefs",
+    "descriptor",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "localTruthLabel",
+    "truthStatus",
+    "createdAt"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.production_descriptor.local.v1"
+    },
+    "descriptorId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "descriptorKind": {
+      "enum": [
+        "scene",
+        "shot",
+        "clip",
+        "rough-cut",
+        "export"
+      ]
+    },
+    "productionUnitRef": {
+      "type": "object"
+    },
+    "parentUnitRefs": {
+      "type": "array"
+    },
+    "continuityBandRefs": {
+      "type": "array"
+    },
+    "referencePrimitiveRefs": {
+      "type": "array"
+    },
+    "renderStrategyRefs": {
+      "type": "array"
+    },
+    "descriptor": {
+      "type": "object"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    }
+  }
+}

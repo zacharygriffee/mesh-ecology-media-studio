@@ -54,7 +54,8 @@ export const schemaFiles = {
   'media.production_unit.v1': 'schemas/media-production-unit.schema.json',
   'media.reference_primitive.v1': 'schemas/media-reference-primitive.schema.json',
   'media.continuity_band.v1': 'schemas/media-continuity-band.schema.json',
-  'media.render_strategy.v1': 'schemas/media-render-strategy.schema.json'
+  'media.render_strategy.v1': 'schemas/media-render-strategy.schema.json',
+  'media.production_descriptor.local.v1': 'schemas/media-production-descriptor-local.schema.json'
 }
 
 export const requiredFields = {
@@ -647,6 +648,26 @@ export const requiredFields = {
     'localTruthLabel',
     'truthStatus',
     'createdAt'
+  ],
+  'media.production_descriptor.local.v1': [
+    'schema',
+    'descriptorId',
+    'projectId',
+    'descriptorKind',
+    'productionUnitRef',
+    'title',
+    'parentUnitRefs',
+    'continuityBandRefs',
+    'referencePrimitiveRefs',
+    'renderStrategyRefs',
+    'descriptor',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'localTruthLabel',
+    'truthStatus',
+    'createdAt'
   ]
 }
 
@@ -687,7 +708,8 @@ const idFields = {
   [artifactKinds.mediaProductionUnit]: 'productionUnitId',
   [artifactKinds.mediaReferencePrimitive]: 'primitiveId',
   [artifactKinds.mediaContinuityBand]: 'bandId',
-  [artifactKinds.mediaRenderStrategy]: 'strategyId'
+  [artifactKinds.mediaRenderStrategy]: 'strategyId',
+  [artifactKinds.mediaProductionDescriptorLocal]: 'descriptorId'
 }
 
 const domainProjectSchemas = new Set([
@@ -710,7 +732,8 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaProductionUnit,
   artifactKinds.mediaReferencePrimitive,
   artifactKinds.mediaContinuityBand,
-  artifactKinds.mediaRenderStrategy
+  artifactKinds.mediaRenderStrategy,
+  artifactKinds.mediaProductionDescriptorLocal
 ])
 
 const localGeneratedSchemas = new Set([
@@ -737,7 +760,8 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaProductionUnit,
   artifactKinds.mediaReferencePrimitive,
   artifactKinds.mediaContinuityBand,
-  artifactKinds.mediaRenderStrategy
+  artifactKinds.mediaRenderStrategy,
+  artifactKinds.mediaProductionDescriptorLocal
 ])
 
 const readinessStates = new Set(['draft', 'blocked', 'ready', 'caution', 'complete'])
@@ -801,6 +825,7 @@ const renderInputModes = new Set([
   'audio-to-media',
   'media-transformation'
 ])
+const productionDescriptorKinds = new Set(['scene', 'shot', 'clip', 'rough-cut', 'export'])
 
 export async function readSchema(schemaId, options = {}) {
   const rootDir = options.rootDir ?? process.cwd()
@@ -1316,6 +1341,32 @@ export function validateRecordShape(record, schemaId = record.schema) {
 
     if (record.guidanceOnly !== true) {
       throw new Error(`Record ${schemaId} must set guidanceOnly=true`)
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaProductionDescriptorLocal) {
+    if (!productionDescriptorKinds.has(record.descriptorKind)) {
+      throw new Error(`Record ${schemaId} has invalid production descriptor kind: ${record.descriptorKind}`)
+    }
+
+    validateRef(record.productionUnitRef, `${schemaId}.productionUnitRef`)
+
+    for (const collection of ['parentUnitRefs', 'continuityBandRefs', 'referencePrimitiveRefs', 'renderStrategyRefs']) {
+      validateRefArray(record[collection], `${schemaId}.${collection}`)
+    }
+
+    if (!record.descriptor || typeof record.descriptor !== 'object') {
+      throw new Error(`Record ${schemaId}.descriptor must be an object`)
+    }
+
+    if (record.descriptorKind === 'rough-cut' && record.descriptor.publicationAuthorization !== false) {
+      throw new Error(`Record ${schemaId} rough-cut descriptor must not claim publication authorization`)
+    }
+
+    if (record.descriptorKind === 'export' && record.descriptor.publicationAuthorization !== false) {
+      throw new Error(`Record ${schemaId} export descriptor must not claim publication authorization`)
     }
 
     validateLocalFalseFlags(record, schemaId)

@@ -247,7 +247,9 @@ Edge compatibility candidates for documented Edge review shapes without
 claiming Edge runtime verification. Phase 14 adds generalized production-unit,
 reference-primitive, continuity-band, and render-strategy records so
 scene/shot/clip stays available as one strategy without becoming the root
-ontology.
+ontology. Phase 15 adds local production descriptors for scene, shot, clip,
+rough-cut, and export specializations without making them mesh truth or
+publication authority.
 
 ## Start Here
 
@@ -274,3 +276,4 @@ ontology.
 - [docs/27-packs-control-surface-alignment.md](docs/27-packs-control-surface-alignment.md)
 - [docs/28-edge-compatibility-candidates.md](docs/28-edge-compatibility-candidates.md)
 - [docs/29-production-strategy-posture.md](docs/29-production-strategy-posture.md)
+- [docs/30-production-descriptors.md](docs/30-production-descriptors.md)

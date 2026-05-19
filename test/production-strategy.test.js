@@ -5,9 +5,15 @@ import { makeRef } from '../src/contracts/constructors.js'
 import { validateRequiredRecord } from '../src/contracts/schemas.js'
 import {
   createContinuityBand,
+  createClipDescriptor,
+  createExportDescriptor,
   createProductionUnit,
+  createProductionDescriptor,
   createReferencePrimitive,
   createRenderStrategy,
+  createRoughCutDescriptor,
+  createSceneDescriptor,
+  createShotDescriptor,
   refForProductionRecord
 } from '../src/production/strategy.js'
 
@@ -151,5 +157,136 @@ test('production strategy rejects rigid or unknown vocabulary', () => {
       fallbackModes: []
     }),
     /Invalid render input mode/
+  )
+})
+
+test('production descriptors specialize scene shot clip without replacing production units', () => {
+  const sceneUnit = createProductionUnit({
+    projectId: 'project-descriptors',
+    unitKind: 'scene',
+    title: 'Scene descriptor unit',
+    purpose: 'Scene planning as a production-unit specialization.'
+  })
+  const shotUnit = createProductionUnit({
+    projectId: 'project-descriptors',
+    unitKind: 'shot',
+    title: 'Shot descriptor unit',
+    purpose: 'Shot planning as a production-unit specialization.',
+    parentRefs: [refForProductionRecord(sceneUnit)]
+  })
+  const clipUnit = createProductionUnit({
+    projectId: 'project-descriptors',
+    unitKind: 'clip',
+    title: 'Clip descriptor unit',
+    purpose: 'Clip planning as a production-unit specialization.',
+    parentRefs: [refForProductionRecord(shotUnit)]
+  })
+
+  const scene = createSceneDescriptor({
+    projectId: 'project-descriptors',
+    productionUnitRef: refForProductionRecord(sceneUnit),
+    title: 'Scene descriptor',
+    scene: {
+      summary: 'Local scene planning note'
+    }
+  })
+  const shot = createShotDescriptor({
+    projectId: 'project-descriptors',
+    productionUnitRef: refForProductionRecord(shotUnit),
+    title: 'Shot descriptor',
+    sceneRef: refForProductionRecord(sceneUnit),
+    shot: {
+      framing: 'medium',
+      motionPromptRole: 'render guidance only'
+    }
+  })
+  const clip = createClipDescriptor({
+    projectId: 'project-descriptors',
+    productionUnitRef: refForProductionRecord(clipUnit),
+    title: 'Clip descriptor',
+    shotRef: refForProductionRecord(shotUnit),
+    clip: {
+      durationSeconds: 4,
+      providerAgnostic: true
+    }
+  })
+
+  assert.equal(validateRequiredRecord(scene), true)
+  assert.equal(validateRequiredRecord(shot), true)
+  assert.equal(validateRequiredRecord(clip), true)
+  assert.equal(scene.descriptorKind, 'scene')
+  assert.equal(shot.descriptor.sceneShotClipProjectionOnly, true)
+  assert.equal(clip.productionUnitRef.id, clipUnit.productionUnitId)
+})
+
+test('rough cut and export descriptors do not claim publication authority', () => {
+  const roughCutUnit = createProductionUnit({
+    projectId: 'project-descriptors',
+    unitKind: 'rough-cut',
+    title: 'Rough cut unit',
+    purpose: 'Local assembly work.'
+  })
+  const exportUnit = createProductionUnit({
+    projectId: 'project-descriptors',
+    unitKind: 'export',
+    title: 'Export unit',
+    purpose: 'Local export planning.',
+    parentRefs: [refForProductionRecord(roughCutUnit)]
+  })
+  const roughCut = createRoughCutDescriptor({
+    projectId: 'project-descriptors',
+    productionUnitRef: refForProductionRecord(roughCutUnit),
+    title: 'Rough cut descriptor',
+    timeline: {
+      tracks: ['video-main', 'audio-main'],
+      roughAssemblyOnly: true
+    },
+    notes: ['local edit intent, not publication']
+  })
+  const exportDescriptor = createExportDescriptor({
+    projectId: 'project-descriptors',
+    productionUnitRef: refForProductionRecord(exportUnit),
+    title: 'Export descriptor',
+    sourceUnitRefs: [refForProductionRecord(roughCutUnit)],
+    target: {
+      format: 'mp4',
+      audience: 'local review'
+    }
+  })
+
+  assert.equal(validateRequiredRecord(roughCut), true)
+  assert.equal(validateRequiredRecord(exportDescriptor), true)
+  assert.equal(roughCut.descriptor.publicationAuthorization, false)
+  assert.equal(exportDescriptor.descriptor.publicationAuthorization, false)
+})
+
+test('production descriptors reject unknown descriptor kinds and authority claims', () => {
+  const unit = createProductionUnit({
+    projectId: 'project-descriptors',
+    unitKind: 'scene',
+    title: 'Descriptor validation unit',
+    purpose: 'Validation fixture.'
+  })
+
+  assert.throws(
+    () => createProductionDescriptor({
+      projectId: 'project-descriptors',
+      descriptorKind: 'storyboard-lock',
+      productionUnitRef: refForProductionRecord(unit),
+      title: 'Bad descriptor'
+    }),
+    /Invalid production descriptor kind/
+  )
+
+  const exportDescriptor = createExportDescriptor({
+    projectId: 'project-descriptors',
+    productionUnitRef: refForProductionRecord(unit),
+    title: 'Export descriptor'
+  })
+  exportDescriptor.descriptor.publicationAuthorization = true
+
+  assert.throws(
+    () => validateRequiredRecord(exportDescriptor),
+    /must not claim publication authorization/
   )
 })

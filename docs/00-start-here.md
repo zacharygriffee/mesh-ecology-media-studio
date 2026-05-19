@@ -31,6 +31,7 @@ Read in this order:
 23. [Packs Control Surface Alignment](27-packs-control-surface-alignment.md)
 24. [Edge Compatibility Candidates](28-edge-compatibility-candidates.md)
 25. [Production Strategy Posture](29-production-strategy-posture.md)
+26. [Production Descriptors](30-production-descriptors.md)
 
 The first executable path is:
 
@@ -133,6 +134,8 @@ adds Studio-built Edge compatibility candidates for documented Edge review
 shapes without claiming Edge runtime verification. Phase 14 adds generalized
 production-unit, reference-primitive, continuity-band, and render-strategy
 records so scene/shot/clip remains one strategy rather than the root ontology.
-It creates local records and does not claim mesh truth,
-distributed proof, byte materialization proof, provider truth, causal truth,
-publication authorization, or ratifier authority.
+Phase 15 adds local production descriptors for scene, shot, clip, rough-cut,
+and export specializations without making those descriptors authoritative.
+These records do not claim mesh truth, distributed proof, byte materialization
+proof, provider truth, causal truth, publication authorization, or ratifier
+authority.
