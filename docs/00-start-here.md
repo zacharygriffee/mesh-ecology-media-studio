@@ -29,6 +29,7 @@ Read in this order:
 21. [Candidate Review And Project Status](25-candidate-review-and-project-status.md)
 22. [Narrow Slice Completion](26-narrow-slice-completion.md)
 23. [Packs Control Surface Alignment](27-packs-control-surface-alignment.md)
+24. [Edge Compatibility Candidates](28-edge-compatibility-candidates.md)
 
 The first executable path is:
 
@@ -105,6 +106,12 @@ Write a local Packs-aligned control-surface projection without adding UI:
 npm run control:surface -- --project-dir examples/card-to-candidate
 ```
 
+Write a local Edge compatibility bundle without calling Edge:
+
+```bash
+npm run edge:compat -- --project-dir examples/card-to-candidate
+```
+
 Phase 2 hardened the local wedge with a local run manifest, artifact-kind
 registry, and modest malformed-record checks. Phase 3 defines the local project
 layout, safe local refs, placement classes, and asset lifecycle states. Phase 4
@@ -120,7 +127,9 @@ snapshots. Phase 11 completes the narrow Mode 0 slice with continuity drafts,
 byte descriptor preview alignment, candidate-review inspection export,
 card-grouped provider attempts, and committed Edge bundle fixtures. The wedge
 remains local-only. Phase 12 adds a Packs-aligned control-surface projection
-for future inspection without defining UI or Edge runtime messages. It creates
-local records and does not claim mesh truth,
+for future inspection without defining UI or Edge runtime messages. Phase 13
+adds Studio-built Edge compatibility candidates for documented Edge review
+shapes without claiming Edge runtime verification. It creates local records and
+does not claim mesh truth,
 distributed proof, byte materialization proof, provider truth, causal truth,
 publication authorization, or ratifier authority.

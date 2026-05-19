@@ -48,7 +48,9 @@ export const schemaFiles = {
   'media.candidate_review.local.v1': 'schemas/media-candidate-review-local.schema.json',
   'media.project_status.local.v1': 'schemas/media-project-status-local.schema.json',
   'media.continuity_evidence.local.v1': 'schemas/media-continuity-evidence-local.schema.json',
-  'media.control_surface_projection.local.v1': 'schemas/media-control-surface-projection-local.schema.json'
+  'media.control_surface_projection.local.v1': 'schemas/media-control-surface-projection-local.schema.json',
+  'media.edge_review_evidence.local.v1': 'schemas/media-edge-review-evidence-local.schema.json',
+  'media.edge_compatibility_bundle.local.v1': 'schemas/media-edge-compatibility-bundle-local.schema.json'
 }
 
 export const requiredFields = {
@@ -511,6 +513,56 @@ export const requiredFields = {
     'rendererContract',
     'localTruthLabel',
     'truthStatus'
+  ],
+  'media.edge_review_evidence.local.v1': [
+    'schema',
+    'edgeReviewEvidenceId',
+    'projectId',
+    'createdAt',
+    'artifactKind',
+    'schemaVersion',
+    'reviewStatus',
+    'edgeReadinessHint',
+    'edgeImportClassification',
+    'sourceRefs',
+    'summary',
+    'reasonCodes',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'providerTruth',
+    'edgeRuntimeBuilt',
+    'edgeRuntimeVerified',
+    'localTruthLabel',
+    'truthStatus'
+  ],
+  'media.edge_compatibility_bundle.local.v1': [
+    'schema',
+    'compatibilityBundleId',
+    'projectId',
+    'createdAt',
+    'mode',
+    'targetRepo',
+    'targetSurface',
+    'edgeDoctrineRefs',
+    'studioSourceRefs',
+    'edgeShapeTargets',
+    'studioReviewEvidence',
+    'edgeWorkPacketCandidate',
+    'edgeEvidenceImportCandidate',
+    'edgeReadinessViewCandidate',
+    'edgeReturnSurfaceCandidate',
+    'warnings',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'providerTruth',
+    'edgeRuntimeBuilt',
+    'edgeRuntimeVerified',
+    'localTruthLabel',
+    'truthStatus'
   ]
 }
 
@@ -545,7 +597,9 @@ const idFields = {
   [artifactKinds.mediaCandidateReviewLocal]: 'candidateReviewId',
   [artifactKinds.mediaProjectStatusLocal]: 'statusId',
   [artifactKinds.mediaContinuityEvidenceLocal]: 'continuityEvidenceId',
-  [artifactKinds.mediaControlSurfaceProjectionLocal]: 'projectionId'
+  [artifactKinds.mediaControlSurfaceProjectionLocal]: 'projectionId',
+  [artifactKinds.mediaEdgeReviewEvidenceLocal]: 'edgeReviewEvidenceId',
+  [artifactKinds.mediaEdgeCompatibilityBundleLocal]: 'compatibilityBundleId'
 }
 
 const domainProjectSchemas = new Set([
@@ -562,7 +616,9 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaCandidateReviewLocal,
   artifactKinds.mediaProjectStatusLocal,
   artifactKinds.mediaContinuityEvidenceLocal,
-  artifactKinds.mediaControlSurfaceProjectionLocal
+  artifactKinds.mediaControlSurfaceProjectionLocal,
+  artifactKinds.mediaEdgeReviewEvidenceLocal,
+  artifactKinds.mediaEdgeCompatibilityBundleLocal
 ])
 
 const localGeneratedSchemas = new Set([
@@ -583,7 +639,9 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaCandidateReviewLocal,
   artifactKinds.mediaProjectStatusLocal,
   artifactKinds.mediaContinuityEvidenceLocal,
-  artifactKinds.mediaControlSurfaceProjectionLocal
+  artifactKinds.mediaControlSurfaceProjectionLocal,
+  artifactKinds.mediaEdgeReviewEvidenceLocal,
+  artifactKinds.mediaEdgeCompatibilityBundleLocal
 ])
 
 const readinessStates = new Set(['draft', 'blocked', 'ready', 'caution', 'complete'])
@@ -967,6 +1025,74 @@ export function validateRecordShape(record, schemaId = record.schema) {
     }
   }
 
+  if (schemaId === artifactKinds.mediaEdgeReviewEvidenceLocal) {
+    validateLocalFalseFlags(record, schemaId)
+
+    if (record.artifactKind !== 'media_studio_edge_review_evidence') {
+      throw new Error(`Record ${schemaId} must set artifactKind=media_studio_edge_review_evidence`)
+    }
+
+    if (record.schemaVersion !== 'media_studio_edge_review_evidence.v1') {
+      throw new Error(`Record ${schemaId} must set schemaVersion=media_studio_edge_review_evidence.v1`)
+    }
+
+    if (record.reviewStatus !== 'ready_for_operator_review') {
+      throw new Error(`Record ${schemaId} must set reviewStatus=ready_for_operator_review`)
+    }
+
+    if (record.edgeReadinessHint !== 'ready_for_operator_review') {
+      throw new Error(`Record ${schemaId} must set edgeReadinessHint=ready_for_operator_review`)
+    }
+
+    validateEdgeClassification(record.edgeImportClassification, schemaId)
+    validateEdgeRuntimeFlags(record, schemaId)
+
+    for (const flag of ['providerTruth']) {
+      if (record[flag] !== false) {
+        throw new Error(`Record ${schemaId} must set ${flag}=false`)
+      }
+    }
+  }
+
+  if (schemaId === artifactKinds.mediaEdgeCompatibilityBundleLocal) {
+    if (record.mode !== 'standalone-local') {
+      throw new Error(`Record ${schemaId} has invalid mode: ${record.mode}`)
+    }
+
+    if (record.targetRepo !== 'mesh-ecology-media-studio') {
+      throw new Error(`Record ${schemaId} must target mesh-ecology-media-studio`)
+    }
+
+    if (record.targetSurface !== 'media-edge-operator-seam') {
+      throw new Error(`Record ${schemaId} must target media-edge-operator-seam`)
+    }
+
+    for (const collection of ['edgeDoctrineRefs', 'studioSourceRefs', 'edgeShapeTargets', 'warnings']) {
+      if (!Array.isArray(record[collection])) {
+        throw new Error(`Record ${schemaId}.${collection} must be an array`)
+      }
+    }
+
+    for (const ref of record.studioSourceRefs) {
+      validateInspectionRef(ref, `${schemaId}.studioSourceRefs`)
+    }
+
+    validateRequiredRecord(record.studioReviewEvidence, artifactKinds.mediaEdgeReviewEvidenceLocal)
+    validateEdgeRuntimeFlags(record, schemaId)
+    validateLocalFalseFlags(record, schemaId)
+
+    for (const flag of ['providerTruth']) {
+      if (record[flag] !== false) {
+        throw new Error(`Record ${schemaId} must set ${flag}=false`)
+      }
+    }
+
+    validateEdgeCandidate(record.edgeWorkPacketCandidate, 'edge_cross_project_work_packet', 'edge_cross_project_work_packet.v1', schemaId)
+    validateEdgeCandidate(record.edgeEvidenceImportCandidate, 'edge_cross_project_evidence_import', 'edge_cross_project_evidence_import.v1', schemaId)
+    validateEdgeCandidate(record.edgeReadinessViewCandidate, 'edge_cross_project_readiness_view', 'edge_cross_project_readiness_view.v1', schemaId)
+    validateEdgeCandidate(record.edgeReturnSurfaceCandidate, 'edge_operator_return_surface', 'edge_operator_return_surface.v1', schemaId)
+  }
+
   if (localGeneratedSchemas.has(schemaId)) {
     validateLocalDoctrineFlags(record, schemaId)
   }
@@ -1050,6 +1176,70 @@ function validateLocalDoctrineFlags(record, schemaId) {
         throw new Error(`Record ${schemaId} must set ${flag}=false`)
       }
     }
+  }
+}
+
+function validateEdgeClassification(classification, schemaId) {
+  if (!classification || typeof classification !== 'object') {
+    throw new Error(`Record ${schemaId} must include edgeImportClassification`)
+  }
+
+  const required = [
+    'projectId',
+    'targetRepo',
+    'targetSurface',
+    'evidenceKind',
+    'edgeExpectedEvidenceKind'
+  ]
+  const missing = required.filter((field) => !isNonEmptyString(classification[field]))
+  if (missing.length > 0) {
+    throw new Error(`Record ${schemaId}.edgeImportClassification is missing: ${missing.join(', ')}`)
+  }
+
+  if (classification.classificationOnly !== true) {
+    throw new Error(`Record ${schemaId}.edgeImportClassification must set classificationOnly=true`)
+  }
+
+  if (classification.edgeOwnsSchema !== false) {
+    throw new Error(`Record ${schemaId}.edgeImportClassification must set edgeOwnsSchema=false`)
+  }
+
+  if (classification.targetRepo !== 'mesh-ecology-media-studio') {
+    throw new Error(`Record ${schemaId}.edgeImportClassification targetRepo must be mesh-ecology-media-studio`)
+  }
+
+  if (classification.targetSurface !== 'media-edge-operator-seam') {
+    throw new Error(`Record ${schemaId}.edgeImportClassification targetSurface must be media-edge-operator-seam`)
+  }
+}
+
+function validateEdgeRuntimeFlags(record, schemaId) {
+  for (const flag of ['edgeRuntimeBuilt', 'edgeRuntimeVerified']) {
+    if (record[flag] !== false) {
+      throw new Error(`Record ${schemaId} must set ${flag}=false`)
+    }
+  }
+}
+
+function validateEdgeCandidate(candidate, artifactKind, schemaVersion, schemaId) {
+  if (!candidate || typeof candidate !== 'object') {
+    throw new Error(`Record ${schemaId} must include ${artifactKind} candidate`)
+  }
+
+  if (candidate.edgeArtifactKind !== artifactKind) {
+    throw new Error(`Record ${schemaId} candidate must target ${artifactKind}`)
+  }
+
+  if (candidate.edgeSchemaVersion !== schemaVersion) {
+    throw new Error(`Record ${schemaId} candidate must target ${schemaVersion}`)
+  }
+
+  if (candidate.edgeRuntimeBuilt !== false || candidate.edgeRuntimeVerified !== false) {
+    throw new Error(`Record ${schemaId} candidate must not claim Edge runtime build or verification`)
+  }
+
+  if (candidate.operatorGuidanceOnly !== true || candidate.reviewOnly !== true) {
+    throw new Error(`Record ${schemaId} candidate must be review-only operator guidance`)
   }
 }
 

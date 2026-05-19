@@ -359,5 +359,7 @@ export function idForRecord(record) {
   if (record.statusId) return record.statusId
   if (record.continuityEvidenceId) return record.continuityEvidenceId
   if (record.projectionId) return record.projectionId
+  if (record.edgeReviewEvidenceId) return record.edgeReviewEvidenceId
+  if (record.compatibilityBundleId) return record.compatibilityBundleId
   return undefined
 }

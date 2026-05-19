@@ -55,6 +55,7 @@ import { inspectProviderFailure } from '../src/seams/inspect-provider-failure.js
 import { inspectVeniceSmoke } from '../src/seams/inspect-venice-smoke.js'
 import { writeProjectStatus } from '../src/seams/project-status.js'
 import { writeControlSurfaceProjection } from '../src/seams/control-surface-projection.js'
+import { writeEdgeCompatibilityBundle } from '../src/seams/edge-compatibility-bundle.js'
 import { writeContinuityEvidence } from '../src/seams/continuity-evidence.js'
 import { summarizeInspectionPacket } from '../src/seams/summarize-inspection-packet.js'
 import { checkInspectionFixture } from '../src/local/generate-inspection-fixture.js'
@@ -1151,6 +1152,40 @@ test('control surface projection maps Packs planes without UI contract', async (
 
   const written = JSON.parse(await readFile(path.join(dir, output), 'utf8'))
   assert.equal(written.projectionId, projection.projectionId)
+})
+
+test('edge compatibility bundle targets Edge review shapes without runtime claims', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await inspectLocalRun({ projectDir: dir })
+  await writeProjectStatus({ projectDir: dir })
+  await writeControlSurfaceProjection({ projectDir: dir })
+
+  const { bundle, output } = await writeEdgeCompatibilityBundle({ projectDir: dir })
+
+  assert.equal(bundle.schema, 'media.edge_compatibility_bundle.local.v1')
+  assert.equal(bundle.targetSurface, 'media-edge-operator-seam')
+  assert.equal(bundle.edgeRuntimeBuilt, false)
+  assert.equal(bundle.edgeRuntimeVerified, false)
+  assert.equal(bundle.studioReviewEvidence.schema, 'media.edge_review_evidence.local.v1')
+  assert.equal(bundle.studioReviewEvidence.edgeImportClassification.edgeOwnsSchema, false)
+  assert.equal(bundle.edgeWorkPacketCandidate.edgeArtifactKind, 'edge_cross_project_work_packet')
+  assert.equal(bundle.edgeWorkPacketCandidate.edgeSchemaVersion, 'edge_cross_project_work_packet.v1')
+  assert.equal(bundle.edgeWorkPacketCandidate.packetState, 'ready_for_operator_export')
+  assert.equal(bundle.edgeEvidenceImportCandidate.edgeArtifactKind, 'edge_cross_project_evidence_import')
+  assert.equal(bundle.edgeEvidenceImportCandidate.edgeReadinessEffect, 'ready_for_operator_review')
+  assert.equal(bundle.edgeReadinessViewCandidate.edgeArtifactKind, 'edge_cross_project_readiness_view')
+  assert.equal(bundle.edgeReturnSurfaceCandidate.edgeArtifactKind, 'edge_operator_return_surface')
+  assert.ok(bundle.edgeShapeTargets.some((target) => target.edgeArtifactKind === 'edge_operator_decision'))
+  assert.equal(validateRequiredRecord(bundle.studioReviewEvidence), true)
+  assert.equal(validateRequiredRecord(bundle), true)
+
+  const written = JSON.parse(await readFile(path.join(dir, output), 'utf8'))
+  assert.equal(written.compatibilityBundleId, bundle.compatibilityBundleId)
 })
 
 test('validator rejects missing schema', async () => {

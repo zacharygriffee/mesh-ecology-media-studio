@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-edge-compatibility-bundle-local.schema.json",
+  "title": "media.edge_compatibility_bundle.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "compatibilityBundleId",
+    "projectId",
+    "createdAt",
+    "mode",
+    "targetRepo",
+    "targetSurface",
+    "edgeDoctrineRefs",
+    "studioSourceRefs",
+    "edgeShapeTargets",
+    "studioReviewEvidence",
+    "edgeWorkPacketCandidate",
+    "edgeEvidenceImportCandidate",
+    "edgeReadinessViewCandidate",
+    "edgeReturnSurfaceCandidate",
+    "warnings",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "providerTruth",
+    "edgeRuntimeBuilt",
+    "edgeRuntimeVerified",
+    "localTruthLabel",
+    "truthStatus"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.edge_compatibility_bundle.local.v1"
+    },
+    "compatibilityBundleId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "targetRepo": {
+      "const": "mesh-ecology-media-studio"
+    },
+    "targetSurface": {
+      "const": "media-edge-operator-seam"
+    },
+    "edgeDoctrineRefs": {
+      "type": "array"
+    },
+    "studioSourceRefs": {
+      "type": "array"
+    },
+    "edgeShapeTargets": {
+      "type": "array"
+    },
+    "studioReviewEvidence": {
+      "type": "object"
+    },
+    "edgeWorkPacketCandidate": {
+      "type": "object"
+    },
+    "edgeEvidenceImportCandidate": {
+      "type": "object"
+    },
+    "edgeReadinessViewCandidate": {
+      "type": "object"
+    },
+    "edgeReturnSurfaceCandidate": {
+      "type": "object"
+    },
+    "warnings": {
+      "type": "array"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    },
+    "providerTruth": {
+      "const": false
+    },
+    "edgeRuntimeBuilt": {
+      "const": false
+    },
+    "edgeRuntimeVerified": {
+      "const": false
+    }
+  }
+}

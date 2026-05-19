@@ -212,6 +212,12 @@ Write a local Packs-aligned control-surface projection without adding UI:
 npm run control:surface -- --project-dir examples/card-to-candidate
 ```
 
+Write a local Edge compatibility bundle without calling Edge:
+
+```bash
+npm run edge:compat -- --project-dir examples/card-to-candidate
+```
+
 Regenerate the committed inspection fixture:
 
 ```bash
@@ -236,7 +242,9 @@ Phase 11 completes the narrow Mode 0 slice with continuity drafts, byte
 descriptor preview alignment, candidate-review inspection export, card-grouped
 provider attempts, and committed Edge bundle fixtures. Phase 12 adds a
 Packs-aligned control-surface projection for future inspection without defining
-UI, Edge runtime messages, or an authority surface.
+UI, Edge runtime messages, or an authority surface. Phase 13 adds Studio-built
+Edge compatibility candidates for documented Edge review shapes without
+claiming Edge runtime verification.
 
 ## Start Here
 
@@ -261,3 +269,4 @@ UI, Edge runtime messages, or an authority surface.
 - [docs/25-candidate-review-and-project-status.md](docs/25-candidate-review-and-project-status.md)
 - [docs/26-narrow-slice-completion.md](docs/26-narrow-slice-completion.md)
 - [docs/27-packs-control-surface-alignment.md](docs/27-packs-control-surface-alignment.md)
+- [docs/28-edge-compatibility-candidates.md](docs/28-edge-compatibility-candidates.md)

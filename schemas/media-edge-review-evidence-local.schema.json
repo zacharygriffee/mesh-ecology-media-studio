@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-edge-review-evidence-local.schema.json",
+  "title": "media.edge_review_evidence.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "edgeReviewEvidenceId",
+    "projectId",
+    "createdAt",
+    "artifactKind",
+    "schemaVersion",
+    "reviewStatus",
+    "edgeReadinessHint",
+    "edgeImportClassification",
+    "sourceRefs",
+    "summary",
+    "reasonCodes",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "providerTruth",
+    "edgeRuntimeBuilt",
+    "edgeRuntimeVerified",
+    "localTruthLabel",
+    "truthStatus"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.edge_review_evidence.local.v1"
+    },
+    "edgeReviewEvidenceId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "artifactKind": {
+      "const": "media_studio_edge_review_evidence"
+    },
+    "schemaVersion": {
+      "const": "media_studio_edge_review_evidence.v1"
+    },
+    "reviewStatus": {
+      "const": "ready_for_operator_review"
+    },
+    "edgeReadinessHint": {
+      "const": "ready_for_operator_review"
+    },
+    "edgeImportClassification": {
+      "type": "object",
+      "required": [
+        "projectId",
+        "targetRepo",
+        "targetSurface",
+        "evidenceKind",
+        "edgeExpectedEvidenceKind",
+        "classificationOnly",
+        "edgeOwnsSchema"
+      ]
+    },
+    "sourceRefs": {
+      "type": "array"
+    },
+    "reasonCodes": {
+      "type": "array"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    },
+    "providerTruth": {
+      "const": false
+    },
+    "edgeRuntimeBuilt": {
+      "const": false
+    },
+    "edgeRuntimeVerified": {
+      "const": false
+    }
+  }
+}

@@ -31,6 +31,9 @@ Current local inspection helpers:
   references, provider runs, assets, reviews, and exports.
 - `control-surface-projection.js`: writes a local Packs-aligned control
   surface projection for future Edge inspection without defining UI contracts.
+- `edge-compatibility-bundle.js`: writes Studio-owned evidence and
+  Edge-shaped review candidates without calling or claiming Edge runtime
+  verification.
 - `continuity-evidence.js`: writes local continuity evidence drafts for an
   asset's card, branch, context, and lineage fields.
 
