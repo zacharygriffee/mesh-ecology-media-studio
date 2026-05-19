@@ -138,6 +138,13 @@ uses a constrained image request, writes decoded bytes under
 provider result, asset descriptor, review evidence, readiness, and operator
 decision records.
 
+Export an existing Venice smoke run for local Edge-readable inspection without
+calling Venice:
+
+```bash
+npm run inspect:venice-smoke
+```
+
 Phase 2 inspection hardening added the manifest, a small artifact-kind
 registry, and modest malformed-record checks. Phase 3 adds the local project
 layout, safe local refs, placement classes, and asset lifecycle states. Phase 4
@@ -162,3 +169,4 @@ live smoke gate without making provider APIs part of the default wedge.
 - [docs/16-venice-dry-run-adapter.md](docs/16-venice-dry-run-adapter.md)
 - [docs/17-venice-live-smoke-gate.md](docs/17-venice-live-smoke-gate.md)
 - [docs/18-venice-smoke-edge-inspection-preview.md](docs/18-venice-smoke-edge-inspection-preview.md)
+- [docs/19-local-inspection-export.md](docs/19-local-inspection-export.md)

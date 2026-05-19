@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-edge-inspection-packet-local.schema.json",
+  "title": "media.edge_inspection_packet.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "packetId",
+    "createdAt",
+    "mode",
+    "seam",
+    "sourceRunRef",
+    "recordRefs",
+    "artifactKinds",
+    "generatedArtifactRefs",
+    "warnings",
+    "operatorGuidanceOnly",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "providerTruth",
+    "byteAvailabilityProof",
+    "materializationProof",
+    "publicationAuthorization"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.edge_inspection_packet.local.v1"
+    },
+    "packetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "seam": {
+      "const": "media-edge-operator-seam"
+    },
+    "sourceRunRef": {
+      "type": "object",
+      "required": [
+        "kind",
+        "id",
+        "path",
+        "localOnly"
+      ]
+    },
+    "recordRefs": {
+      "type": "object"
+    },
+    "artifactKinds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "generatedArtifactRefs": {
+      "type": "array"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "operatorGuidanceOnly": {
+      "const": true
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    },
+    "providerTruth": {
+      "const": false
+    },
+    "byteAvailabilityProof": {
+      "const": false
+    },
+    "materializationProof": {
+      "const": false
+    },
+    "publicationAuthorization": {
+      "const": false
+    }
+  }
+}

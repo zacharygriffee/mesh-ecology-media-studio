@@ -20,7 +20,8 @@ export const placementClasses = Object.freeze({
   recordEvidence: 'record-evidence',
   recordReadiness: 'record-readiness',
   recordDecision: 'record-decision',
-  recordManifest: 'record-manifest'
+  recordManifest: 'record-manifest',
+  recordExport: 'record-export'
 })
 
 export const lifecycleStates = Object.freeze({
@@ -50,7 +51,8 @@ const placementDirectories = Object.freeze({
   [placementClasses.recordEvidence]: 'records/evidence',
   [placementClasses.recordReadiness]: 'records/readiness',
   [placementClasses.recordDecision]: 'records/decisions',
-  [placementClasses.recordManifest]: 'records/manifests'
+  [placementClasses.recordManifest]: 'records/manifests',
+  [placementClasses.recordExport]: 'records/exports'
 })
 
 const urlPattern = /^[a-z][a-z0-9+.-]*:/i

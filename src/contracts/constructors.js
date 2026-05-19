@@ -257,6 +257,37 @@ export function createLocalRunManifest({
   }
 }
 
+export function createEdgeInspectionPacket({
+  packetId = `edge-inspection-${randomUUID()}`,
+  sourceRunRef,
+  recordRefs,
+  artifactKinds: packetArtifactKinds,
+  generatedArtifactRefs,
+  warnings = [],
+  createdAt = nowIso()
+}) {
+  return {
+    schema: artifactKinds.mediaEdgeInspectionPacketLocal,
+    packetId,
+    createdAt,
+    mode: 'standalone-local',
+    seam: 'media-edge-operator-seam',
+    sourceRunRef,
+    recordRefs,
+    artifactKinds: packetArtifactKinds,
+    generatedArtifactRefs,
+    warnings,
+    operatorGuidanceOnly: true,
+    ...localFalseFlags,
+    providerTruth: false,
+    byteAvailabilityProof: false,
+    materializationProof: false,
+    publicationAuthorization: false,
+    localTruthLabel: 'local receipt',
+    truthStatus
+  }
+}
+
 function extractNestedCapabilitySchemas(providerProfile) {
   if (!providerProfile || !Array.isArray(providerProfile.capabilities)) {
     return []

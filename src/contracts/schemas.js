@@ -35,7 +35,8 @@ export const schemaFiles = {
   'media.provider_result.v1': 'schemas/media-provider-result.schema.json',
   'media.provider_shape.v1': 'schemas/media-provider-shape.schema.json',
   'media.provider_endpoint_shape.v1': 'schemas/media-provider-endpoint-shape.schema.json',
-  'media.provider_mapping.v1': 'schemas/media-provider-mapping.schema.json'
+  'media.provider_mapping.v1': 'schemas/media-provider-mapping.schema.json',
+  'media.edge_inspection_packet.local.v1': 'schemas/media-edge-inspection-packet-local.schema.json'
 }
 
 export const requiredFields = {
@@ -254,6 +255,27 @@ export const requiredFields = {
     'meshTruth',
     'providerTruth',
     'createdAt'
+  ],
+  'media.edge_inspection_packet.local.v1': [
+    'schema',
+    'packetId',
+    'createdAt',
+    'mode',
+    'seam',
+    'sourceRunRef',
+    'recordRefs',
+    'artifactKinds',
+    'generatedArtifactRefs',
+    'warnings',
+    'operatorGuidanceOnly',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'providerTruth',
+    'byteAvailabilityProof',
+    'materializationProof',
+    'publicationAuthorization'
   ]
 }
 
@@ -275,7 +297,8 @@ const idFields = {
   [artifactKinds.mediaProviderResult]: 'resultId',
   [artifactKinds.mediaProviderShape]: 'providerId',
   [artifactKinds.mediaProviderEndpointShape]: 'endpointId',
-  [artifactKinds.mediaProviderMapping]: 'mappingId'
+  [artifactKinds.mediaProviderMapping]: 'mappingId',
+  [artifactKinds.mediaEdgeInspectionPacketLocal]: 'packetId'
 }
 
 const domainProjectSchemas = new Set([
@@ -296,7 +319,8 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaEvidence,
   artifactKinds.mediaReadiness,
   artifactKinds.mediaOperatorDecision,
-  artifactKinds.mediaLocalRunManifest
+  artifactKinds.mediaLocalRunManifest,
+  artifactKinds.mediaEdgeInspectionPacketLocal
 ])
 
 const readinessStates = new Set(['draft', 'blocked', 'ready', 'caution', 'complete'])
@@ -459,6 +483,30 @@ export function validateRecordShape(record, schemaId = record.schema) {
     validateProviderMapping(record)
   }
 
+  if (schemaId === artifactKinds.mediaEdgeInspectionPacketLocal) {
+    if (record.seam !== 'media-edge-operator-seam') {
+      throw new Error(`Record ${schemaId} has invalid seam: ${record.seam}`)
+    }
+
+    if (record.operatorGuidanceOnly !== true) {
+      throw new Error(`Record ${schemaId} must set operatorGuidanceOnly=true`)
+    }
+
+    if (!record.recordRefs || typeof record.recordRefs !== 'object') {
+      throw new Error(`Record ${schemaId} must include recordRefs`)
+    }
+
+    for (const [name, ref] of Object.entries(record.recordRefs)) {
+      validateInspectionRef(ref, `${schemaId}.recordRefs.${name}`)
+    }
+
+    if (!Array.isArray(record.generatedArtifactRefs)) {
+      throw new Error(`Record ${schemaId} generatedArtifactRefs must be an array`)
+    }
+
+    record.generatedArtifactRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.generatedArtifactRefs[${index}]`))
+  }
+
   if (localGeneratedSchemas.has(schemaId)) {
     validateLocalDoctrineFlags(record, schemaId)
   }
@@ -517,6 +565,24 @@ function validateLocalDoctrineFlags(record, schemaId) {
       }
     }
   }
+
+  if (schemaId === artifactKinds.mediaEdgeInspectionPacketLocal) {
+    const requiredFalseFlags = [
+      'meshTruth',
+      'distributedProof',
+      'ratifiedSharedState',
+      'providerTruth',
+      'byteAvailabilityProof',
+      'materializationProof',
+      'publicationAuthorization'
+    ]
+
+    for (const flag of requiredFalseFlags) {
+      if (record[flag] !== false) {
+        throw new Error(`Record ${schemaId} must set ${flag}=false`)
+      }
+    }
+  }
 }
 
 function validateRef(ref, label) {
@@ -543,6 +609,20 @@ function validateGeneratedRecordRef(ref, label) {
   if (!isNonEmptyString(ref.path)) {
     throw new Error(`${label}.path must be a string`)
   }
+
+  if (ref.localOnly !== true) {
+    throw new Error(`${label}.localOnly must be true`)
+  }
+}
+
+function validateInspectionRef(ref, label) {
+  validateRef(ref, label)
+
+  if (!isNonEmptyString(ref.path)) {
+    throw new Error(`${label}.path must be a string`)
+  }
+
+  assertSafeLocalPath(ref.path)
 
   if (ref.localOnly !== true) {
     throw new Error(`${label}.localOnly must be true`)

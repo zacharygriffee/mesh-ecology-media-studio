@@ -20,6 +20,7 @@ Read in this order:
 12. [Venice Dry-Run Adapter](16-venice-dry-run-adapter.md)
 13. [Venice Live Smoke Gate](17-venice-live-smoke-gate.md)
 14. [Venice Smoke Edge Inspection Preview](18-venice-smoke-edge-inspection-preview.md)
+15. [Local Inspection Export](19-local-inspection-export.md)
 
 The first executable path is:
 
@@ -31,6 +32,12 @@ Run tests with:
 
 ```bash
 npm test
+```
+
+Export an existing Venice smoke run for local Edge-readable inspection with:
+
+```bash
+npm run inspect:venice-smoke
 ```
 
 The optional Venice live smoke command is intentionally gated:

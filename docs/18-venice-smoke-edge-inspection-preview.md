@@ -47,3 +47,6 @@ All Venice smoke records remain local-only:
 
 The generated PNG path and hash are useful for local inspection. They are not a
 portable byte reference and do not prove durable availability.
+
+See [Local Inspection Export](19-local-inspection-export.md) for the local
+`media.edge_inspection_packet.local.v1` export command.

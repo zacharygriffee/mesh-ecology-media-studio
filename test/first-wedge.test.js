@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
@@ -42,6 +42,7 @@ import {
   resolveVeniceApiKey,
   runVeniceLiveSmoke
 } from '../src/providers/venice-live-smoke.js'
+import { inspectVeniceSmoke } from '../src/seams/inspect-venice-smoke.js'
 
 async function createFixtureProject() {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-wedge-'))
@@ -491,6 +492,74 @@ test('Venice live smoke command path can be tested without network by injected f
   assert.equal(validateRequiredRecord(manifestRecord), true)
   assert.equal(manifestRecord.candidateInputRef.path, 'media/generated/provider-smoke/venice-live-smoke-0.png')
   assert.ok(manifestRecord.warnings.some((warning) => warning.includes('live Venice smoke call')))
+})
+
+test('Venice smoke inspection packet exports local refs without provider calls', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-venice-inspect-'))
+
+  await runVeniceLiveSmoke({
+    env: {
+      VENICE_LIVE: '1',
+      VENICE_INFERENCE_KEY: 'test-key'
+    },
+    envPath: path.join(dir, '.env-missing'),
+    projectDir: dir,
+    fetchImpl: async () => ({
+      status: 200,
+      async json() {
+        return {
+          id: 'venice-live-test-response',
+          images: ['base64-image-placeholder'],
+          request: { format: 'png' }
+        }
+      }
+    })
+  })
+
+  const result = await inspectVeniceSmoke({ projectDir: dir })
+
+  assert.equal(result.packet.schema, 'media.edge_inspection_packet.local.v1')
+  assert.equal(result.packet.seam, 'media-edge-operator-seam')
+  assert.equal(result.packet.operatorGuidanceOnly, true)
+  assert.equal(result.packet.meshTruth, false)
+  assert.equal(result.packet.generatedArtifactRefs[0].path, 'media/generated/provider-smoke/venice-live-smoke-0.png')
+  assert.equal(validateRequiredRecord(result.packet), true)
+
+  const written = JSON.parse(
+    await readFile(path.join(dir, 'records', 'exports', 'venice-smoke-edge-inspection-packet.local.json'), 'utf8')
+  )
+  assert.equal(written.schema, 'media.edge_inspection_packet.local.v1')
+  assert.equal(written.recordRefs.providerResult.path, 'records/provider-results/venice-live-smoke-provider-result.local.json')
+})
+
+test('Venice smoke inspection packet fails on missing records', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-venice-inspect-missing-'))
+
+  await runVeniceLiveSmoke({
+    env: {
+      VENICE_LIVE: '1',
+      VENICE_INFERENCE_KEY: 'test-key'
+    },
+    envPath: path.join(dir, '.env-missing'),
+    projectDir: dir,
+    fetchImpl: async () => ({
+      status: 200,
+      async json() {
+        return {
+          id: 'venice-live-test-response',
+          images: ['base64-image-placeholder'],
+          request: { format: 'png' }
+        }
+      }
+    })
+  })
+
+  await rm(path.join(dir, 'records', 'assets', 'venice-live-smoke-asset-0.local.json'))
+
+  await assert.rejects(
+    () => inspectVeniceSmoke({ projectDir: dir }),
+    /Missing Venice smoke inspection record: records\/assets\/venice-live-smoke-asset-0.local.json/
+  )
 })
 
 test('Venice live smoke normalizes failure fixtures without claiming provider truth', async () => {
