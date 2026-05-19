@@ -2,7 +2,7 @@
 
 This source tree is intentionally small.
 
-- `contracts/`: schema loading, required-field checks, and descriptor constructors
+- `contracts/`: artifact-kind registry, schema loading, local validation, and descriptor constructors
 - `local/`: Mode 0 local-only wedge execution
 - `providers/`: future provider adapters, not active API integrations
 - `assets/`: future media asset helpers

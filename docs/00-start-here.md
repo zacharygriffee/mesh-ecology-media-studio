@@ -11,6 +11,7 @@ Read in this order:
 3. [Media Studio Doctrine](03-media-studio-doctrine.md)
 4. [Edge Seams](04-edge-seams.md)
 5. [First Wedge](09-first-wedge.md)
+6. [Edge Inspection Preview](10-edge-inspection-preview.md)
 
 The first executable path is:
 
@@ -18,5 +19,14 @@ The first executable path is:
 npm run wedge:example
 ```
 
-That command is local-only. It creates local records and does not claim mesh
-truth, distributed proof, byte materialization proof, or ratifier authority.
+Run tests with:
+
+```bash
+npm test
+```
+
+Phase 2 hardens the local wedge with a local run manifest, artifact-kind
+registry, and modest malformed-record checks. The wedge remains local-only. It
+creates local records and does not claim mesh truth, distributed proof, byte
+materialization proof, provider truth, causal truth, publication authorization,
+or ratifier authority.

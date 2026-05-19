@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto'
 
+import { artifactKinds } from './artifact-kinds.js'
+
 const truthStatus = 'not mesh truth; not distributed proof; not ratified shared state'
 
 export function nowIso() {
@@ -46,6 +48,7 @@ export function createWorkPacket({ card, operatorRef = 'local-operator', created
       operatorGuidanceOnly: true
     },
     localTruthLabel: 'local draft',
+    localOnly: true,
     truthStatus,
     createdAt
   }
@@ -68,6 +71,7 @@ export function createProviderJobResult({ card, workPacket, providerName, candid
       status: 'available-local'
     },
     localTruthLabel: 'local receipt',
+    localOnly: true,
     truthStatus,
     createdAt
   }
@@ -121,6 +125,7 @@ export function createAssetDescriptor({
       providerResultLocalOnly: true
     },
     localTruthLabel: 'local receipt',
+    localOnly: true,
     truthStatus,
     createdAt
   }
@@ -144,6 +149,7 @@ export function createReviewEvidence({ card, assetDescriptor, summary, createdAt
     ],
     classificationOnly: true,
     localTruthLabel: 'local receipt',
+    localOnly: true,
     truthStatus,
     createdAt
   }
@@ -159,6 +165,7 @@ export function createReadiness({ subjectRef, state, reasons, nextActions, creat
     nextActions,
     operatorGuidanceOnly: true,
     localTruthLabel: 'local receipt',
+    localOnly: true,
     truthStatus,
     createdAt
   }
@@ -186,7 +193,93 @@ export function createOperatorDecision({
     ],
     localDecisionOnly: true,
     localTruthLabel: 'local decision',
+    localOnly: true,
     truthStatus,
     createdAt
   }
+}
+
+export function createLocalRunManifest({
+  card,
+  candidateInputPath,
+  candidateHash,
+  generatedRecords,
+  generatedRecordPaths,
+  createdAt = nowIso()
+}) {
+  const recordEntries = Object.entries(generatedRecords)
+  const generatedRecordRefs = recordEntries.map(([name, record]) => ({
+    kind: record.schema,
+    id: idForRecord(record),
+    path: generatedRecordPaths[name],
+    localOnly: true
+  }))
+
+  return {
+    schema: artifactKinds.mediaLocalRunManifest,
+    runId: `local-run-${randomUUID()}`,
+    createdAt,
+    mode: 'standalone-local',
+    inputCardRef: makeRef('media-card', card.cardId, card.schema),
+    candidateInputRef: {
+      kind: 'local-candidate-input',
+      path: candidateInputPath,
+      hash: candidateHash,
+      localOnly: true
+    },
+    generatedRecordRefs,
+    artifactKinds: [
+      card.schema,
+      ...recordEntries.map(([, record]) => record.schema),
+      artifactKinds.mediaLocalRunManifest
+    ],
+    hashes: {
+      candidate: candidateHash
+    },
+    doctrineLabels: [
+      'local draft',
+      'local receipt',
+      'local cache',
+      'local decision',
+      'local evidence',
+      'not mesh truth',
+      'not distributed proof',
+      'not ratified shared state',
+      'not provider truth',
+      'not byte availability proof',
+      'not materialization proof',
+      'not causal truth',
+      'not publication authorization'
+    ],
+    warnings: [
+      'Mode 0 standalone-local output only.',
+      'Provider result is synthetic/local-placeholder and not provider truth.',
+      'Local file existence and local hashes are not byte availability or materialization proof.',
+      'Operator decision is local-only and is not mesh authorization.'
+    ],
+    operatorGuidanceOnly: true,
+    localOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    providerTruth: false,
+    byteAvailabilityProof: false,
+    materializationProof: false,
+    causalTruth: false,
+    publicationAuthorization: false,
+    localTruthLabel: 'local receipt',
+    truthStatus
+  }
+}
+
+export function idForRecord(record) {
+  if (record.cardId) return record.cardId
+  if (record.packetId) return record.packetId
+  if (record.providerJobResultId) return record.providerJobResultId
+  if (record.assetId) return record.assetId
+  if (record.evidenceId) return record.evidenceId
+  if (record.readinessId) return record.readinessId
+  if (record.decisionId) return record.decisionId
+  if (record.runId) return record.runId
+  return undefined
 }

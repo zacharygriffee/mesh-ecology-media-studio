@@ -115,13 +115,25 @@ This reads `examples/card-to-candidate/input/card.json`, treats
 `examples/card-to-candidate/local-media/candidate.txt` as the local generated
 candidate, hashes it, writes a local work packet, provider result descriptor,
 asset descriptor, review evidence, readiness record, and local operator
-decision under `examples/card-to-candidate/out/`.
+decision under `examples/card-to-candidate/out/`. Phase 2 also writes a local
+run manifest: `media-local-run-manifest.local.json`.
 
 All generated records are local drafts, local receipts, local caches, or local
 decisions. They are not mesh truth, distributed proof, or ratified shared state.
+
+Run local tests:
+
+```bash
+npm test
+```
+
+Phase 2 inspection hardening adds the manifest, a small artifact-kind registry,
+and modest malformed-record checks so Edge can inspect later without being
+required now.
 
 ## Start Here
 
 - [docs/00-start-here.md](docs/00-start-here.md)
 - [docs/01-charter.md](docs/01-charter.md)
 - [docs/09-first-wedge.md](docs/09-first-wedge.md)
+- [docs/10-edge-inspection-preview.md](docs/10-edge-inspection-preview.md)

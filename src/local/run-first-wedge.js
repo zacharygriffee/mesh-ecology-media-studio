@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 
 import {
   createAssetDescriptor,
+  createLocalRunManifest,
   createOperatorDecision,
   createProviderJobResult,
   createReadiness,
@@ -109,6 +110,7 @@ export async function runFirstWedge(options = {}) {
   const fileStat = await stat(ingestedCandidatePath)
   const hash = await sha256File(ingestedCandidatePath)
   const localPath = path.relative(projectDir, ingestedCandidatePath)
+  const candidateInputPath = path.relative(projectDir, sourceCandidatePath)
   const contentType = contentTypeFor(ingestedCandidatePath)
 
   const workPacket = createWorkPacket({ card, operatorRef })
@@ -147,12 +149,37 @@ export async function runFirstWedge(options = {}) {
     decision,
     reason: `Local operator marked candidate ${decision}.`
   })
+  const generatedRecords = {
+    workPacket,
+    providerJobResult,
+    assetDescriptor,
+    reviewEvidence,
+    readiness,
+    operatorDecision
+  }
+  const generatedRecordPaths = {
+    workPacket: 'out/media-work-packet.local.json',
+    providerJobResult: 'out/provider-job-result.local.json',
+    assetDescriptor: 'out/media-asset-descriptor.local.json',
+    reviewEvidence: 'out/media-evidence.local.json',
+    readiness: 'out/media-readiness.local.json',
+    operatorDecision: 'out/media-operator-decision.local.json'
+  }
+  const localRunManifest = createLocalRunManifest({
+    card,
+    candidateInputPath,
+    candidateHash: hash,
+    generatedRecords,
+    generatedRecordPaths
+  })
 
   validateRequiredRecord(workPacket)
+  validateRequiredRecord(providerJobResult)
   validateRequiredRecord(assetDescriptor)
   validateRequiredRecord(reviewEvidence)
   validateRequiredRecord(readiness)
   validateRequiredRecord(operatorDecision)
+  validateRequiredRecord(localRunManifest)
 
   await mkdir(outDir, { recursive: true })
   await writeJson(path.join(outDir, 'media-work-packet.local.json'), workPacket)
@@ -161,6 +188,7 @@ export async function runFirstWedge(options = {}) {
   await writeJson(path.join(outDir, 'media-evidence.local.json'), reviewEvidence)
   await writeJson(path.join(outDir, 'media-readiness.local.json'), readiness)
   await writeJson(path.join(outDir, 'media-operator-decision.local.json'), operatorDecision)
+  await writeJson(path.join(outDir, 'media-local-run-manifest.local.json'), localRunManifest)
 
   return {
     projectDir,
@@ -170,7 +198,8 @@ export async function runFirstWedge(options = {}) {
       assetDescriptor,
       reviewEvidence,
       readiness,
-      operatorDecision
+      operatorDecision,
+      localRunManifest
     }
   }
 }

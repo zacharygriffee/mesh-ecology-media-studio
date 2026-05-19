@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-provider-job-result-local.schema.json",
+  "title": "media.provider_job_result.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "providerJobResultId",
+    "projectId",
+    "packetRef",
+    "cardRef",
+    "provider",
+    "result",
+    "localTruthLabel",
+    "localOnly",
+    "truthStatus",
+    "createdAt"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.provider_job_result.local.v1"
+    },
+    "providerJobResultId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "packetRef": {
+      "type": "object",
+      "required": [
+        "kind",
+        "id",
+        "schema"
+      ]
+    },
+    "cardRef": {
+      "type": "object",
+      "required": [
+        "kind",
+        "id",
+        "schema"
+      ]
+    },
+    "provider": {
+      "type": "object",
+      "required": [
+        "name",
+        "integration",
+        "apiCalled"
+      ]
+    },
+    "result": {
+      "type": "object",
+      "required": [
+        "candidateLocalPath",
+        "status"
+      ]
+    },
+    "localTruthLabel": {
+      "const": "local receipt"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "truthStatus": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

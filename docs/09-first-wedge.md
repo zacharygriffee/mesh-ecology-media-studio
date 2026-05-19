@@ -36,6 +36,11 @@ Generated outputs are local-only:
 - `media-evidence.local.json`
 - `media-readiness.local.json`
 - `media-operator-decision.local.json`
+- `media-local-run-manifest.local.json`
 
 These are local drafts, local receipts, local caches, or local decisions. They
 are not mesh truth, distributed proof, or ratified shared state.
+
+The local run manifest summarizes one wedge run for later inspection. It is
+operator guidance only and keeps `localOnly=true`, `meshTruth=false`,
+`distributedProof=false`, and `ratifiedSharedState=false`.

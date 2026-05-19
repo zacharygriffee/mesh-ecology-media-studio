@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-local-run-manifest.schema.json",
+  "title": "media.local_run_manifest.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "runId",
+    "createdAt",
+    "mode",
+    "inputCardRef",
+    "candidateInputRef",
+    "generatedRecordRefs",
+    "artifactKinds",
+    "hashes",
+    "doctrineLabels",
+    "warnings",
+    "operatorGuidanceOnly",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.local_run_manifest.v1"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "inputCardRef": {
+      "type": "object",
+      "required": [
+        "kind",
+        "id",
+        "schema"
+      ]
+    },
+    "candidateInputRef": {
+      "type": "object",
+      "required": [
+        "kind",
+        "path",
+        "hash"
+      ]
+    },
+    "generatedRecordRefs": {
+      "type": "array"
+    },
+    "artifactKinds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "hashes": {
+      "type": "object"
+    },
+    "doctrineLabels": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "operatorGuidanceOnly": {
+      "const": true
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    }
+  }
+}
