@@ -70,6 +70,8 @@ export function createAssetDescriptor({
   localPath,
   localRef,
   lifecycle,
+  sourceApiCalled = false,
+  transitionSummary = 'local candidate ingested from first wedge',
   createdAt = nowIso()
 }) {
   return {
@@ -86,7 +88,7 @@ export function createAssetDescriptor({
     source: {
       sourceType: 'provider-result',
       providerResultRef: makeRef('provider-result', idForRecord(providerResult), providerResult.schema),
-      apiCalled: false
+      apiCalled: sourceApiCalled
     },
     lineage: {
       parentRefs: [
@@ -98,7 +100,7 @@ export function createAssetDescriptor({
       contextId: card.sceneId ?? card.projectId,
       observerRef: workPacket.operatorContext.operatorRef,
       continuityClaims: [],
-      transitionSummary: 'local candidate ingested from first wedge'
+      transitionSummary
     },
     provenance: {
       cardPromptHashScope: 'prompt text retained on card record',
@@ -187,6 +189,12 @@ export function createLocalRunManifest({
   candidateHash,
   generatedRecords,
   generatedRecordPaths,
+  warnings = [
+    'Mode 0 standalone-local output only.',
+    'Provider result is synthetic/local-placeholder and not provider truth.',
+    'Local file existence and local hashes are not byte availability or materialization proof.',
+    'Operator decision is local-only and is not mesh authorization.'
+  ],
   createdAt = nowIso()
 }) {
   const recordEntries = Object.entries(generatedRecords)
@@ -236,12 +244,7 @@ export function createLocalRunManifest({
       'not causal truth',
       'not publication authorization'
     ],
-    warnings: [
-      'Mode 0 standalone-local output only.',
-      'Provider result is synthetic/local-placeholder and not provider truth.',
-      'Local file existence and local hashes are not byte availability or materialization proof.',
-      'Operator decision is local-only and is not mesh authorization.'
-    ],
+    warnings,
     operatorGuidanceOnly: true,
     ...localFalseFlags,
     providerTruth: false,

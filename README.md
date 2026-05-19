@@ -133,8 +133,10 @@ VENICE_LIVE=1 npm run provider:venice:smoke
 ```
 
 The command reads `VENICE_INFERENCE_KEY` from the environment or ignored `.env`,
-uses a constrained image request, and writes only local non-truth-bearing
-provider result records.
+uses a constrained image request, writes decoded bytes under
+`media/generated/provider-smoke/`, and records only local non-truth-bearing
+provider result, asset descriptor, review evidence, readiness, and operator
+decision records.
 
 Phase 2 inspection hardening added the manifest, a small artifact-kind
 registry, and modest malformed-record checks. Phase 3 adds the local project
@@ -159,3 +161,4 @@ live smoke gate without making provider APIs part of the default wedge.
 - [docs/15-provider-shape-registry.md](docs/15-provider-shape-registry.md)
 - [docs/16-venice-dry-run-adapter.md](docs/16-venice-dry-run-adapter.md)
 - [docs/17-venice-live-smoke-gate.md](docs/17-venice-live-smoke-gate.md)
+- [docs/18-venice-smoke-edge-inspection-preview.md](docs/18-venice-smoke-edge-inspection-preview.md)

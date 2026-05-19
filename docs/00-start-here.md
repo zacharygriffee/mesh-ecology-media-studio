@@ -19,6 +19,7 @@ Read in this order:
 11. [Provider Shape Registry](15-provider-shape-registry.md)
 12. [Venice Dry-Run Adapter](16-venice-dry-run-adapter.md)
 13. [Venice Live Smoke Gate](17-venice-live-smoke-gate.md)
+14. [Venice Smoke Edge Inspection Preview](18-venice-smoke-edge-inspection-preview.md)
 
 The first executable path is:
 
@@ -37,6 +38,11 @@ The optional Venice live smoke command is intentionally gated:
 ```bash
 VENICE_LIVE=1 npm run provider:venice:smoke
 ```
+
+That command writes ignored local smoke artifacts under
+`examples/venice-smoke/`. It does not run as part of `npm test`. Venice
+provider capability and failure fixtures are local-only and validate without
+calling the provider.
 
 Phase 2 hardened the local wedge with a local run manifest, artifact-kind
 registry, and modest malformed-record checks. Phase 3 defines the local project

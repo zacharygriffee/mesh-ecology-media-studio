@@ -1,0 +1,9 @@
+{
+  "id": "venice-fixture-auth-failure-001",
+  "status": "failed",
+  "httpStatus": 401,
+  "error": {
+    "kind": "auth-failure",
+    "message": "Unauthorized fixture response"
+  }
+}

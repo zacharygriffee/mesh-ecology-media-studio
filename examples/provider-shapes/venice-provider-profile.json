@@ -1,0 +1,35 @@
+{
+  "schema": "media.provider_profile.v1",
+  "providerId": "venice",
+  "displayName": "Venice",
+  "capabilities": [
+    {
+      "schema": "media.provider_capability.v1",
+      "capabilityId": "capability-venice-image-generation-smoke",
+      "intentFamily": "image-generation",
+      "outputKinds": [
+        "image"
+      ],
+      "constraints": {
+        "smokeGateOnly": true,
+        "allowedModels": [
+          "venice-sd35"
+        ],
+        "maxWidth": 512,
+        "maxHeight": 512,
+        "maxVariants": 1,
+        "apiCallsRequire": "VENICE_LIVE=1"
+      },
+      "localOnly": true,
+      "meshTruth": false,
+      "distributedProof": false,
+      "ratifiedSharedState": false,
+      "createdAt": "2026-05-19T00:00:00.000Z"
+    }
+  ],
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "createdAt": "2026-05-19T00:00:00.000Z"
+}

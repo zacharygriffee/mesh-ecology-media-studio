@@ -1,0 +1,10 @@
+{
+  "id": "venice-fixture-malformed-001",
+  "status": "succeeded",
+  "httpStatus": 200,
+  "images": [
+    {
+      "unexpected": "missing base64 image payload"
+    }
+  ]
+}

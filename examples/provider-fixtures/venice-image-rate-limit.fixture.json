@@ -1,0 +1,9 @@
+{
+  "id": "venice-fixture-rate-limit-001",
+  "status": "failed",
+  "httpStatus": 429,
+  "error": {
+    "kind": "rate-limit",
+    "message": "Rate limited fixture response"
+  }
+}

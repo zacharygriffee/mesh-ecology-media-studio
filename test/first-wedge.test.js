@@ -286,7 +286,8 @@ test('provider shape fixtures validate locally', async () => {
   for (const fixturePath of [
     'examples/provider-shapes/openai-image-shape.json',
     'examples/provider-shapes/venice-image-shape.json',
-    'examples/provider-shapes/venice-image-mapping.json'
+    'examples/provider-shapes/venice-image-mapping.json',
+    'examples/provider-shapes/venice-provider-profile.json'
   ]) {
     const fixture = JSON.parse(await readFile(fixturePath, 'utf8'))
     assert.equal(validateRequiredRecord(fixture), true)
@@ -433,12 +434,144 @@ test('Venice live smoke command path can be tested without network by injected f
   assert.equal(fetchCalled, true)
   assert.equal(result.live, true)
   assert.equal(result.providerResult.providerTruth, false)
+  assert.equal(result.generatedAssets.assets.length, 1)
+  assert.equal(result.generatedAssets.assets[0].localRef.path, 'media/generated/provider-smoke/venice-live-smoke-0.png')
+  assert.equal(validateRequiredRecord(result.generatedAssets.assets[0].assetDescriptor), true)
+  assert.equal(result.reviews.length, 1)
+  assert.equal(result.reviews[0].operatorDecision.decisionType, 'accept')
+  assert.equal(validateRequiredRecord(result.reviews[0].operatorDecision), true)
+  assert.equal(result.manifestRecord.manifest.schema, 'media.local_run_manifest.v1')
+  assert.equal(validateRequiredRecord(result.manifestRecord.manifest), true)
 
   const written = JSON.parse(
     await readFile(path.join(dir, 'records', 'provider-results', 'venice-live-smoke-provider-result.local.json'), 'utf8')
   )
   assert.equal(written.providerInput.apiKeyPresent, true)
   assert.equal(JSON.stringify(written).includes('test-key'), false)
+  assert.equal(written.generatedRecordRefs.length, 2)
+  assert.equal(written.generatedAssets[0].localRef.path, 'media/generated/provider-smoke/venice-live-smoke-0.png')
+  assert.equal(written.reviewRecords.length, 1)
+  assert.equal(written.reviewRecords[0].localDecisionOnly, true)
+  assert.equal(written.manifestRef.id, 'records/manifests/venice-live-smoke-manifest.local.json')
+
+  const workPacket = JSON.parse(
+    await readFile(path.join(dir, 'records', 'work-packets', 'venice-live-smoke-work-packet.local.json'), 'utf8')
+  )
+  const generationRequest = JSON.parse(
+    await readFile(path.join(dir, 'records', 'work-packets', 'venice-live-smoke-generation-request.local.json'), 'utf8')
+  )
+  assert.equal(validateRequiredRecord(workPacket), true)
+  assert.equal(validateRequiredRecord(generationRequest), true)
+
+  const assetRecord = JSON.parse(
+    await readFile(path.join(dir, 'records', 'assets', 'venice-live-smoke-asset-0.local.json'), 'utf8')
+  )
+  assert.equal(assetRecord.schema, 'media.asset.descriptor.v1')
+  assert.equal(assetRecord.source.apiCalled, true)
+  assert.equal(assetRecord.localRef.placementClass, 'media-generated')
+  assert.equal(assetRecord.meshTruth, false)
+
+  const evidenceRecord = JSON.parse(
+    await readFile(path.join(dir, 'records', 'evidence', 'venice-live-smoke-0-evidence.local.json'), 'utf8')
+  )
+  const readinessRecord = JSON.parse(
+    await readFile(path.join(dir, 'records', 'readiness', 'venice-live-smoke-0-readiness.local.json'), 'utf8')
+  )
+  const decisionRecord = JSON.parse(
+    await readFile(path.join(dir, 'records', 'decisions', 'venice-live-smoke-0-decision.local.json'), 'utf8')
+  )
+  assert.equal(validateRequiredRecord(evidenceRecord), true)
+  assert.equal(readinessRecord.state, 'complete')
+  assert.equal(decisionRecord.decisionType, 'accept')
+  assert.equal(decisionRecord.localDecisionOnly, true)
+
+  const manifestRecord = JSON.parse(
+    await readFile(path.join(dir, 'records', 'manifests', 'venice-live-smoke-manifest.local.json'), 'utf8')
+  )
+  assert.equal(validateRequiredRecord(manifestRecord), true)
+  assert.equal(manifestRecord.candidateInputRef.path, 'media/generated/provider-smoke/venice-live-smoke-0.png')
+  assert.ok(manifestRecord.warnings.some((warning) => warning.includes('live Venice smoke call')))
+})
+
+test('Venice live smoke normalizes failure fixtures without claiming provider truth', async () => {
+  const generationRequest = createVeniceSmokeGenerationRequest({
+    createdAt: '2026-05-19T00:00:00.000Z'
+  })
+
+  for (const fixturePath of [
+    'examples/provider-fixtures/venice-image-auth-failure.fixture.json',
+    'examples/provider-fixtures/venice-image-rate-limit.fixture.json'
+  ]) {
+    const fixture = JSON.parse(await readFile(fixturePath, 'utf8'))
+    const result = normalizeVeniceLiveImageResult({
+      generationRequest,
+      responseJson: fixture,
+      httpStatus: fixture.httpStatus
+    })
+
+    assert.equal(result.status, 'failed')
+    assert.equal(result.providerTruth, false)
+    assert.equal(validateRequiredRecord(result), true)
+  }
+})
+
+test('Venice live smoke persists failed provider result without creating assets', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-venice-failed-smoke-'))
+  const fixture = JSON.parse(
+    await readFile('examples/provider-fixtures/venice-image-auth-failure.fixture.json', 'utf8')
+  )
+
+  await assert.rejects(
+    () => runVeniceLiveSmoke({
+      env: {
+        VENICE_LIVE: '1',
+        VENICE_INFERENCE_KEY: 'test-key'
+      },
+      envPath: path.join(dir, '.env-missing'),
+      projectDir: dir,
+      fetchImpl: async () => ({
+        status: fixture.httpStatus,
+        async json() {
+          return fixture
+        }
+      })
+    }),
+    /failed with HTTP 401/
+  )
+
+  const written = JSON.parse(
+    await readFile(path.join(dir, 'records', 'provider-results', 'venice-live-smoke-provider-result.local.json'), 'utf8')
+  )
+  assert.equal(written.providerResult.status, 'failed')
+  assert.equal(written.providerResult.providerTruth, false)
+  assert.deepEqual(written.generatedAssets, [])
+  assert.deepEqual(written.reviewRecords, [])
+  assert.equal(written.manifestRef, undefined)
+})
+
+test('Venice live smoke rejects malformed image payload fixtures', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-malformed-smoke-'))
+  const fixture = JSON.parse(
+    await readFile('examples/provider-fixtures/venice-image-malformed.fixture.json', 'utf8')
+  )
+
+  await assert.rejects(
+    () => runVeniceLiveSmoke({
+      env: {
+        VENICE_LIVE: '1',
+        VENICE_INFERENCE_KEY: 'test-key'
+      },
+      envPath: path.join(dir, '.env-missing'),
+      projectDir: dir,
+      fetchImpl: async () => ({
+        status: 200,
+        async json() {
+          return fixture
+        }
+      })
+    }),
+    /Unsupported Venice image payload/
+  )
 })
 
 test('local refs accept safe project-relative paths', () => {
