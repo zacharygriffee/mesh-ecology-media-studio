@@ -32,6 +32,8 @@ Run the local wedge and inspection commands first:
 ```bash
 npm run wedge:example
 npm run inspect:local-run -- --project-dir examples/card-to-candidate
+npm run status:project -- --project-dir examples/card-to-candidate
+npm run readiness:edge -- --project-dir examples/card-to-candidate
 npm run control:surface -- --project-dir examples/card-to-candidate
 npm run edge:compat -- --project-dir examples/card-to-candidate
 ```
@@ -85,6 +87,11 @@ making the boundary clear:
 edgeRuntimeBuilt: false
 edgeRuntimeVerified: false
 ```
+
+The bundle also carries `readinessResourceSummary`, copied from Studio's local
+status/readiness records. This lets Edge inspect missing byte proposals,
+missing resource candidates, unresolved candidates, and stale resource
+candidates without treating them as Edge runtime verification.
 
 ## No Runtime Integration
 

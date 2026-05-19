@@ -39,3 +39,13 @@ The status record also includes `assetResourceConsistency`. It summarizes
 accepted/reference assets missing byte descriptor proposals, missing resource
 ref candidates, or unresolved byte/resource alignment. This is readiness
 guidance for later inspection only.
+
+For a combined local operator snapshot, run:
+
+```bash
+npm run health:project -- --project-dir examples/card-to-candidate
+```
+
+This writes `media.project_health.local.v1` under `records/manifests/`. It
+combines project status, Edge readiness guidance, and production graph
+validation. It is local operator guidance only.

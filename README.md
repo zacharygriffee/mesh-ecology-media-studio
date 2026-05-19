@@ -198,6 +198,7 @@ Write a local project status snapshot:
 
 ```bash
 npm run status:project -- --project-dir examples/card-to-candidate
+npm run health:project -- --project-dir examples/card-to-candidate
 ```
 
 Write local continuity evidence:
@@ -292,7 +293,10 @@ Spine's JSON-exit posture with scaffold resolvability labels and resource-ref
 candidates, without promoting a local-layer backend. Phase 21 adds readiness
 guidance for unresolved resource refs, aligns resource candidates with byte
 descriptor proposals when present, and validates production descriptor
-parentage without adding UI, Edge calls, or mesh publication.
+parentage without adding UI, Edge calls, or mesh publication. Phase 22 carries
+readiness/resource summaries into Edge compatibility bundles and adds a local
+project health snapshot while still keeping resource promotion, Edge runtime
+verification, and mesh publication deferred.
 
 ## Start Here
 

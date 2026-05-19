@@ -1346,6 +1346,8 @@ export function validateRecordShape(record, schemaId = record.schema) {
       }
     }
 
+    validateReadinessResourceSummary(record.readinessResourceSummary, `${schemaId}.readinessResourceSummary`)
+
     for (const ref of record.studioSourceRefs) {
       validateInspectionRef(ref, `${schemaId}.studioSourceRefs`)
     }
@@ -1802,6 +1804,22 @@ function validateByteDescriptorAlignment(alignment, label) {
     validateInspectionRef(alignment.byteDescriptorProposalRef, `${label}.byteDescriptorProposalRef`)
   } else if (alignment.byteDescriptorProposalRef !== null && alignment.byteDescriptorProposalRef !== undefined) {
     throw new Error(`${label}.byteDescriptorProposalRef must be null when missing`)
+  }
+}
+
+function validateReadinessResourceSummary(summary, label) {
+  if (!summary || typeof summary !== 'object') {
+    throw new Error(`${label} must be an object`)
+  }
+
+  if (summary.operatorGuidanceOnly !== true || summary.localOnly !== true) {
+    throw new Error(`${label} must remain local operator guidance`)
+  }
+
+  for (const flag of ['meshTruth', 'distributedProof', 'ratifiedSharedState', 'edgeRuntimeVerified']) {
+    if (summary[flag] !== false) {
+      throw new Error(`${label} must set ${flag}=false`)
+    }
   }
 }
 

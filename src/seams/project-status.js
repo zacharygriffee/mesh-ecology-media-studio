@@ -117,6 +117,7 @@ function summarizeAssetResourceConsistency(records) {
   const missingResourceRefCandidateAssetIds = []
   const unresolvedResourceCandidateIds = []
   const alignedResourceCandidateIds = []
+  const staleResourceCandidateIds = []
 
   for (const entry of acceptedOrReferenceAssets) {
     const assetId = entry.record.assetId
@@ -129,7 +130,11 @@ function summarizeAssetResourceConsistency(records) {
     if (!resourceCandidate) {
       missingResourceRefCandidateAssetIds.push(assetId)
     } else if (resourceCandidate.byteDescriptorAlignment?.status === 'aligned') {
-      alignedResourceCandidateIds.push(resourceCandidate.resourceRefCandidateId)
+      if (resourceCandidateMatchesAsset(resourceCandidate, entry.record)) {
+        alignedResourceCandidateIds.push(resourceCandidate.resourceRefCandidateId)
+      } else {
+        staleResourceCandidateIds.push(resourceCandidate.resourceRefCandidateId)
+      }
     } else {
       unresolvedResourceCandidateIds.push(resourceCandidate.resourceRefCandidateId)
     }
@@ -137,7 +142,8 @@ function summarizeAssetResourceConsistency(records) {
 
   const warningCount = missingByteDescriptorProposalAssetIds.length +
     missingResourceRefCandidateAssetIds.length +
-    unresolvedResourceCandidateIds.length
+    unresolvedResourceCandidateIds.length +
+    staleResourceCandidateIds.length
 
   return {
     acceptedOrReferenceAssets: acceptedOrReferenceAssets.length,
@@ -147,6 +153,7 @@ function summarizeAssetResourceConsistency(records) {
     missingByteDescriptorProposalAssetIds,
     missingResourceRefCandidateAssetIds,
     unresolvedResourceCandidateIds,
+    staleResourceCandidateIds,
     readyForEdgeInspection: acceptedOrReferenceAssets.length > 0 && warningCount === 0,
     warningCount,
     localOnly: true,
@@ -156,6 +163,11 @@ function summarizeAssetResourceConsistency(records) {
     byteAvailabilityProof: false,
     materializationProof: false
   }
+}
+
+function resourceCandidateMatchesAsset(resourceCandidate, assetDescriptor) {
+  return JSON.stringify(resourceCandidate.proposedResourceRef?.hash ?? null) === JSON.stringify(assetDescriptor.hash ?? null) &&
+    JSON.stringify(resourceCandidate.proposedResourceRef?.localRef ?? null) === JSON.stringify(assetDescriptor.localRef ?? null)
 }
 
 function isAcceptedOrReferenceAsset(record) {
@@ -180,7 +192,12 @@ async function readProjectRecords(root) {
     const raw = JSON.parse(await readFile(file, 'utf8'))
     const record = raw.providerResult?.schema === artifactKinds.mediaProviderResult ? raw.providerResult : raw
     if (!record.schema) continue
-    validateRequiredRecord(record)
+    try {
+      validateRequiredRecord(record)
+    } catch (error) {
+      if (relativePath.startsWith('records/exports/')) continue
+      throw error
+    }
     records.push({
       path: relativePath,
       record

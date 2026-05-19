@@ -58,6 +58,7 @@ export async function writeEdgeReadinessGuidance({
   const missingByteDescriptorProposalAssetIds = []
   const missingResourceRefCandidateAssetIds = []
   const unresolvedResourceCandidateIds = []
+  const staleResourceCandidateIds = []
 
   for (const entry of acceptedOrReferenceAssets) {
     const assetId = entry.record.assetId
@@ -70,6 +71,8 @@ export async function writeEdgeReadinessGuidance({
       missingResourceRefCandidateAssetIds.push(assetId)
     } else if (resourceCandidateEntry.record.byteDescriptorAlignment?.status !== 'aligned') {
       unresolvedResourceCandidateIds.push(resourceCandidateEntry.record.resourceRefCandidateId)
+    } else if (!resourceCandidateMatchesAsset(resourceCandidateEntry.record, entry.record)) {
+      staleResourceCandidateIds.push(resourceCandidateEntry.record.resourceRefCandidateId)
     }
   }
 
@@ -77,18 +80,21 @@ export async function writeEdgeReadinessGuidance({
     acceptedOrReferenceAssets,
     missingByteDescriptorProposalAssetIds,
     missingResourceRefCandidateAssetIds,
-    unresolvedResourceCandidateIds
+    unresolvedResourceCandidateIds,
+    staleResourceCandidateIds
   })
   const reasons = readinessReasons({
     acceptedOrReferenceAssets,
     missingByteDescriptorProposalAssetIds,
     missingResourceRefCandidateAssetIds,
-    unresolvedResourceCandidateIds
+    unresolvedResourceCandidateIds,
+    staleResourceCandidateIds
   })
   const nextActions = readinessNextActions({
     missingByteDescriptorProposalAssetIds,
     missingResourceRefCandidateAssetIds,
-    unresolvedResourceCandidateIds
+    unresolvedResourceCandidateIds,
+    staleResourceCandidateIds
   })
   const readiness = createReadiness({
     subjectRef: makeRef('media-project', projectId, 'media.project.local'),
@@ -104,6 +110,7 @@ export async function writeEdgeReadinessGuidance({
     missingByteDescriptorProposalAssetIds,
     missingResourceRefCandidateAssetIds,
     unresolvedResourceCandidateIds,
+    staleResourceCandidateIds,
     currentCategory: 'device_dependent_scaffold',
     targetCategory: 'local_layer_resource_ref',
     localJsonIsScaffold: true,
@@ -150,7 +157,12 @@ async function readRecords(root) {
     if (relativePath.startsWith('records/exports/bundles/')) continue
     const record = JSON.parse(await readFile(file, 'utf8'))
     if (!record.schema) continue
-    validateRequiredRecord(record)
+    try {
+      validateRequiredRecord(record)
+    } catch (error) {
+      if (relativePath.startsWith('records/exports/')) continue
+      throw error
+    }
     entries.push({
       path: relativePath,
       record
@@ -176,13 +188,15 @@ function readinessState({
   acceptedOrReferenceAssets,
   missingByteDescriptorProposalAssetIds,
   missingResourceRefCandidateAssetIds,
-  unresolvedResourceCandidateIds
+  unresolvedResourceCandidateIds,
+  staleResourceCandidateIds
 }) {
   if (acceptedOrReferenceAssets.length === 0) return 'blocked'
   if (
     missingByteDescriptorProposalAssetIds.length === 0 &&
     missingResourceRefCandidateAssetIds.length === 0 &&
-    unresolvedResourceCandidateIds.length === 0
+    unresolvedResourceCandidateIds.length === 0 &&
+    staleResourceCandidateIds.length === 0
   ) {
     return 'ready'
   }
@@ -194,7 +208,8 @@ function readinessReasons({
   acceptedOrReferenceAssets,
   missingByteDescriptorProposalAssetIds,
   missingResourceRefCandidateAssetIds,
-  unresolvedResourceCandidateIds
+  unresolvedResourceCandidateIds,
+  staleResourceCandidateIds
 }) {
   const reasons = [
     'Edge inspection readiness is local operator guidance only.',
@@ -217,6 +232,10 @@ function readinessReasons({
     reasons.push(`${unresolvedResourceCandidateIds.length} resource-ref candidates are missing byte descriptor alignment.`)
   }
 
+  if (staleResourceCandidateIds.length > 0) {
+    reasons.push(`${staleResourceCandidateIds.length} resource-ref candidates do not match current asset hash/localRef.`)
+  }
+
   if (reasons.length === 2) {
     reasons.push('Accepted/reference assets have byte proposal and resource-ref candidate coverage for later Edge inspection.')
   }
@@ -227,15 +246,16 @@ function readinessReasons({
 function readinessNextActions({
   missingByteDescriptorProposalAssetIds,
   missingResourceRefCandidateAssetIds,
-  unresolvedResourceCandidateIds
+  unresolvedResourceCandidateIds,
+  staleResourceCandidateIds
 }) {
   const actions = []
 
-  if (missingByteDescriptorProposalAssetIds.length > 0 || unresolvedResourceCandidateIds.length > 0) {
+  if (missingByteDescriptorProposalAssetIds.length > 0 || unresolvedResourceCandidateIds.length > 0 || staleResourceCandidateIds.length > 0) {
     actions.push('Run npm run bytes:proposal before treating resource refs as aligned candidates.')
   }
 
-  if (missingResourceRefCandidateAssetIds.length > 0 || unresolvedResourceCandidateIds.length > 0) {
+  if (missingResourceRefCandidateAssetIds.length > 0 || unresolvedResourceCandidateIds.length > 0 || staleResourceCandidateIds.length > 0) {
     actions.push('Run npm run resource:refs after byte descriptor proposals are current.')
   }
 
@@ -245,6 +265,11 @@ function readinessNextActions({
 
   actions.push('Keep mesh publication, ratifier authority, and materialization proof deferred to their proper lanes.')
   return actions
+}
+
+function resourceCandidateMatchesAsset(resourceCandidate, assetDescriptor) {
+  return JSON.stringify(resourceCandidate.proposedResourceRef?.hash ?? null) === JSON.stringify(assetDescriptor.hash ?? null) &&
+    JSON.stringify(resourceCandidate.proposedResourceRef?.localRef ?? null) === JSON.stringify(assetDescriptor.localRef ?? null)
 }
 
 async function listJsonFiles(root) {

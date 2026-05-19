@@ -25,6 +25,7 @@ const sourceRecordPaths = Object.freeze({
   inspectionPacket: 'records/exports/local-run-edge-inspection-packet.local.json',
   controlSurfaceProjection: 'records/exports/media-control-surface-projection.local.json',
   projectStatus: 'records/manifests/media-project-status.local.json',
+  edgeReadinessGuidance: 'records/readiness/media-edge-inspection-readiness.local.json',
   providerRunLedger: 'records/provider-results/media-provider-run-ledger.local.json'
 })
 const optionalSourceRecordPaths = Object.freeze({
@@ -91,10 +92,12 @@ export async function writeEdgeCompatibilityBundle({
     schema: record.schema,
     relativePath
   }))
+  const readinessResourceSummary = createReadinessResourceSummary({ sources })
   const createdAt = nowIso()
   const reviewEvidence = createStudioEdgeReviewEvidence({
     projectId,
     sourceRefs: studioSourceRefs,
+    readinessResourceSummary,
     createdAt
   })
   const sourceRefStrings = studioSourceRefs.map((ref) => `${ref.kind}:${ref.id}`)
@@ -114,6 +117,7 @@ export async function writeEdgeCompatibilityBundle({
     projectId,
     workPacketCandidate,
     evidenceImportCandidate,
+    readinessResourceSummary,
     sourceRefStrings,
     createdAt
   })
@@ -147,6 +151,7 @@ export async function writeEdgeCompatibilityBundle({
       edgeShapeTarget('edge_operator_return_surface', 'edge_operator_return_surface.v1'),
       edgeShapeTarget('edge_operator_decision', 'edge_operator_decision.v1')
     ],
+    readinessResourceSummary,
     studioReviewEvidence: reviewEvidence,
     edgeWorkPacketCandidate: workPacketCandidate,
     edgeEvidenceImportCandidate: evidenceImportCandidate,
@@ -222,7 +227,7 @@ async function readSourceRecords(root) {
   return sources
 }
 
-function createStudioEdgeReviewEvidence({ projectId, sourceRefs, createdAt }) {
+function createStudioEdgeReviewEvidence({ projectId, sourceRefs, readinessResourceSummary, createdAt }) {
   const reviewEvidence = {
     schema: artifactKinds.mediaEdgeReviewEvidenceLocal,
     edgeReviewEvidenceId: `media-studio-edge-review-${projectId}`,
@@ -243,6 +248,7 @@ function createStudioEdgeReviewEvidence({ projectId, sourceRefs, createdAt }) {
     },
     sourceRefs,
     sourceArtifactRefs: sourceRefs.map((ref) => `${ref.kind}:${ref.id}`),
+    readinessResourceSummary,
     summary: 'Studio local inspection artifacts are ready for Edge-style operator review as local evidence only.',
     reasonCodes: [
       'studio_local_wedge_complete',
@@ -335,7 +341,7 @@ function createEdgeEvidenceImportCandidate({ projectId, reviewEvidence, workPack
   })
 }
 
-function createEdgeReadinessViewCandidate({ projectId, workPacketCandidate, evidenceImportCandidate, sourceRefStrings, createdAt }) {
+function createEdgeReadinessViewCandidate({ projectId, workPacketCandidate, evidenceImportCandidate, readinessResourceSummary, sourceRefStrings, createdAt }) {
   return edgeCandidate({
     edgeArtifactKind: 'edge_cross_project_readiness_view',
     edgeSchemaVersion: 'edge_cross_project_readiness_view.v1',
@@ -353,7 +359,11 @@ function createEdgeReadinessViewCandidate({ projectId, workPacketCandidate, evid
     sourceEvidenceImportRefs: [evidenceImportCandidate.importId],
     readinessSummary: {
       state: 'ready_for_operator_review',
-      operatorGuidanceOnly: true
+      operatorGuidanceOnly: true,
+      studioReadinessState: readinessResourceSummary.edgeReadinessState,
+      assetResourceReady: readinessResourceSummary.assetResourceReady,
+      assetResourceWarnings: readinessResourceSummary.assetResourceWarnings,
+      staleResourceCandidateIds: readinessResourceSummary.staleResourceCandidateIds
     },
     consumerLabels: {
       view: 'Studio media readiness view candidate',
@@ -365,6 +375,35 @@ function createEdgeReadinessViewCandidate({ projectId, workPacketCandidate, evid
       validationIsReviewOnly: true
     }
   })
+}
+
+function createReadinessResourceSummary({ sources }) {
+  const projectStatus = sources.projectStatus?.record
+  const edgeReadiness = sources.edgeReadinessGuidance?.record
+  const consistency = projectStatus?.assetResourceConsistency
+  const resolvability = edgeReadiness?.resolvabilitySummary
+
+  return {
+    summaryKind: 'studio-readiness-resource-summary',
+    projectStatusRef: sources.projectStatus ? sources.projectStatus.relativePath : null,
+    edgeReadinessRef: sources.edgeReadinessGuidance ? sources.edgeReadinessGuidance.relativePath : null,
+    edgeReadinessState: edgeReadiness?.state ?? 'not-recorded',
+    assetResourceReady: consistency?.readyForEdgeInspection ?? false,
+    assetResourceWarnings: consistency?.warningCount ?? null,
+    acceptedOrReferenceAssets: consistency?.acceptedOrReferenceAssets ?? resolvability?.acceptedOrReferenceAssets ?? 0,
+    byteDescriptorProposalCoverage: consistency?.byteDescriptorProposalCoverage ?? resolvability?.byteDescriptorProposals ?? 0,
+    resourceRefCandidateCoverage: consistency?.resourceRefCandidateCoverage ?? resolvability?.resourceRefCandidates ?? 0,
+    missingByteDescriptorProposalAssetIds: consistency?.missingByteDescriptorProposalAssetIds ?? resolvability?.missingByteDescriptorProposalAssetIds ?? [],
+    missingResourceRefCandidateAssetIds: consistency?.missingResourceRefCandidateAssetIds ?? resolvability?.missingResourceRefCandidateAssetIds ?? [],
+    unresolvedResourceCandidateIds: consistency?.unresolvedResourceCandidateIds ?? resolvability?.unresolvedResourceCandidateIds ?? [],
+    staleResourceCandidateIds: consistency?.staleResourceCandidateIds ?? resolvability?.staleResourceCandidateIds ?? [],
+    operatorGuidanceOnly: true,
+    localOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    edgeRuntimeVerified: false
+  }
 }
 
 function createEdgeReturnSurfaceCandidate({ projectId, readinessViewCandidate, workPacketCandidate, evidenceImportCandidate, sourceRefStrings, createdAt }) {
@@ -500,6 +539,7 @@ function kindForSchema(schema) {
     [artifactKinds.mediaEdgeInspectionPacketLocal]: 'media-edge-inspection-packet',
     [artifactKinds.mediaControlSurfaceProjectionLocal]: 'media-control-surface-projection',
     [artifactKinds.mediaProjectStatusLocal]: 'media-project-status',
+    [artifactKinds.mediaReadiness]: 'media-readiness',
     [artifactKinds.mediaProviderRunLedgerLocal]: 'media-provider-run-ledger',
     [artifactKinds.mediaProductionUnit]: 'media-production-unit',
     [artifactKinds.mediaReferencePrimitive]: 'media-reference-primitive',
@@ -519,6 +559,7 @@ function idForRecord(record) {
     record.packetId ??
     record.projectionId ??
     record.statusId ??
+    record.readinessId ??
     record.ledgerId ??
     record.productionUnitId ??
     record.primitiveId ??

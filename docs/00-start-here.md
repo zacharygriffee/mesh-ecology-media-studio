@@ -103,6 +103,7 @@ Record a local candidate comparison and project status snapshot with:
 ```bash
 npm run review:candidates -- --project-dir examples/card-to-candidate
 npm run status:project -- --project-dir examples/card-to-candidate
+npm run health:project -- --project-dir examples/card-to-candidate
 npm run continuity:draft -- --project-dir examples/card-to-candidate
 npm run production:from-card -- --project-dir examples/card-to-candidate
 npm run production:validate -- --project-dir examples/card-to-candidate
@@ -155,6 +156,7 @@ CLI without adding UI or provider work. Phase 20 adopts Spine's JSON-exit
 posture by marking local JSON/path refs as scaffold and adding local-layer
 resource-ref candidates. Phase 21 adds readiness guidance for unresolved
 resource refs, byte proposal alignment for resource candidates, and production
-descriptor parentage validation. These records do not claim mesh truth,
-distributed proof, byte materialization proof, provider truth, causal truth,
-publication authorization, or ratifier authority.
+descriptor parentage validation. Phase 22 carries readiness/resource summaries
+into Edge compatibility bundles and adds a local project health snapshot. These
+records do not claim mesh truth, distributed proof, byte materialization proof,
+provider truth, causal truth, publication authorization, or ratifier authority.

@@ -56,6 +56,7 @@ import { indexProviderRuns } from '../src/seams/index-provider-runs.js'
 import { inspectProviderFailure } from '../src/seams/inspect-provider-failure.js'
 import { inspectVeniceSmoke } from '../src/seams/inspect-venice-smoke.js'
 import { writeProjectStatus } from '../src/seams/project-status.js'
+import { writeProjectHealth } from '../src/seams/project-health.js'
 import { writeEdgeReadinessGuidance } from '../src/seams/edge-readiness-guidance.js'
 import { writeControlSurfaceProjection } from '../src/seams/control-surface-projection.js'
 import { writeEdgeCompatibilityBundle } from '../src/seams/edge-compatibility-bundle.js'
@@ -1093,6 +1094,53 @@ test('project status flags unresolved byte and resource coverage', async () => {
   assert.equal(validateRequiredRecord(result.status), true)
 })
 
+test('project status and readiness flag stale resource candidates', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await writeByteDescriptorProposals({ projectDir: dir })
+  await writeLocalLayerResourceRefCandidates({ projectDir: dir })
+  const assetPath = path.join(dir, 'records', 'assets', 'media-asset-descriptor.local.json')
+  const asset = JSON.parse(await readFile(assetPath, 'utf8'))
+  asset.localRef = {
+    ...asset.localRef,
+    path: 'media/accepted/renamed-candidate.txt'
+  }
+  await writeFile(assetPath, `${JSON.stringify(asset, null, 2)}\n`)
+
+  const status = await writeProjectStatus({ projectDir: dir })
+  const readiness = await writeEdgeReadinessGuidance({ projectDir: dir })
+
+  assert.equal(status.status.assetResourceConsistency.readyForEdgeInspection, false)
+  assert.equal(status.status.assetResourceConsistency.staleResourceCandidateIds.length, 1)
+  assert.equal(readiness.readiness.state, 'caution')
+  assert.equal(readiness.readiness.resolvabilitySummary.staleResourceCandidateIds.length, 1)
+})
+
+test('project health combines status readiness and production validation', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await writeByteDescriptorProposals({ projectDir: dir })
+  await writeLocalLayerResourceRefCandidates({ projectDir: dir })
+  await writeProductionRecordsFromCard({ projectDir: dir })
+
+  const result = await writeProjectHealth({ projectDir: dir })
+
+  assert.equal(result.health.schema, 'media.project_health.local.v1')
+  assert.equal(result.health.healthState, 'ready-for-local-inspection')
+  assert.equal(result.health.assetResourceConsistency.readyForEdgeInspection, true)
+  assert.equal(result.health.productionValidation.valid, true)
+  assert.equal(result.health.meshTruth, false)
+  assert.equal(result.health.edgeRuntimeVerified, false)
+})
+
 test('promote candidate copies placement and records local decision without provider work', async () => {
   const dir = await createFixtureProject()
   await runFirstWedge({ projectDir: dir })
@@ -1444,6 +1492,7 @@ test('edge compatibility bundle targets Edge review shapes without runtime claim
   })
   await inspectLocalRun({ projectDir: dir })
   await writeProjectStatus({ projectDir: dir })
+  await writeEdgeReadinessGuidance({ projectDir: dir })
   await writeControlSurfaceProjection({ projectDir: dir })
 
   const { bundle, output } = await writeEdgeCompatibilityBundle({ projectDir: dir })
@@ -1460,6 +1509,9 @@ test('edge compatibility bundle targets Edge review shapes without runtime claim
   assert.equal(bundle.edgeEvidenceImportCandidate.edgeArtifactKind, 'edge_cross_project_evidence_import')
   assert.equal(bundle.edgeEvidenceImportCandidate.edgeReadinessEffect, 'ready_for_operator_review')
   assert.equal(bundle.edgeReadinessViewCandidate.edgeArtifactKind, 'edge_cross_project_readiness_view')
+  assert.equal(bundle.readinessResourceSummary.assetResourceReady, false)
+  assert.equal(bundle.readinessResourceSummary.operatorGuidanceOnly, true)
+  assert.equal(bundle.studioReviewEvidence.readinessResourceSummary.edgeRuntimeVerified, false)
   assert.equal(bundle.edgeReturnSurfaceCandidate.edgeArtifactKind, 'edge_operator_return_surface')
   assert.ok(bundle.edgeShapeTargets.some((target) => target.edgeArtifactKind === 'edge_operator_decision'))
   assert.equal(validateRequiredRecord(bundle.studioReviewEvidence), true)
@@ -1467,6 +1519,29 @@ test('edge compatibility bundle targets Edge review shapes without runtime claim
 
   const written = JSON.parse(await readFile(path.join(dir, output), 'utf8'))
   assert.equal(written.compatibilityBundleId, bundle.compatibilityBundleId)
+})
+
+test('edge compatibility bundle includes aligned readiness resource summary', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await writeByteDescriptorProposals({ projectDir: dir })
+  await writeLocalLayerResourceRefCandidates({ projectDir: dir })
+  await writeEdgeReadinessGuidance({ projectDir: dir })
+  await inspectLocalRun({ projectDir: dir })
+  await writeProjectStatus({ projectDir: dir })
+  await writeControlSurfaceProjection({ projectDir: dir })
+
+  const { bundle } = await writeEdgeCompatibilityBundle({ projectDir: dir })
+
+  assert.equal(bundle.readinessResourceSummary.assetResourceReady, true)
+  assert.equal(bundle.readinessResourceSummary.edgeReadinessState, 'ready')
+  assert.equal(bundle.edgeReadinessViewCandidate.readinessSummary.assetResourceReady, true)
+  assert.equal(bundle.edgeReadinessViewCandidate.readinessSummary.assetResourceWarnings, 0)
+  assert.equal(validateRequiredRecord(bundle), true)
 })
 
 test('Edge inspection includes production strategy records when present', async () => {
