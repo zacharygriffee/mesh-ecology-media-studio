@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-local-layer-resource-ref-candidate-local.schema.json",
+  "title": "media.local_layer_resource_ref_candidate.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "resourceRefCandidateId",
+    "projectId",
+    "sourceRef",
+    "sourcePath",
+    "resourceKind",
+    "currentRefCategory",
+    "targetRefCategory",
+    "proposedResourceRef",
+    "resolvabilityPosture",
+    "status",
+    "localLayerResourceRef",
+    "replicatedPointerRef",
+    "causalReviewableRef",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "localTruthLabel",
+    "truthStatus",
+    "createdAt"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.local_layer_resource_ref_candidate.local.v1"
+    },
+    "resourceRefCandidateId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceRef": {
+      "type": "object"
+    },
+    "sourcePath": {
+      "type": "string"
+    },
+    "resourceKind": {
+      "type": "string"
+    },
+    "currentRefCategory": {
+      "const": "device_dependent_scaffold"
+    },
+    "targetRefCategory": {
+      "const": "local_layer_resource_ref"
+    },
+    "proposedResourceRef": {
+      "type": "object"
+    },
+    "resolvabilityPosture": {
+      "type": "object"
+    },
+    "status": {
+      "const": "candidate"
+    },
+    "localLayerResourceRef": {
+      "const": false
+    },
+    "replicatedPointerRef": {
+      "const": false
+    },
+    "causalReviewableRef": {
+      "const": false
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    }
+  }
+}

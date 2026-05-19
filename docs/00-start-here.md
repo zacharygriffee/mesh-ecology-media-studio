@@ -35,6 +35,7 @@ Read in this order:
 27. [Approval Proposals](31-approval-proposals.md)
 28. [Byte Descriptor Proposals](32-byte-descriptor-proposals.md)
 29. [Record Folder Conventions](33-record-folder-conventions.md)
+30. [JSON Exit And Resolvability Posture](34-json-exit-and-resolvability-posture.md)
 
 The first executable path is:
 
@@ -106,6 +107,7 @@ npm run continuity:draft -- --project-dir examples/card-to-candidate
 npm run production:from-card -- --project-dir examples/card-to-candidate
 npm run approval:proposal -- --project-dir examples/card-to-candidate
 npm run bytes:proposal -- --project-dir examples/card-to-candidate
+npm run resource:refs -- --project-dir examples/card-to-candidate
 ```
 
 Write a local Packs-aligned control-surface projection without adding UI:
@@ -147,6 +149,8 @@ granting it. Phase 17 adds byte descriptor proposals for accepted/reference
 assets without claiming byte availability, materialization, or byte authority.
 Phase 18 documents the new local record folders and extends local status and
 inspection summaries around them. Phase 19 adds a local production-from-card
-CLI without adding UI or provider work. These records do not claim mesh truth,
-distributed proof, byte materialization proof, provider truth, causal truth,
-publication authorization, or ratifier authority.
+CLI without adding UI or provider work. Phase 20 adopts Spine's JSON-exit
+posture by marking local JSON/path refs as scaffold and adding local-layer
+resource-ref candidates. These records do not claim mesh truth, distributed
+proof, byte materialization proof, provider truth, causal truth, publication
+authorization, or ratifier authority.

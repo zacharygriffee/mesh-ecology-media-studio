@@ -224,6 +224,12 @@ Write local byte descriptor proposals without claiming byte materialization:
 npm run bytes:proposal -- --project-dir examples/card-to-candidate
 ```
 
+Write local-layer resource-ref candidates without claiming admitted resources:
+
+```bash
+npm run resource:refs -- --project-dir examples/card-to-candidate
+```
+
 Write a local Packs-aligned control-surface projection without adding UI:
 
 ```bash
@@ -274,7 +280,9 @@ reference assets without claiming byte availability, materialization, or byte
 authority. Phase 18 documents local record folder conventions and extends
 local project status plus inspection summaries for production, approval, and
 byte proposal records. Phase 19 adds a local production-from-card CLI without
-adding UI, provider calls, Edge calls, or mesh publication.
+adding UI, provider calls, Edge calls, or mesh publication. Phase 20 adopts
+Spine's JSON-exit posture with scaffold resolvability labels and resource-ref
+candidates, without promoting a local-layer backend.
 
 ## Start Here
 
@@ -305,3 +313,4 @@ adding UI, provider calls, Edge calls, or mesh publication.
 - [docs/31-approval-proposals.md](docs/31-approval-proposals.md)
 - [docs/32-byte-descriptor-proposals.md](docs/32-byte-descriptor-proposals.md)
 - [docs/33-record-folder-conventions.md](docs/33-record-folder-conventions.md)
+- [docs/34-json-exit-and-resolvability-posture.md](docs/34-json-exit-and-resolvability-posture.md)

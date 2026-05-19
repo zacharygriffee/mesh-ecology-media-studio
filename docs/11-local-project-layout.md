@@ -27,6 +27,7 @@ project/
     production/
     approvals/
     bytes/
+    resources/
     manifests/
 ```
 
@@ -60,6 +61,9 @@ availability, materialization, authority, or mesh truth.
   authority and do not grant ratifier authority or publication authorization.
 - `records/bytes/`: local byte descriptor proposals. These preview future byte
   descriptors and do not prove byte availability or materialization.
+- `records/resources/`: local-layer resource-ref candidates. These identify
+  device-dependent scaffold refs that should later become resolvable local-layer
+  resource refs.
 
 Inspection commands may include these folders when records are present. The
 folders remain local cache/receipt/proposal space, not shared truth.

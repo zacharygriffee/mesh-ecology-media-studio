@@ -145,6 +145,7 @@ function countRecords(records) {
     productionDescriptors: bySchema(artifactKinds.mediaProductionDescriptorLocal),
     approvalProposals: bySchema(artifactKinds.mediaApprovalProposalLocal),
     byteDescriptorProposals: bySchema(artifactKinds.mediaByteDescriptorProposalLocal),
+    resourceRefCandidates: bySchema(artifactKinds.mediaLocalLayerResourceRefCandidateLocal),
     decisions: bySchema(artifactKinds.mediaOperatorDecision),
     manifests: bySchema(artifactKinds.mediaLocalRunManifest),
     inspectionPackets: bySchema(artifactKinds.mediaEdgeInspectionPacketLocal),

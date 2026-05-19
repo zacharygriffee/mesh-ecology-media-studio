@@ -8,6 +8,9 @@ import {
   assertSafeLocalPath
 } from '../local/project-layout.js'
 import {
+  assertResolvabilityCategory
+} from '../local/resolvability.js'
+import {
   assertIntentFamily,
   validateProviderCapability
 } from '../providers/provider-neutral.js'
@@ -57,7 +60,8 @@ export const schemaFiles = {
   'media.render_strategy.v1': 'schemas/media-render-strategy.schema.json',
   'media.production_descriptor.local.v1': 'schemas/media-production-descriptor-local.schema.json',
   'media.approval_proposal.local.v1': 'schemas/media-approval-proposal-local.schema.json',
-  'media.byte_descriptor_proposal.local.v1': 'schemas/media-byte-descriptor-proposal-local.schema.json'
+  'media.byte_descriptor_proposal.local.v1': 'schemas/media-byte-descriptor-proposal-local.schema.json',
+  'media.local_layer_resource_ref_candidate.local.v1': 'schemas/media-local-layer-resource-ref-candidate-local.schema.json'
 }
 
 export const requiredFields = {
@@ -717,6 +721,29 @@ export const requiredFields = {
     'localTruthLabel',
     'truthStatus',
     'createdAt'
+  ],
+  'media.local_layer_resource_ref_candidate.local.v1': [
+    'schema',
+    'resourceRefCandidateId',
+    'projectId',
+    'sourceRef',
+    'sourcePath',
+    'resourceKind',
+    'currentRefCategory',
+    'targetRefCategory',
+    'proposedResourceRef',
+    'resolvabilityPosture',
+    'status',
+    'localLayerResourceRef',
+    'replicatedPointerRef',
+    'causalReviewableRef',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'localTruthLabel',
+    'truthStatus',
+    'createdAt'
   ]
 }
 
@@ -760,7 +787,8 @@ const idFields = {
   [artifactKinds.mediaRenderStrategy]: 'strategyId',
   [artifactKinds.mediaProductionDescriptorLocal]: 'descriptorId',
   [artifactKinds.mediaApprovalProposalLocal]: 'proposalId',
-  [artifactKinds.mediaByteDescriptorProposalLocal]: 'byteDescriptorProposalId'
+  [artifactKinds.mediaByteDescriptorProposalLocal]: 'byteDescriptorProposalId',
+  [artifactKinds.mediaLocalLayerResourceRefCandidateLocal]: 'resourceRefCandidateId'
 }
 
 const domainProjectSchemas = new Set([
@@ -786,7 +814,8 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaRenderStrategy,
   artifactKinds.mediaProductionDescriptorLocal,
   artifactKinds.mediaApprovalProposalLocal,
-  artifactKinds.mediaByteDescriptorProposalLocal
+  artifactKinds.mediaByteDescriptorProposalLocal,
+  artifactKinds.mediaLocalLayerResourceRefCandidateLocal
 ])
 
 const localGeneratedSchemas = new Set([
@@ -816,7 +845,8 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaRenderStrategy,
   artifactKinds.mediaProductionDescriptorLocal,
   artifactKinds.mediaApprovalProposalLocal,
-  artifactKinds.mediaByteDescriptorProposalLocal
+  artifactKinds.mediaByteDescriptorProposalLocal,
+  artifactKinds.mediaLocalLayerResourceRefCandidateLocal
 ])
 
 const readinessStates = new Set(['draft', 'blocked', 'ready', 'caution', 'complete'])
@@ -1493,6 +1523,30 @@ export function validateRecordShape(record, schemaId = record.schema) {
     validateLocalFalseFlags(record, schemaId)
   }
 
+  if (schemaId === artifactKinds.mediaLocalLayerResourceRefCandidateLocal) {
+    validateRef(record.sourceRef, `${schemaId}.sourceRef`)
+    assertSafeLocalPath(record.sourcePath)
+    assertResolvabilityCategory(record.currentRefCategory)
+    assertResolvabilityCategory(record.targetRefCategory)
+    validateResolvabilityPosture(record.resolvabilityPosture, `${schemaId}.resolvabilityPosture`)
+
+    if (record.status !== 'candidate') {
+      throw new Error(`Record ${schemaId} must set status=candidate`)
+    }
+
+    if (!record.proposedResourceRef || typeof record.proposedResourceRef !== 'object') {
+      throw new Error(`Record ${schemaId} must include proposedResourceRef`)
+    }
+
+    for (const flag of ['localLayerResourceRef', 'replicatedPointerRef', 'causalReviewableRef']) {
+      if (record[flag] !== false) {
+        throw new Error(`Record ${schemaId} must set ${flag}=false`)
+      }
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+  }
+
   if (localGeneratedSchemas.has(schemaId)) {
     validateLocalDoctrineFlags(record, schemaId)
   }
@@ -1538,6 +1592,14 @@ function validateLocalDoctrineFlags(record, schemaId) {
   }
 
   if (schemaId === artifactKinds.mediaLocalRunManifest) {
+    if (record.resolvabilityPosture !== undefined) {
+      validateResolvabilityPosture(record.resolvabilityPosture, `${schemaId}.resolvabilityPosture`)
+    }
+
+    if (record.candidateInputRef?.resolvabilityCategory !== undefined) {
+      assertResolvabilityCategory(record.candidateInputRef.resolvabilityCategory)
+    }
+
     const requiredFalseFlags = [
       'meshTruth',
       'distributedProof',
@@ -1676,6 +1738,10 @@ function validateGeneratedRecordRef(ref, label) {
     throw new Error(`${label}.path must be a string`)
   }
 
+  if (ref.resolvabilityCategory !== undefined) {
+    assertResolvabilityCategory(ref.resolvabilityCategory)
+  }
+
   if (ref.localOnly !== true) {
     throw new Error(`${label}.localOnly must be true`)
   }
@@ -1696,6 +1762,23 @@ function validateInspectionRef(ref, label) {
 
   if (ref.localOnly !== true) {
     throw new Error(`${label}.localOnly must be true`)
+  }
+}
+
+function validateResolvabilityPosture(posture, label) {
+  if (!posture || typeof posture !== 'object') {
+    throw new Error(`${label} must be an object`)
+  }
+
+  assertResolvabilityCategory(posture.currentCategory)
+  assertResolvabilityCategory(posture.targetCategory)
+
+  if (posture.localJsonIsScaffold !== true || posture.localPathIsScaffold !== true) {
+    throw new Error(`${label} must preserve local JSON/path scaffold posture`)
+  }
+
+  if (posture.operatorFacingIdentityBoundary !== false) {
+    throw new Error(`${label} must not claim operator-facing identity boundary`)
   }
 }
 

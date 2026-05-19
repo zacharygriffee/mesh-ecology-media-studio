@@ -16,6 +16,7 @@ records/
   production/
   approvals/
   bytes/
+  resources/
   manifests/
   exports/
 ```
@@ -53,6 +54,17 @@ publication authorization, or mesh approval.
 
 These records preview future byte descriptor posture. They do not prove byte
 availability, materialization, or byte authority.
+
+## Resources
+
+`records/resources/` contains resource-ref candidates:
+
+- `media.local_layer_resource_ref_candidate.local.v1`
+
+These records classify current local JSON/path refs as
+`device_dependent_scaffold` and point toward future
+`local_layer_resource_ref` posture. They are not admitted local-layer resources,
+replicated pointer refs, or causal-reviewable refs.
 
 ## Inspection
 

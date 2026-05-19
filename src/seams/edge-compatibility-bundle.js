@@ -31,10 +31,12 @@ const optionalSourceRecordPaths = Object.freeze({
   approvalProposal: 'records/approvals/media-approval-proposal.local.json'
 })
 const optionalSourceRoots = Object.freeze([
-  'records/bytes'
+  'records/bytes',
+  'records/resources'
 ])
 const optionalSourceSchemas = new Set([
-  artifactKinds.mediaByteDescriptorProposalLocal
+  artifactKinds.mediaByteDescriptorProposalLocal,
+  artifactKinds.mediaLocalLayerResourceRefCandidateLocal
 ])
 const productionSourceSchemas = new Set([
   artifactKinds.mediaProductionUnit,
@@ -505,7 +507,8 @@ function kindForSchema(schema) {
     [artifactKinds.mediaRenderStrategy]: 'media-render-strategy',
     [artifactKinds.mediaProductionDescriptorLocal]: 'media-production-descriptor',
     [artifactKinds.mediaApprovalProposalLocal]: 'media-approval-proposal',
-    [artifactKinds.mediaByteDescriptorProposalLocal]: 'media-byte-descriptor-proposal'
+    [artifactKinds.mediaByteDescriptorProposalLocal]: 'media-byte-descriptor-proposal',
+    [artifactKinds.mediaLocalLayerResourceRefCandidateLocal]: 'media-local-layer-resource-ref-candidate'
   }
 
   return schemaKinds[schema] ?? schema
@@ -524,6 +527,7 @@ function idForRecord(record) {
     record.descriptorId ??
     record.proposalId ??
     record.byteDescriptorProposalId ??
+    record.resourceRefCandidateId ??
     record.schema
 }
 

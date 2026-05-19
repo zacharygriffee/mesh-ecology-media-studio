@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 
 import { artifactKinds } from './artifact-kinds.js'
+import { createScaffoldResolvabilityPosture } from '../local/resolvability.js'
 
 const truthStatus = 'not mesh truth; not distributed proof; not ratified shared state'
 const localFalseFlags = Object.freeze({
@@ -202,6 +203,7 @@ export function createLocalRunManifest({
     kind: record.schema,
     id: idForRecord(record),
     path: generatedRecordPaths[name],
+    resolvabilityCategory: 'device_dependent_scaffold',
     localOnly: true
   }))
 
@@ -215,6 +217,7 @@ export function createLocalRunManifest({
       kind: 'local-candidate-input',
       path: candidateInputPath,
       hash: candidateHash,
+      resolvabilityCategory: 'device_dependent_scaffold',
       localOnly: true
     },
     generatedRecordRefs,
@@ -245,6 +248,9 @@ export function createLocalRunManifest({
       'not publication authorization'
     ],
     warnings,
+    resolvabilityPosture: createScaffoldResolvabilityPosture({
+      reason: 'Local run manifest paths and generated record refs are Mode 0 scaffold refs until resource-ref candidates or replicated pointer refs exist.'
+    }),
     operatorGuidanceOnly: true,
     ...localFalseFlags,
     providerTruth: false,
@@ -368,5 +374,6 @@ export function idForRecord(record) {
   if (record.descriptorId) return record.descriptorId
   if (record.proposalId) return record.proposalId
   if (record.byteDescriptorProposalId) return record.byteDescriptorProposalId
+  if (record.resourceRefCandidateId) return record.resourceRefCandidateId
   return undefined
 }

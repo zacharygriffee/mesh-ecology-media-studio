@@ -1,0 +1,161 @@
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import { artifactKinds } from '../contracts/artifact-kinds.js'
+import { makeRef, nowIso } from '../contracts/constructors.js'
+import { validateRequiredRecord } from '../contracts/schemas.js'
+import { assertSafeLocalPath } from './project-layout.js'
+import { createScaffoldResolvabilityPosture } from './resolvability.js'
+
+const modulePath = fileURLToPath(import.meta.url)
+const defaultProjectDir = 'examples/card-to-candidate'
+const truthStatus = 'not mesh truth; not distributed proof; not ratified shared state'
+const eligiblePlacementClasses = new Set(['media-accepted', 'media-reference'])
+
+function parseArgs(argv) {
+  const args = {
+    projectDir: defaultProjectDir
+  }
+
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i]
+    const next = argv[i + 1]
+
+    if (arg === '--project-dir') {
+      args.projectDir = next
+      i += 1
+    }
+  }
+
+  return args
+}
+
+export async function writeLocalLayerResourceRefCandidates({
+  projectDir = defaultProjectDir
+} = {}) {
+  const root = path.resolve(projectDir)
+  const assetEntries = await readAssetDescriptors(root)
+  const eligibleAssets = assetEntries.filter(({ record }) => isEligibleAsset(record))
+
+  if (eligibleAssets.length === 0) {
+    throw new Error('Resource ref candidates require at least one accepted or reference asset descriptor')
+  }
+
+  const candidates = []
+  const seenCandidateIds = new Set()
+  for (const entry of eligibleAssets) {
+    const candidate = createLocalLayerResourceRefCandidate({
+      assetDescriptor: entry.record,
+      assetRecordPath: entry.path
+    })
+    if (seenCandidateIds.has(candidate.resourceRefCandidateId)) continue
+    seenCandidateIds.add(candidate.resourceRefCandidateId)
+    const output = `records/resources/${candidate.resourceRefCandidateId}.local.json`
+    assertSafeLocalPath(output)
+    await mkdir(path.dirname(path.join(root, output)), { recursive: true })
+    await writeFile(path.join(root, output), `${JSON.stringify(candidate, null, 2)}\n`)
+    candidates.push({ candidate, output })
+  }
+
+  console.log(`resource ref candidates: ${candidates.length}`)
+  console.log('resource identity: candidate only')
+
+  return { candidates }
+}
+
+export function createLocalLayerResourceRefCandidate({
+  assetDescriptor,
+  assetRecordPath,
+  createdAt = nowIso()
+}) {
+  const sourceRef = makeRef('media-asset', assetDescriptor.assetId, assetDescriptor.schema)
+  const hashValue = assetDescriptor.hash?.value ?? assetDescriptor.assetId
+  const candidate = {
+    schema: artifactKinds.mediaLocalLayerResourceRefCandidateLocal,
+    resourceRefCandidateId: `resource-ref-candidate-${assetDescriptor.assetId}`,
+    projectId: assetDescriptor.projectId,
+    sourceRef,
+    sourcePath: assetRecordPath,
+    resourceKind: 'media-asset-by-hash',
+    currentRefCategory: 'device_dependent_scaffold',
+    targetRefCategory: 'local_layer_resource_ref',
+    proposedResourceRef: {
+      kind: 'local-layer-resource-ref-candidate',
+      id: `media-asset:${assetDescriptor.projectId}:${assetDescriptor.assetId}`,
+      resourceKind: 'media-asset-by-hash',
+      hash: assetDescriptor.hash,
+      localRef: assetDescriptor.localRef,
+      identitySeed: `sha256:${hashValue}`,
+      candidateOnly: true
+    },
+    resolvabilityPosture: createScaffoldResolvabilityPosture({
+      reason: 'Asset descriptor and local file path are Mode 0 scaffold inputs until a local-layer resource ref is admitted.'
+    }),
+    status: 'candidate',
+    localLayerResourceRef: false,
+    replicatedPointerRef: false,
+    causalReviewableRef: false,
+    localOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    localTruthLabel: 'local proposal',
+    truthStatus,
+    createdAt
+  }
+
+  validateRequiredRecord(candidate)
+  return candidate
+}
+
+async function readAssetDescriptors(root) {
+  const files = await listJsonFiles(path.join(root, 'records', 'assets'))
+  const entries = []
+
+  for (const file of files) {
+    const record = JSON.parse(await readFile(file, 'utf8'))
+    if (record.schema !== artifactKinds.mediaAssetDescriptor) continue
+    validateRequiredRecord(record)
+    entries.push({
+      path: path.relative(root, file).split(path.sep).join('/'),
+      record
+    })
+  }
+
+  return entries.sort((left, right) => left.path.localeCompare(right.path))
+}
+
+function isEligibleAsset(record) {
+  const placementClass = record.localRef?.placementClass
+  const localPath = record.localRef?.path
+  return eligiblePlacementClasses.has(placementClass) ||
+    localPath?.startsWith('media/accepted/') ||
+    localPath?.startsWith('media/references/')
+}
+
+async function listJsonFiles(root) {
+  let dirents
+  try {
+    dirents = await readdir(root, { withFileTypes: true })
+  } catch (error) {
+    if (error.code === 'ENOENT') return []
+    throw error
+  }
+
+  const files = []
+  for (const dirent of dirents) {
+    const fullPath = path.join(root, dirent.name)
+    if (dirent.isDirectory()) {
+      files.push(...await listJsonFiles(fullPath))
+    } else if (dirent.isFile() && dirent.name.endsWith('.json')) {
+      files.push(fullPath)
+    }
+  }
+
+  return files
+}
+
+if (process.argv[1] === modulePath) {
+  await writeLocalLayerResourceRefCandidates(parseArgs(process.argv.slice(2)))
+}

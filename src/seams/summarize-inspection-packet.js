@@ -108,6 +108,7 @@ function countRecordFamilies(recordRefs) {
     continuity: 0,
     production: 0,
     provider: 0,
+    resources: 0,
     review: 0,
     wedge: 0
   }
@@ -124,6 +125,7 @@ function countRecordFamilies(recordRefs) {
 function familyForSchema(schema) {
   if (schema.includes('approval_proposal')) return 'approvals'
   if (schema.includes('byte_descriptor_proposal') || schema.includes('byte_reference')) return 'bytes'
+  if (schema.includes('resource_ref_candidate')) return 'resources'
   if (schema.includes('production_') || schema.includes('reference_primitive') || schema.includes('continuity_band') || schema.includes('render_strategy')) return 'production'
   if (schema.includes('continuity_evidence')) return 'continuity'
   if (schema.includes('candidate_review') || schema === 'media.evidence.v1' || schema === 'media.operator_decision.v1') return 'review'

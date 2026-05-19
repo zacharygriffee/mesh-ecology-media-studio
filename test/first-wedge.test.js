@@ -62,6 +62,10 @@ import { writeContinuityEvidence } from '../src/seams/continuity-evidence.js'
 import { summarizeInspectionPacket } from '../src/seams/summarize-inspection-packet.js'
 import { checkInspectionFixture } from '../src/local/generate-inspection-fixture.js'
 import {
+  createLocalLayerResourceRefCandidate,
+  writeLocalLayerResourceRefCandidates
+} from '../src/local/resource-ref-candidates.js'
+import {
   createProductionUnit,
   createSceneDescriptor,
   refForProductionRecord
@@ -145,6 +149,11 @@ test('first wedge creates local records without claiming mesh truth', async () =
   assert.ok(manifest.artifactKinds.includes('media.asset_lifecycle.v1'))
   assert.ok(manifest.doctrineLabels.includes('not provider truth'))
   assert.equal(manifest.generatedRecordRefs[0].path, 'records/work-packets/media-work-packet.local.json')
+  assert.equal(manifest.generatedRecordRefs[0].resolvabilityCategory, 'device_dependent_scaffold')
+  assert.equal(manifest.candidateInputRef.resolvabilityCategory, 'device_dependent_scaffold')
+  assert.equal(manifest.resolvabilityPosture.currentCategory, 'device_dependent_scaffold')
+  assert.equal(manifest.resolvabilityPosture.targetCategory, 'local_layer_resource_ref')
+  assert.equal(manifest.resolvabilityPosture.operatorFacingIdentityBoundary, false)
 })
 
 test('provider profile validates with provider-neutral capability', () => {
@@ -871,6 +880,48 @@ test('byte descriptor proposal rejects byte proof claims', async () => {
   )
 })
 
+test('resource ref candidate marks local asset refs as scaffold only', async () => {
+  const dir = await createFixtureProject()
+  const result = await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+
+  const { candidates } = await writeLocalLayerResourceRefCandidates({ projectDir: dir })
+  assert.equal(candidates.length, 1)
+  const candidate = candidates[0].candidate
+  assert.equal(candidate.schema, 'media.local_layer_resource_ref_candidate.local.v1')
+  assert.equal(candidate.sourceRef.id, result.outputs.assetDescriptor.assetId)
+  assert.equal(candidate.currentRefCategory, 'device_dependent_scaffold')
+  assert.equal(candidate.targetRefCategory, 'local_layer_resource_ref')
+  assert.equal(candidate.localLayerResourceRef, false)
+  assert.equal(candidate.replicatedPointerRef, false)
+  assert.equal(candidate.causalReviewableRef, false)
+  assert.equal(candidate.resolvabilityPosture.operatorFacingIdentityBoundary, false)
+  assert.equal(validateRequiredRecord(candidate), true)
+})
+
+test('resource ref candidate rejects promoted-resource claims', async () => {
+  const dir = await createFixtureProject()
+  const result = await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  const candidate = createLocalLayerResourceRefCandidate({
+    assetDescriptor: result.outputs.assetDescriptor,
+    assetRecordPath: 'records/assets/media-asset-descriptor.local.json'
+  })
+
+  candidate.localLayerResourceRef = true
+
+  assert.throws(
+    () => validateRequiredRecord(candidate),
+    /localLayerResourceRef=false/
+  )
+})
+
 test('continuity evidence drafts local lineage without causal truth claims', async () => {
   const dir = await createFixtureProject()
   await runFirstWedge({ projectDir: dir })
@@ -906,6 +957,7 @@ test('project status summarizes local records without truth claims', async () =>
   await writeCandidateReview({ projectDir: dir })
   await writeApprovalProposal({ projectDir: dir })
   await writeByteDescriptorProposals({ projectDir: dir })
+  await writeLocalLayerResourceRefCandidates({ projectDir: dir })
 
   const productionDir = path.join(dir, 'records', 'production')
   await mkdir(productionDir, { recursive: true })
@@ -934,6 +986,7 @@ test('project status summarizes local records without truth claims', async () =>
   assert.equal(result.status.counts.productionDescriptors, 1)
   assert.equal(result.status.counts.approvalProposals, 1)
   assert.equal(result.status.counts.byteDescriptorProposals, 1)
+  assert.equal(result.status.counts.resourceRefCandidates, 1)
   assert.equal(result.status.meshTruth, false)
   assert.equal(result.status.providerTruth, false)
   assert.equal(validateRequiredRecord(result.status), true)
@@ -1011,7 +1064,7 @@ test('committed local-run inspection fixture validates', async () => {
   assert.equal(validateRequiredRecord(bundleManifest), true)
 })
 
-test('committed local-run inspection fixture freshness check passes', async () => {
+test('committed local-run inspection fixture shape check passes', async () => {
   await checkInspectionFixture({
     projectDir: 'examples/inspection-fixtures/card-to-candidate'
   })
@@ -1430,6 +1483,32 @@ test('Edge inspection includes byte descriptor proposal records when present', a
   await writeControlSurfaceProjection({ projectDir: dir })
   const { bundle } = await writeEdgeCompatibilityBundle({ projectDir: dir })
   assert.ok(bundle.studioSourceRefs.some((ref) => ref.schema === 'media.byte_descriptor_proposal.local.v1'))
+  assert.equal(validateRequiredRecord(bundle), true)
+})
+
+test('Edge inspection includes resource ref candidate records when present', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await writeLocalLayerResourceRefCandidates({ projectDir: dir })
+
+  const { packet } = await inspectLocalRun({ projectDir: dir })
+  assert.ok(Object.values(packet.recordRefs).some((ref) => ref.schema === 'media.local_layer_resource_ref_candidate.local.v1'))
+  assert.ok(packet.artifactKinds.includes('media.local_layer_resource_ref_candidate.local.v1'))
+
+  const summary = await summarizeInspectionPacket({
+    projectDir: dir,
+    packet: 'records/exports/local-run-edge-inspection-packet.local.json'
+  })
+  assert.ok(summary.familyRows.some(([family, count]) => family === 'resources' && count === '1'))
+
+  await writeProjectStatus({ projectDir: dir })
+  await writeControlSurfaceProjection({ projectDir: dir })
+  const { bundle } = await writeEdgeCompatibilityBundle({ projectDir: dir })
+  assert.ok(bundle.studioSourceRefs.some((ref) => ref.schema === 'media.local_layer_resource_ref_candidate.local.v1'))
   assert.equal(validateRequiredRecord(bundle), true)
 })
 

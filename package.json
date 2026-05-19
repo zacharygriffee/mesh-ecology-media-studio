@@ -26,6 +26,7 @@
     "approval:proposal": "node src/review/approval-proposal.js",
     "bytes:proposal": "node src/assets/byte-descriptor-proposal.js",
     "production:from-card": "node src/production/create-production-records.js",
+    "resource:refs": "node src/local/resource-ref-candidates.js",
     "reference:ingest": "node src/assets/ingest-reference.js",
     "fixture:inspection": "node src/local/generate-inspection-fixture.js",
     "fixture:inspection:check": "node src/local/generate-inspection-fixture.js --check",
