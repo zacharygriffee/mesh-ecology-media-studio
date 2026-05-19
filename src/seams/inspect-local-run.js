@@ -17,6 +17,7 @@ const defaultManifest = 'records/manifests/media-local-run-manifest.local.json'
 const defaultOutput = 'records/exports/local-run-edge-inspection-packet.local.json'
 const extraInspectionRoots = Object.freeze([
   'records/evidence',
+  'records/readiness',
   'records/production',
   'records/approvals',
   'records/bytes',
@@ -25,6 +26,7 @@ const extraInspectionRoots = Object.freeze([
 const extraInspectionSchemas = new Set([
   'media.candidate_review.local.v1',
   'media.continuity_evidence.local.v1',
+  'media.readiness.v1',
   'media.production_unit.v1',
   'media.reference_primitive.v1',
   'media.continuity_band.v1',
@@ -208,7 +210,7 @@ function nameForSchema(schema, relativePath) {
     'media.provider_result.v1': 'providerResult',
     'media.asset.descriptor.v1': 'assetDescriptor',
     'media.evidence.v1': 'reviewEvidence',
-    'media.readiness.v1': 'readiness',
+    'media.readiness.v1': `readiness:${path.basename(relativePath, '.json')}`,
     'media.operator_decision.v1': 'operatorDecision',
     'media.candidate_review.local.v1': `candidateReview:${path.basename(relativePath, '.json')}`,
     'media.continuity_evidence.local.v1': `continuityEvidence:${path.basename(relativePath, '.json')}`,

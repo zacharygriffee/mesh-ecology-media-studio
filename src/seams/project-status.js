@@ -49,6 +49,16 @@ export async function writeProjectStatus({
   const projectId = card?.projectId ?? path.basename(root)
   const counts = countRecords(records)
   const latestRefs = latestRecordRefs(records)
+  const assetResourceConsistency = summarizeAssetResourceConsistency(records)
+  const warnings = [
+    'Project status is a local snapshot only.',
+    'Counts and refs are not mesh truth, provider truth, byte proof, or ratifier authority.'
+  ]
+
+  if (assetResourceConsistency.readyForEdgeInspection === false) {
+    warnings.push('Some accepted/reference assets are missing byte proposals or resource-ref candidate alignment.')
+  }
+
   const status = {
     schema: artifactKinds.mediaProjectStatusLocal,
     statusId: `project-status-${projectId}`,
@@ -57,10 +67,8 @@ export async function writeProjectStatus({
     mode: 'standalone-local',
     counts,
     latestRefs,
-    warnings: [
-      'Project status is a local snapshot only.',
-      'Counts and refs are not mesh truth, provider truth, byte proof, or ratifier authority.'
-    ],
+    assetResourceConsistency,
+    warnings,
     localOnly: true,
     meshTruth: false,
     distributedProof: false,
@@ -85,12 +93,78 @@ export async function writeProjectStatus({
     for (const [name, count] of Object.entries(counts)) {
       console.log(`${name}: ${count}`)
     }
+    console.log(`assetResourceReady: ${assetResourceConsistency.readyForEdgeInspection}`)
+    console.log(`assetResourceWarnings: ${assetResourceConsistency.warningCount}`)
   }
 
   return {
     status,
     output
   }
+}
+
+function summarizeAssetResourceConsistency(records) {
+  const acceptedOrReferenceAssets = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaAssetDescriptor)
+    .filter((entry) => isAcceptedOrReferenceAsset(entry.record))
+  const byteProposalAssetIds = new Set(records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaByteDescriptorProposalLocal)
+    .map((entry) => entry.record.sourceAssetRef.id))
+  const resourceCandidateByAssetId = new Map(records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaLocalLayerResourceRefCandidateLocal)
+    .map((entry) => [entry.record.sourceRef.id, entry.record]))
+  const missingByteDescriptorProposalAssetIds = []
+  const missingResourceRefCandidateAssetIds = []
+  const unresolvedResourceCandidateIds = []
+  const alignedResourceCandidateIds = []
+
+  for (const entry of acceptedOrReferenceAssets) {
+    const assetId = entry.record.assetId
+    const resourceCandidate = resourceCandidateByAssetId.get(assetId)
+
+    if (!byteProposalAssetIds.has(assetId)) {
+      missingByteDescriptorProposalAssetIds.push(assetId)
+    }
+
+    if (!resourceCandidate) {
+      missingResourceRefCandidateAssetIds.push(assetId)
+    } else if (resourceCandidate.byteDescriptorAlignment?.status === 'aligned') {
+      alignedResourceCandidateIds.push(resourceCandidate.resourceRefCandidateId)
+    } else {
+      unresolvedResourceCandidateIds.push(resourceCandidate.resourceRefCandidateId)
+    }
+  }
+
+  const warningCount = missingByteDescriptorProposalAssetIds.length +
+    missingResourceRefCandidateAssetIds.length +
+    unresolvedResourceCandidateIds.length
+
+  return {
+    acceptedOrReferenceAssets: acceptedOrReferenceAssets.length,
+    byteDescriptorProposalCoverage: byteProposalAssetIds.size,
+    resourceRefCandidateCoverage: resourceCandidateByAssetId.size,
+    alignedResourceCandidateIds,
+    missingByteDescriptorProposalAssetIds,
+    missingResourceRefCandidateAssetIds,
+    unresolvedResourceCandidateIds,
+    readyForEdgeInspection: acceptedOrReferenceAssets.length > 0 && warningCount === 0,
+    warningCount,
+    localOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    byteAvailabilityProof: false,
+    materializationProof: false
+  }
+}
+
+function isAcceptedOrReferenceAsset(record) {
+  const placementClass = record.localRef?.placementClass
+  const localPath = record.localRef?.path
+  return placementClass === 'media-accepted' ||
+    placementClass === 'media-reference' ||
+    localPath?.startsWith('media/accepted/') ||
+    localPath?.startsWith('media/references/')
 }
 
 async function readProjectRecords(root) {

@@ -72,6 +72,7 @@ import {
   refForProductionRecord
 } from '../src/production/strategy.js'
 import { writeProductionRecordsFromCard } from '../src/production/create-production-records.js'
+import { validateProductionRecordsInProject } from '../src/production/validate-production-records.js'
 
 const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 
@@ -1066,8 +1067,29 @@ test('project status summarizes local records without truth claims', async () =>
   assert.equal(result.status.counts.approvalProposals, 1)
   assert.equal(result.status.counts.byteDescriptorProposals, 1)
   assert.equal(result.status.counts.resourceRefCandidates, 1)
+  assert.equal(result.status.assetResourceConsistency.readyForEdgeInspection, true)
+  assert.equal(result.status.assetResourceConsistency.warningCount, 0)
+  assert.equal(result.status.assetResourceConsistency.alignedResourceCandidateIds.length, 1)
   assert.equal(result.status.meshTruth, false)
   assert.equal(result.status.providerTruth, false)
+  assert.equal(validateRequiredRecord(result.status), true)
+})
+
+test('project status flags unresolved byte and resource coverage', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+
+  const result = await writeProjectStatus({ projectDir: dir })
+
+  assert.equal(result.status.assetResourceConsistency.readyForEdgeInspection, false)
+  assert.equal(result.status.assetResourceConsistency.warningCount, 2)
+  assert.equal(result.status.assetResourceConsistency.missingByteDescriptorProposalAssetIds.length, 1)
+  assert.equal(result.status.assetResourceConsistency.missingResourceRefCandidateAssetIds.length, 1)
+  assert.ok(result.status.warnings.some((warning) => warning.includes('missing byte proposals')))
   assert.equal(validateRequiredRecord(result.status), true)
 })
 
@@ -1512,6 +1534,9 @@ test('production from card writes local records without UI or provider work', as
   assert.equal(status.status.counts.productionDescriptors, 3)
   assert.equal(status.status.counts.continuityBands, 1)
   assert.equal(status.status.counts.renderStrategies, 1)
+  const validation = await validateProductionRecordsInProject({ projectDir: dir })
+  assert.equal(validation.valid, true)
+  assert.equal(validation.count, 8)
 
   await runFirstWedge({ projectDir: dir })
   const { packet } = await inspectLocalRun({ projectDir: dir })
@@ -1589,6 +1614,27 @@ test('Edge inspection includes resource ref candidate records when present', asy
   const { bundle } = await writeEdgeCompatibilityBundle({ projectDir: dir })
   assert.ok(bundle.studioSourceRefs.some((ref) => ref.schema === 'media.local_layer_resource_ref_candidate.local.v1'))
   assert.equal(validateRequiredRecord(bundle), true)
+})
+
+test('inspection summary surfaces Edge readiness posture rows', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await writeByteDescriptorProposals({ projectDir: dir })
+  await writeLocalLayerResourceRefCandidates({ projectDir: dir })
+  await writeEdgeReadinessGuidance({ projectDir: dir })
+  await inspectLocalRun({ projectDir: dir })
+
+  const summary = await summarizeInspectionPacket({
+    projectDir: dir,
+    packet: 'records/exports/local-run-edge-inspection-packet.local.json'
+  })
+
+  assert.ok(summary.readinessRows.some((row) => row[0] === 'readiness-edge-inspection-project-test' && row[1] === 'ready'))
+  assert.ok(summary.readinessRows.some((row) => row[3].includes('device_dependent_scaffold->local_layer_resource_ref aligned')))
 })
 
 test('validator rejects missing schema', async () => {

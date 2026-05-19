@@ -105,6 +105,7 @@ npm run review:candidates -- --project-dir examples/card-to-candidate
 npm run status:project -- --project-dir examples/card-to-candidate
 npm run continuity:draft -- --project-dir examples/card-to-candidate
 npm run production:from-card -- --project-dir examples/card-to-candidate
+npm run production:validate -- --project-dir examples/card-to-candidate
 npm run approval:proposal -- --project-dir examples/card-to-candidate
 npm run bytes:proposal -- --project-dir examples/card-to-candidate
 npm run resource:refs -- --project-dir examples/card-to-candidate

@@ -41,6 +41,7 @@ Create a local scene/shot/render-pass set from the current card with:
 
 ```bash
 npm run production:from-card -- --project-dir examples/card-to-candidate
+npm run production:validate -- --project-dir examples/card-to-candidate
 ```
 
 The command writes local records under `records/production/`. It does not call

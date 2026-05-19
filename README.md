@@ -210,6 +210,7 @@ Write local production records from the current card without UI:
 
 ```bash
 npm run production:from-card -- --project-dir examples/card-to-candidate
+npm run production:validate -- --project-dir examples/card-to-candidate
 ```
 
 Write a local approval proposal without granting approval authority:

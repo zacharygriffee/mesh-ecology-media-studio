@@ -36,6 +36,7 @@ export async function summarizeInspectionPacket({
   assertSafeLocalPath(packet)
 
   const packetPath = path.join(path.resolve(projectDir), packet)
+  const root = path.resolve(projectDir)
   const record = JSON.parse(await readFile(packetPath, 'utf8'))
   validateRequiredRecord(record, 'media.edge_inspection_packet.local.v1')
 
@@ -63,6 +64,7 @@ export async function summarizeInspectionPacket({
     .filter(([, count]) => count > 0)
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([family, count]) => [family, String(count)])
+  const readinessRows = await readinessPostureRows(root, record.recordRefs)
 
   printTable(['field', 'value'], rows)
   if (familyRows.length > 0) {
@@ -75,6 +77,11 @@ export async function summarizeInspectionPacket({
     printTable(['recordSchema', 'count'], schemaRows)
   }
 
+  if (readinessRows.length > 0) {
+    console.log('')
+    printTable(['readiness', 'state', 'subject', 'resourcePosture'], readinessRows)
+  }
+
   if (artifactRows.length > 0) {
     console.log('')
     printTable(['artifact', 'contentType', 'path', 'bytePreview'], artifactRows)
@@ -85,8 +92,49 @@ export async function summarizeInspectionPacket({
     rows,
     familyRows,
     schemaRows,
+    readinessRows,
     artifactRows
   }
+}
+
+async function readinessPostureRows(root, recordRefs) {
+  const readinessRefs = Object.values(recordRefs)
+    .filter((ref) => ref.schema === 'media.readiness.v1' && ref.path)
+    .sort((left, right) => left.path.localeCompare(right.path))
+  const rows = []
+
+  for (const ref of readinessRefs) {
+    assertSafeLocalPath(ref.path)
+    const readiness = JSON.parse(await readFile(path.join(root, ref.path), 'utf8'))
+    validateRequiredRecord(readiness, 'media.readiness.v1')
+    const subject = readiness.subjectRef
+      ? `${readiness.subjectRef.kind}:${readiness.subjectRef.id}`
+      : 'unknown'
+    const resourcePosture = readiness.resolvabilitySummary
+      ? resourcePostureLabel(readiness.resolvabilitySummary)
+      : 'not-declared'
+
+    rows.push([
+      readiness.readinessId,
+      readiness.state,
+      subject,
+      resourcePosture
+    ])
+  }
+
+  return rows
+}
+
+function resourcePostureLabel(summary) {
+  const missingByte = summary.missingByteDescriptorProposalAssetIds?.length ?? 0
+  const missingResource = summary.missingResourceRefCandidateAssetIds?.length ?? 0
+  const unresolved = summary.unresolvedResourceCandidateIds?.length ?? 0
+
+  if (missingByte === 0 && missingResource === 0 && unresolved === 0) {
+    return `${summary.currentCategory ?? 'unknown'}->${summary.targetCategory ?? 'unknown'} aligned`
+  }
+
+  return `missing-byte:${missingByte} missing-resource:${missingResource} unresolved:${unresolved}`
 }
 
 function countRecordSchemas(recordRefs) {

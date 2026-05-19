@@ -34,3 +34,8 @@ proposals, byte descriptor proposals, resource-ref candidates, decisions,
 manifests, inspection packets, bundles, and provider ledgers. Counts and refs
 are local cache state only, not mesh truth, provider truth, byte proof,
 authority, local-layer resource admission, or materialization proof.
+
+The status record also includes `assetResourceConsistency`. It summarizes
+accepted/reference assets missing byte descriptor proposals, missing resource
+ref candidates, or unresolved byte/resource alignment. This is readiness
+guidance for later inspection only.
