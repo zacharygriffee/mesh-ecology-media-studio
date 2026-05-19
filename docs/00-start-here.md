@@ -14,6 +14,8 @@ Read in this order:
 6. [Edge Inspection Preview](10-edge-inspection-preview.md)
 7. [Local Project Layout](11-local-project-layout.md)
 8. [Asset Lifecycle](12-asset-lifecycle.md)
+9. [Provider-Neutral Job Contract](13-provider-neutral-job-contract.md)
+10. [Provider Adapter Boundary](14-provider-adapter-boundary.md)
 
 The first executable path is:
 
@@ -29,7 +31,8 @@ npm test
 
 Phase 2 hardened the local wedge with a local run manifest, artifact-kind
 registry, and modest malformed-record checks. Phase 3 defines the local project
-layout, safe local refs, placement classes, and asset lifecycle states. The
-wedge remains local-only. It creates local records and does not claim mesh
-truth, distributed proof, byte materialization proof, provider truth, causal
-truth, publication authorization, or ratifier authority.
+layout, safe local refs, placement classes, and asset lifecycle states. Phase 4
+adds provider-neutral request/profile/capability/result records without calling
+provider APIs. The wedge remains local-only. It creates local records and does
+not claim mesh truth, distributed proof, byte materialization proof, provider
+truth, causal truth, publication authorization, or ratifier authority.

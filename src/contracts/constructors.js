@@ -60,33 +60,10 @@ export function createWorkPacket({ card, operatorRef = 'local-operator', created
   }
 }
 
-export function createProviderJobResult({ card, workPacket, providerName, candidateLocalPath, createdAt = nowIso() }) {
-  return {
-    schema: 'media.provider_job_result.local.v1',
-    providerJobResultId: `provider-result-${randomUUID()}`,
-    projectId: card.projectId,
-    packetRef: makeRef('media-work-packet', workPacket.packetId, workPacket.schema),
-    cardRef: makeRef('media-card', card.cardId, card.schema),
-    provider: {
-      name: providerName,
-      integration: 'local-placeholder',
-      apiCalled: false
-    },
-    result: {
-      candidateLocalPath,
-      status: 'available-local'
-    },
-    localTruthLabel: 'local receipt',
-    ...localFalseFlags,
-    truthStatus,
-    createdAt
-  }
-}
-
 export function createAssetDescriptor({
   card,
   workPacket,
-  providerJobResult,
+  providerResult,
   hash,
   size,
   contentType,
@@ -107,12 +84,8 @@ export function createAssetDescriptor({
       path: localPath
     },
     source: {
-      sourceType: 'provider-job-result',
-      providerJobResultRef: makeRef(
-        'provider-job-result',
-        providerJobResult.providerJobResultId,
-        providerJobResult.schema
-      ),
+      sourceType: 'provider-result',
+      providerResultRef: makeRef('provider-result', idForRecord(providerResult), providerResult.schema),
       apiCalled: false
     },
     lineage: {
@@ -129,7 +102,7 @@ export function createAssetDescriptor({
     },
     provenance: {
       cardPromptHashScope: 'prompt text retained on card record',
-      providerName: providerJobResult.provider.name,
+      providerId: providerResult.providerId,
       providerResultLocalOnly: true,
       lifecycle
     },
@@ -240,6 +213,7 @@ export function createLocalRunManifest({
     artifactKinds: [
       card.schema,
       ...recordEntries.map(([, record]) => record.schema),
+      ...extractNestedCapabilitySchemas(generatedRecords.providerProfile),
       generatedRecords.assetDescriptor?.localRef?.schema,
       generatedRecords.assetDescriptor?.provenance?.lifecycle?.schema,
       artifactKinds.mediaLocalRunManifest
@@ -280,6 +254,14 @@ export function createLocalRunManifest({
   }
 }
 
+function extractNestedCapabilitySchemas(providerProfile) {
+  if (!providerProfile || !Array.isArray(providerProfile.capabilities)) {
+    return []
+  }
+
+  return providerProfile.capabilities.map((capability) => capability.schema).filter(Boolean)
+}
+
 export function idForRecord(record) {
   if (record.cardId) return record.cardId
   if (record.packetId) return record.packetId
@@ -289,5 +271,9 @@ export function idForRecord(record) {
   if (record.readinessId) return record.readinessId
   if (record.decisionId) return record.decisionId
   if (record.runId) return record.runId
+  if (record.requestId) return record.requestId
+  if (record.providerId) return record.providerId
+  if (record.capabilityId) return record.capabilityId
+  if (record.resultId) return record.resultId
   return undefined
 }

@@ -7,6 +7,10 @@ import {
   assertPlacementClass,
   assertSafeLocalPath
 } from '../local/project-layout.js'
+import {
+  assertIntentFamily,
+  validateProviderCapability
+} from '../providers/provider-neutral.js'
 
 export const schemaFiles = {
   'media.card.v1': 'schemas/media-card.schema.json',
@@ -19,7 +23,11 @@ export const schemaFiles = {
   'media.local_run_manifest.v1': 'schemas/media-local-run-manifest.schema.json',
   'media.project_layout.v1': 'schemas/media-project-layout.schema.json',
   'media.local_ref.v1': 'schemas/media-local-ref.schema.json',
-  'media.asset_lifecycle.v1': 'schemas/media-asset-lifecycle.schema.json'
+  'media.asset_lifecycle.v1': 'schemas/media-asset-lifecycle.schema.json',
+  'media.generation_request.v1': 'schemas/media-generation-request.schema.json',
+  'media.provider_profile.v1': 'schemas/media-provider-profile.schema.json',
+  'media.provider_capability.v1': 'schemas/media-provider-capability.schema.json',
+  'media.provider_result.v1': 'schemas/media-provider-result.schema.json'
 }
 
 export const requiredFields = {
@@ -151,6 +159,51 @@ export const requiredFields = {
     'meshTruth',
     'distributedProof',
     'ratifiedSharedState'
+  ],
+  'media.generation_request.v1': [
+    'schema',
+    'requestId',
+    'projectId',
+    'cardRef',
+    'intentFamily',
+    'prompt',
+    'negativePrompt',
+    'referenceAssetRefs',
+    'target',
+    'providerHints',
+    'createdAt',
+    'localOnly',
+    'meshTruth'
+  ],
+  'media.provider_profile.v1': [
+    'schema',
+    'providerId',
+    'displayName',
+    'capabilities',
+    'localOnly',
+    'meshTruth',
+    'createdAt'
+  ],
+  'media.provider_capability.v1': [
+    'schema',
+    'capabilityId',
+    'intentFamily',
+    'outputKinds',
+    'localOnly',
+    'meshTruth',
+    'createdAt'
+  ],
+  'media.provider_result.v1': [
+    'schema',
+    'resultId',
+    'requestRef',
+    'providerId',
+    'providerJobRef',
+    'status',
+    'outputRefs',
+    'createdAt',
+    'localOnly',
+    'meshTruth'
   ]
 }
 
@@ -165,7 +218,11 @@ const idFields = {
   [artifactKinds.mediaLocalRunManifest]: 'runId',
   [artifactKinds.mediaProjectLayout]: 'projectId',
   [artifactKinds.mediaLocalRef]: 'path',
-  [artifactKinds.mediaAssetLifecycle]: 'assetId'
+  [artifactKinds.mediaAssetLifecycle]: 'assetId',
+  [artifactKinds.mediaGenerationRequest]: 'requestId',
+  [artifactKinds.mediaProviderProfile]: 'providerId',
+  [artifactKinds.mediaProviderCapability]: 'capabilityId',
+  [artifactKinds.mediaProviderResult]: 'resultId'
 }
 
 const domainProjectSchemas = new Set([
@@ -175,7 +232,8 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaAssetDescriptor,
   artifactKinds.mediaEvidence,
   artifactKinds.mediaProjectLayout,
-  artifactKinds.mediaAssetLifecycle
+  artifactKinds.mediaAssetLifecycle,
+  artifactKinds.mediaGenerationRequest
 ])
 
 const localGeneratedSchemas = new Set([
@@ -257,6 +315,10 @@ export function validateRecordShape(record, schemaId = record.schema) {
     validateRef(record.cardRef, `${schemaId}.cardRef`)
   }
 
+  if (record.requestRef !== undefined) {
+    validateRef(record.requestRef, `${schemaId}.requestRef`)
+  }
+
   if (record.packetRef !== undefined) {
     validateRef(record.packetRef, `${schemaId}.packetRef`)
   }
@@ -295,6 +357,41 @@ export function validateRecordShape(record, schemaId = record.schema) {
   if (schemaId === artifactKinds.mediaAssetDescriptor && record.localRef?.schema === artifactKinds.mediaLocalRef) {
     assertPlacementClass(record.localRef.placementClass)
     assertSafeLocalPath(record.localRef.path)
+  }
+
+  if (schemaId === artifactKinds.mediaGenerationRequest) {
+    assertIntentFamily(record.intentFamily)
+    validateLocalFalseFlags(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaProviderCapability) {
+    validateProviderCapability(record)
+    validateLocalFalseFlags(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaProviderProfile) {
+    if (!Array.isArray(record.capabilities) || record.capabilities.length === 0) {
+      throw new Error('Provider profile must declare at least one capability')
+    }
+
+    record.capabilities.forEach(validateProviderCapability)
+    validateLocalFalseFlags(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaProviderResult) {
+    if (!record.providerId) {
+      throw new Error('Provider result is missing providerId')
+    }
+
+    if (!record.providerJobRef || typeof record.providerJobRef !== 'object' || !record.providerJobRef.id) {
+      throw new Error('Provider result is missing providerJobRef')
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+
+    if (record.providerTruth !== false) {
+      throw new Error('Provider result must set providerTruth=false')
+    }
   }
 
   if (localGeneratedSchemas.has(schemaId)) {

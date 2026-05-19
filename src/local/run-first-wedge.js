@@ -8,7 +8,6 @@ import {
   createAssetDescriptor,
   createLocalRunManifest,
   createOperatorDecision,
-  createProviderJobResult,
   createReadiness,
   createReviewEvidence,
   createWorkPacket,
@@ -23,6 +22,12 @@ import {
   placementDirectory,
   projectRelativePath
 } from './project-layout.js'
+import {
+  createGenerationRequestFromCard,
+  createProviderCapability,
+  createProviderProfile,
+  normalizeProviderResult
+} from '../providers/provider-neutral.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 
@@ -94,7 +99,7 @@ export async function runFirstWedge(options = {}) {
   const projectDir = path.resolve(options.projectDir ?? 'examples/card-to-candidate')
   const decision = options.decision ?? 'accepted'
   const operatorRef = options.operatorRef ?? 'local-operator'
-  const providerName = options.providerName ?? 'local-placeholder-provider'
+  const providerId = options.providerName ?? 'local-placeholder-provider'
 
   if (!['accepted', 'rejected'].includes(decision)) {
     throw new Error('decision must be accepted or rejected')
@@ -132,16 +137,53 @@ export async function runFirstWedge(options = {}) {
   })
 
   const workPacket = createWorkPacket({ card, operatorRef })
-  const providerJobResult = createProviderJobResult({
+  const providerCapability = createProviderCapability({
+    intentFamily: workPacket.intentFamily,
+    outputKinds: [card.kind],
+    constraints: {
+      integration: 'local-placeholder',
+      apiCalled: false
+    }
+  })
+  const providerProfile = createProviderProfile({
+    providerId,
+    displayName: providerId,
+    capabilities: [providerCapability]
+  })
+  const generationRequest = createGenerationRequestFromCard({
     card,
-    workPacket,
-    providerName,
-    candidateLocalPath: localPath
+    providerHints: {
+      ...card.providerHints,
+      providerId
+    }
+  })
+  const providerResult = normalizeProviderResult({
+    generationRequest,
+    providerId,
+    providerJobRef: {
+      kind: 'local-synthetic-provider-job',
+      id: `local-placeholder:${generationRequest.requestId}`,
+      localOnly: true
+    },
+    status: 'succeeded',
+    outputRefs: [
+      {
+        kind: 'media-local-ref',
+        id: localRef.path,
+        schema: localRef.schema,
+        localRef
+      }
+    ],
+    rawProviderRef: {
+      kind: 'local-placeholder',
+      apiCalled: false,
+      candidateLocalPath: localPath
+    }
   })
   const assetDescriptor = createAssetDescriptor({
     card,
     workPacket,
-    providerJobResult,
+    providerResult,
     hash,
     size: fileStat.size,
     contentType,
@@ -180,7 +222,9 @@ export async function runFirstWedge(options = {}) {
   })
   const generatedRecords = {
     workPacket,
-    providerJobResult,
+    providerProfile,
+    generationRequest,
+    providerResult,
     assetDescriptor,
     reviewEvidence,
     readiness,
@@ -188,7 +232,9 @@ export async function runFirstWedge(options = {}) {
   }
   const generatedRecordPaths = {
     workPacket: 'records/work-packets/media-work-packet.local.json',
-    providerJobResult: 'records/provider-results/provider-job-result.local.json',
+    providerProfile: 'records/provider-results/media-provider-profile.local.json',
+    generationRequest: 'records/work-packets/media-generation-request.local.json',
+    providerResult: 'records/provider-results/media-provider-result.local.json',
     assetDescriptor: 'records/assets/media-asset-descriptor.local.json',
     reviewEvidence: 'records/evidence/media-evidence.local.json',
     readiness: 'records/readiness/media-readiness.local.json',
@@ -203,7 +249,10 @@ export async function runFirstWedge(options = {}) {
   })
 
   validateRequiredRecord(workPacket)
-  validateRequiredRecord(providerJobResult)
+  validateRequiredRecord(providerCapability)
+  validateRequiredRecord(providerProfile)
+  validateRequiredRecord(generationRequest)
+  validateRequiredRecord(providerResult)
   validateRequiredRecord(assetDescriptor)
   validateRequiredRecord(reviewEvidence)
   validateRequiredRecord(readiness)
@@ -221,7 +270,9 @@ export async function runFirstWedge(options = {}) {
   }
 
   await writeJson(path.join(projectDir, generatedRecordPaths.workPacket), workPacket)
-  await writeJson(path.join(projectDir, generatedRecordPaths.providerJobResult), providerJobResult)
+  await writeJson(path.join(projectDir, generatedRecordPaths.providerProfile), providerProfile)
+  await writeJson(path.join(projectDir, generatedRecordPaths.generationRequest), generationRequest)
+  await writeJson(path.join(projectDir, generatedRecordPaths.providerResult), providerResult)
   await writeJson(path.join(projectDir, generatedRecordPaths.assetDescriptor), assetDescriptor)
   await writeJson(path.join(projectDir, generatedRecordPaths.reviewEvidence), reviewEvidence)
   await writeJson(path.join(projectDir, generatedRecordPaths.readiness), readiness)
@@ -233,7 +284,9 @@ export async function runFirstWedge(options = {}) {
     projectLayout,
     outputs: {
       workPacket,
-      providerJobResult,
+      providerProfile,
+      generationRequest,
+      providerResult,
       assetDescriptor,
       reviewEvidence,
       readiness,

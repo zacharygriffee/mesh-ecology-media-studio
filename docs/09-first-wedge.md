@@ -33,7 +33,9 @@ No provider API is called.
 Generated outputs are local-only:
 
 - `records/work-packets/media-work-packet.local.json`
-- `records/provider-results/provider-job-result.local.json`
+- `records/work-packets/media-generation-request.local.json`
+- `records/provider-results/media-provider-profile.local.json`
+- `records/provider-results/media-provider-result.local.json`
 - `records/assets/media-asset-descriptor.local.json`
 - `records/evidence/media-evidence.local.json`
 - `records/readiness/media-readiness.local.json`

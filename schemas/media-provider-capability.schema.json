@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-provider-capability.schema.json",
+  "title": "media.provider_capability.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "capabilityId",
+    "intentFamily",
+    "outputKinds",
+    "localOnly",
+    "meshTruth",
+    "createdAt"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.provider_capability.v1"
+    },
+    "capabilityId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "intentFamily": {
+      "enum": [
+        "image-generation",
+        "video-generation",
+        "audio-generation",
+        "media-transformation",
+        "media-evidence"
+      ]
+    },
+    "outputKinds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "constraints": {
+      "type": "object"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

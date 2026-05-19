@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-provider-result.schema.json",
+  "title": "media.provider_result.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "resultId",
+    "requestRef",
+    "providerId",
+    "providerJobRef",
+    "status",
+    "outputRefs",
+    "createdAt",
+    "localOnly",
+    "meshTruth"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.provider_result.v1"
+    },
+    "resultId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requestRef": {
+      "type": "object",
+      "required": [
+        "kind",
+        "id",
+        "schema"
+      ]
+    },
+    "providerId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "providerJobRef": {
+      "type": "object"
+    },
+    "status": {
+      "enum": [
+        "queued",
+        "running",
+        "succeeded",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "outputRefs": {
+      "type": "array"
+    },
+    "costEstimate": {
+      "type": "object"
+    },
+    "timing": {
+      "type": "object"
+    },
+    "rawProviderRef": {
+      "type": "object"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    }
+  }
+}

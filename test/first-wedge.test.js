@@ -7,6 +7,13 @@ import test from 'node:test'
 import { runFirstWedge } from '../src/local/run-first-wedge.js'
 import { validateRequiredRecord } from '../src/contracts/schemas.js'
 import {
+  createGenerationRequestFromCard,
+  createProviderCapability,
+  createProviderProfile,
+  normalizeProviderResult,
+  validateProviderCapability
+} from '../src/providers/provider-neutral.js'
+import {
   assertLifecycleState,
   assertPlacementClass,
   assertSafeLocalPath,
@@ -63,7 +70,11 @@ test('first wedge creates local records without claiming mesh truth', async () =
   assert.equal(result.outputs.assetDescriptor.localRef.placementClass, 'media-accepted')
   assert.equal(result.outputs.assetDescriptor.localRef.path, 'media/accepted/candidate.txt')
   assert.equal(result.outputs.workPacket.meshTruth, false)
-  assert.equal(result.outputs.providerJobResult.distributedProof, false)
+  assert.equal(result.outputs.providerResult.schema, 'media.provider_result.v1')
+  assert.equal(result.outputs.providerResult.providerTruth, false)
+  assert.equal(result.outputs.providerResult.distributedProof, false)
+  assert.equal(result.outputs.generationRequest.schema, 'media.generation_request.v1')
+  assert.equal(result.outputs.providerProfile.schema, 'media.provider_profile.v1')
   assert.equal(result.outputs.operatorDecision.ratifiedSharedState, false)
   assert.equal(result.outputs.assetDescriptor.provenance.lifecycle.schema, 'media.asset_lifecycle.v1')
   assert.equal(result.projectLayout.schema, 'media.project_layout.v1')
@@ -78,11 +89,111 @@ test('first wedge creates local records without claiming mesh truth', async () =
     await readFile(path.join(dir, 'records', 'manifests', 'media-local-run-manifest.local.json'), 'utf8')
   )
   assert.equal(manifest.hashes.candidate.algorithm, 'sha256')
-  assert.ok(manifest.artifactKinds.includes('media.provider_job_result.local.v1'))
+  assert.ok(manifest.artifactKinds.includes('media.provider_profile.v1'))
+  assert.ok(manifest.artifactKinds.includes('media.provider_capability.v1'))
+  assert.ok(manifest.artifactKinds.includes('media.generation_request.v1'))
+  assert.ok(manifest.artifactKinds.includes('media.provider_result.v1'))
   assert.ok(manifest.artifactKinds.includes('media.local_ref.v1'))
   assert.ok(manifest.artifactKinds.includes('media.asset_lifecycle.v1'))
   assert.ok(manifest.doctrineLabels.includes('not provider truth'))
   assert.equal(manifest.generatedRecordRefs[0].path, 'records/work-packets/media-work-packet.local.json')
+})
+
+test('provider profile validates with provider-neutral capability', () => {
+  const capability = createProviderCapability({
+    intentFamily: 'image-generation',
+    outputKinds: ['image']
+  })
+  const profile = createProviderProfile({
+    providerId: 'local-placeholder-provider',
+    displayName: 'Local Placeholder Provider',
+    capabilities: [capability]
+  })
+
+  assert.equal(validateRequiredRecord(capability), true)
+  assert.equal(validateRequiredRecord(profile), true)
+  assert.equal(profile.meshTruth, false)
+})
+
+test('provider capability rejects unsupported intent family', () => {
+  assert.throws(
+    () => createProviderCapability({
+      intentFamily: 'text-generation',
+      outputKinds: ['text']
+    }),
+    /Unsupported intent family/
+  )
+
+  assert.throws(
+    () => validateProviderCapability({
+      schema: 'media.provider_capability.v1',
+      capabilityId: 'capability-bad',
+      intentFamily: 'text-generation',
+      outputKinds: ['text'],
+      localOnly: true,
+      meshTruth: false
+    }),
+    /Unsupported intent family/
+  )
+})
+
+test('provider profile rejects missing provider id', () => {
+  const capability = createProviderCapability({
+    intentFamily: 'image-generation',
+    outputKinds: ['image']
+  })
+
+  assert.throws(
+    () => createProviderProfile({
+      displayName: 'Missing Id',
+      capabilities: [capability]
+    }),
+    /missing providerId/
+  )
+})
+
+test('generation request can be derived from a card', () => {
+  const card = {
+    schema: 'media.card.v1',
+    cardId: 'card-provider-test',
+    projectId: 'project-test',
+    kind: 'image',
+    prompt: 'test prompt',
+    negativePrompt: 'none',
+    referenceAssetRefs: [],
+    target: { contentType: 'image/png' },
+    providerHints: { providerId: 'local-placeholder-provider' },
+    acceptanceCriteria: [],
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }
+  const request = createGenerationRequestFromCard({ card })
+
+  assert.equal(request.schema, 'media.generation_request.v1')
+  assert.equal(request.intentFamily, 'image-generation')
+  assert.equal(request.cardRef.id, 'card-provider-test')
+  assert.equal(validateRequiredRecord(request), true)
+})
+
+test('provider result normalization creates non-truth-bearing provider result', () => {
+  const generationRequest = {
+    schema: 'media.generation_request.v1',
+    requestId: 'request-test'
+  }
+  const result = normalizeProviderResult({
+    generationRequest,
+    providerId: 'local-placeholder-provider',
+    providerJobRef: {
+      kind: 'local-synthetic-provider-job',
+      id: 'job-test'
+    },
+    status: 'succeeded',
+    outputRefs: []
+  })
+
+  assert.equal(result.schema, 'media.provider_result.v1')
+  assert.equal(result.providerTruth, false)
+  assert.equal(result.requestRef.id, 'request-test')
+  assert.equal(validateRequiredRecord(result), true)
 })
 
 test('local refs accept safe project-relative paths', () => {

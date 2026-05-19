@@ -5,5 +5,10 @@ examples/**/media/rejected/
 examples/**/media/proxies/
 examples/**/media/thumbnails/
 examples/**/media/exports/
+.env
+.env.*
+!.env.example
+*.local.env
+secrets/
 node_modules/
 npm-debug.log*

@@ -128,7 +128,9 @@ npm test
 
 Phase 2 inspection hardening added the manifest, a small artifact-kind
 registry, and modest malformed-record checks. Phase 3 adds the local project
-layout, safe local refs, placement classes, and asset lifecycle states.
+layout, safe local refs, placement classes, and asset lifecycle states. Phase 4
+adds provider-neutral generation request, provider profile/capability, and
+normalized provider result records without calling provider APIs.
 
 ## Start Here
 
@@ -138,3 +140,5 @@ layout, safe local refs, placement classes, and asset lifecycle states.
 - [docs/10-edge-inspection-preview.md](docs/10-edge-inspection-preview.md)
 - [docs/11-local-project-layout.md](docs/11-local-project-layout.md)
 - [docs/12-asset-lifecycle.md](docs/12-asset-lifecycle.md)
+- [docs/13-provider-neutral-job-contract.md](docs/13-provider-neutral-job-contract.md)
+- [docs/14-provider-adapter-boundary.md](docs/14-provider-adapter-boundary.md)
