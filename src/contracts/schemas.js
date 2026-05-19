@@ -641,6 +641,7 @@ export const requiredFields = {
     'operatorPacketIndexRef',
     'readinessState',
     'handoffState',
+    'readinessDiagnosis',
     'edgeShapeTargets',
     'warnings',
     'operatorGuidanceOnly',
@@ -1559,6 +1560,8 @@ export function validateRecordShape(record, schemaId = record.schema) {
     validateInspectionRef(record.projectHealthRef, `${schemaId}.projectHealthRef`)
     validateInspectionRef(record.operatorPacketIndexRef, `${schemaId}.operatorPacketIndexRef`)
 
+    validateHandoffDiagnosis(record.readinessDiagnosis, `${schemaId}.readinessDiagnosis`)
+
     if (record.operatorGuidanceOnly !== true) {
       throw new Error(`Record ${schemaId} must set operatorGuidanceOnly=true`)
     }
@@ -2023,6 +2026,28 @@ function validateReadinessResourceSummary(summary, label) {
 
   for (const flag of ['meshTruth', 'distributedProof', 'ratifiedSharedState', 'edgeRuntimeVerified']) {
     if (summary[flag] !== false) {
+      throw new Error(`${label} must set ${flag}=false`)
+    }
+  }
+}
+
+function validateHandoffDiagnosis(diagnosis, label) {
+  if (!diagnosis || typeof diagnosis !== 'object') {
+    throw new Error(`${label} must be an object`)
+  }
+
+  for (const collection of ['blockingIssues', 'reasons', 'nextActions']) {
+    if (!Array.isArray(diagnosis[collection])) {
+      throw new Error(`${label}.${collection} must be an array`)
+    }
+  }
+
+  if (diagnosis.operatorGuidanceOnly !== true || diagnosis.localOnly !== true) {
+    throw new Error(`${label} must remain local operator guidance`)
+  }
+
+  for (const flag of ['meshTruth', 'distributedProof', 'ratifiedSharedState', 'edgeRuntimeVerified']) {
+    if (diagnosis[flag] !== false) {
       throw new Error(`${label} must set ${flag}=false`)
     }
   }

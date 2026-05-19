@@ -302,7 +302,9 @@ descriptor detection, and adds a local project health snapshot while still
 keeping resource promotion, Edge runtime verification, and mesh publication
 deferred. Phase 23 adds local operator packet indexes and Edge handoff
 candidates so inspection artifacts are easier to scan without adding UI,
-calling Edge, or claiming authority.
+calling Edge, or claiming authority. Phase 24 adds production descriptor
+freshness checks and handoff readiness diagnosis so stale local production
+records explain why a handoff needs attention.
 
 ## Start Here
 

@@ -76,10 +76,8 @@ export async function writeEdgeHandoffCandidate({
   const health = await readAndValidate(root, projectHealth, artifactKinds.mediaProjectHealthLocal)
   const index = await readAndValidate(root, operatorPacketIndex, artifactKinds.mediaOperatorPacketIndexLocal)
   const projectId = bundle.projectId
-  const handoffState = health.healthState === 'ready-for-local-inspection' &&
-    bundle.readinessResourceSummary?.edgeReadinessState === 'ready'
-    ? 'ready-for-edge-inspection'
-    : 'needs-local-attention'
+  const diagnosis = createHandoffDiagnosis({ health, bundle })
+  const handoffState = diagnosis.readyForEdgeInspection ? 'ready-for-edge-inspection' : 'needs-local-attention'
 
   const handoff = {
     schema: artifactKinds.mediaEdgeHandoffCandidateLocal,
@@ -110,6 +108,7 @@ export async function writeEdgeHandoffCandidate({
     operatorPacketIndexRef: localRef('media-operator-packet-index', index.indexId, index.schema, operatorPacketIndex),
     readinessState: bundle.readinessResourceSummary?.edgeReadinessState ?? 'unknown',
     handoffState,
+    readinessDiagnosis: diagnosis,
     edgeShapeTargets: bundle.edgeShapeTargets,
     warnings: [
       'Handoff candidate is Studio-built local guidance only.',
@@ -144,6 +143,64 @@ export async function writeEdgeHandoffCandidate({
   return {
     handoff,
     output
+  }
+}
+
+function createHandoffDiagnosis({ health, bundle }) {
+  const readinessSummary = bundle.readinessResourceSummary ?? {}
+  const productionFreshness = health.productionValidation?.freshness ?? {}
+  const reasons = []
+  const nextActions = []
+
+  if (health.healthState !== 'ready-for-local-inspection') {
+    reasons.push(`project health is ${health.healthState}`)
+    nextActions.push('Run npm run health:summary and resolve listed blocking issues before handoff.')
+  }
+
+  if (readinessSummary.edgeReadinessState !== 'ready') {
+    reasons.push(`Edge readiness guidance is ${readinessSummary.edgeReadinessState ?? 'unknown'}`)
+    nextActions.push('Run npm run readiness:edge and address unresolved byte/resource guidance.')
+  }
+
+  if (readinessSummary.assetResourceReady !== true) {
+    reasons.push('asset/resource refs are not ready for Edge inspection')
+    nextActions.push('Run npm run bytes:proposal and npm run resource:refs, then regenerate readiness and health.')
+  }
+
+  if (health.productionValidation?.valid !== true) {
+    reasons.push('production graph is not valid')
+    nextActions.push('Run npm run production:validate and fix production parentage before handoff.')
+  }
+
+  if (productionFreshness.fresh === false) {
+    reasons.push(`${productionFreshness.staleDescriptorIds?.length ?? 0} production descriptors are stale`)
+    nextActions.push('Regenerate or update production descriptors after production-unit changes.')
+  }
+
+  if (health.blockingIssues.length > 0) {
+    reasons.push(`project health has ${health.blockingIssues.length} blocking issues`)
+  }
+
+  if (reasons.length === 0) {
+    reasons.push('local inspection packet, compatibility bundle, project health, and resource readiness are aligned')
+  }
+
+  return {
+    healthState: health.healthState,
+    edgeReadinessState: readinessSummary.edgeReadinessState ?? 'unknown',
+    assetResourceReady: readinessSummary.assetResourceReady === true,
+    productionGraphValid: health.productionValidation?.valid === true,
+    productionFreshness,
+    blockingIssues: health.blockingIssues,
+    reasons,
+    nextActions: Array.from(new Set(nextActions)),
+    readyForEdgeInspection: reasons.length === 1 && reasons[0].startsWith('local inspection packet'),
+    operatorGuidanceOnly: true,
+    localOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    edgeRuntimeVerified: false
   }
 }
 

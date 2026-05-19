@@ -167,4 +167,6 @@ a local project health snapshot. Phase 23 adds local operator packet indexes
 and Edge handoff candidates so the same records are easier to scan without
 adding UI or Edge runtime calls. These records do not claim mesh truth,
 distributed proof, byte materialization proof, provider truth, causal truth,
-publication authorization, or ratifier authority.
+publication authorization, or ratifier authority. Phase 24 adds production
+descriptor freshness checks and handoff readiness diagnosis so stale local
+production records are visible before broader integration work.

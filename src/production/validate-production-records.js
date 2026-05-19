@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
-import { validateProductionDescriptorGraph } from './strategy.js'
+import { summarizeProductionFreshness, validateProductionDescriptorGraph } from './strategy.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
@@ -50,15 +50,19 @@ export async function validateProductionRecordsInProject({
   }
 
   validateProductionDescriptorGraph(records)
+  const freshness = summarizeProductionFreshness(records)
 
   if (!quiet) {
     console.log(`production graph valid: ${records.length}`)
     console.log(`input: ${inputDir}`)
+    console.log(`production freshness: ${freshness.fresh ? 'fresh' : 'stale'}`)
+    console.log(`staleDescriptors: ${freshness.staleDescriptorIds.length}`)
   }
 
   return {
     valid: true,
     count: records.length,
+    freshness,
     records
   }
 }

@@ -19,6 +19,7 @@
     "operatorPacketIndexRef",
     "readinessState",
     "handoffState",
+    "readinessDiagnosis",
     "edgeShapeTargets",
     "warnings",
     "operatorGuidanceOnly",
@@ -76,6 +77,9 @@
         "ready-for-edge-inspection",
         "needs-local-attention"
       ]
+    },
+    "readinessDiagnosis": {
+      "type": "object"
     },
     "edgeShapeTargets": {
       "type": "array"

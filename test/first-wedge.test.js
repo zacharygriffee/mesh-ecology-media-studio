@@ -1204,6 +1204,8 @@ test('operator packet index and Edge handoff candidate stay local-only', async (
 
   assert.equal(handoffResult.handoff.schema, 'media.edge_handoff_candidate.local.v1')
   assert.equal(handoffResult.handoff.handoffState, 'ready-for-edge-inspection')
+  assert.equal(handoffResult.handoff.readinessDiagnosis.readyForEdgeInspection, true)
+  assert.equal(handoffResult.handoff.readinessDiagnosis.productionFreshness.fresh, true)
   assert.equal(handoffResult.handoff.targetSurface, 'media-edge-operator-seam')
   assert.equal(handoffResult.handoff.edgeRuntimeBuilt, false)
   assert.equal(handoffResult.handoff.edgeRuntimeVerified, false)
@@ -1212,6 +1214,38 @@ test('operator packet index and Edge handoff candidate stay local-only', async (
 
   assert.equal(secondIndex.index.handoffCandidateRefs.length, 1)
   assert.ok(summary.familyRows.some((row) => row[0] === 'handoff' && Number(row[1]) >= 2))
+})
+
+test('Edge handoff diagnosis explains stale production descriptors', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await writeByteDescriptorProposals({ projectDir: dir })
+  await writeLocalLayerResourceRefCandidates({ projectDir: dir })
+  await writeProductionRecordsFromCard({ projectDir: dir })
+  const sceneUnitPath = path.join(dir, 'records', 'production', 'sceneUnit.local.json')
+  const sceneUnit = JSON.parse(await readFile(sceneUnitPath, 'utf8'))
+  sceneUnit.createdAt = '2099-01-01T00:00:00.000Z'
+  await writeFile(sceneUnitPath, `${JSON.stringify(sceneUnit, null, 2)}\n`)
+
+  const healthResult = await writeProjectHealth({ projectDir: dir, summary: true })
+  await inspectLocalRun({ projectDir: dir })
+  await writeControlSurfaceProjection({ projectDir: dir })
+  await writeEdgeCompatibilityBundle({ projectDir: dir })
+  await writeOperatorPacketIndex({ projectDir: dir })
+  const handoffResult = await writeEdgeHandoffCandidate({ projectDir: dir })
+
+  assert.equal(healthResult.health.healthState, 'needs-local-attention')
+  assert.ok(healthResult.health.blockingIssues.includes('production-freshness-stale'))
+  assert.equal(handoffResult.handoff.handoffState, 'needs-local-attention')
+  assert.equal(handoffResult.handoff.readinessDiagnosis.readyForEdgeInspection, false)
+  assert.equal(handoffResult.handoff.readinessDiagnosis.productionFreshness.fresh, false)
+  assert.ok(handoffResult.handoff.readinessDiagnosis.reasons.some((reason) => reason.includes('production descriptors are stale')))
+  assert.ok(handoffResult.handoff.readinessDiagnosis.nextActions.some((action) => action.includes('Regenerate or update production descriptors')))
+  assert.equal(validateRequiredRecord(handoffResult.handoff), true)
 })
 
 test('promote candidate copies placement and records local decision without provider work', async () => {
@@ -1685,6 +1719,8 @@ test('production from card writes local records without UI or provider work', as
   const validation = await validateProductionRecordsInProject({ projectDir: dir })
   assert.equal(validation.valid, true)
   assert.equal(validation.count, 8)
+  assert.equal(validation.freshness.fresh, true)
+  assert.equal(validation.freshness.staleDescriptorIds.length, 0)
 
   await runFirstWedge({ projectDir: dir })
   const { packet } = await inspectLocalRun({ projectDir: dir })
@@ -1696,6 +1732,22 @@ test('production from card writes local records without UI or provider work', as
     packet: 'records/exports/local-run-edge-inspection-packet.local.json'
   })
   assert.ok(summary.familyRows.some(([family, count]) => family === 'production' && count === '8'))
+})
+
+test('production validation flags stale descriptors after production unit changes', async () => {
+  const dir = await createFixtureProject()
+  const result = await writeProductionRecordsFromCard({ projectDir: dir })
+  const sceneUnitPath = path.join(dir, 'records', 'production', 'sceneUnit.local.json')
+  const sceneUnit = JSON.parse(await readFile(sceneUnitPath, 'utf8'))
+  sceneUnit.createdAt = '2099-01-01T00:00:00.000Z'
+  await writeFile(sceneUnitPath, `${JSON.stringify(sceneUnit, null, 2)}\n`)
+
+  const validation = await validateProductionRecordsInProject({ projectDir: dir })
+
+  assert.equal(validation.valid, true)
+  assert.equal(validation.freshness.fresh, false)
+  assert.ok(validation.freshness.staleDescriptorIds.includes(result.records.sceneDescriptor.descriptorId))
+  assert.ok(validation.freshness.staleDescriptorIds.includes(result.records.shotDescriptor.descriptorId))
 })
 
 test('Edge inspection includes approval proposal records when present', async () => {

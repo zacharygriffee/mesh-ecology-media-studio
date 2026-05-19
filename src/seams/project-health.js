@@ -69,6 +69,10 @@ export async function writeProjectHealth({
     blockingIssues.push('production-graph-invalid')
   }
 
+  if (productionValidation.freshness?.fresh === false) {
+    blockingIssues.push('production-freshness-stale')
+  }
+
   const health = {
     schema: artifactKinds.mediaProjectHealthLocal,
     healthId: `project-health-${projectId}`,
@@ -96,6 +100,7 @@ export async function writeProjectHealth({
     productionValidation: {
       valid: productionValidation.valid,
       count: productionValidation.count,
+      freshness: productionValidation.freshness,
       localOnly: true
     },
     operatorGuidanceOnly: true,
@@ -143,6 +148,7 @@ function printHealthSummary(health, output) {
   console.log(`staleByteDescriptorProposals: ${health.assetResourceConsistency.staleByteDescriptorProposalIds.length}`)
   console.log(`staleResourceCandidates: ${health.assetResourceConsistency.staleResourceCandidateIds.length}`)
   console.log(`productionGraphValid: ${health.productionValidation.valid}`)
+  console.log(`staleProductionDescriptors: ${health.productionValidation.freshness?.staleDescriptorIds?.length ?? 0}`)
   console.log(`blockingIssues: ${health.blockingIssues.length}`)
 }
 

@@ -11,9 +11,10 @@ candidates. It is an operator aid, not a UI contract and not shared truth.
 
 The handoff candidate gathers the local inspection packet, Edge compatibility
 bundle, project health snapshot, and packet index into one Edge-facing review
-descriptor. It is Studio-built and remains local-only. It does not call Edge,
-verify Edge runtime behavior, grant operator authority, publish to the mesh, or
-ratify state.
+descriptor. It also carries a local `readinessDiagnosis` explaining why the
+handoff is ready or why it needs local attention. It is Studio-built and
+remains local-only. It does not call Edge, verify Edge runtime behavior, grant
+operator authority, publish to the mesh, or ratify state.
 
 ## Commands
 
@@ -43,3 +44,11 @@ These records are deliberately narrow:
 
 Edge may later inspect these records through `media-edge-operator-seam`, but
 Edge remains the operator boundary and Studio remains the media-domain owner.
+
+## Freshness
+
+Production validation now includes a freshness summary. A descriptor is stale
+when it is older than the production unit it describes, or older than a parent
+production unit it references. Staleness is local operator guidance only: it
+does not prove the descriptor is wrong, and it does not authorize automatic
+repair.

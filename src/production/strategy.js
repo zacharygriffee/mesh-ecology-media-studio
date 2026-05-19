@@ -488,6 +488,58 @@ export function validateProductionDescriptorGraph(records) {
   return true
 }
 
+export function summarizeProductionFreshness(records) {
+  const productionUnits = new Map()
+  const descriptors = []
+
+  for (const record of records) {
+    if (record.schema === artifactKinds.mediaProductionUnit) {
+      productionUnits.set(record.productionUnitId, record)
+    } else if (record.schema === artifactKinds.mediaProductionDescriptorLocal) {
+      descriptors.push(record)
+    }
+  }
+
+  const staleDescriptorIds = []
+  const parentMismatchDescriptorIds = []
+  const missingUnitDescriptorIds = []
+
+  for (const descriptor of descriptors) {
+    const productionUnit = productionUnits.get(descriptor.productionUnitRef.id)
+    if (!productionUnit) {
+      missingUnitDescriptorIds.push(descriptor.descriptorId)
+      continue
+    }
+
+    if (isDescriptorOlderThanUnit(descriptor, productionUnit)) {
+      staleDescriptorIds.push(descriptor.descriptorId)
+    }
+
+    if (['scene', 'shot', 'clip'].includes(descriptor.descriptorKind) && !refIdsMatch(descriptor.parentUnitRefs, productionUnit.parentRefs)) {
+      parentMismatchDescriptorIds.push(descriptor.descriptorId)
+    }
+
+    for (const parentRef of descriptor.parentUnitRefs) {
+      const parentUnit = productionUnits.get(parentRef.id)
+      if (parentUnit && isDescriptorOlderThanUnit(descriptor, parentUnit)) {
+        staleDescriptorIds.push(descriptor.descriptorId)
+      }
+    }
+  }
+
+  const uniqueStaleDescriptorIds = Array.from(new Set(staleDescriptorIds)).sort()
+
+  return {
+    descriptorCount: descriptors.length,
+    staleDescriptorIds: uniqueStaleDescriptorIds,
+    parentMismatchDescriptorIds: parentMismatchDescriptorIds.sort(),
+    missingUnitDescriptorIds: missingUnitDescriptorIds.sort(),
+    fresh: uniqueStaleDescriptorIds.length === 0 && parentMismatchDescriptorIds.length === 0 && missingUnitDescriptorIds.length === 0,
+    localOnly: true,
+    operatorGuidanceOnly: true
+  }
+}
+
 function assertDescriptorUnitKind(descriptor, productionUnit) {
   const allowedUnitKindsByDescriptorKind = {
     scene: ['scene'],
@@ -507,6 +559,18 @@ function assertKnown(value, knownValues, label) {
   if (!knownValues.includes(value)) {
     throw new Error(`Invalid ${label}: ${value}`)
   }
+}
+
+function isDescriptorOlderThanUnit(descriptor, productionUnit) {
+  const descriptorTime = Date.parse(descriptor.createdAt)
+  const unitTime = Date.parse(productionUnit.createdAt)
+  return Number.isFinite(descriptorTime) && Number.isFinite(unitTime) && descriptorTime < unitTime
+}
+
+function refIdsMatch(leftRefs, rightRefs) {
+  const leftIds = leftRefs.map((ref) => ref.id).sort()
+  const rightIds = rightRefs.map((ref) => ref.id).sort()
+  return JSON.stringify(leftIds) === JSON.stringify(rightIds)
 }
 
 function idForProductionRecord(record) {
