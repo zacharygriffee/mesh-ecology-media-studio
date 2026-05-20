@@ -17,7 +17,8 @@ const timestampPattern = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/g
 function parseArgs(argv) {
   const args = {
     projectDir: 'examples/inspection-fixtures/card-to-candidate',
-    check: false
+    check: false,
+    quiet: false
   }
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -29,6 +30,8 @@ function parseArgs(argv) {
       i += 1
     } else if (arg === '--check') {
       args.check = true
+    } else if (arg === '--quiet') {
+      args.quiet = true
     }
   }
 
@@ -36,7 +39,8 @@ function parseArgs(argv) {
 }
 
 export async function generateInspectionFixture({
-  projectDir = 'examples/inspection-fixtures/card-to-candidate'
+  projectDir = 'examples/inspection-fixtures/card-to-candidate',
+  quiet = false
 } = {}) {
   const root = path.resolve(projectDir)
   await rm(root, { recursive: true, force: true })
@@ -46,39 +50,44 @@ export async function generateInspectionFixture({
   await cp('examples/card-to-candidate/media/generated/candidate.txt', path.join(root, 'media', 'generated', 'candidate.txt'))
   await writeFile(path.join(root, 'README.md'), fixtureReadme())
 
-  await runFirstWedge({
-    projectDir: root,
-    decision: 'accepted',
-    operatorRef: 'fixture-operator'
-  })
-  await writeCandidateReview({
-    projectDir: root,
-    operatorRef: 'fixture-operator'
-  })
-  await writeContinuityEvidence({
-    projectDir: root
-  })
-  await inspectLocalRun({
-    projectDir: root,
-    output: 'inspection-packets/local-run-edge-inspection-packet.local.json'
-  })
-  await exportInspectionBundle({
-    projectDir: root,
-    packet: 'inspection-packets/local-run-edge-inspection-packet.local.json',
-    outputDir: 'inspection-bundle/local-run'
+  await withQuietLogs(quiet, async () => {
+    await runFirstWedge({
+      projectDir: root,
+      decision: 'accepted',
+      operatorRef: 'fixture-operator'
+    })
+    await writeCandidateReview({
+      projectDir: root,
+      operatorRef: 'fixture-operator'
+    })
+    await writeContinuityEvidence({
+      projectDir: root
+    })
+    await inspectLocalRun({
+      projectDir: root,
+      output: 'inspection-packets/local-run-edge-inspection-packet.local.json'
+    })
+    await exportInspectionBundle({
+      projectDir: root,
+      packet: 'inspection-packets/local-run-edge-inspection-packet.local.json',
+      outputDir: 'inspection-bundle/local-run'
+    })
   })
   await normalizeFixture(root)
 
-  console.log(`Generated deterministic inspection fixture: ${projectDir}`)
+  if (!quiet) {
+    console.log(`Generated deterministic inspection fixture: ${projectDir}`)
+  }
 }
 
 export async function checkInspectionFixture({
-  projectDir = 'examples/inspection-fixtures/card-to-candidate'
+  projectDir = 'examples/inspection-fixtures/card-to-candidate',
+  quiet = false
 } = {}) {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'media-studio-fixture-check-'))
   const tempFixture = path.join(tempRoot, 'card-to-candidate')
 
-  await generateInspectionFixture({ projectDir: tempFixture })
+  await generateInspectionFixture({ projectDir: tempFixture, quiet: true })
 
   const expectedRoot = path.resolve(projectDir)
   const expectedFiles = (await listFiles(expectedRoot)).map((file) => path.relative(expectedRoot, file)).sort()
@@ -89,7 +98,21 @@ export async function checkInspectionFixture({
   }
 
   await rm(tempRoot, { recursive: true, force: true })
-  console.log(`Inspection fixture shape is compatible: ${projectDir}`)
+  if (!quiet) {
+    console.log(`Inspection fixture shape is compatible: ${projectDir}`)
+  }
+}
+
+async function withQuietLogs(quiet, fn) {
+  if (!quiet) return fn()
+
+  const originalLog = console.log
+  console.log = () => {}
+  try {
+    return await fn()
+  } finally {
+    console.log = originalLog
+  }
 }
 
 async function normalizeFixture(root) {

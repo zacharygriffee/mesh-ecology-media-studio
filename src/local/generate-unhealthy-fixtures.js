@@ -25,7 +25,8 @@ const timestampPattern = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/g
 function parseArgs(argv) {
   const args = {
     projectDir: defaultProjectDir,
-    check: false
+    check: false,
+    quiet: false
   }
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -37,6 +38,8 @@ function parseArgs(argv) {
       i += 1
     } else if (arg === '--check') {
       args.check = true
+    } else if (arg === '--quiet') {
+      args.quiet = true
     }
   }
 
@@ -44,57 +47,63 @@ function parseArgs(argv) {
 }
 
 export async function generateUnhealthyFixtures({
-  projectDir = defaultProjectDir
+  projectDir = defaultProjectDir,
+  quiet = false
 } = {}) {
   const root = path.resolve(projectDir)
   await rm(root, { recursive: true, force: true })
   await mkdir(root, { recursive: true })
   await writeFile(path.join(root, 'README.md'), unhealthyReadme())
 
-  await generateCase({
-    root,
-    caseName: 'missing-byte-proposal',
-    description: 'Accepted asset exists, but no byte descriptor proposal or resource-ref candidate has been generated.',
-    prepare: async () => {}
-  })
-  await generateCase({
-    root,
-    caseName: 'stale-resource-ref',
-    description: 'Byte descriptor proposal exists, but the resource-ref candidate no longer matches the asset local ref.',
-    prepare: async (projectRoot) => {
-      await writeByteDescriptorProposals({ projectDir: projectRoot })
-      await writeLocalLayerResourceRefCandidates({ projectDir: projectRoot })
-      const resourceCandidatePath = await firstJsonFile(path.join(projectRoot, 'records', 'resources'))
-      await mutateJson(resourceCandidatePath, (record) => {
-        record.proposedResourceRef.localRef.path = 'media/accepted/stale-candidate.txt'
-      })
-    }
-  })
-  await generateCase({
-    root,
-    caseName: 'stale-production-descriptor',
-    description: 'Production unit was updated after descriptor creation, so the descriptor is locally stale.',
-    prepare: async (projectRoot) => {
-      await writeByteDescriptorProposals({ projectDir: projectRoot })
-      await writeLocalLayerResourceRefCandidates({ projectDir: projectRoot })
-      await writeProductionRecordsFromCard({ projectDir: projectRoot })
-      await mutateJson(path.join(projectRoot, 'records', 'production', 'sceneUnit.local.json'), (record) => {
-        record.createdAt = '2099-01-01T00:00:00.000Z'
-      })
-    }
+  await withQuietLogs(quiet, async () => {
+    await generateCase({
+      root,
+      caseName: 'missing-byte-proposal',
+      description: 'Accepted asset exists, but no byte descriptor proposal or resource-ref candidate has been generated.',
+      prepare: async () => {}
+    })
+    await generateCase({
+      root,
+      caseName: 'stale-resource-ref',
+      description: 'Byte descriptor proposal exists, but the resource-ref candidate no longer matches the asset local ref.',
+      prepare: async (projectRoot) => {
+        await writeByteDescriptorProposals({ projectDir: projectRoot })
+        await writeLocalLayerResourceRefCandidates({ projectDir: projectRoot })
+        const resourceCandidatePath = await firstJsonFile(path.join(projectRoot, 'records', 'resources'))
+        await mutateJson(resourceCandidatePath, (record) => {
+          record.proposedResourceRef.localRef.path = 'media/accepted/stale-candidate.txt'
+        })
+      }
+    })
+    await generateCase({
+      root,
+      caseName: 'stale-production-descriptor',
+      description: 'Production unit was updated after descriptor creation, so the descriptor is locally stale.',
+      prepare: async (projectRoot) => {
+        await writeByteDescriptorProposals({ projectDir: projectRoot })
+        await writeLocalLayerResourceRefCandidates({ projectDir: projectRoot })
+        await writeProductionRecordsFromCard({ projectDir: projectRoot })
+        await mutateJson(path.join(projectRoot, 'records', 'production', 'sceneUnit.local.json'), (record) => {
+          record.createdAt = '2099-01-01T00:00:00.000Z'
+        })
+      }
+    })
   })
 
   await normalizeFixture(root)
-  console.log(`Generated deterministic unhealthy fixtures: ${projectDir}`)
+  if (!quiet) {
+    console.log(`Generated deterministic unhealthy fixtures: ${projectDir}`)
+  }
 }
 
 export async function checkUnhealthyFixtures({
-  projectDir = defaultProjectDir
+  projectDir = defaultProjectDir,
+  quiet = false
 } = {}) {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'media-studio-unhealthy-fixture-check-'))
   const tempFixture = path.join(tempRoot, 'unhealthy')
 
-  await generateUnhealthyFixtures({ projectDir: tempFixture })
+  await generateUnhealthyFixtures({ projectDir: tempFixture, quiet: true })
 
   const expectedRoot = path.resolve(projectDir)
   const expectedFiles = (await listFiles(expectedRoot)).map((file) => path.relative(expectedRoot, file)).sort()
@@ -105,7 +114,21 @@ export async function checkUnhealthyFixtures({
   }
 
   await rm(tempRoot, { recursive: true, force: true })
-  console.log(`Unhealthy fixture shape is compatible: ${projectDir}`)
+  if (!quiet) {
+    console.log(`Unhealthy fixture shape is compatible: ${projectDir}`)
+  }
+}
+
+async function withQuietLogs(quiet, fn) {
+  if (!quiet) return fn()
+
+  const originalLog = console.log
+  console.log = () => {}
+  try {
+    return await fn()
+  } finally {
+    console.log = originalLog
+  }
 }
 
 async function generateCase({ root, caseName, description, prepare }) {

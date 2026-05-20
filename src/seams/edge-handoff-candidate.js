@@ -136,8 +136,10 @@ export async function writeEdgeHandoffCandidate({
   if (print) {
     console.log(JSON.stringify(handoff, null, 2))
   } else {
-    console.log(`edge handoff candidate: ${output}`)
-    console.log(`handoffState: ${handoff.handoffState}`)
+    console.log(formatHandoffSummary(handoff, output))
+    if (handoff.readinessDiagnosis.nextActions.length > 0) {
+      console.log(`nextAction: ${handoff.readinessDiagnosis.nextActions[0]}`)
+    }
   }
 
   return {
@@ -216,6 +218,17 @@ function localRef(kind, id, schema, relativePath) {
     path: relativePath,
     localOnly: true
   }
+}
+
+function formatHandoffSummary(handoff, output) {
+  const diagnosis = handoff.readinessDiagnosis
+  return [
+    `edge handoff: ${handoff.handoffState}`,
+    `health=${diagnosis.healthState}`,
+    `readiness=${diagnosis.edgeReadinessState}`,
+    `blockers=${diagnosis.blockingIssues.length}`,
+    `output=${output}`
+  ].join(' | ')
 }
 
 if (process.argv[1] === modulePath) {

@@ -124,18 +124,25 @@ export async function writeOperatorPacketIndex({
   if (print) {
     console.log(JSON.stringify(index, null, 2))
   } else {
-    console.log(`operator packet index: ${output}`)
-    console.log(`packets: ${packetRefs.length}`)
-    console.log(`bundles: ${bundleRefs.length}`)
-    console.log(`handoffCandidates: ${handoffCandidateRefs.length}`)
-    console.log(`operatorDecisionRequests: ${operatorDecisionRequestRefs.length}`)
-    console.log(`ruleResolutionTraces: ${mediationRefs.length}`)
+    console.log(formatOperatorPacketIndexSummary(index, output))
   }
 
   return {
     index,
     output
   }
+}
+
+function formatOperatorPacketIndexSummary(index, output) {
+  const summary = index.summary
+  return [
+    `operator packet index: packets=${summary.packets}`,
+    `bundles=${summary.bundles}`,
+    `handoffs=${summary.handoffCandidates}`,
+    `decisionRequests=${summary.operatorDecisionRequests}`,
+    `ruleTraces=${summary.ruleResolutionTraces}`,
+    `output=${output}`
+  ].join(' | ')
 }
 
 async function readIndexableRecords(root) {

@@ -100,17 +100,36 @@ export async function writeCrossProjectOperatorIndex({
   if (print) {
     console.log(JSON.stringify(index, null, 2))
   } else {
-    console.log(`cross-project operator index: ${output}`)
-    console.log(`projects: ${index.summary.projects}`)
-    console.log(`readyForEdgeInspection: ${index.summary.readyForEdgeInspection}`)
-    console.log(`needsLocalAttention: ${index.summary.needsLocalAttention}`)
-    console.log(`missingArtifacts: ${index.summary.missingArtifacts}`)
+    console.log(formatCrossProjectSummary(index, output))
+    for (const project of attentionRows(index.projectSummaries)) {
+      console.log(`attention: ${project.label} | handoff=${project.handoffState} | blockers=${project.blockingIssues.length} | warnings=${project.warnings.length}`)
+    }
   }
 
   return {
     index,
     output
   }
+}
+
+function formatCrossProjectSummary(index, output) {
+  const summary = index.summary
+  return [
+    `cross-project operator index: projects=${summary.projects}`,
+    `ready=${summary.readyForEdgeInspection}`,
+    `attention=${summary.needsLocalAttention}`,
+    `unknown=${summary.unknownHandoffState}`,
+    `missingArtifacts=${summary.missingArtifacts}`,
+    `output=${output}`
+  ].join(' | ')
+}
+
+function attentionRows(projectSummaries) {
+  return projectSummaries.filter((project) => (
+    project.handoffState !== 'ready-for-edge-inspection' ||
+    project.blockingIssues.length > 0 ||
+    project.warnings.length > 0
+  ))
 }
 
 async function summarizeProject(root, projectInput) {

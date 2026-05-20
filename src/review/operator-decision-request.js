@@ -67,8 +67,10 @@ export async function writeOperatorDecisionRequest({
   if (print) {
     console.log(JSON.stringify(request, null, 2))
   } else {
-    console.log(`operator decision request: ${output}`)
-    console.log(`requestKind: ${request.requestKind}`)
+    console.log(formatDecisionRequestSummary(request, output))
+    if (request.nextActions.length > 0) {
+      console.log(`nextAction: ${request.nextActions[0]}`)
+    }
   }
 
   return {
@@ -137,6 +139,15 @@ export function createOperatorDecisionRequest({
 
   validateRequiredRecord(request)
   return request
+}
+
+function formatDecisionRequestSummary(request, output) {
+  return [
+    `operator decision request: ${request.requestKind}`,
+    `status=${request.status}`,
+    `decisions=${request.requestedDecisionTypes.join(',')}`,
+    `output=${output}`
+  ].join(' | ')
 }
 
 if (process.argv[1] === modulePath) {
