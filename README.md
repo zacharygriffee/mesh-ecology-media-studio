@@ -343,6 +343,9 @@ live doctrine.
 Per-asset health explanations now make unhealthy accepted assets and stale
 production descriptors visible in existing health, inspection, handoff, and
 cross-project operator summaries without adding a new artifact family.
+The command surface inventory maps compact command output, machine-readable
+artifact output, JSON stdout support, stable refs, and known churn posture for
+current operational commands.
 
 ## Start Here
 
@@ -380,3 +383,4 @@ cross-project operator summaries without adding a new artifact family.
 - [docs/38-repo-family-alignment.md](docs/38-repo-family-alignment.md)
 - [docs/39-operation-candidate-and-rule-resolution.md](docs/39-operation-candidate-and-rule-resolution.md)
 - [docs/40-repl-posture-and-control-surface-target.md](docs/40-repl-posture-and-control-surface-target.md)
+- [docs/41-command-surface-inventory.md](docs/41-command-surface-inventory.md)

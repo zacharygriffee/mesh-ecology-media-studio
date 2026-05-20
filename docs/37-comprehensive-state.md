@@ -341,6 +341,13 @@ production descriptor needing regeneration.
 The cross-project fixture aggregates unhealthy project handoff posture through
 an explicit input list. It does not discover projects.
 
+## Command Surface Inventory
+
+The current command surface map lives at
+[Command Surface Inventory](41-command-surface-inventory.md). It tracks compact
+human output, machine-readable local artifacts, JSON stdout support, stable
+refs, and known churn posture for operational commands.
+
 ## Current Verification Baseline
 
 The expected baseline is:

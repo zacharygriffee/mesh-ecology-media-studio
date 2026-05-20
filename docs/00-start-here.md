@@ -43,6 +43,7 @@ Read in this order:
 35. [Operation Candidate And Rule Resolution](39-operation-candidate-and-rule-resolution.md)
 36. [Edge Mediation Handoff Semantics](40-edge-mediation-handoff-semantics.md)
 37. [REPL Posture And Control-Surface Target](40-repl-posture-and-control-surface-target.md)
+38. [Command Surface Inventory](41-command-surface-inventory.md)
 
 The first executable path is:
 
@@ -156,6 +157,8 @@ operator-loop contracts rather than Edge REPL command text or transcript state.
 For current Edge app-facing integration posture, use
 `../mesh-ecology-edge/docs/app-facing-seams.md`; old Edge phase docs are history
 unless a current posture doc explicitly points at them.
+For a compact map of command outputs, JSON modes, ref posture, and fixture
+churn, read [Command Surface Inventory](41-command-surface-inventory.md).
 
 Phase 2 hardened the local wedge with a local run manifest, artifact-kind
 registry, and modest malformed-record checks. Phase 3 defines the local project

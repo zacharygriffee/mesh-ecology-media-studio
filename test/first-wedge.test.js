@@ -1504,6 +1504,68 @@ test('local Edge seam artifacts correlate by project refs', async () => {
   assert.equal(validateRequiredRecord(requestResult.request), true)
 })
 
+test('inspection and compatibility bundles include optional operator source refs when regenerated', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await writeByteDescriptorProposals({ projectDir: dir })
+  await writeLocalLayerResourceRefCandidates({ projectDir: dir })
+  await writeProductionRecordsFromCard({ projectDir: dir })
+  await writeRuleResolutionExample({ projectDir: dir, createdAt: '2026-05-19T00:00:00.000Z' })
+  await writeProjectHealth({ projectDir: dir, summary: true })
+  await inspectLocalRun({ projectDir: dir })
+  await writeControlSurfaceProjection({ projectDir: dir })
+  await writeEdgeCompatibilityBundle({ projectDir: dir })
+  await writeOperatorPacketIndex({ projectDir: dir })
+  await writeEdgeHandoffCandidate({ projectDir: dir })
+  await writeOperatorDecisionRequest({ projectDir: dir })
+  const compatibilityResult = await writeEdgeCompatibilityBundle({ projectDir: dir })
+  const inspectionResult = await inspectLocalRun({ projectDir: dir })
+  const exportResult = await exportInspectionBundle({
+    projectDir: dir,
+    packet: inspectionResult.output,
+    outputDir: 'records/exports/bundles/full-local-edge-path'
+  })
+
+  const compatibilitySchemas = new Set(compatibilityResult.bundle.studioSourceRefs.map((ref) => ref.schema))
+  for (const schema of [
+    'media.project_health.local.v1',
+    'media.operator_packet_index.local.v1',
+    'media.edge_handoff_candidate.local.v1',
+    'media.operator_decision_request.local.v1',
+    'media.rule_resolution_trace.local.v1',
+    'media.byte_descriptor_proposal.local.v1',
+    'media.local_layer_resource_ref_candidate.local.v1',
+    'media.production_descriptor.local.v1'
+  ]) {
+    assert.ok(compatibilitySchemas.has(schema), `compatibility bundle missing ${schema}`)
+  }
+
+  const exportedSchemas = new Set(exportResult.manifest.includedRecordRefs.map((ref) => ref.schema))
+  for (const schema of [
+    'media.edge_inspection_packet.local.v1',
+    'media.project_health.local.v1',
+    'media.operator_packet_index.local.v1',
+    'media.edge_handoff_candidate.local.v1',
+    'media.operator_decision_request.local.v1',
+    'media.rule_resolution_trace.local.v1',
+    'media.byte_descriptor_proposal.local.v1',
+    'media.local_layer_resource_ref_candidate.local.v1',
+    'media.production_descriptor.local.v1'
+  ]) {
+    assert.ok(exportedSchemas.has(schema), `export bundle missing ${schema}`)
+  }
+
+  assert.equal(exportResult.manifest.materializationProof, false)
+  assert.equal(exportResult.manifest.meshTruth, false)
+  assert.equal(validateRequiredRecord(compatibilityResult.bundle), true)
+  assert.equal(validateRequiredRecord(inspectionResult.packet), true)
+  assert.equal(validateRequiredRecord(exportResult.manifest), true)
+})
+
 test('Edge handoff diagnosis explains stale production descriptors', async () => {
   const dir = await createFixtureProject()
   await runFirstWedge({
