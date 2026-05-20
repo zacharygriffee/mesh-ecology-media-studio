@@ -43,6 +43,7 @@ export async function createMediaSummary({
   const placementClasses = countBy(assetRecords, (record) => record.localRef?.placementClass ?? 'unknown')
   const lifecycleStates = countBy(assetRecords, (record) => record.provenance?.lifecycle?.state ?? 'unknown')
   const derivativeKinds = countBy(derivativeRecords, (record) => record.derivativeKind ?? 'unknown')
+  const generatedCandidates = summarizeGeneratedCandidates(assetRecords, records)
   const derivativeReadiness = status.mediaDerivativeReadiness
   const attentionRows = derivativeReadiness.assetExplanations
     .filter((entry) => entry.state !== 'ready-for-local-inspection')
@@ -94,6 +95,7 @@ export async function createMediaSummary({
         unknown: derivativeKinds.unknown ?? 0
       }
     },
+    generatedCandidates,
     identity: {
       assetIdPosture: 'compatibility descriptor id',
       contentId: 'byte sameness',
@@ -151,6 +153,13 @@ function printMediaSummary(summary) {
     `failed=${summary.metadataProbe.failed}`
   ].join(' | '))
   console.log([
+    `generated candidates: total=${summary.generatedCandidates.total}`,
+    `reviewed=${summary.generatedCandidates.reviewed}`,
+    `pending=${summary.generatedCandidates.pendingReview}`,
+    `promotedAccepted=${summary.generatedCandidates.promotedAccepted}`,
+    `promotedRejected=${summary.generatedCandidates.promotedRejected}`
+  ].join(' | '))
+  console.log([
     `identity: byteContent=${summary.identity.byteContent.coveredContentIds}/${summary.identity.byteContent.expectedContentIds}`,
     `resourceSituations=${summary.identity.resourceSituations.coveredSituationPlacements}/${summary.identity.resourceSituations.expectedSituationPlacements}`
   ].join(' | '))
@@ -158,8 +167,76 @@ function printMediaSummary(summary) {
   for (const row of summary.derivativeReadiness.attentionRows) {
     console.log(`attention: ${row.path} | issues=${row.issueCodes.join(',')} | nextAction=${row.nextAction}`)
   }
+  for (const row of summary.generatedCandidates.attentionRows) {
+    console.log(`generated candidate: ${row.path} | issues=${row.issueCodes.join(',')} | nextAction=${row.nextAction}`)
+  }
 
   console.log('nonClaims: local-only; no mesh truth; no byte/materialization proof; no resource admission')
+}
+
+function summarizeGeneratedCandidates(assetRecords, records) {
+  const generated = assetRecords.filter((record) =>
+    record.localRef?.placementClass === 'media-generated' &&
+    record.source?.sourceType === 'provider-result'
+  )
+  const providerPromotions = assetRecords.filter((record) =>
+    ['media-accepted', 'media-rejected'].includes(record.localRef?.placementClass) &&
+    record.source?.sourceType === 'provider-result'
+  )
+  const decisionsByAssetId = new Map()
+
+  for (const entry of records) {
+    const record = entry.record
+    if (record.schema !== artifactKinds.mediaOperatorDecision) continue
+    const subjectId = record.subjectRef?.id
+    if (!subjectId) continue
+    const decisions = decisionsByAssetId.get(subjectId) ?? []
+    decisions.push(record)
+    decisionsByAssetId.set(subjectId, decisions)
+  }
+
+  const rows = generated.map((asset) => {
+    const decisions = decisionsByAssetId.get(asset.assetId) ?? []
+    const decisionTypes = Array.from(new Set(decisions.map((decision) => decision.decisionType).filter(Boolean))).sort()
+    const reviewed = decisions.length > 0
+
+    return {
+      assetId: asset.assetId,
+      path: asset.localRef?.path,
+      contentId: asset.contentId,
+      situationRef: asset.situationRef,
+      placementRef: asset.placementRef,
+      reviewState: reviewed ? 'reviewed-locally' : 'needs-local-review',
+      decisionTypes,
+      issueCodes: reviewed ? [] : ['missing_local_review'],
+      nextAction: reviewed
+        ? 'Promote accepted or rejected generated candidate when placement should change.'
+        : 'Run npm run review:candidates or promote the generated candidate with an explicit local decision.',
+      localOnly: true,
+      operatorGuidanceOnly: true,
+      meshTruth: false,
+      providerTruth: false,
+      publicationAuthorization: false
+    }
+  })
+  const attentionRows = rows.filter((row) => row.issueCodes.length > 0)
+
+  return {
+    total: generated.length,
+    reviewed: rows.length - attentionRows.length,
+    pendingReview: attentionRows.length,
+    acceptedDecisions: rows.filter((row) => row.decisionTypes.includes('accept')).length,
+    rejectedDecisions: rows.filter((row) => row.decisionTypes.includes('reject')).length,
+    promotedAccepted: providerPromotions.filter((record) => record.localRef?.placementClass === 'media-accepted').length,
+    promotedRejected: providerPromotions.filter((record) => record.localRef?.placementClass === 'media-rejected').length,
+    rows,
+    attentionRows,
+    localOnly: true,
+    operatorGuidanceOnly: true,
+    meshTruth: false,
+    providerTruth: false,
+    publicationAuthorization: false
+  }
 }
 
 function countBy(records, classifier) {

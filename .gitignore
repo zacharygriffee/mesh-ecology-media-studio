@@ -1,6 +1,7 @@
 examples/**/out/
 examples/**/records/
 examples/**/records/exports/
+examples/venice-smoke/cards/
 examples/**/media/accepted/
 examples/**/media/rejected/
 examples/**/media/source/

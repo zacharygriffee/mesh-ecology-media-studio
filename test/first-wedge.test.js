@@ -544,6 +544,9 @@ test('provider output ingest gives generated images derivative readiness', async
   assert.deepEqual(asset.derivativeReadiness.issueCodes, ['missing_thumbnail'])
   assert.equal(asset.derivativeReadiness.materializationProof, false)
   assert.equal(before.assets.byMediaKind.image, 1)
+  assert.equal(before.generatedCandidates.total, 1)
+  assert.equal(before.generatedCandidates.pendingReview, 1)
+  assert.equal(before.generatedCandidates.attentionRows[0].issueCodes[0], 'missing_local_review')
   assert.equal(before.derivativeReadiness.evaluatedAssets, 1)
   assert.equal(before.derivativeReadiness.attentionAssets, 1)
   assert.equal(before.derivativeReadiness.attentionRows[0].path, 'media/generated/provider-generated-0.png')
@@ -554,6 +557,79 @@ test('provider output ingest gives generated images derivative readiness', async
   assert.equal(after.byteAvailabilityProof, false)
   assert.equal(after.materializationProof, false)
   assert.equal(after.resourceAdmission, false)
+})
+
+test('provider generated image can be explicitly promoted with fresh derivative readiness', async () => {
+  const dir = await createFixtureProject()
+  const card = JSON.parse(await readFile(path.join(dir, 'cards', 'card.json'), 'utf8'))
+  const generationRequest = createGenerationRequestFromCard({ card })
+  const providerResult = normalizeProviderResult({
+    generationRequest,
+    providerId: 'local-test-provider',
+    providerJobRef: {
+      kind: 'local-provider-job',
+      id: 'job-provider-promotion-test',
+      localOnly: true
+    },
+    status: 'succeeded',
+    outputRefs: [
+      {
+        kind: 'provider-output',
+        id: 'provider-output-0',
+        outputDelivery: 'inline-base64',
+        contentType: 'image/png',
+        localOnly: true,
+        providerTruth: false
+      }
+    ]
+  })
+  const providerResultRecord = 'records/provider-results/provider-generated-result.local.json'
+  await mkdir(path.join(dir, 'records', 'provider-results'), { recursive: true })
+  await writeFile(path.join(dir, providerResultRecord), `${JSON.stringify(providerResult, null, 2)}\n`)
+  const generated = await writeProviderOutputAssets({
+    projectDir: dir,
+    card,
+    generationRequest,
+    providerResult,
+    outputs: [
+      {
+        index: 0,
+        bytes: Buffer.from(onePixelPngBase64, 'base64'),
+        contentType: 'image/png',
+        extension: 'png'
+      }
+    ],
+    filenamePrefix: 'provider-generated',
+    recordPrefix: 'provider-generated',
+    sourceApiCalled: true
+  })
+  const promotion = await promoteCandidate({
+    projectDir: dir,
+    assetRecord: generated.assets[0].assetRecordRef,
+    providerResultRecord,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  const summary = await createMediaSummary({ projectDir: dir })
+
+  assert.equal(promotion.assetDescriptor.localRef.path, 'media/accepted/provider-generated-0.png')
+  assert.equal(promotion.assetDescriptor.source.apiCalled, true)
+  assertLayeredAssetIdentity(promotion.assetDescriptor, {
+    expectedPlacementClass: 'media-accepted',
+    expectedPath: 'media/accepted/provider-generated-0.png',
+    expectedRole: 'accepted'
+  })
+  assert.equal(promotion.assetDescriptor.metadataProbe.mediaKind, 'image')
+  assert.equal(promotion.assetDescriptor.metadataProbe.image.width, 1)
+  assert.deepEqual(promotion.assetDescriptor.derivativeReadiness.issueCodes, ['missing_thumbnail'])
+  assert.equal(promotion.assetDescriptor.derivativeReadiness.materializationProof, false)
+  assert.equal(promotion.review.operatorDecision.decisionType, 'accept')
+  assert.equal(summary.generatedCandidates.total, 1)
+  assert.equal(summary.generatedCandidates.promotedAccepted, 1)
+  assert.equal(summary.generatedCandidates.promotedRejected, 0)
+  assert.equal(summary.derivativeReadiness.evaluatedAssets, 2)
+  assert.equal(summary.derivativeReadiness.attentionAssets, 2)
+  assert.equal(validateRequiredRecord(promotion.assetDescriptor), true)
 })
 
 test('provider shape registry validates endpoint shape and provider shape', () => {
@@ -819,19 +895,26 @@ test('Venice live smoke command path can be tested without network by injected f
   )
   assert.equal(written.providerInput.apiKeyPresent, true)
   assert.equal(JSON.stringify(written).includes('test-key'), false)
-  assert.equal(written.generatedRecordRefs.length, 3)
+  assert.equal(written.generatedRecordRefs.length, 4)
+  assert.equal(written.generatedRecordRefs[0].id, 'cards/card.json')
   assert.equal(written.generatedAssets[0].localRef.path, 'media/generated/provider-smoke/venice-live-smoke-0.png')
   assert.equal(written.generatedAssets[0].imageMetadataRef.schema, 'media.image_metadata.local.v1')
   assert.equal(written.reviewRecords.length, 1)
   assert.equal(written.reviewRecords[0].localDecisionOnly, true)
   assert.equal(written.manifestRef.id, 'records/manifests/venice-live-smoke-manifest.local.json')
 
+  const cardRecord = JSON.parse(
+    await readFile(path.join(dir, 'cards', 'card.json'), 'utf8')
+  )
   const workPacket = JSON.parse(
     await readFile(path.join(dir, 'records', 'work-packets', 'venice-live-smoke-work-packet.local.json'), 'utf8')
   )
   const generationRequest = JSON.parse(
     await readFile(path.join(dir, 'records', 'work-packets', 'venice-live-smoke-generation-request.local.json'), 'utf8')
   )
+  assert.equal(cardRecord.schema, 'media.card.v1')
+  assert.equal(cardRecord.projectId, 'venice-smoke-project')
+  assert.equal(validateRequiredRecord(cardRecord), true)
   assert.equal(validateRequiredRecord(workPacket), true)
   assert.equal(validateRequiredRecord(generationRequest), true)
 

@@ -463,15 +463,18 @@ export async function runVeniceLiveSmoke({
   const resultRef = 'records/provider-results/venice-live-smoke-provider-result.local.json'
   const adapterRunRef = 'records/provider-results/venice-live-smoke-adapter-run.local.json'
   const failureEvidenceRef = 'records/evidence/venice-live-smoke-provider-failure-evidence.local.json'
+  const cardRef = 'cards/card.json'
   const workPacketRef = 'records/work-packets/venice-live-smoke-work-packet.local.json'
   const generationRequestRef = 'records/work-packets/venice-live-smoke-generation-request.local.json'
   assertSafeLocalPath(resultRef)
   assertSafeLocalPath(adapterRunRef)
   assertSafeLocalPath(failureEvidenceRef)
+  assertSafeLocalPath(cardRef)
   assertSafeLocalPath(workPacketRef)
   assertSafeLocalPath(generationRequestRef)
   const outputPath = path.join(projectDir, resultRef)
   const adapterRunPath = path.join(projectDir, adapterRunRef)
+  const cardPath = path.join(projectDir, cardRef)
   const workPacketPath = path.join(projectDir, workPacketRef)
   const generationRequestPath = path.join(projectDir, generationRequestRef)
   const failureEvidenceRecord = providerResult.status === 'failed'
@@ -494,6 +497,8 @@ export async function runVeniceLiveSmoke({
 
   validateRequiredRecord(workPacket)
   validateRequiredRecord(finalAdapterRun)
+  await mkdir(path.dirname(cardPath), { recursive: true })
+  await writeFile(cardPath, `${JSON.stringify(card, null, 2)}\n`)
   await mkdir(path.dirname(workPacketPath), { recursive: true })
   await writeFile(workPacketPath, `${JSON.stringify(workPacket, null, 2)}\n`)
   await writeFile(generationRequestPath, `${JSON.stringify(generationRequest, null, 2)}\n`)
@@ -525,6 +530,7 @@ export async function runVeniceLiveSmoke({
     providerResult,
     adapterRun: finalAdapterRun,
     generatedRecordRefs: [
+      makeRef('media-card', cardRef, card.schema),
       makeRef('media-work-packet', workPacketRef, workPacket.schema),
       makeRef('media-generation-request', generationRequestRef, generationRequest.schema),
       makeRef('media-provider-adapter-run', adapterRunRef, finalAdapterRun.schema),

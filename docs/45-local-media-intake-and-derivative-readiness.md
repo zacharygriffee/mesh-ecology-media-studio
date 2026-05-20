@@ -161,14 +161,31 @@ npm run --silent media:summary -- --project-dir examples/card-to-candidate --pri
 
 The compact output shows asset counts by media kind, derivative readiness,
 thumbnail/proxy/waveform counts, metadata probe attention, byte content posture,
-resource situation posture, and attention rows only when attention is needed.
-`--print` emits machine-readable JSON for agents and future control surfaces.
-Use `npm run --silent` when redirecting JSON stdout so npm's script banner is
-not included.
+resource situation posture, provider-generated candidate review/promotion
+posture, and attention rows only when attention is needed. `--print` emits
+machine-readable JSON for agents and future control surfaces. Use
+`npm run --silent` when redirecting JSON stdout so npm's script banner is not
+included.
 
 The summary reads local records and refreshes the project status snapshot. It
 does not generate derivatives, call providers, call Edge, publish to mesh, or
 claim byte/materialization proof.
+
+## Generated Candidate Promotion
+
+Provider-generated image candidates land under `media/generated/` first.
+Use `promote:candidate` to copy one into `media/accepted/` or
+`media/rejected/` with an explicit local decision:
+
+```bash
+npm run promote:candidate -- --project-dir examples/venice-smoke --asset-record records/assets/venice-live-smoke-asset-0.local.json --provider-result-record records/provider-results/venice-live-smoke-provider-result.local.json --decision accepted
+```
+
+Promotion does not rerun provider work. Promoted image descriptors get fresh
+metadata probe and derivative readiness for the new placement, because
+derivative identity is descriptor/situation/placement-specific. A thumbnail
+receipt for the generated candidate does not automatically satisfy the promoted
+accepted/rejected placement.
 
 ## Non-Claims
 

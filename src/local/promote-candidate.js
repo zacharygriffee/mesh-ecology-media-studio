@@ -20,6 +20,10 @@ import {
 } from './project-layout.js'
 import { writeLocalAssetReview } from '../review/local-review.js'
 import { writeLocalImageMetadataRecord } from '../assets/image-metadata.js'
+import {
+  createDerivativeReadinessForMedia,
+  probeLocalMediaMetadata
+} from '../assets/media-metadata.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 
@@ -105,6 +109,17 @@ export async function promoteCandidate({
     hash,
     size: fileStat.size
   })
+  const metadataProbe = await probeLocalMediaMetadata({
+    filePath: finalPath,
+    localRef,
+    contentType: originalAsset.contentType,
+    hash,
+    size: fileStat.size
+  })
+  const derivativeReadiness = createDerivativeReadinessForMedia({
+    contentType: originalAsset.contentType,
+    metadataProbe
+  })
   const workPacket = createWorkPacket({ card, operatorRef })
   const lifecycle = createAssetLifecycle({
     assetId: `asset-${hash.value.slice(0, 16)}`,
@@ -126,6 +141,8 @@ export async function promoteCandidate({
     localPath: finalRelativePath,
     localRef,
     lifecycle,
+    metadataProbe,
+    derivativeReadiness,
     sourceApiCalled: originalAsset.source?.apiCalled === true,
     transitionSummary: `local candidate promoted to ${decision} placement without rerunning provider work`
   })

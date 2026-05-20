@@ -154,9 +154,9 @@ VENICE_LIVE=1 npm run provider:venice:smoke
 The command reads `VENICE_INFERENCE_KEY` from the environment or ignored `.env`,
 uses a constrained image request, writes decoded bytes under
 `media/generated/provider-smoke/`, and records only local non-truth-bearing
-provider result, asset descriptor, review evidence, readiness, and operator
-decision records. Generated image descriptors also carry local metadata probe
-and derivative readiness posture so `media:summary` and
+card, provider result, asset descriptor, review evidence, readiness, and
+operator decision records. Generated image descriptors also carry local
+metadata probe and derivative readiness posture so `media:summary` and
 `derivatives:thumbnail` can inspect them like other imported image assets.
 
 Export an existing Venice smoke run for local Edge-readable inspection without
@@ -236,6 +236,9 @@ npm run media:summary -- --project-dir examples/card-to-candidate
 npm run media:summary -- --project-dir examples/card-to-candidate --print
 npm run --silent media:summary -- --project-dir examples/card-to-candidate --print
 ```
+
+The summary also reports provider-generated candidates, local review posture,
+and accepted/rejected promoted placements when those records exist.
 
 Compare local candidate assets and record a local selection:
 
