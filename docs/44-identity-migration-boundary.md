@@ -88,6 +88,13 @@ path, placement class, and lifecycle state.
 Use these refs when local behavior depends on role or placement, such as
 accepted candidate versus reference asset.
 
+Spine's Virtualia placement posture adds broader family vocabulary such as
+`sourceId`, `originLocusId`, `dreamRefId`, `emergenceLocusId`,
+`emergencePathId`, `placementId`, and `projectionId`. Those terms are
+directional alignment vocabulary for future lifting/projection work. They do
+not change the current Studio identity boundary and are not active Studio
+schemas in this pass.
+
 ## What resourceRefCandidateId Means
 
 `resourceRefCandidateId` identifies a proposed local-layer resource subject for
@@ -141,6 +148,10 @@ deliberate schema/descriptor-id transition.
 
 Do not remove `assetId` compatibility refs casually. Existing records, schemas,
 fixtures, and local tools still expect them.
+
+Do not use Spine's Virtualia locus/path/projection vocabulary as an excuse to
+add runtime coupling, schema migration, or Virtualia integration before a
+specific promotion packet requires it.
 
 ## Guardrails
 

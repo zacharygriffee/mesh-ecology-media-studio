@@ -185,7 +185,11 @@ For the identity split behind future byte/resource repair work, read
 [Media Identity And Storage Posture](42-media-identity-and-storage-posture.md).
 It applies Spine's family-wide
 `../mesh-ecology-spine/docs/identity-layering-and-storage-posture.md` posture
-to Studio media assets.
+and `../mesh-ecology-spine/docs/virtualia-placement-and-emergence-posture.md`
+posture to Studio media assets. Studio uses `situationRef` and `placementRef`
+for current media identity pressure, while Spine's `sourceId`, locus, path, and
+projection terms remain directional vocabulary rather than active Studio
+schemas.
 For the current hybrid identity boundary, read
 [Identity Migration Boundary](44-identity-migration-boundary.md): `assetId`
 remains content-derived for compatibility, `contentId` keys byte sameness, and
@@ -275,3 +279,6 @@ must remain distinct. `placementRef` is now documented as a concrete subtype of
 the broader `situationRef` concept. The shared-basis identity fixture shows one
 content basis diverging into accepted and reference situations without making
 one resource candidate satisfy both.
+Spine's Virtualia placement posture adds family-level locus/path/projection
+vocabulary. Studio aligns to it without implementing Virtualia schemas,
+runtime coupling, or a claim that media projections are reality by themselves.

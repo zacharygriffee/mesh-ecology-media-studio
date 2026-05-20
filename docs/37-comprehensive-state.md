@@ -396,6 +396,12 @@ should be descriptor/situation/placement-oriented, and causal records should
 link the layers without collapsing them. This now ties directly to Spine's
 family-wide
 `../mesh-ecology-spine/docs/identity-layering-and-storage-posture.md` posture.
+It also aligns with
+`../mesh-ecology-spine/docs/virtualia-placement-and-emergence-posture.md`:
+Studio owns media-specific projection and asset workflows, while Virtualia is
+an emergent cross-repo continuum. Spine's `sourceId`, locus, path, and
+projection vocabulary informs future Studio promotion work but is not active
+schema or runtime behavior here.
 `examples/identity-fixtures/shared-basis-divergent-situations/` is the current
 fixture pressure: accepted and reference copies share content/origin/basis but
 use distinct situation, placement, and resource candidate identities.

@@ -80,6 +80,13 @@ identity, byte publication identity, descriptor identity, situation/placement
 identity, resource identity, causal referent identity, materialization identity,
 and authority state must remain distinct.
 
+Spine's Virtualia placement posture adds directional family vocabulary for
+`sourceId`, `originLocusId`, `dreamRefId`, `emergenceLocusId`,
+`emergencePathId`, `placementId`, and `projectionId`. Studio treats these as
+alignment terms, not active schemas. Studio may surface Virtualia-compatible
+media/projection pressure later, but Studio media assets and projections are
+not Virtualia reality by themselves.
+
 Studio is currently in a deliberate hybrid identity compatibility state. The
 active `assetId` field remains content-derived for compatibility, while
 `contentId` keys byte sameness and descriptor/situation/placement refs key
@@ -372,6 +379,9 @@ Phase 29 aligns Studio with the repo family: Spine rule-book and projection
 posture, Edge operator seams, Packs control-surface doctrine, Bytes references,
 causal-substrate continuity, Platform activation boundaries, mesh-v0-2 actor
 hygiene, Identity authority, and Testbed proof scope.
+Studio now also points at Spine's Virtualia placement posture: Studio owns
+media-specific projection and asset workflows, while Virtualia remains an
+emergent cross-repo continuum and not a Studio runtime target.
 Phase 39 adds local media operation candidates and rule-resolution traces so
 Studio can describe `auto_prepare`, `ask_operator`, and `forbid` mediation
 pressure without executing media operations or calling Edge.

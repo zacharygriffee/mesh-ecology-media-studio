@@ -17,11 +17,12 @@ universal ontology layer. `situationRef` is the broader observer/context/surface
 position of a referent-like artifact. `placementRef` is one concrete subtype of
 `situationRef`, usually path, container, slot, or lifecycle based.
 
-Spine has now adopted this as family-wide doctrine in
-`../mesh-ecology-spine/docs/identity-layering-and-storage-posture.md`
-(`5bafd47 Add identity layering storage posture`). Studio is the media-domain
-application and discovery evidence for that posture, not the owner of the
-family-wide rule.
+Spine has adopted this as family-wide doctrine in
+`../mesh-ecology-spine/docs/identity-layering-and-storage-posture.md` and now
+extends the placement/emergence vocabulary in
+`../mesh-ecology-spine/docs/virtualia-placement-and-emergence-posture.md`.
+Studio is the media-domain application and discovery evidence for that posture,
+not the owner of the family-wide rule.
 
 The family rule from Spine is:
 
@@ -156,6 +157,42 @@ Non-claims:
 - `materializationRef` is not ratification.
 - causal refs are not storage.
 - Edge inspection is not approval.
+
+## Spine Virtualia Placement Alignment
+
+Spine's Virtualia placement posture introduces directional family vocabulary:
+
+- `sourceId`: real-world source evidence identity.
+- `originLocusId`: where the operator entered the local dream-domain/context.
+- `dreamRefId`: operator-local referent identity in the local dream-domain.
+- `emergenceLocusId`: rule-book-governed place-of-becoming.
+- `emergencePathId`: outward path through local, segmented, or shared domains.
+- `placementId`: a specific placement event or state.
+- `projectionId`: observer-visible presentation or rendering.
+
+Studio should treat these as alignment terms, not active schemas in this repo.
+Current Studio `situationRef` and `placementRef` records remain the practical
+Mode 0 media identity pressure. If Studio later lifts media assets toward
+Virtualia-compatible domains, these Spine terms can help map source evidence,
+loci, paths, placements, and projections without collapsing identity layers.
+
+Studio may surface Virtualia-compatible media or projection pressure, but Studio
+media assets, thumbnails, candidates, production descriptors, and projections
+are not reality by themselves. They require explicit source evidence,
+rule-book context, causal/referent posture, and admission or authority lanes
+before any broader domain can treat them as more than local media records.
+
+Spine also names identity modes:
+
+- `referent-born`: asset identity survives movement across loci.
+- `place-born`: asset identity derives from a specific emergence locus.
+- `rulebook-selected`: the domain or asset rule book chooses the identity mode.
+
+Studio has not selected a universal identity mode for media assets. Current
+records preserve compatibility through `assetId`, use `contentId` for byte
+sameness, and use descriptor/situation/placement resource subjects for local
+resource posture. A future descriptor-id transition should make the selected
+identity mode explicit per asset kind.
 
 ## Byte And Resource Posture
 
