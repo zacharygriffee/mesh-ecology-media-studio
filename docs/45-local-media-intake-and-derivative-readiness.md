@@ -75,6 +75,10 @@ records `media.derivative.local.v1` receipts under `records/assets/`. The
 receipt lets status and health summaries clear `missing_thumbnail` for that
 specific descriptor/situation/placement when the derivative is current.
 
+Thumbnail receipts use descriptor/situation/placement identity, not `assetId`
+alone. Same-content assets in different situations may share `contentId`, but
+they receive distinct derivative subject refs and distinct thumbnail receipts.
+
 This is still local derivative work. A generated thumbnail is not byte
 availability proof, materialization proof, resource admission, publication
 authorization, or mesh truth.
@@ -135,6 +139,10 @@ media-asset-derivative-readiness: media/source/source-pixel.png | state=needs-lo
 `repair:local-posture` treats derivative readiness issues as non-blocking
 skips. Thumbnail generation is handled by `npm run derivatives:thumbnail`;
 proxy and waveform generation remain deferred.
+
+When a thumbnail receipt satisfies readiness, `status:project` prints a compact
+`derivative ready` row with the local derivative ref. That row is operator
+guidance only.
 
 ## Non-Claims
 

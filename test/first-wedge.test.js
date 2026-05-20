@@ -1148,6 +1148,12 @@ test('thumbnail derivative generation clears image thumbnail readiness locally',
   assert.equal(result.generated.length, 1)
   assert.equal(derivative.schema, 'media.derivative.local.v1')
   assert.equal(derivative.derivativeKind, 'thumbnail')
+  assert.equal(derivative.derivativeSubjectRef.kind, 'media-derivative-subject')
+  assert.equal(derivative.derivativeIdentity.derivativeSubjectRef.id, derivative.derivativeSubjectRef.id)
+  assert.equal(derivative.derivativeIdentity.keyKind, 'derivativeKind+contentId+assetDescriptorRef+situationRef+placementRef+localPath')
+  assert.equal(derivative.sourceContentRef.id, derivative.derivativeIdentity.sourceContentId)
+  assert.equal(derivative.sourceSituationRef.id, derivative.derivativeIdentity.sourceSituationId)
+  assert.equal(derivative.sourcePlacementRef.id, derivative.derivativeIdentity.sourcePlacementId)
   assert.equal(derivative.toolRef.tool, 'sharp')
   assert.equal(derivative.output.width, 1)
   assert.equal(derivative.output.height, 1)
@@ -1160,7 +1166,51 @@ test('thumbnail derivative generation clears image thumbnail readiness locally',
   assert.equal(after.status.mediaDerivativeReadiness.attentionAssets, 0)
   assert.deepEqual(after.status.mediaDerivativeReadiness.assetExplanations[0].issueCodes, [])
   assert.equal(after.status.mediaDerivativeReadiness.assetExplanations[0].derivativeRefs.length, 1)
+  assert.equal(after.status.mediaDerivativeReadiness.assetExplanations[0].satisfiedDerivativeKinds[0], 'thumbnail')
+  assert.equal(after.status.mediaDerivativeReadiness.assetExplanations[0].derivativeSubjectRefs[0].id, derivative.derivativeSubjectRef.id)
+  assert.match(after.status.mediaDerivativeReadiness.assetExplanations[0].summary, /thumbnail receipt/)
   assert.equal(after.status.mediaDerivativeReadiness.assetExplanations[0].nonClaims.materializationProof, false)
+})
+
+test('thumbnail derivative identity stays situation specific for same content', async () => {
+  const dir = await createFixtureProject()
+  await writeFile(
+    path.join(dir, 'media', 'generated', 'pixel.png'),
+    Buffer.from(onePixelPngBase64, 'base64')
+  )
+
+  const source = await importMediaAsset({
+    projectDir: dir,
+    source: 'media/generated/pixel.png',
+    placement: 'source',
+    filename: 'source-pixel.png',
+    operatorRef: 'operator-test',
+    ffprobe: false
+  })
+  const reference = await importMediaAsset({
+    projectDir: dir,
+    source: 'media/generated/pixel.png',
+    placement: 'reference',
+    filename: 'reference-pixel.png',
+    operatorRef: 'operator-test',
+    ffprobe: false
+  })
+  const result = await generateThumbnailDerivatives({ projectDir: dir, maxSize: 64 })
+  const status = await writeProjectStatus({ projectDir: dir, quiet: true })
+
+  assert.equal(source.assetDescriptor.contentId, reference.assetDescriptor.contentId)
+  assert.notEqual(source.assetDescriptor.situationRef.id, reference.assetDescriptor.situationRef.id)
+  assert.equal(result.generated.length, 2)
+  assert.equal(new Set(result.generated.map((record) => record.sourceContentRef.id)).size, 1)
+  assert.equal(new Set(result.generated.map((record) => record.derivativeSubjectRef.id)).size, 2)
+  assert.equal(new Set(result.generated.map((record) => record.derivativeId)).size, 2)
+  assert.equal(status.status.mediaDerivativeReadiness.readyAssets, 2)
+  assert.equal(status.status.mediaDerivativeReadiness.attentionAssets, 0)
+  assert.deepEqual(status.status.mediaDerivativeReadiness.assetExplanations.map((entry) => entry.satisfiedDerivativeKinds[0]), [
+    'thumbnail',
+    'thumbnail'
+  ])
+  assert.equal(status.status.mediaDerivativeReadiness.assetExplanations.every((entry) => entry.nonClaims.materializationProof === false), true)
 })
 
 test('ffprobe posture normalizes unavailable failed and available results without real video', async () => {

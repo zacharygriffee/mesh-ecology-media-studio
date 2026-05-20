@@ -220,6 +220,7 @@ async function readRecords(root) {
       validateRequiredRecord(record)
     } catch (error) {
       if (relativePath.startsWith('records/exports/')) continue
+      if (record.schema === artifactKinds.mediaDerivativeLocal) continue
       throw error
     }
     entries.push({

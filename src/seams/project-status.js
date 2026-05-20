@@ -6,6 +6,12 @@ import { artifactKinds } from '../contracts/artifact-kinds.js'
 import { makeRef, nowIso } from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
+import {
+  createDerivativeSubjectRefForAsset,
+  createDerivativeSubjectRefForRecord,
+  derivativeSubjectKeyForAsset,
+  derivativeSubjectKeyForRecord
+} from '../assets/derivative-identity.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultOutput = 'records/manifests/media-project-status.local.json'
@@ -101,6 +107,9 @@ export async function writeProjectStatus({
     }
     for (const asset of mediaDerivativeReadiness.assetExplanations.filter((entry) => entry.state !== 'ready-for-local-inspection')) {
       console.log(`derivative guidance: ${asset.path} | issues=${asset.issueCodes.join(',')} | nextAction=${asset.nextAction}`)
+    }
+    for (const asset of mediaDerivativeReadiness.assetExplanations.filter((entry) => entry.state === 'ready-for-local-inspection' && entry.derivativeRefs.length > 0)) {
+      console.log(`derivative ready: ${asset.path} | derivatives=${asset.satisfiedDerivativeKinds.join(',')} | refs=${asset.derivativeRefs.map((ref) => ref.path).join(',')}`)
     }
   }
 
@@ -360,7 +369,13 @@ function summarizeMediaDerivativeReadiness(records) {
 function derivativeHealthExplanation(entry, derivativeIndex) {
   const readiness = entry.record.derivativeReadiness ?? {}
   const originalIssueCodes = Array.isArray(readiness.issueCodes) ? readiness.issueCodes : []
+  const expectedDerivativeSubjectRefs = originalIssueCodes
+    .map((code) => derivativeKindForIssue(code))
+    .filter(Boolean)
+    .map((derivativeKind) => createDerivativeSubjectRefForAsset(entry.record, derivativeKind))
   const derivativeRefs = []
+  const derivativeSubjectRefs = []
+  const satisfiedDerivativeKinds = []
   const issueCodes = originalIssueCodes.filter((code) => {
     const derivativeKind = derivativeKindForIssue(code)
     if (!derivativeKind) return true
@@ -371,6 +386,8 @@ function derivativeHealthExplanation(entry, derivativeIndex) {
       path: derivative.derivativeLocalRef?.path,
       localOnly: true
     })
+    derivativeSubjectRefs.push(derivative.derivativeSubjectRef ?? createDerivativeSubjectRefForRecord(derivative))
+    satisfiedDerivativeKinds.push(derivativeKind)
     return false
   })
   const pathRef = entry.record.localRef?.path ?? entry.path
@@ -387,6 +404,9 @@ function derivativeHealthExplanation(entry, derivativeIndex) {
     mediaKind: readiness.mediaKind ?? entry.record.metadataProbe?.mediaKind ?? 'unknown',
     metadataProbeState: readiness.metadataProbeState ?? entry.record.metadataProbe?.metadataProbeState ?? 'unknown',
     requiredDerivativeKinds: readiness.requiredDerivativeKinds ?? [],
+    expectedDerivativeSubjectRefs,
+    derivativeSubjectRefs,
+    satisfiedDerivativeKinds,
     derivativeRefs,
     state,
     healthState: state,
@@ -395,9 +415,12 @@ function derivativeHealthExplanation(entry, derivativeIndex) {
       ? ['local derivative readiness has no attention issues']
       : issueCodes.map((code) => derivativeReason(code)),
     nextAction: readiness.nextAction ?? nextDerivativeAction(issueCodes),
-    summary: issueCodes.length === 0
-      ? `${pathRef} has no derivative readiness attention issues.`
-      : `${pathRef} needs local derivative attention: ${issueCodes.join(', ')}.`,
+    summary: derivativeSummary({
+      pathRef,
+      issueCodes,
+      satisfiedDerivativeKinds,
+      derivativeRefs
+    }),
     sourceRefs: [
       {
         ...makeRef('media-asset-descriptor', entry.record.assetId, entry.record.schema),
@@ -441,26 +464,21 @@ function indexDerivativesBySubject(records) {
   return index
 }
 
-function derivativeSubjectKeyForAsset(asset, derivativeKind) {
-  return [
-    derivativeKind,
-    contentIdForRecord(asset),
-    asset.assetDescriptorRef?.id ?? asset.assetId,
-    asset.situationRef?.id ?? 'missing-situation',
-    asset.placementRef?.id ?? 'missing-placement',
-    asset.localRef?.path ?? 'missing-path'
-  ].join('|')
-}
+function derivativeSummary({
+  pathRef,
+  issueCodes,
+  satisfiedDerivativeKinds,
+  derivativeRefs
+}) {
+  if (issueCodes.length > 0) {
+    return `${pathRef} needs local derivative attention: ${issueCodes.join(', ')}.`
+  }
 
-function derivativeSubjectKeyForRecord(record) {
-  return [
-    record.derivativeKind,
-    record.sourceContentRef?.id,
-    record.sourceAssetDescriptorRef?.id ?? record.sourceAssetRef?.id,
-    record.sourceSituationRef?.id ?? 'missing-situation',
-    record.sourcePlacementRef?.id ?? 'missing-placement',
-    record.sourceLocalRef?.path ?? 'missing-path'
-  ].join('|')
+  if (derivativeRefs.length > 0) {
+    return `${pathRef} has local derivative readiness satisfied by ${satisfiedDerivativeKinds.join(', ')} receipt(s).`
+  }
+
+  return `${pathRef} has no derivative readiness attention issues.`
 }
 
 function derivativeReason(code) {
@@ -771,6 +789,7 @@ async function readProjectRecords(root) {
       validateRequiredRecord(record)
     } catch (error) {
       if (relativePath.startsWith('records/exports/')) continue
+      if (record.schema === artifactKinds.mediaDerivativeLocal) continue
       throw error
     }
     records.push({

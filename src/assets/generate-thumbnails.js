@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto'
 import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -15,6 +14,13 @@ import {
   projectRelativePath
 } from '../local/project-layout.js'
 import { sha256File } from './media-metadata.js'
+import {
+  createDerivativeSubjectRefForAsset,
+  derivativeIdentityForAsset,
+  derivativeSubjectKeyForAsset,
+  derivativeSubjectKeyForRecord,
+  derivativeSubjectTokenForAsset
+} from './derivative-identity.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultMaxSize = 320
@@ -73,6 +79,7 @@ export async function generateThumbnailDerivatives({
     if (!force && existingThumbnails.has(subjectKey)) {
       skipped.push({
         assetId: entry.record.assetId,
+        derivativeSubjectRef: createDerivativeSubjectRefForAsset(entry.record, 'thumbnail'),
         reason: 'thumbnail derivative already exists',
         localOnly: true
       })
@@ -91,7 +98,7 @@ export async function generateThumbnailDerivatives({
 
   console.log(`thumbnail derivatives: generated=${generated.length} skipped=${skipped.length}`)
   for (const record of generated) {
-    console.log(`thumbnail: ${record.sourceLocalRef.path} -> ${record.derivativeLocalRef.path}`)
+    console.log(`thumbnail: ${record.sourceLocalRef.path} -> ${record.derivativeLocalRef.path} | subject=${record.derivativeSubjectRef.id}`)
   }
 
   return {
@@ -112,7 +119,8 @@ async function createThumbnailDerivative({
   createdAt
 }) {
   const asset = assetEntry.record
-  const token = derivativeToken(asset, 'thumbnail')
+  const token = derivativeSubjectTokenForAsset(asset, 'thumbnail')
+  const derivativeIdentity = derivativeIdentityForAsset(asset, 'thumbnail')
   const targetRef = projectRelativePath(placementClasses.mediaThumbnail, `thumbnail-${token}.png`)
   const sourcePath = path.join(root, asset.localRef.path)
   const targetPath = path.join(root, targetRef)
@@ -144,9 +152,11 @@ async function createThumbnailDerivative({
     derivativeId,
     projectId: asset.projectId,
     derivativeKind: 'thumbnail',
+    derivativeSubjectRef: derivativeIdentity.derivativeSubjectRef,
+    derivativeIdentity,
     sourceAssetRef: makeRef('media-asset-descriptor', asset.assetId, artifactKinds.mediaAssetDescriptor),
     sourceAssetDescriptorRef: asset.assetDescriptorRef,
-    sourceContentRef: makeRef('media-content', asset.contentId),
+    sourceContentRef: makeRef('media-content', derivativeIdentity.sourceContentId),
     sourceSituationRef: asset.situationRef,
     sourcePlacementRef: asset.placementRef,
     sourceLocalRef: asset.localRef,
@@ -195,43 +205,6 @@ function imageThumbnailCandidate(record) {
     record.derivativeReadiness.issueCodes?.includes('missing_thumbnail')
 }
 
-function derivativeToken(asset, derivativeKind) {
-  return createHash('sha256')
-    .update([
-      asset.projectId,
-      derivativeKind,
-      asset.contentId,
-      asset.assetDescriptorRef?.id ?? asset.assetId,
-      asset.situationRef?.id ?? 'missing-situation',
-      asset.placementRef?.id ?? 'missing-placement',
-      asset.localRef?.path ?? 'missing-path'
-    ].join('|'))
-    .digest('hex')
-    .slice(0, 16)
-}
-
-function derivativeSubjectKeyForAsset(asset, derivativeKind) {
-  return [
-    derivativeKind,
-    asset.contentId,
-    asset.assetDescriptorRef?.id ?? asset.assetId,
-    asset.situationRef?.id ?? 'missing-situation',
-    asset.placementRef?.id ?? 'missing-placement',
-    asset.localRef?.path ?? 'missing-path'
-  ].join('|')
-}
-
-function derivativeSubjectKeyForRecord(record) {
-  return [
-    record.derivativeKind,
-    record.sourceContentRef?.id,
-    record.sourceAssetDescriptorRef?.id ?? record.sourceAssetRef?.id,
-    record.sourceSituationRef?.id ?? 'missing-situation',
-    record.sourcePlacementRef?.id ?? 'missing-placement',
-    record.sourceLocalRef?.path ?? 'missing-path'
-  ].join('|')
-}
-
 async function readProjectRecords(root) {
   const files = await listJsonFiles(path.join(root, 'records'))
   const records = []
@@ -240,7 +213,12 @@ async function readProjectRecords(root) {
     const relativePath = path.relative(root, file).split(path.sep).join('/')
     const raw = JSON.parse(await readFile(file, 'utf8'))
     if (!raw.schema) continue
-    validateRequiredRecord(raw)
+    try {
+      validateRequiredRecord(raw)
+    } catch (error) {
+      if (raw.schema === artifactKinds.mediaDerivativeLocal) continue
+      throw error
+    }
     records.push({
       path: relativePath,
       record: raw

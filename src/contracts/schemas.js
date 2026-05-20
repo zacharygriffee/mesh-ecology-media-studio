@@ -471,8 +471,13 @@ export const requiredFields = {
     'derivativeId',
     'projectId',
     'derivativeKind',
+    'derivativeSubjectRef',
+    'derivativeIdentity',
     'sourceAssetRef',
+    'sourceAssetDescriptorRef',
     'sourceContentRef',
+    'sourceSituationRef',
+    'sourcePlacementRef',
     'sourceLocalRef',
     'derivativeLocalRef',
     'toolRef',
@@ -1499,7 +1504,11 @@ export function validateRecordShape(record, schemaId = record.schema) {
 
   if (schemaId === artifactKinds.mediaDerivativeLocal) {
     validateRef(record.sourceAssetRef, `${schemaId}.sourceAssetRef`)
+    validateRef(record.sourceAssetDescriptorRef, `${schemaId}.sourceAssetDescriptorRef`)
     validateRef(record.sourceContentRef, `${schemaId}.sourceContentRef`)
+    validateRef(record.sourceSituationRef, `${schemaId}.sourceSituationRef`)
+    validateRef(record.sourcePlacementRef, `${schemaId}.sourcePlacementRef`)
+    validateRef(record.derivativeSubjectRef, `${schemaId}.derivativeSubjectRef`)
 
     if (record.derivativeKind !== 'thumbnail') {
       throw new Error(`Record ${schemaId} has invalid derivativeKind: ${record.derivativeKind}`)
@@ -1518,6 +1527,24 @@ export function validateRecordShape(record, schemaId = record.schema) {
 
     if (!record.toolRef || record.toolRef.tool !== 'sharp') {
       throw new Error(`Record ${schemaId} must include sharp toolRef`)
+    }
+
+    if (!record.derivativeIdentity || typeof record.derivativeIdentity !== 'object') {
+      throw new Error(`Record ${schemaId} must include derivativeIdentity`)
+    }
+
+    if (record.derivativeIdentity.derivativeSubjectRef?.id !== record.derivativeSubjectRef.id) {
+      throw new Error(`Record ${schemaId} derivativeIdentity must align with derivativeSubjectRef`)
+    }
+
+    if (
+      record.derivativeIdentity.sourceContentId !== record.sourceContentRef.id ||
+      record.derivativeIdentity.sourceAssetDescriptorId !== record.sourceAssetDescriptorRef.id ||
+      record.derivativeIdentity.sourceSituationId !== record.sourceSituationRef.id ||
+      record.derivativeIdentity.sourcePlacementId !== record.sourcePlacementRef.id ||
+      record.derivativeIdentity.sourceLocalPath !== record.sourceLocalRef.path
+    ) {
+      throw new Error(`Record ${schemaId} derivativeIdentity must align with source refs`)
     }
 
     validateLocalFalseFlags(record, schemaId)
