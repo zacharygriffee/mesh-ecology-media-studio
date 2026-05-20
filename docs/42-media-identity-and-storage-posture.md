@@ -8,9 +8,14 @@ share the same content-derived `assetId`, while still representing different
 Studio meanings, workflow roles, and placements.
 
 This is not a cryptographic collision. It is a modeling issue. Studio must not
-use one identifier for content identity, descriptor identity, placement
-identity, resource identity, byte publication identity, materialization
-identity, and causal history.
+use one identifier for content identity, descriptor identity,
+situation/placement identity, resource identity, byte publication identity,
+materialization identity, and causal history.
+
+This pass refines the Studio wording further: `placementRef` is not the
+universal ontology layer. `situationRef` is the broader observer/context/surface
+position of a referent-like artifact. `placementRef` is one concrete subtype of
+`situationRef`, usually path, container, slot, or lifecycle based.
 
 Spine has now adopted this as family-wide doctrine in
 `../mesh-ecology-spine/docs/identity-layering-and-storage-posture.md`
@@ -24,7 +29,7 @@ The family rule from Spine is:
 content identity
 != byte publication identity
 != artifact descriptor identity
-!= placement identity
+!= situation / placement identity
 != resource identity
 != causal referent identity
 != materialization identity
@@ -40,11 +45,117 @@ Studio applies Spine's layered identity model in media-domain terms:
 | `contentId` | Are these bytes identical? | Usually derived from a content hash. |
 | `bytePublicationRef` | Where can these bytes be fetched or replicated from? | Future Bytes/Hyperblob/Hypercore-facing ref, not implemented here. |
 | `assetDescriptorId` | What Studio media-domain object is this? | Must not collapse merely because bytes match. |
-| `placementRef` | Where and in what workflow role does this asset live? | Project-local or future virtual-drive placement. |
-| `resourceRefCandidateId` | What exact local-layer resource subject is being proposed? | Should be descriptor/placement-specific. |
+| `referentRef` | What observer-facing thing is being tracked? | Future causal/media adapter layer; not implemented here. |
+| `situationRef` | Where/as-what is this referent-like artifact situated for an observer in a context, surface, branch, device, project, timeline, concern, virtual drive, or Virtualia region? | Broader than filesystem placement; conceptual only here. |
+| `placementRef` | What concrete path, container, slot, or lifecycle placement applies when relevant? | Current local-project subtype of `situationRef`. |
+| `resourceRefCandidateId` | What exact local-layer resource subject is being proposed? | Should be descriptor/situation/placement-specific. |
 | `causalReferentId` / `causalRefs` | What happened across import, copy, fork, transform, publish, materialize, or export? | Future causal-shaped linkage; causal-substrate remains optional. |
 | `materializationRef` | Where was this asset materialized for a script, app, or tool? | Local execution/view path only, not truth. |
 | `authorityState` | What was admitted, ratified, approved, authorized, or materialized by a valid authority lane? | Not implied by any local Studio record. |
+
+The documentation stack is:
+
+```text
+contentId
+publicationRef
+artifactDescriptorRef
+referentRef
+situationRef
+  -> placementRef as one subtype
+resourceRef
+materializationRef
+authorityRef
+causalRefs
+```
+
+Core rule:
+
+```text
+No master ID.
+Layered refs.
+Each ref answers one question.
+```
+
+## SituationRef And PlacementRef
+
+`situationRef` describes the broad observer/context/surface/role position of a
+referent-like artifact. It can involve a Studio project, Edge local-layer
+surface, rough-cut timeline, mesh concern, causal branch, virtual drive view, or
+Virtualia region.
+
+`placementRef` is a concrete subtype of `situationRef`. In current Mode 0
+Studio records it usually means a project-local path, placement class, and
+lifecycle state such as `media/accepted/candidate.mp4` with
+`placementClass=media-accepted`.
+
+Conceptual future shape only:
+
+```json
+{
+  "schema": "media.situation_ref.v1",
+  "situationId": "situation:<hash>",
+  "observerRef": {
+    "kind": "operator | agent | device | mesh-participant | studio",
+    "id": "operator:zack"
+  },
+  "contextRef": {
+    "kind": "studio-project | local-device | virtual-drive | timeline | mesh-concern | causal-branch | virtualia-region",
+    "id": "project:tangential-condition"
+  },
+  "surfaceRef": {
+    "kind": "media-project-local-layer | edge-local-layer | mesh-concern-surface | virtual-drive-view",
+    "id": "surface:studio-media-project"
+  },
+  "role": "accepted-candidate",
+  "placement": {
+    "kind": "path-placement",
+    "path": "media/accepted/candidate.mp4",
+    "placementClass": "media-accepted",
+    "lifecycleState": "accepted"
+  },
+  "ruleBookRef": {
+    "id": "rule-book:studio-local-media"
+  },
+  "causalRefs": {
+    "branchRefs": [],
+    "happeningRefs": [],
+    "deferred": true
+  },
+  "nonClaims": {
+    "truthClaimed": false,
+    "authorityGranted": false,
+    "materializationProven": false
+  }
+}
+```
+
+Examples:
+
+- Local project situation: context is a Studio project, surface is
+  `media-project-local-layer`, role is `accepted-candidate`, placement subtype
+  is path `media/accepted/candidate.mp4` with lifecycle state `accepted`.
+- Timeline situation: context is a rough-cut timeline, role is `clip segment`,
+  placement subtype is track `video-1` and time range `00:12-00:18`.
+- Virtual drive situation: context is a future virtual drive, role is
+  `first-frame-reference`, placement subtype is path
+  `shots/014/references/first-frame.png`.
+- Mesh concern situation: context is a `media-candidates` concern, role is
+  `proposed accepted candidate resource`, and `resourceRef` remains candidate
+  only.
+- Virtualia situation: context is a Virtualia region or projected world layer,
+  role is visual referent / projection layer, and causal refs remain
+  observer-relative branch refs.
+
+Non-claims:
+
+- `situationRef` is not truth.
+- `placementRef` is not authority.
+- local path is not durable identity.
+- `resourceRef` is not admission.
+- `byteRef` is not availability proof.
+- `materializationRef` is not ratification.
+- causal refs are not storage.
+- Edge inspection is not approval.
 
 ## Byte And Resource Posture
 
@@ -52,13 +163,14 @@ Byte descriptor proposals should be keyed by content identity. They describe
 bytes and content-derived digest posture. The same `contentId` may appear in
 multiple placements and may have multiple byte publication refs over time.
 
-Resource-ref candidates should be keyed by asset descriptor and placement
-identity. They propose a resource subject for a specific Studio object in a
-specific role/path/lifecycle position. One resource candidate must not
+Resource-ref candidates should be keyed by artifact descriptor and
+situation/placement identity. They propose a resource subject for a specific
+Studio object in a specific observer/context/surface role and concrete
+path/slot/lifecycle position when applicable. One resource candidate must not
 accidentally satisfy two placements unless it explicitly models both subjects.
 
-Causal records should link content, descriptor, placement, byte publication,
-and materialization histories without collapsing them.
+Causal records should link content, descriptor, referent, situation, placement,
+byte publication, and materialization histories without collapsing them.
 
 ## Example
 
@@ -75,6 +187,7 @@ Expected future posture:
 one shared contentId
 one or more bytePublicationRefs
 two assetDescriptorIds
+two situationRefs
 two placementRefs
 two resourceRefCandidateIds
 causal relation showing shared origin or copy/fork relationship
@@ -91,6 +204,23 @@ paths. Current byte/resource proposal writers and health checks map too much by
 `assetId`. This is known and should be migrated deliberately rather than patched
 opportunistically.
 
+The collision happened because one content-derived ID was being asked to answer
+too many questions:
+
+```text
+same bytes?
+same artifact?
+same situation?
+same local placement?
+same resource?
+same causal referent?
+same authority state?
+```
+
+The fix is not simply to replace `assetId` with `placementRef`. The fix is to
+separate layered refs: `contentId`, `artifactDescriptorRef`, `referentRef`,
+`situationRef`, `placementRef`, `resourceRef`, and `causalRefs`.
+
 The preferred future test fixture is:
 
 ```text
@@ -102,6 +232,7 @@ Expected result:
 ```text
 one contentId
 two asset descriptors
+two situation refs
 two placement refs
 one shared byte descriptor proposal where appropriate
 two resource-ref candidates
@@ -282,18 +413,19 @@ Risk: A byte descriptor may be mistaken for availability, materialization, or
 artifact meaning.
 
 Repo: `mesh-ecology-packs`
-Concept: Control-surface rendering of content identity and placement identity.
+Concept: Control-surface rendering of content identity, situation identity, and
+placement identity.
 Current issue: Future surfaces should show that same bytes can appear in
-different Studio roles.
+different observer contexts, surfaces, roles, and concrete placements.
 Suggested owner: Packs control-surface vocabulary.
 Suggested file/doc: media intent / semantic component docs.
 Blocking status: Optional.
-Risk: Operator UI may imply the same content means the same approval,
-placement, or production role.
+Risk: Operator UI may imply the same content means the same situation,
+placement, approval, or production role.
 
 Repo: `causal-substrate`
-Concept: Distinct media referents for content, descriptor, placement,
-publication, and materialization histories.
+Concept: Distinct media referents for content, descriptor, situation,
+placement, publication, and materialization histories.
 Current issue: Studio needs causal interpretation without making causal
 substrate a storage engine or policy executor.
 Suggested owner: Future media-causal-adapter guidance.
@@ -302,10 +434,24 @@ Blocking status: Optional until adapter work begins.
 Risk: Causal history may collapse copy/fork/materialization events into one
 artifact identity.
 
+Repo: `mesh-ecology-spine`
+Concept: `situationRef` as a broader observer/context/surface identity layer,
+with `placementRef` as a subtype.
+Current issue: Spine has family-wide identity layering posture, but Studio's
+media identity pressure shows that placement alone is too path-shaped for
+observer/context/surface reality.
+Suggested owner: Spine doctrine.
+Suggested file/doc: identity layering and storage posture, or a future
+situation/reference posture doc.
+Blocking status: Optional for current Studio docs; important before cross-repo
+local-layer promotion.
+Risk: Repos may model local path placement as the universal context identity
+and lose observer/surface/branch semantics.
+
 Repo: `mesh-ecology-media-studio`
 Concept: Migration from content-derived `assetId` as catch-all identity toward
-content-oriented byte proposals and descriptor/placement-oriented resource
-candidates.
+content-oriented byte proposals and descriptor/situation/placement-oriented
+resource candidates.
 Current issue: Current writers and health checks still map too much by
 `assetId`.
 Suggested owner: Studio.
@@ -314,7 +460,7 @@ current posture anchor.
 Blocking status: Blocks the same-content/two-placement repair fixture, but not
 Mode 0 local wedge operation.
 Risk: Repair or readiness may keep treating same-byte assets in different
-placements as one resource subject.
+situations/placements as one resource subject.
 
 ## Non-Claims
 

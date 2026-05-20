@@ -76,9 +76,9 @@ together. Studio follows that posture by treating HTTP, local paths, JSON
 files, provider results, receipts, and local operator actions as bootstrap or
 evidence surfaces unless a later mesh-facing lane explicitly promotes them.
 Studio also follows Spine's family-wide identity layering posture: content
-identity, byte publication identity, descriptor identity, placement identity,
-resource identity, causal referent identity, materialization identity, and
-authority state must remain distinct.
+identity, byte publication identity, descriptor identity, situation/placement
+identity, resource identity, causal referent identity, materialization identity,
+and authority state must remain distinct.
 
 ### Packs
 
@@ -352,8 +352,8 @@ resource-ref candidate, and production descriptor records from existing health
 issues without inventing reviews, approvals, provider results, or authority.
 The media identity and storage posture now ties Studio's same-byte asset issue
 to Spine's family-wide identity layering doctrine so content, publication,
-descriptor, placement, resource, causal, materialization, and authority layers
-do not collapse into one Studio meaning.
+descriptor, situation, placement, resource, causal, materialization, and
+authority layers do not collapse into one Studio meaning.
 The command surface inventory maps compact command output, machine-readable
 artifact output, JSON stdout support, stable refs, and known churn posture for
 current operational commands.
