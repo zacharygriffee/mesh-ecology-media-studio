@@ -66,6 +66,7 @@ import { writeOperatorPacketIndex } from '../src/seams/operator-packet-index.js'
 import { writeContinuityEvidence } from '../src/seams/continuity-evidence.js'
 import { summarizeInspectionPacket } from '../src/seams/summarize-inspection-packet.js'
 import { checkInspectionFixture } from '../src/local/generate-inspection-fixture.js'
+import { checkUnhealthyFixtures } from '../src/local/generate-unhealthy-fixtures.js'
 import {
   createLocalLayerResourceRefCandidate,
   writeLocalLayerResourceRefCandidates
@@ -1340,6 +1341,30 @@ test('committed local-run inspection fixture validates', async () => {
 test('committed local-run inspection fixture shape check passes', async () => {
   await checkInspectionFixture({
     projectDir: 'examples/inspection-fixtures/card-to-candidate'
+  })
+})
+
+test('committed unhealthy inspection fixtures validate', async () => {
+  for (const caseName of ['missing-byte-proposal', 'stale-resource-ref', 'stale-production-descriptor']) {
+    const root = path.join('examples', 'inspection-fixtures', 'unhealthy', caseName)
+    const health = JSON.parse(await readFile(path.join(root, 'media-project-health.local.json'), 'utf8'))
+    const handoff = JSON.parse(await readFile(path.join(root, 'media-edge-handoff-candidate.local.json'), 'utf8'))
+    const request = JSON.parse(await readFile(path.join(root, 'media-operator-decision-request.local.json'), 'utf8'))
+    const summary = JSON.parse(await readFile(path.join(root, 'summary.local.json'), 'utf8'))
+
+    assert.equal(health.healthState, 'needs-local-attention')
+    assert.equal(handoff.handoffState, 'needs-local-attention')
+    assert.equal(request.requestKind, 'resolve-local-attention')
+    assert.equal(summary.meshTruth, false)
+    assert.equal(validateRequiredRecord(health), true)
+    assert.equal(validateRequiredRecord(handoff), true)
+    assert.equal(validateRequiredRecord(request), true)
+  }
+})
+
+test('committed unhealthy inspection fixture shape check passes', async () => {
+  await checkUnhealthyFixtures({
+    projectDir: 'examples/inspection-fixtures/unhealthy'
   })
 })
 

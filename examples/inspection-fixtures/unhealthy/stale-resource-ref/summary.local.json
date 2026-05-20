@@ -1,0 +1,19 @@
+{
+  "caseName": "stale-resource-ref",
+  "healthState": "needs-local-attention",
+  "blockingIssues": [
+    "asset-resource-consistency-not-ready",
+    "edge-readiness-caution"
+  ],
+  "handoffState": "needs-local-attention",
+  "requestKind": "resolve-local-attention",
+  "nextActions": [
+    "Run npm run health:summary and resolve listed blocking issues before handoff.",
+    "Run npm run readiness:edge and address unresolved byte/resource guidance.",
+    "Run npm run bytes:proposal and npm run resource:refs, then regenerate readiness and health."
+  ],
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false
+}

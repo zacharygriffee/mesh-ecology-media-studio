@@ -1,0 +1,75 @@
+{
+  "schema": "media.project_health.local.v1",
+  "healthId": "project-health-studio-example-project",
+  "projectId": "studio-example-project",
+  "createdAt": "2026-05-19T00:00:00.000Z",
+  "mode": "standalone-local",
+  "healthState": "needs-local-attention",
+  "blockingIssues": [
+    "production-freshness-stale"
+  ],
+  "statusRef": {
+    "kind": "media-project-status",
+    "id": "project-status-studio-example-project",
+    "schema": "media.project_status.local.v1",
+    "path": "records/manifests/media-project-status.local.json",
+    "localOnly": true
+  },
+  "readinessRef": {
+    "kind": "media-readiness",
+    "id": "readiness-edge-inspection-studio-example-project",
+    "schema": "media.readiness.v1",
+    "path": "records/readiness/media-edge-inspection-readiness.local.json",
+    "localOnly": true
+  },
+  "assetResourceConsistency": {
+    "acceptedOrReferenceAssets": 1,
+    "byteDescriptorProposalCoverage": 1,
+    "resourceRefCandidateCoverage": 1,
+    "alignedResourceCandidateIds": [
+      "resource-ref-candidate-asset-8fd840913d8f9778"
+    ],
+    "missingByteDescriptorProposalAssetIds": [],
+    "missingResourceRefCandidateAssetIds": [],
+    "unresolvedResourceCandidateIds": [],
+    "staleByteDescriptorProposalIds": [],
+    "staleResourceCandidateIds": [],
+    "readyForEdgeInspection": true,
+    "warningCount": 0,
+    "localOnly": true,
+    "meshTruth": false,
+    "distributedProof": false,
+    "ratifiedSharedState": false,
+    "byteAvailabilityProof": false,
+    "materializationProof": false
+  },
+  "edgeReadinessState": "ready",
+  "productionValidation": {
+    "valid": true,
+    "count": 8,
+    "freshness": {
+      "descriptorCount": 3,
+      "staleDescriptorIds": [
+        "production-descriptor-scene-00000000-0000-4000-8000-000000000009",
+        "production-descriptor-shot-00000000-0000-4000-8000-000000000011"
+      ],
+      "parentMismatchDescriptorIds": [],
+      "missingUnitDescriptorIds": [],
+      "fresh": false,
+      "localOnly": true,
+      "operatorGuidanceOnly": true
+    },
+    "localOnly": true
+  },
+  "operatorGuidanceOnly": true,
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "providerTruth": false,
+  "byteAvailabilityProof": false,
+  "materializationProof": false,
+  "edgeRuntimeVerified": false,
+  "localTruthLabel": "local cache",
+  "truthStatus": "not mesh truth; not distributed proof; not ratified shared state"
+}

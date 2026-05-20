@@ -1,0 +1,17 @@
+{
+  "caseName": "stale-production-descriptor",
+  "healthState": "needs-local-attention",
+  "blockingIssues": [
+    "production-freshness-stale"
+  ],
+  "handoffState": "needs-local-attention",
+  "requestKind": "resolve-local-attention",
+  "nextActions": [
+    "Run npm run health:summary and resolve listed blocking issues before handoff.",
+    "Regenerate or update production descriptors after production-unit changes."
+  ],
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false
+}

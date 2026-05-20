@@ -63,3 +63,18 @@ a `review-ready-handoff` request. A blocked or stale handoff produces a
 
 These records are not approvals, ratifier outputs, or Edge decisions. They are
 request-only local guidance and require a later operator boundary.
+
+## Unhealthy Fixtures
+
+Compact unhealthy examples live under:
+
+```text
+examples/inspection-fixtures/unhealthy/
+```
+
+Regenerate or check them with:
+
+```bash
+npm run fixture:unhealthy
+npm run fixture:unhealthy:check
+```

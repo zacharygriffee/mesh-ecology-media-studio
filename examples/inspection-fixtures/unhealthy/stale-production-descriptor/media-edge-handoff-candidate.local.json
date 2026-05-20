@@ -1,0 +1,278 @@
+{
+  "schema": "media.edge_handoff_candidate.local.v1",
+  "handoffCandidateId": "edge-handoff-studio-example-project",
+  "projectId": "studio-example-project",
+  "createdAt": "2026-05-19T00:00:00.000Z",
+  "mode": "standalone-local",
+  "targetSurface": "media-edge-operator-seam",
+  "targetSeams": [
+    "media-edge-operator-seam",
+    "media-work-packet-seam",
+    "media-evidence-import-seam",
+    "media-readiness-guidance-seam",
+    "media-operator-decision-seam",
+    "media-byte-reference-seam",
+    "media-causal-evidence-seam"
+  ],
+  "sourceRefs": [
+    {
+      "kind": "media-edge-inspection-packet",
+      "id": "edge-inspection-00000000-0000-4000-8000-000000000003",
+      "schema": "media.edge_inspection_packet.local.v1",
+      "path": "records/exports/local-run-edge-inspection-packet.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-edge-compatibility-bundle",
+      "id": "edge-compatibility-studio-example-project",
+      "schema": "media.edge_compatibility_bundle.local.v1",
+      "path": "records/exports/media-edge-compatibility-bundle.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-project-health",
+      "id": "project-health-studio-example-project",
+      "schema": "media.project_health.local.v1",
+      "path": "records/manifests/media-project-health.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-operator-packet-index",
+      "id": "operator-packet-index-studio-example-project",
+      "schema": "media.operator_packet_index.local.v1",
+      "path": "records/exports/media-operator-packet-index.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-local-run-manifest",
+      "id": "local-run-00000000-0000-4000-8000-000000000004",
+      "schema": "media.local_run_manifest.v1",
+      "path": "records/manifests/media-local-run-manifest.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-edge-inspection-packet",
+      "id": "edge-inspection-00000000-0000-4000-8000-000000000003",
+      "schema": "media.edge_inspection_packet.local.v1",
+      "path": "records/exports/local-run-edge-inspection-packet.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-control-surface-projection",
+      "id": "control-surface-projection-studio-example-project",
+      "schema": "media.control_surface_projection.local.v1",
+      "path": "records/exports/media-control-surface-projection.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-project-status",
+      "id": "project-status-studio-example-project",
+      "schema": "media.project_status.local.v1",
+      "path": "records/manifests/media-project-status.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-project-health",
+      "id": "project-health-studio-example-project",
+      "schema": "media.project_health.local.v1",
+      "path": "records/manifests/media-project-health.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-readiness",
+      "id": "readiness-edge-inspection-studio-example-project",
+      "schema": "media.readiness.v1",
+      "path": "records/readiness/media-edge-inspection-readiness.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-production-descriptor",
+      "id": "production-descriptor-clip-00000000-0000-4000-8000-000000000005",
+      "schema": "media.production_descriptor.local.v1",
+      "path": "records/production/clipDescriptor.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-production-unit",
+      "id": "production-unit-still-00000000-0000-4000-8000-000000000006",
+      "schema": "media.production_unit.v1",
+      "path": "records/production/clipUnit.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-continuity-band",
+      "id": "continuity-band-render-pass-00000000-0000-4000-8000-000000000007",
+      "schema": "media.continuity_band.v1",
+      "path": "records/production/continuityBand.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-render-strategy",
+      "id": "render-strategy-classic-scene-shot-clip-00000000-0000-4000-8000-000000000008",
+      "schema": "media.render_strategy.v1",
+      "path": "records/production/renderStrategy.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-production-descriptor",
+      "id": "production-descriptor-scene-00000000-0000-4000-8000-000000000009",
+      "schema": "media.production_descriptor.local.v1",
+      "path": "records/production/sceneDescriptor.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-production-unit",
+      "id": "production-unit-scene-00000000-0000-4000-8000-000000000010",
+      "schema": "media.production_unit.v1",
+      "path": "records/production/sceneUnit.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-production-descriptor",
+      "id": "production-descriptor-shot-00000000-0000-4000-8000-000000000011",
+      "schema": "media.production_descriptor.local.v1",
+      "path": "records/production/shotDescriptor.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-production-unit",
+      "id": "production-unit-shot-00000000-0000-4000-8000-000000000012",
+      "schema": "media.production_unit.v1",
+      "path": "records/production/shotUnit.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-byte-descriptor-proposal",
+      "id": "byte-descriptor-proposal-asset-8fd840913d8f9778",
+      "schema": "media.byte_descriptor_proposal.local.v1",
+      "path": "records/bytes/byte-descriptor-proposal-asset-8fd840913d8f9778.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-local-layer-resource-ref-candidate",
+      "id": "resource-ref-candidate-asset-8fd840913d8f9778",
+      "schema": "media.local_layer_resource_ref_candidate.local.v1",
+      "path": "records/resources/resource-ref-candidate-asset-8fd840913d8f9778.local.json",
+      "localOnly": true
+    }
+  ],
+  "inspectionPacketRef": {
+    "kind": "media-edge-inspection-packet",
+    "id": "edge-inspection-00000000-0000-4000-8000-000000000003",
+    "schema": "media.edge_inspection_packet.local.v1",
+    "path": "records/exports/local-run-edge-inspection-packet.local.json",
+    "localOnly": true
+  },
+  "compatibilityBundleRef": {
+    "kind": "media-edge-compatibility-bundle",
+    "id": "edge-compatibility-studio-example-project",
+    "schema": "media.edge_compatibility_bundle.local.v1",
+    "path": "records/exports/media-edge-compatibility-bundle.local.json",
+    "localOnly": true
+  },
+  "projectHealthRef": {
+    "kind": "media-project-health",
+    "id": "project-health-studio-example-project",
+    "schema": "media.project_health.local.v1",
+    "path": "records/manifests/media-project-health.local.json",
+    "localOnly": true
+  },
+  "operatorPacketIndexRef": {
+    "kind": "media-operator-packet-index",
+    "id": "operator-packet-index-studio-example-project",
+    "schema": "media.operator_packet_index.local.v1",
+    "path": "records/exports/media-operator-packet-index.local.json",
+    "localOnly": true
+  },
+  "readinessState": "ready",
+  "handoffState": "needs-local-attention",
+  "readinessDiagnosis": {
+    "healthState": "needs-local-attention",
+    "edgeReadinessState": "ready",
+    "assetResourceReady": true,
+    "productionGraphValid": true,
+    "productionFreshness": {
+      "descriptorCount": 3,
+      "staleDescriptorIds": [
+        "production-descriptor-scene-00000000-0000-4000-8000-000000000009",
+        "production-descriptor-shot-00000000-0000-4000-8000-000000000011"
+      ],
+      "parentMismatchDescriptorIds": [],
+      "missingUnitDescriptorIds": [],
+      "fresh": false,
+      "localOnly": true,
+      "operatorGuidanceOnly": true
+    },
+    "blockingIssues": [
+      "production-freshness-stale"
+    ],
+    "reasons": [
+      "project health is needs-local-attention",
+      "2 production descriptors are stale",
+      "project health has 1 blocking issues"
+    ],
+    "nextActions": [
+      "Run npm run health:summary and resolve listed blocking issues before handoff.",
+      "Regenerate or update production descriptors after production-unit changes."
+    ],
+    "readyForEdgeInspection": false,
+    "operatorGuidanceOnly": true,
+    "localOnly": true,
+    "meshTruth": false,
+    "distributedProof": false,
+    "ratifiedSharedState": false,
+    "edgeRuntimeVerified": false
+  },
+  "edgeShapeTargets": [
+    {
+      "edgeArtifactKind": "edge_cross_project_work_packet",
+      "edgeSchemaVersion": "edge_cross_project_work_packet.v1",
+      "targetOnly": true,
+      "edgeRuntimeBuilt": false,
+      "edgeRuntimeVerified": false
+    },
+    {
+      "edgeArtifactKind": "edge_cross_project_evidence_import",
+      "edgeSchemaVersion": "edge_cross_project_evidence_import.v1",
+      "targetOnly": true,
+      "edgeRuntimeBuilt": false,
+      "edgeRuntimeVerified": false
+    },
+    {
+      "edgeArtifactKind": "edge_cross_project_readiness_view",
+      "edgeSchemaVersion": "edge_cross_project_readiness_view.v1",
+      "targetOnly": true,
+      "edgeRuntimeBuilt": false,
+      "edgeRuntimeVerified": false
+    },
+    {
+      "edgeArtifactKind": "edge_operator_return_surface",
+      "edgeSchemaVersion": "edge_operator_return_surface.v1",
+      "targetOnly": true,
+      "edgeRuntimeBuilt": false,
+      "edgeRuntimeVerified": false
+    },
+    {
+      "edgeArtifactKind": "edge_operator_decision",
+      "edgeSchemaVersion": "edge_operator_decision.v1",
+      "targetOnly": true,
+      "edgeRuntimeBuilt": false,
+      "edgeRuntimeVerified": false
+    }
+  ],
+  "warnings": [
+    "Handoff candidate is Studio-built local guidance only.",
+    "This record does not call Edge, verify Edge runtime behavior, or authorize publication.",
+    "Edge may later consume these refs, but Edge remains the operator boundary."
+  ],
+  "operatorGuidanceOnly": true,
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "providerTruth": false,
+  "edgeRuntimeBuilt": false,
+  "edgeRuntimeVerified": false,
+  "localTruthLabel": "local draft",
+  "truthStatus": "not mesh truth; not distributed proof; not ratified shared state"
+}

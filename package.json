@@ -37,6 +37,8 @@
     "reference:ingest": "node src/assets/ingest-reference.js",
     "fixture:inspection": "node src/local/generate-inspection-fixture.js",
     "fixture:inspection:check": "node src/local/generate-inspection-fixture.js --check",
+    "fixture:unhealthy": "node src/local/generate-unhealthy-fixtures.js",
+    "fixture:unhealthy:check": "node src/local/generate-unhealthy-fixtures.js --check",
     "wedge:example": "node src/local/run-first-wedge.js --project-dir examples/card-to-candidate --decision accepted",
     "test": "node --test test/*.test.js"
   },

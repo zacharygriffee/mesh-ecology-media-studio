@@ -1,0 +1,208 @@
+{
+  "schema": "media.edge_handoff_candidate.local.v1",
+  "handoffCandidateId": "edge-handoff-studio-example-project",
+  "projectId": "studio-example-project",
+  "createdAt": "2026-05-19T00:00:00.000Z",
+  "mode": "standalone-local",
+  "targetSurface": "media-edge-operator-seam",
+  "targetSeams": [
+    "media-edge-operator-seam",
+    "media-work-packet-seam",
+    "media-evidence-import-seam",
+    "media-readiness-guidance-seam",
+    "media-operator-decision-seam",
+    "media-byte-reference-seam",
+    "media-causal-evidence-seam"
+  ],
+  "sourceRefs": [
+    {
+      "kind": "media-edge-inspection-packet",
+      "id": "edge-inspection-00000000-0000-4000-8000-000000000001",
+      "schema": "media.edge_inspection_packet.local.v1",
+      "path": "records/exports/local-run-edge-inspection-packet.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-edge-compatibility-bundle",
+      "id": "edge-compatibility-studio-example-project",
+      "schema": "media.edge_compatibility_bundle.local.v1",
+      "path": "records/exports/media-edge-compatibility-bundle.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-project-health",
+      "id": "project-health-studio-example-project",
+      "schema": "media.project_health.local.v1",
+      "path": "records/manifests/media-project-health.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-operator-packet-index",
+      "id": "operator-packet-index-studio-example-project",
+      "schema": "media.operator_packet_index.local.v1",
+      "path": "records/exports/media-operator-packet-index.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-local-run-manifest",
+      "id": "local-run-00000000-0000-4000-8000-000000000002",
+      "schema": "media.local_run_manifest.v1",
+      "path": "records/manifests/media-local-run-manifest.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-edge-inspection-packet",
+      "id": "edge-inspection-00000000-0000-4000-8000-000000000001",
+      "schema": "media.edge_inspection_packet.local.v1",
+      "path": "records/exports/local-run-edge-inspection-packet.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-control-surface-projection",
+      "id": "control-surface-projection-studio-example-project",
+      "schema": "media.control_surface_projection.local.v1",
+      "path": "records/exports/media-control-surface-projection.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-project-status",
+      "id": "project-status-studio-example-project",
+      "schema": "media.project_status.local.v1",
+      "path": "records/manifests/media-project-status.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-project-health",
+      "id": "project-health-studio-example-project",
+      "schema": "media.project_health.local.v1",
+      "path": "records/manifests/media-project-health.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-readiness",
+      "id": "readiness-edge-inspection-studio-example-project",
+      "schema": "media.readiness.v1",
+      "path": "records/readiness/media-edge-inspection-readiness.local.json",
+      "localOnly": true
+    }
+  ],
+  "inspectionPacketRef": {
+    "kind": "media-edge-inspection-packet",
+    "id": "edge-inspection-00000000-0000-4000-8000-000000000001",
+    "schema": "media.edge_inspection_packet.local.v1",
+    "path": "records/exports/local-run-edge-inspection-packet.local.json",
+    "localOnly": true
+  },
+  "compatibilityBundleRef": {
+    "kind": "media-edge-compatibility-bundle",
+    "id": "edge-compatibility-studio-example-project",
+    "schema": "media.edge_compatibility_bundle.local.v1",
+    "path": "records/exports/media-edge-compatibility-bundle.local.json",
+    "localOnly": true
+  },
+  "projectHealthRef": {
+    "kind": "media-project-health",
+    "id": "project-health-studio-example-project",
+    "schema": "media.project_health.local.v1",
+    "path": "records/manifests/media-project-health.local.json",
+    "localOnly": true
+  },
+  "operatorPacketIndexRef": {
+    "kind": "media-operator-packet-index",
+    "id": "operator-packet-index-studio-example-project",
+    "schema": "media.operator_packet_index.local.v1",
+    "path": "records/exports/media-operator-packet-index.local.json",
+    "localOnly": true
+  },
+  "readinessState": "caution",
+  "handoffState": "needs-local-attention",
+  "readinessDiagnosis": {
+    "healthState": "needs-local-attention",
+    "edgeReadinessState": "caution",
+    "assetResourceReady": false,
+    "productionGraphValid": true,
+    "productionFreshness": {
+      "descriptorCount": 0,
+      "staleDescriptorIds": [],
+      "parentMismatchDescriptorIds": [],
+      "missingUnitDescriptorIds": [],
+      "fresh": true,
+      "localOnly": true,
+      "operatorGuidanceOnly": true
+    },
+    "blockingIssues": [
+      "asset-resource-consistency-not-ready",
+      "edge-readiness-caution"
+    ],
+    "reasons": [
+      "project health is needs-local-attention",
+      "Edge readiness guidance is caution",
+      "asset/resource refs are not ready for Edge inspection",
+      "project health has 2 blocking issues"
+    ],
+    "nextActions": [
+      "Run npm run health:summary and resolve listed blocking issues before handoff.",
+      "Run npm run readiness:edge and address unresolved byte/resource guidance.",
+      "Run npm run bytes:proposal and npm run resource:refs, then regenerate readiness and health."
+    ],
+    "readyForEdgeInspection": false,
+    "operatorGuidanceOnly": true,
+    "localOnly": true,
+    "meshTruth": false,
+    "distributedProof": false,
+    "ratifiedSharedState": false,
+    "edgeRuntimeVerified": false
+  },
+  "edgeShapeTargets": [
+    {
+      "edgeArtifactKind": "edge_cross_project_work_packet",
+      "edgeSchemaVersion": "edge_cross_project_work_packet.v1",
+      "targetOnly": true,
+      "edgeRuntimeBuilt": false,
+      "edgeRuntimeVerified": false
+    },
+    {
+      "edgeArtifactKind": "edge_cross_project_evidence_import",
+      "edgeSchemaVersion": "edge_cross_project_evidence_import.v1",
+      "targetOnly": true,
+      "edgeRuntimeBuilt": false,
+      "edgeRuntimeVerified": false
+    },
+    {
+      "edgeArtifactKind": "edge_cross_project_readiness_view",
+      "edgeSchemaVersion": "edge_cross_project_readiness_view.v1",
+      "targetOnly": true,
+      "edgeRuntimeBuilt": false,
+      "edgeRuntimeVerified": false
+    },
+    {
+      "edgeArtifactKind": "edge_operator_return_surface",
+      "edgeSchemaVersion": "edge_operator_return_surface.v1",
+      "targetOnly": true,
+      "edgeRuntimeBuilt": false,
+      "edgeRuntimeVerified": false
+    },
+    {
+      "edgeArtifactKind": "edge_operator_decision",
+      "edgeSchemaVersion": "edge_operator_decision.v1",
+      "targetOnly": true,
+      "edgeRuntimeBuilt": false,
+      "edgeRuntimeVerified": false
+    }
+  ],
+  "warnings": [
+    "Handoff candidate is Studio-built local guidance only.",
+    "This record does not call Edge, verify Edge runtime behavior, or authorize publication.",
+    "Edge may later consume these refs, but Edge remains the operator boundary."
+  ],
+  "operatorGuidanceOnly": true,
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "providerTruth": false,
+  "edgeRuntimeBuilt": false,
+  "edgeRuntimeVerified": false,
+  "localTruthLabel": "local draft",
+  "truthStatus": "not mesh truth; not distributed proof; not ratified shared state"
+}

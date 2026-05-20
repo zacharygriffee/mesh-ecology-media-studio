@@ -1,0 +1,77 @@
+{
+  "schema": "media.operator_decision_request.local.v1",
+  "requestId": "operator-decision-request-studio-example-project",
+  "projectId": "studio-example-project",
+  "createdAt": "2026-05-19T00:00:00.000Z",
+  "mode": "standalone-local",
+  "requestKind": "resolve-local-attention",
+  "targetSurface": "media-edge-operator-seam",
+  "subjectRef": {
+    "kind": "media-edge-handoff-candidate",
+    "id": "edge-handoff-studio-example-project",
+    "schema": "media.edge_handoff_candidate.local.v1"
+  },
+  "sourceRefs": [
+    {
+      "kind": "media-edge-handoff-candidate",
+      "id": "edge-handoff-studio-example-project",
+      "schema": "media.edge_handoff_candidate.local.v1",
+      "path": "records/exports/media-edge-handoff-candidate.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-edge-inspection-packet",
+      "id": "edge-inspection-00000000-0000-4000-8000-000000000003",
+      "schema": "media.edge_inspection_packet.local.v1",
+      "path": "records/exports/local-run-edge-inspection-packet.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-edge-compatibility-bundle",
+      "id": "edge-compatibility-studio-example-project",
+      "schema": "media.edge_compatibility_bundle.local.v1",
+      "path": "records/exports/media-edge-compatibility-bundle.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-project-health",
+      "id": "project-health-studio-example-project",
+      "schema": "media.project_health.local.v1",
+      "path": "records/manifests/media-project-health.local.json",
+      "localOnly": true
+    },
+    {
+      "kind": "media-operator-packet-index",
+      "id": "operator-packet-index-studio-example-project",
+      "schema": "media.operator_packet_index.local.v1",
+      "path": "records/exports/media-operator-packet-index.local.json",
+      "localOnly": true
+    }
+  ],
+  "requestedDecisionTypes": [
+    "resolve_blockers",
+    "request_changes",
+    "defer"
+  ],
+  "reason": "Studio local handoff needs operator attention before future Edge-mediated review.",
+  "nextActions": [
+    "Run npm run health:summary and resolve listed blocking issues before handoff.",
+    "Regenerate or update production descriptors after production-unit changes."
+  ],
+  "status": "proposed",
+  "operatorGuidanceOnly": true,
+  "requestOnly": true,
+  "authorityRequired": true,
+  "edgeRuntimeBuilt": false,
+  "edgeRuntimeVerified": false,
+  "approvalAuthority": false,
+  "ratifierAuthority": false,
+  "publicationAuthorization": false,
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "providerTruth": false,
+  "localTruthLabel": "local request",
+  "truthStatus": "not mesh truth; not distributed proof; not ratified shared state"
+}

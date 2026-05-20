@@ -92,6 +92,7 @@ Check committed fixture freshness with:
 
 ```bash
 npm run fixture:inspection:check
+npm run fixture:unhealthy:check
 ```
 
 Ingest a project-local reference asset with:
@@ -174,3 +175,5 @@ production records are visible before broader integration work.
 Phase 25 adds request-only operator decision request records for future
 Edge-mediated attention without granting approval, ratifier, or publication
 authority.
+Phase 26 adds compact unhealthy inspection fixtures for missing byte proposals,
+stale resource refs, and stale production descriptors.

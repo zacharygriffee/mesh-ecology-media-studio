@@ -259,6 +259,8 @@ Regenerate the committed inspection fixture:
 ```bash
 npm run fixture:inspection
 npm run fixture:inspection:check
+npm run fixture:unhealthy
+npm run fixture:unhealthy:check
 ```
 
 Phase 2 inspection hardening added the manifest, a small artifact-kind
@@ -309,6 +311,8 @@ records explain why a handoff needs attention.
 Phase 25 adds request-only operator decision request records so Studio can ask
 for later Edge-mediated attention without granting approval, ratifier, or
 publication authority.
+Phase 26 adds compact unhealthy inspection fixtures for missing byte proposals,
+stale resource refs, and stale production descriptors.
 
 ## Start Here
 
