@@ -11,6 +11,7 @@ import { readLocalImageMetadata } from '../src/assets/image-metadata.js'
 import { ingestReferenceAsset } from '../src/assets/ingest-reference.js'
 import { importMediaAsset } from '../src/assets/import-media.js'
 import { generateThumbnailDerivatives } from '../src/assets/generate-thumbnails.js'
+import { createMediaSummary, writeMediaSummary } from '../src/assets/media-summary.js'
 import {
   derivativeIssueCodesForContentType,
   normalizeFfprobeProbeResult,
@@ -1211,6 +1212,90 @@ test('thumbnail derivative identity stays situation specific for same content', 
     'thumbnail'
   ])
   assert.equal(status.status.mediaDerivativeReadiness.assetExplanations.every((entry) => entry.nonClaims.materializationProof === false), true)
+})
+
+test('media summary reports intake derivative and identity posture compactly', async () => {
+  const dir = await createFixtureProject()
+  await writeFile(
+    path.join(dir, 'media', 'generated', 'pixel.png'),
+    Buffer.from(onePixelPngBase64, 'base64')
+  )
+
+  await importMediaAsset({
+    projectDir: dir,
+    source: 'media/generated/pixel.png',
+    placement: 'source',
+    filename: 'source-pixel.png',
+    operatorRef: 'operator-test',
+    ffprobe: false
+  })
+  await importMediaAsset({
+    projectDir: dir,
+    source: 'media/generated/candidate.txt',
+    placement: 'source',
+    filename: 'source-notes.txt',
+    operatorRef: 'operator-test',
+    ffprobe: false
+  })
+
+  const before = await createMediaSummary({ projectDir: dir })
+  const output = await captureConsole(() => writeMediaSummary({ projectDir: dir }))
+
+  assert.equal(before.projectId, 'project-test')
+  assert.equal(before.assets.total, 2)
+  assert.equal(before.assets.byMediaKind.image, 1)
+  assert.equal(before.assets.byMediaKind.unsupported, 1)
+  assert.equal(before.metadataProbe.unsupported, 1)
+  assert.equal(before.derivativeReadiness.evaluatedAssets, 2)
+  assert.equal(before.derivativeReadiness.attentionAssets, 2)
+  assert.equal(before.derivativeReadiness.attentionRows.some((row) => row.issueCodes.includes('missing_thumbnail')), true)
+  assert.equal(before.derivativeReadiness.attentionRows.some((row) => row.issueCodes.includes('unsupported_media_type')), true)
+  assert.equal(before.identity.byteContent.keyKind, 'contentId')
+  assert.equal(before.identity.resourceSituations.keyKind, 'assetDescriptorRef+situationRef+placementRef')
+  assert.equal(before.localOnly, true)
+  assert.equal(before.meshTruth, false)
+  assert.equal(before.byteAvailabilityProof, false)
+  assert.equal(before.materializationProof, false)
+  assert.equal(before.resourceAdmission, false)
+  assert.ok(output.lines.some((line) => line.startsWith('media summary: project=project-test')))
+  assert.ok(output.lines.some((line) => line.includes('attention: media/source/source-pixel.png')))
+  assert.ok(output.lines.some((line) => line.includes('unsupported_media_type')))
+
+  await generateThumbnailDerivatives({ projectDir: dir, maxSize: 64 })
+  const after = await createMediaSummary({ projectDir: dir })
+
+  assert.equal(after.derivatives.byKind.thumbnail, 1)
+  assert.equal(after.derivativeReadiness.readyAssets, 1)
+  assert.equal(after.derivativeReadiness.attentionAssets, 1)
+  assert.deepEqual(after.derivativeReadiness.attentionRows.map((row) => row.issueCodes[0]), ['unsupported_media_type'])
+})
+
+test('media summary print mode emits parseable local-only JSON', async () => {
+  const dir = await createFixtureProject()
+  await writeFile(
+    path.join(dir, 'media', 'generated', 'pixel.png'),
+    Buffer.from(onePixelPngBase64, 'base64')
+  )
+  await importMediaAsset({
+    projectDir: dir,
+    source: 'media/generated/pixel.png',
+    placement: 'source',
+    filename: 'source-pixel.png',
+    operatorRef: 'operator-test',
+    ffprobe: false
+  })
+  await generateThumbnailDerivatives({ projectDir: dir, maxSize: 64 })
+
+  const output = await captureConsole(() => writeMediaSummary({ projectDir: dir, print: true }))
+  const summary = JSON.parse(output.lines.join('\n'))
+
+  assert.equal(summary.schema, 'media.summary.local.v1')
+  assert.equal(summary.assets.byMediaKind.image, 1)
+  assert.equal(summary.derivatives.byKind.thumbnail, 1)
+  assert.equal(summary.derivativeReadiness.readyAssets, 1)
+  assert.equal(summary.localOnly, true)
+  assert.equal(summary.providerTruth, false)
+  assert.equal(summary.edgeApproval, false)
 })
 
 test('ffprobe posture normalizes unavailable failed and available results without real video', async () => {

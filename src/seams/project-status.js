@@ -772,7 +772,7 @@ function resourceCandidateIncludesPlacement(resourceCandidate, assetDescriptor) 
   return (resourceCandidate.sourcePlacementRef?.id ?? resourceCandidate.proposedResourceRef?.placementRef?.id) === assetDescriptor.placementRef.id
 }
 
-async function readProjectRecords(root) {
+export async function readProjectRecords(root) {
   const files = [
     ...await listJsonFiles(path.join(root, 'cards')),
     ...await listJsonFiles(path.join(root, 'records'))

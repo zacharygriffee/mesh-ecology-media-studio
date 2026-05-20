@@ -37,6 +37,12 @@ for image descriptors and writes `media.derivative.local.v1` receipts. These
 receipts clear thumbnail readiness for the matching descriptor/situation/
 placement only. Proxy and waveform generation remain deferred.
 
+`npm run media:summary` prints a compact operator summary of media intake,
+metadata probe posture, derivative readiness, derivative receipts, and the
+current byte/resource identity posture. `--print` emits the same summary as
+machine-readable JSON. The command remains local-only and does not call Edge,
+providers, storage backends, or mesh publication.
+
 ## Broad Vector
 
 The repo is moving from local media execution toward inspectable local media

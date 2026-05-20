@@ -144,6 +144,27 @@ When a thumbnail receipt satisfies readiness, `status:project` prints a compact
 `derivative ready` row with the local derivative ref. That row is operator
 guidance only.
 
+## Media Summary
+
+Use `media:summary` when the operator needs the media posture without raw JSON:
+
+```bash
+npm run media:summary -- --project-dir examples/card-to-candidate
+npm run media:summary -- --project-dir examples/card-to-candidate --print
+npm run --silent media:summary -- --project-dir examples/card-to-candidate --print
+```
+
+The compact output shows asset counts by media kind, derivative readiness,
+thumbnail/proxy/waveform counts, metadata probe attention, byte content posture,
+resource situation posture, and attention rows only when attention is needed.
+`--print` emits machine-readable JSON for agents and future control surfaces.
+Use `npm run --silent` when redirecting JSON stdout so npm's script banner is
+not included.
+
+The summary reads local records and refreshes the project status snapshot. It
+does not generate derivatives, call providers, call Edge, publish to mesh, or
+claim byte/materialization proof.
+
 ## Non-Claims
 
 Local media intake and derivative readiness do not claim:

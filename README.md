@@ -219,6 +219,14 @@ availability, materialization, resource admission, or mesh truth. Proxy and
 waveform generation remain deferred. See
 [Local Media Intake And Derivative Readiness](docs/45-local-media-intake-and-derivative-readiness.md).
 
+Summarize local intake and derivative posture without opening raw JSON:
+
+```bash
+npm run media:summary -- --project-dir examples/card-to-candidate
+npm run media:summary -- --project-dir examples/card-to-candidate --print
+npm run --silent media:summary -- --project-dir examples/card-to-candidate --print
+```
+
 Compare local candidate assets and record a local selection:
 
 ```bash

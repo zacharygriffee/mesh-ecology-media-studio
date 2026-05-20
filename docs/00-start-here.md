@@ -125,6 +125,13 @@ npm run derivatives:thumbnail -- --project-dir examples/card-to-candidate
 Thumbnail receipts remain local-only. Proxy and waveform generation remain
 deferred.
 
+Summarize local media intake, derivative readiness, and identity posture with:
+
+```bash
+npm run media:summary -- --project-dir examples/card-to-candidate
+npm run --silent media:summary -- --project-dir examples/card-to-candidate --print
+```
+
 Record a local candidate comparison and project status snapshot with:
 
 ```bash

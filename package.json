@@ -38,6 +38,7 @@
     "resource:refs": "node src/local/resource-ref-candidates.js",
     "repair:local-posture": "node src/local/repair-local-posture.js",
     "media:import": "node src/assets/import-media.js",
+    "media:summary": "node src/assets/media-summary.js",
     "derivatives:thumbnail": "node src/assets/generate-thumbnails.js",
     "reference:ingest": "node src/assets/ingest-reference.js",
     "fixture:inspection": "node src/local/generate-inspection-fixture.js",
