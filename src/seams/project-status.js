@@ -51,6 +51,7 @@ export async function writeProjectStatus({
   const counts = countRecords(records)
   const latestRefs = latestRecordRefs(records)
   const assetResourceConsistency = summarizeAssetResourceConsistency(records)
+  const mediaDerivativeReadiness = summarizeMediaDerivativeReadiness(records)
   const warnings = [
     'Project status is a local snapshot only.',
     'Counts and refs are not mesh truth, provider truth, byte proof, or ratifier authority.'
@@ -72,6 +73,7 @@ export async function writeProjectStatus({
     counts,
     latestRefs,
     assetResourceConsistency,
+    mediaDerivativeReadiness,
     warnings,
     localOnly: true,
     meshTruth: false,
@@ -97,6 +99,9 @@ export async function writeProjectStatus({
     for (const asset of assetResourceConsistency.assetExplanations.filter((entry) => entry.state !== 'ready-for-local-inspection')) {
       console.log(`asset attention: ${asset.assetId} | reason=${asset.reasons[0]}`)
     }
+    for (const asset of mediaDerivativeReadiness.assetExplanations.filter((entry) => entry.state !== 'ready-for-local-inspection')) {
+      console.log(`derivative attention: ${asset.path} | issues=${asset.issueCodes.join(',')}`)
+    }
   }
 
   return {
@@ -113,6 +118,8 @@ function formatProjectStatusSummary(status, output) {
   const consistency = status.assetResourceConsistency
   const bytePosture = `${consistency.bytePosture?.coveredContentIds ?? 0}/${consistency.bytePosture?.expectedContentIds ?? 0}`
   const resourcePosture = `${consistency.resourcePosture?.coveredSituationPlacements ?? 0}/${consistency.resourcePosture?.expectedSituationPlacements ?? 0}`
+  const derivativeReadiness = status.mediaDerivativeReadiness
+  const derivativePosture = `${derivativeReadiness?.readyAssets ?? 0}/${derivativeReadiness?.evaluatedAssets ?? 0}`
 
   return [
     `project status: ${status.projectId}`,
@@ -121,6 +128,7 @@ function formatProjectStatusSummary(status, output) {
     `identityWarnings=${status.assetResourceConsistency.identityWarningCount}`,
     `byteContent=${bytePosture}`,
     `resourceSituations=${resourcePosture}`,
+    `derivativeReadiness=${derivativePosture}`,
     `records=${nonZeroCounts}`,
     `output=${output}`
   ].join(' | ')
@@ -317,6 +325,105 @@ function summarizeAssetResourceConsistency(records) {
     byteAvailabilityProof: false,
     materializationProof: false
   }
+}
+
+function summarizeMediaDerivativeReadiness(records) {
+  const derivativeAssets = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaAssetDescriptor)
+    .filter((entry) => entry.record.derivativeReadiness?.evaluate === true)
+  const assetExplanations = derivativeAssets.map((entry) => derivativeHealthExplanation(entry))
+  const attention = assetExplanations.filter((entry) => entry.state !== 'ready-for-local-inspection')
+
+  return {
+    evaluatedAssets: derivativeAssets.length,
+    readyAssets: assetExplanations.length - attention.length,
+    attentionAssets: attention.length,
+    issueCodes: Array.from(new Set(attention.flatMap((entry) => entry.issueCodes))).sort(),
+    assetExplanations,
+    localOnly: true,
+    operatorGuidanceOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    byteAvailabilityProof: false,
+    materializationProof: false,
+    resourceAdmission: false,
+    publicationAuthorization: false
+  }
+}
+
+function derivativeHealthExplanation(entry) {
+  const readiness = entry.record.derivativeReadiness ?? {}
+  const issueCodes = Array.isArray(readiness.issueCodes) ? readiness.issueCodes : []
+  const pathRef = entry.record.localRef?.path ?? entry.path
+  const state = issueCodes.length === 0 ? 'ready-for-local-inspection' : 'needs-local-attention'
+
+  return {
+    subjectKind: 'media-asset-derivative-readiness',
+    subjectRef: makeRef('media-asset', entry.record.assetId, entry.record.schema),
+    assetId: entry.record.assetId,
+    contentId: contentIdForRecord(entry.record),
+    situationRef: entry.record.situationRef,
+    placementRef: entry.record.placementRef,
+    path: pathRef,
+    mediaKind: readiness.mediaKind ?? entry.record.metadataProbe?.mediaKind ?? 'unknown',
+    metadataProbeState: readiness.metadataProbeState ?? entry.record.metadataProbe?.metadataProbeState ?? 'unknown',
+    requiredDerivativeKinds: readiness.requiredDerivativeKinds ?? [],
+    state,
+    healthState: state,
+    issueCodes,
+    reasons: issueCodes.length === 0
+      ? ['local derivative readiness has no attention issues']
+      : issueCodes.map((code) => derivativeReason(code)),
+    nextAction: readiness.nextAction ?? nextDerivativeAction(issueCodes),
+    summary: issueCodes.length === 0
+      ? `${pathRef} has no derivative readiness attention issues.`
+      : `${pathRef} needs local derivative attention: ${issueCodes.join(', ')}.`,
+    sourceRefs: [
+      {
+        ...makeRef('media-asset-descriptor', entry.record.assetId, entry.record.schema),
+        path: entry.path,
+        localOnly: true
+      }
+    ],
+    nonClaims: healthNonClaims({
+      resourceAdmission: false,
+      providerTruth: false,
+      publicationAuthorization: false
+    }),
+    localOnly: true,
+    operatorGuidanceOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    providerTruth: false,
+    byteAvailabilityProof: false,
+    materializationProof: false,
+    resourceAdmission: false,
+    publicationAuthorization: false
+  }
+}
+
+function derivativeReason(code) {
+  if (code === 'missing_thumbnail') return 'missing thumbnail derivative'
+  if (code === 'missing_proxy') return 'missing proxy derivative'
+  if (code === 'missing_waveform') return 'missing waveform derivative'
+  if (code === 'metadata_probe_unavailable') return 'metadata probe unavailable'
+  if (code === 'unsupported_media_type') return 'unsupported media type for derivative readiness'
+  return code.replaceAll('_', ' ')
+}
+
+function nextDerivativeAction(issueCodes) {
+  if (issueCodes.includes('unsupported_media_type')) {
+    return 'Review content type before derivative preparation.'
+  }
+  if (issueCodes.includes('metadata_probe_unavailable')) {
+    return 'Install or repair local metadata tools before derivative preparation.'
+  }
+  if (issueCodes.some((code) => ['missing_thumbnail', 'missing_proxy', 'missing_waveform'].includes(code))) {
+    return 'Prepare local derivatives when derivative generation exists.'
+  }
+  return 'No local derivative readiness action needed.'
 }
 
 function findDuplicateAssetIdSituationWarnings(assetEntries) {

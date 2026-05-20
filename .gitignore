@@ -3,6 +3,7 @@ examples/**/records/
 examples/**/records/exports/
 examples/**/media/accepted/
 examples/**/media/rejected/
+examples/**/media/source/
 examples/**/media/generated/provider-smoke/
 examples/**/media/references/
 examples/**/media/proxies/

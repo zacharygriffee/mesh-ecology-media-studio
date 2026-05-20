@@ -1,0 +1,141 @@
+# Local Media Intake And Derivative Readiness
+
+## Purpose
+
+Studio can import project-local media files into the Mode 0 project layout and
+make derivative readiness visible to operators.
+
+This is an operational local-media slice. It does not add provider APIs, Edge
+runtime calls, storage backends, virtual drives, causal adapters, or active
+derivative generation.
+
+## Command
+
+Import a safe project-relative file:
+
+```bash
+npm run media:import -- --project-dir examples/card-to-candidate --source media/generated/candidate.txt --placement source
+```
+
+Supported placements:
+
+```text
+source -> media/source/
+generated -> media/generated/
+reference -> media/references/
+```
+
+Optional flags:
+
+```text
+--filename <safe filename>
+--operator-ref <operator id>
+```
+
+The command rejects absolute paths, traversal, URL-like refs, home expansion,
+backslash paths, and filenames with path separators.
+
+## Records Written
+
+`media:import` writes a normal `media.asset.descriptor.v1` under
+`records/assets/`.
+
+The descriptor includes the current layered identity fields:
+
+```text
+contentId
+assetDescriptorRef / artifactDescriptorRef
+originRef
+basisRef
+situationRef
+placementRef
+causalRefs deferred
+```
+
+`assetId` remains content-derived for compatibility. Do not use it as byte or
+resource identity in new behavior.
+
+PNG imports may also write `media.image_metadata.local.v1` when dimensions can
+be probed by the existing lightweight PNG reader.
+
+## Metadata Posture
+
+Imported descriptors carry a descriptor-level `metadataProbe` object with:
+
+```text
+mediaKind
+contentType
+size
+hash
+metadataProbeState
+warnings
+optional image dimensions
+optional ffprobe summary for video/audio when ffprobe is available
+```
+
+`ffprobe` is optional. Missing or failed `ffprobe` records local guidance and
+does not fail import.
+
+## Derivative Readiness
+
+Imported descriptors also carry `derivativeReadiness`.
+
+Initial issue codes:
+
+```text
+missing_thumbnail
+missing_proxy
+missing_waveform
+metadata_probe_unavailable
+unsupported_media_type
+```
+
+These issue codes appear in project status and health summaries as operator
+guidance. They do not generate derivatives.
+
+## Operator Surfaces
+
+These commands surface derivative readiness rows:
+
+```bash
+npm run status:project -- --project-dir examples/card-to-candidate
+npm run health:summary -- --project-dir examples/card-to-candidate
+```
+
+Example row shape:
+
+```text
+media-asset-derivative-readiness: media/source/source-pixel.png | state=needs-local-attention | issues=missing_thumbnail | nextAction=Prepare local derivatives when derivative generation exists.
+```
+
+## Non-Claims
+
+Local media intake and derivative readiness do not claim:
+
+```text
+mesh truth
+distributed proof
+ratified shared state
+byte availability proof
+materialization proof
+resource admission
+provider truth
+causal truth
+publication authorization
+Edge approval
+```
+
+## Deferred Work
+
+Deferred deliberately:
+
+- thumbnail generation
+- proxy generation
+- waveform generation
+- media preview UI
+- provider expansion
+- storage backend
+- virtual drive
+- causal adapter
+- Edge runtime integration
+- `assetId` generation migration

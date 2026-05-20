@@ -19,6 +19,7 @@ text is not the durable contract.
 | `npm run wedge:example` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
 | `npm run promote:candidate` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
 | `npm run reference:ingest` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
+| `npm run media:import` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
 | `npm run review:candidates` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
 | `npm run approval:proposal` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
 | `npm run continuity:draft` | yes | yes | `--print` | yes | runtime records use fresh ids/timestamps |

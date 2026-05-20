@@ -47,6 +47,7 @@ Read in this order:
 39. [Media Identity And Storage Posture](42-media-identity-and-storage-posture.md)
 40. [AssetId Usage Audit](43-asset-id-usage-audit.md)
 41. [Identity Migration Boundary](44-identity-migration-boundary.md)
+42. [Local Media Intake And Derivative Readiness](45-local-media-intake-and-derivative-readiness.md)
 
 The first executable path is:
 
@@ -111,7 +112,12 @@ Ingest a project-local reference asset with:
 
 ```bash
 npm run reference:ingest -- --project-dir examples/card-to-candidate --source media/generated/candidate.txt --filename candidate-reference.txt
+npm run media:import -- --project-dir examples/card-to-candidate --source media/generated/candidate.txt --placement source
 ```
+
+`media:import` writes a local asset descriptor with metadata probe posture and
+derivative readiness guidance. It does not generate thumbnails, proxies, or
+waveforms.
 
 Record a local candidate comparison and project status snapshot with:
 

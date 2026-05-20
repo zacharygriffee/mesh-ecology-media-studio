@@ -54,7 +54,7 @@ export async function writeLocalImageMetadataRecord({
   }
 }
 
-function imageDimensions(bytes, contentType) {
+export function imageDimensions(bytes, contentType) {
   if (contentType === 'image/png' || bytes.subarray(1, 4).toString('ascii') === 'PNG') {
     return pngDimensions(bytes)
   }

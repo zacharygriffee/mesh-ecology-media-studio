@@ -27,6 +27,11 @@ non-claims. They remain local guidance and do not prove byte availability,
 materialization, resource admission, causal truth, publication authorization, or
 Edge approval.
 
+`npm run media:import` imports safe project-relative media into `media/source`,
+`media/generated`, or `media/references`, writes an asset descriptor with local
+metadata probe posture, and exposes derivative readiness guidance for missing
+thumbnails, proxies, or waveforms. It does not generate those derivatives.
+
 ## Broad Vector
 
 The repo is moving from local media execution toward inspectable local media
@@ -114,7 +119,8 @@ The repo currently defines and validates records for:
 - provider-neutral generation requests, profiles, capabilities, and results
 - provider shape registry, mappings, adapter contracts, and failure taxonomy
 - Venice dry-run and gated live-smoke posture
-- asset descriptors, image metadata, reference ingest, and provider run ledger
+- asset descriptors, image metadata, reference/media ingest, local metadata
+  probe posture, derivative readiness guidance, and provider run ledger
 - local candidate review, review evidence, readiness, and operator decisions
 - local inspection packets and export bundles
 - project status, project health, and readiness/resource summaries

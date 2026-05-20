@@ -58,6 +58,8 @@ export async function writeProjectHealth({
   const blockingIssues = []
   const assetHealthExplanations = (statusResult.status.assetResourceConsistency.assetExplanations ?? [])
     .filter((entry) => entry.state !== 'ready-for-local-inspection')
+  const derivativeHealthExplanations = (statusResult.status.mediaDerivativeReadiness?.assetExplanations ?? [])
+    .filter((entry) => entry.state !== 'ready-for-local-inspection')
   const productionHealthExplanations = buildProductionHealthExplanations(productionValidation)
 
   if (statusResult.status.assetResourceConsistency.readyForEdgeInspection !== true) {
@@ -99,7 +101,9 @@ export async function writeProjectHealth({
       localOnly: true
     },
     assetResourceConsistency: statusResult.status.assetResourceConsistency,
+    mediaDerivativeReadiness: statusResult.status.mediaDerivativeReadiness,
     assetHealthExplanations,
+    derivativeHealthExplanations,
     edgeReadinessState: readinessResult.readiness.state,
     productionValidation: {
       valid: productionValidation.valid,
@@ -110,6 +114,7 @@ export async function writeProjectHealth({
     productionHealthExplanations,
     operatorHealthExplanations: [
       ...assetHealthExplanations,
+      ...derivativeHealthExplanations,
       ...productionHealthExplanations
     ],
     operatorGuidanceOnly: true,

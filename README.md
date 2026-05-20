@@ -201,6 +201,17 @@ Ingest a local reference asset into `media/references/`:
 npm run reference:ingest -- --project-dir examples/card-to-candidate --source media/generated/candidate.txt --filename candidate-reference.txt
 ```
 
+Import source, generated, or reference media into the local project layout:
+
+```bash
+npm run media:import -- --project-dir examples/card-to-candidate --source media/generated/candidate.txt --placement source
+```
+
+The import writes a local asset descriptor with metadata probe posture and
+derivative readiness guidance. It does not generate thumbnails, proxies, or
+waveforms. See
+[Local Media Intake And Derivative Readiness](docs/45-local-media-intake-and-derivative-readiness.md).
+
 Compare local candidate assets and record a local selection:
 
 ```bash

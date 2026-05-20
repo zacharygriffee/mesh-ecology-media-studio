@@ -9,6 +9,8 @@ import { runFirstWedge } from '../src/local/run-first-wedge.js'
 import { promoteCandidate } from '../src/local/promote-candidate.js'
 import { readLocalImageMetadata } from '../src/assets/image-metadata.js'
 import { ingestReferenceAsset } from '../src/assets/ingest-reference.js'
+import { importMediaAsset } from '../src/assets/import-media.js'
+import { derivativeIssueCodesForContentType } from '../src/assets/media-metadata.js'
 import { createByteDescriptorProposal, writeByteDescriptorProposals } from '../src/assets/byte-descriptor-proposal.js'
 import { writeCandidateReview } from '../src/review/candidate-review.js'
 import { createApprovalProposal, writeApprovalProposal } from '../src/review/approval-proposal.js'
@@ -1017,6 +1019,105 @@ test('reference ingest blocks unsafe source refs', async () => {
       source: '../outside.png'
     }),
     /Local ref path/
+  )
+})
+
+test('media import writes source asset descriptor with metadata and derivative readiness', async () => {
+  const dir = await createFixtureProject()
+  await writeFile(
+    path.join(dir, 'media', 'generated', 'pixel.png'),
+    Buffer.from(onePixelPngBase64, 'base64')
+  )
+
+  const result = await importMediaAsset({
+    projectDir: dir,
+    source: 'media/generated/pixel.png',
+    placement: 'source',
+    filename: 'source-pixel.png',
+    operatorRef: 'operator-test',
+    ffprobe: false
+  })
+  const status = await writeProjectStatus({ projectDir: dir, quiet: true })
+  const health = await writeProjectHealth({ projectDir: dir, summary: true })
+
+  assert.equal(result.assetDescriptor.schema, 'media.asset.descriptor.v1')
+  assert.equal(result.assetDescriptor.localRef.path, 'media/source/source-pixel.png')
+  assert.equal(result.assetDescriptor.localRef.placementClass, 'media-source')
+  assertLayeredAssetIdentity(result.assetDescriptor, {
+    expectedPlacementClass: 'media-source',
+    expectedPath: 'media/source/source-pixel.png',
+    expectedRole: 'source-media'
+  })
+  assert.equal(result.assetDescriptor.metadataProbe.mediaKind, 'image')
+  assert.equal(result.assetDescriptor.metadataProbe.image.width, 1)
+  assert.equal(result.assetDescriptor.derivativeReadiness.evaluate, true)
+  assert.deepEqual(result.assetDescriptor.derivativeReadiness.issueCodes, ['missing_thumbnail'])
+  assert.equal(result.assetDescriptor.derivativeReadiness.materializationProof, false)
+  assert.equal(result.imageMetadata.metadata.width, 1)
+  assert.equal(validateRequiredRecord(result.assetDescriptor), true)
+  assert.equal(validateRequiredRecord(result.imageMetadata.metadata), true)
+  assert.equal(status.status.mediaDerivativeReadiness.evaluatedAssets, 1)
+  assert.equal(status.status.mediaDerivativeReadiness.attentionAssets, 1)
+  assert.equal(status.status.mediaDerivativeReadiness.assetExplanations[0].issueCodes.includes('missing_thumbnail'), true)
+  assert.equal(status.status.mediaDerivativeReadiness.assetExplanations[0].nonClaims.materializationProof, false)
+  assert.ok(health.health.operatorHealthExplanations.some((entry) =>
+    entry.subjectKind === 'media-asset-derivative-readiness' &&
+    entry.issueCodes.includes('missing_thumbnail')
+  ))
+})
+
+test('media import records unsupported metadata posture without failing import', async () => {
+  const dir = await createFixtureProject()
+
+  const result = await importMediaAsset({
+    projectDir: dir,
+    source: 'media/generated/candidate.txt',
+    placement: 'source',
+    filename: 'source-notes.txt',
+    operatorRef: 'operator-test',
+    ffprobe: false
+  })
+  const status = await writeProjectStatus({ projectDir: dir, quiet: true })
+
+  assert.equal(result.assetDescriptor.contentType, 'text/plain')
+  assert.equal(result.assetDescriptor.metadataProbe.metadataProbeState, 'unsupported')
+  assert.equal(result.assetDescriptor.metadataProbe.materializationProof, false)
+  assert.deepEqual(result.assetDescriptor.derivativeReadiness.issueCodes, ['unsupported_media_type'])
+  assert.equal(status.status.mediaDerivativeReadiness.assetExplanations[0].nextAction, 'Review content type before derivative preparation.')
+})
+
+test('media derivative readiness maps image video audio and unsupported types', () => {
+  assert.deepEqual(derivativeIssueCodesForContentType('image/png'), ['missing_thumbnail'])
+  assert.deepEqual(derivativeIssueCodesForContentType('video/mp4'), ['missing_thumbnail', 'missing_proxy'])
+  assert.deepEqual(derivativeIssueCodesForContentType('audio/wav'), ['missing_waveform'])
+  assert.deepEqual(derivativeIssueCodesForContentType('text/plain'), ['unsupported_media_type'])
+})
+
+test('media import blocks unsafe refs and unsupported placements', async () => {
+  const dir = await createFixtureProject()
+
+  await assert.rejects(
+    () => importMediaAsset({
+      projectDir: dir,
+      source: '../outside.mp4'
+    }),
+    /Local ref path/
+  )
+  await assert.rejects(
+    () => importMediaAsset({
+      projectDir: dir,
+      source: 'media/generated/candidate.txt',
+      filename: '../candidate.txt'
+    }),
+    /Filename must not include path separators/
+  )
+  await assert.rejects(
+    () => importMediaAsset({
+      projectDir: dir,
+      source: 'media/generated/candidate.txt',
+      placement: 'accepted'
+    }),
+    /Unsupported media import placement/
   )
 })
 
