@@ -1,21 +1,17 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mesh-ecology.example/schemas/media-operator-packet-index-local.schema.json",
-  "title": "media.operator_packet_index.local.v1",
+  "$id": "https://mesh-ecology.example/schemas/media-cross-project-operator-index-local.schema.json",
+  "title": "media.cross_project_operator_index.local.v1",
   "type": "object",
   "additionalProperties": true,
   "required": [
     "schema",
     "indexId",
-    "projectId",
     "createdAt",
     "mode",
-    "indexedRootRef",
-    "packetRefs",
-    "bundleRefs",
-    "healthRefs",
-    "handoffCandidateRefs",
-    "operatorDecisionRequestRefs",
+    "inputListRef",
+    "projectRefs",
+    "projectSummaries",
     "summary",
     "warnings",
     "operatorGuidanceOnly",
@@ -31,35 +27,22 @@
   ],
   "properties": {
     "schema": {
-      "const": "media.operator_packet_index.local.v1"
+      "const": "media.cross_project_operator_index.local.v1"
     },
     "indexId": {
-      "type": "string",
-      "minLength": 1
-    },
-    "projectId": {
       "type": "string",
       "minLength": 1
     },
     "mode": {
       "const": "standalone-local"
     },
-    "indexedRootRef": {
+    "inputListRef": {
       "type": "object"
     },
-    "packetRefs": {
+    "projectRefs": {
       "type": "array"
     },
-    "bundleRefs": {
-      "type": "array"
-    },
-    "healthRefs": {
-      "type": "array"
-    },
-    "handoffCandidateRefs": {
-      "type": "array"
-    },
-    "operatorDecisionRequestRefs": {
+    "projectSummaries": {
       "type": "array"
     },
     "summary": {

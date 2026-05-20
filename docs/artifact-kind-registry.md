@@ -39,6 +39,8 @@ Known Studio artifact kinds:
 - `media.operator_packet_index.local.v1`
 - `media.edge_handoff_candidate.local.v1`
 - `media.operator_decision_request.local.v1`
+- `media.cross_project_inspection_input_list.local.v1`
+- `media.cross_project_operator_index.local.v1`
 - `media.production_unit.v1`
 - `media.reference_primitive.v1`
 - `media.continuity_band.v1`

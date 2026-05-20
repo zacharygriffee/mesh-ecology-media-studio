@@ -104,6 +104,7 @@ export async function writeOperatorPacketIndex({
     distributedProof: false,
     ratifiedSharedState: false,
     providerTruth: false,
+    edgeRuntimeBuilt: false,
     edgeRuntimeVerified: false,
     localTruthLabel: 'local cache',
     truthStatus

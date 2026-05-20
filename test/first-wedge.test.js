@@ -63,6 +63,7 @@ import { writeControlSurfaceProjection } from '../src/seams/control-surface-proj
 import { writeEdgeCompatibilityBundle } from '../src/seams/edge-compatibility-bundle.js'
 import { writeEdgeHandoffCandidate } from '../src/seams/edge-handoff-candidate.js'
 import { writeOperatorPacketIndex } from '../src/seams/operator-packet-index.js'
+import { writeCrossProjectOperatorIndex } from '../src/seams/cross-project-operator-index.js'
 import { writeContinuityEvidence } from '../src/seams/continuity-evidence.js'
 import { summarizeInspectionPacket } from '../src/seams/summarize-inspection-packet.js'
 import { checkInspectionFixture } from '../src/local/generate-inspection-fixture.js'
@@ -103,6 +104,66 @@ async function createFixtureProject() {
   await writeFile(path.join(dir, 'media', 'generated', 'candidate.txt'), 'candidate bytes')
 
   return dir
+}
+
+function slash(value) {
+  return value.split(path.sep).join('/')
+}
+
+function createCrossProjectInputList(projects) {
+  return {
+    schema: 'media.cross_project_inspection_input_list.local.v1',
+    inputListId: 'test-cross-project-input-list',
+    createdAt: '2026-05-19T00:00:00.000Z',
+    mode: 'standalone-local',
+    projects: projects.map(({ projectId, rootPath }) => ({
+      projectId,
+      rootRef: {
+        kind: 'local-directory',
+        id: projectId,
+        schema: 'media.local_ref.v1',
+        path: rootPath,
+        localOnly: true
+      },
+      artifactRefs: {
+        projectHealth: {
+          kind: 'media-project-health',
+          id: 'project-health-project-test',
+          schema: 'media.project_health.local.v1',
+          path: 'records/manifests/media-project-health.local.json',
+          localOnly: true
+        },
+        handoffCandidate: {
+          kind: 'media-edge-handoff-candidate',
+          id: 'edge-handoff-project-test',
+          schema: 'media.edge_handoff_candidate.local.v1',
+          path: 'records/exports/media-edge-handoff-candidate.local.json',
+          localOnly: true
+        },
+        operatorDecisionRequest: {
+          kind: 'media-operator-decision-request',
+          id: 'operator-decision-request-project-test',
+          schema: 'media.operator_decision_request.local.v1',
+          path: 'records/requests/media-operator-decision-request.local.json',
+          localOnly: true
+        }
+      }
+    })),
+    warnings: [
+      'Test input list only.',
+      'All referenced artifacts are local-only and not mesh truth.'
+    ],
+    operatorGuidanceOnly: true,
+    localOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    providerTruth: false,
+    edgeRuntimeBuilt: false,
+    edgeRuntimeVerified: false,
+    localTruthLabel: 'local draft',
+    truthStatus: 'not mesh truth; not distributed proof; not ratified shared state'
+  }
 }
 
 test('first wedge creates local records without claiming mesh truth', async () => {
@@ -1366,6 +1427,86 @@ test('committed unhealthy inspection fixture shape check passes', async () => {
   await checkUnhealthyFixtures({
     projectDir: 'examples/inspection-fixtures/unhealthy'
   })
+})
+
+test('cross-project operator index summarizes explicit local project inputs', async () => {
+  const readyDir = await createFixtureProject()
+  await runFirstWedge({ projectDir: readyDir })
+  await writeByteDescriptorProposals({ projectDir: readyDir })
+  await writeLocalLayerResourceRefCandidates({ projectDir: readyDir })
+  await writeEdgeReadinessGuidance({ projectDir: readyDir })
+  await inspectLocalRun({ projectDir: readyDir })
+  await writeProjectStatus({ projectDir: readyDir })
+  await writeProductionRecordsFromCard({ projectDir: readyDir })
+  await writeProjectHealth({ projectDir: readyDir })
+  await writeControlSurfaceProjection({ projectDir: readyDir })
+  await writeEdgeCompatibilityBundle({ projectDir: readyDir })
+  await writeOperatorPacketIndex({ projectDir: readyDir })
+  await writeEdgeHandoffCandidate({ projectDir: readyDir })
+  await writeOperatorDecisionRequest({ projectDir: readyDir })
+
+  const blockedDir = await createFixtureProject()
+  await runFirstWedge({ projectDir: blockedDir })
+  await writeEdgeReadinessGuidance({ projectDir: blockedDir })
+  await inspectLocalRun({ projectDir: blockedDir })
+  await writeProjectStatus({ projectDir: blockedDir })
+  await writeProjectHealth({ projectDir: blockedDir })
+  await writeControlSurfaceProjection({ projectDir: blockedDir })
+  await writeEdgeCompatibilityBundle({ projectDir: blockedDir })
+  await writeOperatorPacketIndex({ projectDir: blockedDir })
+  await writeEdgeHandoffCandidate({ projectDir: blockedDir })
+  await writeOperatorDecisionRequest({ projectDir: blockedDir })
+
+  const baseDir = '/'
+  const indexRoot = await mkdtemp(path.join(os.tmpdir(), 'media-studio-cross-project-index-'))
+  const inputListPath = path.join(indexRoot, 'input-list.local.json')
+  const outputPath = path.join(indexRoot, 'cross-project-index.local.json')
+  const inputList = createCrossProjectInputList([
+    { projectId: 'ready-project', rootPath: slash(path.relative(baseDir, readyDir)) },
+    { projectId: 'blocked-project', rootPath: slash(path.relative(baseDir, blockedDir)) }
+  ])
+  await writeFile(inputListPath, `${JSON.stringify(inputList, null, 2)}\n`)
+
+  const result = await writeCrossProjectOperatorIndex({
+    baseDir,
+    inputList: slash(path.relative(baseDir, inputListPath)),
+    output: slash(path.relative(baseDir, outputPath))
+  })
+
+  assert.equal(result.index.schema, 'media.cross_project_operator_index.local.v1')
+  assert.equal(result.index.summary.projects, 2)
+  assert.equal(result.index.summary.readyForEdgeInspection, 1)
+  assert.equal(result.index.summary.needsLocalAttention, 1)
+  assert.equal(result.index.meshTruth, false)
+  assert.equal(result.index.edgeRuntimeVerified, false)
+  assert.equal(validateRequiredRecord(inputList), true)
+  assert.equal(validateRequiredRecord(result.index), true)
+})
+
+test('cross-project input list rejects unsafe project refs', () => {
+  const inputList = createCrossProjectInputList([
+    { projectId: 'unsafe-project', rootPath: '../outside' }
+  ])
+
+  assert.throws(
+    () => validateRequiredRecord(inputList),
+    /Local ref path/
+  )
+})
+
+test('committed cross-project inspection fixture validates', async () => {
+  const inputList = JSON.parse(
+    await readFile('examples/inspection-fixtures/cross-project/input-list.local.json', 'utf8')
+  )
+  const index = JSON.parse(
+    await readFile('examples/inspection-fixtures/cross-project/media-cross-project-operator-index.local.json', 'utf8')
+  )
+
+  assert.equal(validateRequiredRecord(inputList), true)
+  assert.equal(validateRequiredRecord(index), true)
+  assert.equal(index.summary.projects, 3)
+  assert.equal(index.summary.needsLocalAttention, 3)
+  assert.equal(index.meshTruth, false)
 })
 
 test('Venice smoke inspection packet fails on missing records', async () => {

@@ -162,6 +162,7 @@ Summarize or index inspection records:
 ```bash
 npm run inspect:summary -- --project-dir examples/card-to-candidate --packet records/exports/local-run-edge-inspection-packet.local.json
 npm run inspect:index -- --project-dir examples/card-to-candidate
+npm run operator:cross-project-index
 ```
 
 Index provider attempts across a local project:
@@ -313,6 +314,9 @@ for later Edge-mediated attention without granting approval, ratifier, or
 publication authority.
 Phase 26 adds compact unhealthy inspection fixtures for missing byte proposals,
 stale resource refs, and stale production descriptors.
+Phase 27 adds an explicit cross-project inspection input list and local
+operator index so several project handoff postures can be scanned without
+project discovery or Edge runtime calls.
 
 ## Start Here
 
@@ -345,3 +349,4 @@ stale resource refs, and stale production descriptors.
 - [docs/33-record-folder-conventions.md](docs/33-record-folder-conventions.md)
 - [docs/34-json-exit-and-resolvability-posture.md](docs/34-json-exit-and-resolvability-posture.md)
 - [docs/35-operator-packet-index-and-handoff.md](docs/35-operator-packet-index-and-handoff.md)
+- [docs/36-cross-project-inspection-index.md](docs/36-cross-project-inspection-index.md)

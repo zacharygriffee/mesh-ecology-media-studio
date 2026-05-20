@@ -37,6 +37,7 @@ Read in this order:
 29. [Record Folder Conventions](33-record-folder-conventions.md)
 30. [JSON Exit And Resolvability Posture](34-json-exit-and-resolvability-posture.md)
 31. [Operator Packet Index And Handoff](35-operator-packet-index-and-handoff.md)
+32. [Cross Project Inspection Index](36-cross-project-inspection-index.md)
 
 The first executable path is:
 
@@ -69,6 +70,7 @@ npm run inspect:summary -- --project-dir examples/card-to-candidate --packet rec
 npm run inspect:index -- --project-dir examples/card-to-candidate
 npm run inspect:provider-runs -- --project-dir examples/card-to-candidate
 npm run operator:index -- --project-dir examples/card-to-candidate
+npm run operator:cross-project-index
 ```
 
 Create a local Edge-handoff preview bundle with:

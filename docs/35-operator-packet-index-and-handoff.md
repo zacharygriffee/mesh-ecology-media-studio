@@ -78,3 +78,15 @@ Regenerate or check them with:
 npm run fixture:unhealthy
 npm run fixture:unhealthy:check
 ```
+
+## Cross-Project Scan
+
+For an explicit multi-project input list, use:
+
+```bash
+npm run operator:cross-project-index
+```
+
+This writes `media.cross_project_operator_index.local.v1`. It summarizes
+listed local project artifacts, but does not discover projects, call Edge, or
+turn local records into shared truth.

@@ -1,0 +1,125 @@
+{
+  "schema": "media.cross_project_inspection_input_list.local.v1",
+  "inputListId": "fixture-cross-project-unhealthy",
+  "createdAt": "2026-05-19T00:00:00.000Z",
+  "mode": "standalone-local",
+  "projects": [
+    {
+      "projectId": "studio-example-project:missing-byte-proposal",
+      "label": "Missing byte proposal",
+      "rootRef": {
+        "kind": "local-directory",
+        "id": "unhealthy-missing-byte-proposal",
+        "schema": "media.local_ref.v1",
+        "path": "examples/inspection-fixtures/unhealthy/missing-byte-proposal",
+        "localOnly": true
+      },
+      "artifactRefs": {
+        "projectHealth": {
+          "kind": "media-project-health",
+          "id": "project-health-studio-example-project",
+          "schema": "media.project_health.local.v1",
+          "path": "media-project-health.local.json",
+          "localOnly": true
+        },
+        "handoffCandidate": {
+          "kind": "media-edge-handoff-candidate",
+          "id": "edge-handoff-studio-example-project",
+          "schema": "media.edge_handoff_candidate.local.v1",
+          "path": "media-edge-handoff-candidate.local.json",
+          "localOnly": true
+        },
+        "operatorDecisionRequest": {
+          "kind": "media-operator-decision-request",
+          "id": "operator-decision-request-studio-example-project",
+          "schema": "media.operator_decision_request.local.v1",
+          "path": "media-operator-decision-request.local.json",
+          "localOnly": true
+        }
+      }
+    },
+    {
+      "projectId": "studio-example-project:stale-resource-ref",
+      "label": "Stale resource ref",
+      "rootRef": {
+        "kind": "local-directory",
+        "id": "unhealthy-stale-resource-ref",
+        "schema": "media.local_ref.v1",
+        "path": "examples/inspection-fixtures/unhealthy/stale-resource-ref",
+        "localOnly": true
+      },
+      "artifactRefs": {
+        "projectHealth": {
+          "kind": "media-project-health",
+          "id": "project-health-studio-example-project",
+          "schema": "media.project_health.local.v1",
+          "path": "media-project-health.local.json",
+          "localOnly": true
+        },
+        "handoffCandidate": {
+          "kind": "media-edge-handoff-candidate",
+          "id": "edge-handoff-studio-example-project",
+          "schema": "media.edge_handoff_candidate.local.v1",
+          "path": "media-edge-handoff-candidate.local.json",
+          "localOnly": true
+        },
+        "operatorDecisionRequest": {
+          "kind": "media-operator-decision-request",
+          "id": "operator-decision-request-studio-example-project",
+          "schema": "media.operator_decision_request.local.v1",
+          "path": "media-operator-decision-request.local.json",
+          "localOnly": true
+        }
+      }
+    },
+    {
+      "projectId": "studio-example-project:stale-production-descriptor",
+      "label": "Stale production descriptor",
+      "rootRef": {
+        "kind": "local-directory",
+        "id": "unhealthy-stale-production-descriptor",
+        "schema": "media.local_ref.v1",
+        "path": "examples/inspection-fixtures/unhealthy/stale-production-descriptor",
+        "localOnly": true
+      },
+      "artifactRefs": {
+        "projectHealth": {
+          "kind": "media-project-health",
+          "id": "project-health-studio-example-project",
+          "schema": "media.project_health.local.v1",
+          "path": "media-project-health.local.json",
+          "localOnly": true
+        },
+        "handoffCandidate": {
+          "kind": "media-edge-handoff-candidate",
+          "id": "edge-handoff-studio-example-project",
+          "schema": "media.edge_handoff_candidate.local.v1",
+          "path": "media-edge-handoff-candidate.local.json",
+          "localOnly": true
+        },
+        "operatorDecisionRequest": {
+          "kind": "media-operator-decision-request",
+          "id": "operator-decision-request-studio-example-project",
+          "schema": "media.operator_decision_request.local.v1",
+          "path": "media-operator-decision-request.local.json",
+          "localOnly": true
+        }
+      }
+    }
+  ],
+  "warnings": [
+    "Fixture input list only; not project discovery.",
+    "All referenced artifacts are local-only and not mesh truth.",
+    "Cross-project indexing does not call or verify Edge."
+  ],
+  "operatorGuidanceOnly": true,
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "providerTruth": false,
+  "edgeRuntimeBuilt": false,
+  "edgeRuntimeVerified": false,
+  "localTruthLabel": "local draft",
+  "truthStatus": "not mesh truth; not distributed proof; not ratified shared state"
+}

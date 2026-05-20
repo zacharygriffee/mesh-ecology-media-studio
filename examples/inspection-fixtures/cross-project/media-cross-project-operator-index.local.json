@@ -1,0 +1,222 @@
+{
+  "schema": "media.cross_project_operator_index.local.v1",
+  "indexId": "cross-project-operator-index-fixture-cross-project-unhealthy",
+  "createdAt": "2026-05-20T00:23:03.375Z",
+  "mode": "standalone-local",
+  "inputListRef": {
+    "kind": "media-cross-project-inspection-input-list",
+    "id": "fixture-cross-project-unhealthy",
+    "schema": "media.cross_project_inspection_input_list.local.v1",
+    "path": "examples/inspection-fixtures/cross-project/input-list.local.json",
+    "localOnly": true
+  },
+  "projectRefs": [
+    {
+      "kind": "local-directory",
+      "id": "unhealthy-missing-byte-proposal",
+      "schema": "media.local_ref.v1",
+      "path": "examples/inspection-fixtures/unhealthy/missing-byte-proposal",
+      "localOnly": true
+    },
+    {
+      "kind": "local-directory",
+      "id": "unhealthy-stale-resource-ref",
+      "schema": "media.local_ref.v1",
+      "path": "examples/inspection-fixtures/unhealthy/stale-resource-ref",
+      "localOnly": true
+    },
+    {
+      "kind": "local-directory",
+      "id": "unhealthy-stale-production-descriptor",
+      "schema": "media.local_ref.v1",
+      "path": "examples/inspection-fixtures/unhealthy/stale-production-descriptor",
+      "localOnly": true
+    }
+  ],
+  "projectSummaries": [
+    {
+      "projectId": "studio-example-project:missing-byte-proposal",
+      "label": "Missing byte proposal",
+      "rootRef": {
+        "kind": "local-directory",
+        "id": "unhealthy-missing-byte-proposal",
+        "schema": "media.local_ref.v1",
+        "path": "examples/inspection-fixtures/unhealthy/missing-byte-proposal",
+        "localOnly": true
+      },
+      "refs": {
+        "projectHealth": {
+          "kind": "media-project-health",
+          "id": "project-health-studio-example-project",
+          "schema": "media.project_health.local.v1",
+          "path": "examples/inspection-fixtures/unhealthy/missing-byte-proposal/media-project-health.local.json",
+          "localOnly": true
+        },
+        "handoffCandidate": {
+          "kind": "media-edge-handoff-candidate",
+          "id": "edge-handoff-studio-example-project",
+          "schema": "media.edge_handoff_candidate.local.v1",
+          "path": "examples/inspection-fixtures/unhealthy/missing-byte-proposal/media-edge-handoff-candidate.local.json",
+          "localOnly": true
+        },
+        "operatorDecisionRequest": {
+          "kind": "media-operator-decision-request",
+          "id": "operator-decision-request-studio-example-project",
+          "schema": "media.operator_decision_request.local.v1",
+          "path": "examples/inspection-fixtures/unhealthy/missing-byte-proposal/media-operator-decision-request.local.json",
+          "localOnly": true
+        }
+      },
+      "healthState": "needs-local-attention",
+      "handoffState": "needs-local-attention",
+      "requestKind": "resolve-local-attention",
+      "blockingIssues": [
+        "asset-resource-consistency-not-ready",
+        "edge-readiness-caution"
+      ],
+      "nextActions": [
+        "Run npm run health:summary and resolve listed blocking issues before handoff.",
+        "Run npm run readiness:edge and address unresolved byte/resource guidance.",
+        "Run npm run bytes:proposal and npm run resource:refs, then regenerate readiness and health."
+      ],
+      "warnings": [],
+      "operatorGuidanceOnly": true,
+      "localOnly": true,
+      "meshTruth": false,
+      "distributedProof": false,
+      "ratifiedSharedState": false,
+      "edgeRuntimeBuilt": false,
+      "edgeRuntimeVerified": false
+    },
+    {
+      "projectId": "studio-example-project:stale-resource-ref",
+      "label": "Stale resource ref",
+      "rootRef": {
+        "kind": "local-directory",
+        "id": "unhealthy-stale-resource-ref",
+        "schema": "media.local_ref.v1",
+        "path": "examples/inspection-fixtures/unhealthy/stale-resource-ref",
+        "localOnly": true
+      },
+      "refs": {
+        "projectHealth": {
+          "kind": "media-project-health",
+          "id": "project-health-studio-example-project",
+          "schema": "media.project_health.local.v1",
+          "path": "examples/inspection-fixtures/unhealthy/stale-resource-ref/media-project-health.local.json",
+          "localOnly": true
+        },
+        "handoffCandidate": {
+          "kind": "media-edge-handoff-candidate",
+          "id": "edge-handoff-studio-example-project",
+          "schema": "media.edge_handoff_candidate.local.v1",
+          "path": "examples/inspection-fixtures/unhealthy/stale-resource-ref/media-edge-handoff-candidate.local.json",
+          "localOnly": true
+        },
+        "operatorDecisionRequest": {
+          "kind": "media-operator-decision-request",
+          "id": "operator-decision-request-studio-example-project",
+          "schema": "media.operator_decision_request.local.v1",
+          "path": "examples/inspection-fixtures/unhealthy/stale-resource-ref/media-operator-decision-request.local.json",
+          "localOnly": true
+        }
+      },
+      "healthState": "needs-local-attention",
+      "handoffState": "needs-local-attention",
+      "requestKind": "resolve-local-attention",
+      "blockingIssues": [
+        "asset-resource-consistency-not-ready",
+        "edge-readiness-caution"
+      ],
+      "nextActions": [
+        "Run npm run health:summary and resolve listed blocking issues before handoff.",
+        "Run npm run readiness:edge and address unresolved byte/resource guidance.",
+        "Run npm run bytes:proposal and npm run resource:refs, then regenerate readiness and health."
+      ],
+      "warnings": [],
+      "operatorGuidanceOnly": true,
+      "localOnly": true,
+      "meshTruth": false,
+      "distributedProof": false,
+      "ratifiedSharedState": false,
+      "edgeRuntimeBuilt": false,
+      "edgeRuntimeVerified": false
+    },
+    {
+      "projectId": "studio-example-project:stale-production-descriptor",
+      "label": "Stale production descriptor",
+      "rootRef": {
+        "kind": "local-directory",
+        "id": "unhealthy-stale-production-descriptor",
+        "schema": "media.local_ref.v1",
+        "path": "examples/inspection-fixtures/unhealthy/stale-production-descriptor",
+        "localOnly": true
+      },
+      "refs": {
+        "projectHealth": {
+          "kind": "media-project-health",
+          "id": "project-health-studio-example-project",
+          "schema": "media.project_health.local.v1",
+          "path": "examples/inspection-fixtures/unhealthy/stale-production-descriptor/media-project-health.local.json",
+          "localOnly": true
+        },
+        "handoffCandidate": {
+          "kind": "media-edge-handoff-candidate",
+          "id": "edge-handoff-studio-example-project",
+          "schema": "media.edge_handoff_candidate.local.v1",
+          "path": "examples/inspection-fixtures/unhealthy/stale-production-descriptor/media-edge-handoff-candidate.local.json",
+          "localOnly": true
+        },
+        "operatorDecisionRequest": {
+          "kind": "media-operator-decision-request",
+          "id": "operator-decision-request-studio-example-project",
+          "schema": "media.operator_decision_request.local.v1",
+          "path": "examples/inspection-fixtures/unhealthy/stale-production-descriptor/media-operator-decision-request.local.json",
+          "localOnly": true
+        }
+      },
+      "healthState": "needs-local-attention",
+      "handoffState": "needs-local-attention",
+      "requestKind": "resolve-local-attention",
+      "blockingIssues": [
+        "production-freshness-stale"
+      ],
+      "nextActions": [
+        "Run npm run health:summary and resolve listed blocking issues before handoff.",
+        "Regenerate or update production descriptors after production-unit changes."
+      ],
+      "warnings": [],
+      "operatorGuidanceOnly": true,
+      "localOnly": true,
+      "meshTruth": false,
+      "distributedProof": false,
+      "ratifiedSharedState": false,
+      "edgeRuntimeBuilt": false,
+      "edgeRuntimeVerified": false
+    }
+  ],
+  "summary": {
+    "projects": 3,
+    "readyForEdgeInspection": 0,
+    "needsLocalAttention": 3,
+    "unknownHandoffState": 0,
+    "blockingIssues": 5,
+    "missingArtifacts": 0,
+    "operatorGuidanceOnly": true
+  },
+  "warnings": [
+    "Cross-project operator index is a local scan over explicit input refs.",
+    "It does not discover projects, call Edge, publish mesh state, or ratify readiness.",
+    "Each project summary is operator guidance only and may be stale until regenerated."
+  ],
+  "operatorGuidanceOnly": true,
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "providerTruth": false,
+  "edgeRuntimeBuilt": false,
+  "edgeRuntimeVerified": false,
+  "localTruthLabel": "local cache",
+  "truthStatus": "not mesh truth; not distributed proof; not ratified shared state"
+}

@@ -36,6 +36,8 @@ export const artifactKinds = Object.freeze({
   mediaOperatorPacketIndexLocal: 'media.operator_packet_index.local.v1',
   mediaEdgeHandoffCandidateLocal: 'media.edge_handoff_candidate.local.v1',
   mediaOperatorDecisionRequestLocal: 'media.operator_decision_request.local.v1',
+  mediaCrossProjectInspectionInputListLocal: 'media.cross_project_inspection_input_list.local.v1',
+  mediaCrossProjectOperatorIndexLocal: 'media.cross_project_operator_index.local.v1',
   mediaProductionUnit: 'media.production_unit.v1',
   mediaReferencePrimitive: 'media.reference_primitive.v1',
   mediaContinuityBand: 'media.continuity_band.v1',

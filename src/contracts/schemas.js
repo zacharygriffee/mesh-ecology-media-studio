@@ -58,6 +58,8 @@ export const schemaFiles = {
   'media.operator_packet_index.local.v1': 'schemas/media-operator-packet-index-local.schema.json',
   'media.edge_handoff_candidate.local.v1': 'schemas/media-edge-handoff-candidate-local.schema.json',
   'media.operator_decision_request.local.v1': 'schemas/media-operator-decision-request-local.schema.json',
+  'media.cross_project_inspection_input_list.local.v1': 'schemas/media-cross-project-inspection-input-list-local.schema.json',
+  'media.cross_project_operator_index.local.v1': 'schemas/media-cross-project-operator-index-local.schema.json',
   'media.production_unit.v1': 'schemas/media-production-unit.schema.json',
   'media.reference_primitive.v1': 'schemas/media-reference-primitive.schema.json',
   'media.continuity_band.v1': 'schemas/media-continuity-band.schema.json',
@@ -624,6 +626,7 @@ export const requiredFields = {
     'distributedProof',
     'ratifiedSharedState',
     'providerTruth',
+    'edgeRuntimeBuilt',
     'edgeRuntimeVerified',
     'localTruthLabel',
     'truthStatus'
@@ -684,6 +687,45 @@ export const requiredFields = {
     'distributedProof',
     'ratifiedSharedState',
     'providerTruth',
+    'localTruthLabel',
+    'truthStatus'
+  ],
+  'media.cross_project_inspection_input_list.local.v1': [
+    'schema',
+    'inputListId',
+    'createdAt',
+    'mode',
+    'projects',
+    'warnings',
+    'operatorGuidanceOnly',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'providerTruth',
+    'edgeRuntimeBuilt',
+    'edgeRuntimeVerified',
+    'localTruthLabel',
+    'truthStatus'
+  ],
+  'media.cross_project_operator_index.local.v1': [
+    'schema',
+    'indexId',
+    'createdAt',
+    'mode',
+    'inputListRef',
+    'projectRefs',
+    'projectSummaries',
+    'summary',
+    'warnings',
+    'operatorGuidanceOnly',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'providerTruth',
+    'edgeRuntimeBuilt',
+    'edgeRuntimeVerified',
     'localTruthLabel',
     'truthStatus'
   ],
@@ -898,6 +940,8 @@ const idFields = {
   [artifactKinds.mediaOperatorPacketIndexLocal]: 'indexId',
   [artifactKinds.mediaEdgeHandoffCandidateLocal]: 'handoffCandidateId',
   [artifactKinds.mediaOperatorDecisionRequestLocal]: 'requestId',
+  [artifactKinds.mediaCrossProjectInspectionInputListLocal]: 'inputListId',
+  [artifactKinds.mediaCrossProjectOperatorIndexLocal]: 'indexId',
   [artifactKinds.mediaProductionUnit]: 'productionUnitId',
   [artifactKinds.mediaReferencePrimitive]: 'primitiveId',
   [artifactKinds.mediaContinuityBand]: 'bandId',
@@ -964,6 +1008,8 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaOperatorPacketIndexLocal,
   artifactKinds.mediaEdgeHandoffCandidateLocal,
   artifactKinds.mediaOperatorDecisionRequestLocal,
+  artifactKinds.mediaCrossProjectInspectionInputListLocal,
+  artifactKinds.mediaCrossProjectOperatorIndexLocal,
   artifactKinds.mediaProductionUnit,
   artifactKinds.mediaReferencePrimitive,
   artifactKinds.mediaContinuityBand,
@@ -1561,7 +1607,7 @@ export function validateRecordShape(record, schemaId = record.schema) {
 
     validateLocalFalseFlags(record, schemaId)
 
-    for (const flag of ['providerTruth', 'edgeRuntimeVerified']) {
+    for (const flag of ['providerTruth', 'edgeRuntimeBuilt', 'edgeRuntimeVerified']) {
       if (record[flag] !== false) {
         throw new Error(`Record ${schemaId} must set ${flag}=false`)
       }
@@ -1663,6 +1709,65 @@ export function validateRecordShape(record, schemaId = record.schema) {
       if (record[flag] !== false) {
         throw new Error(`Record ${schemaId} must set ${flag}=false`)
       }
+    }
+  }
+
+  if (schemaId === artifactKinds.mediaCrossProjectInspectionInputListLocal) {
+    if (record.mode !== 'standalone-local') {
+      throw new Error(`Record ${schemaId} has invalid mode: ${record.mode}`)
+    }
+
+    if (!Array.isArray(record.projects) || record.projects.length === 0) {
+      throw new Error(`Record ${schemaId}.projects must be a non-empty array`)
+    }
+
+    record.projects.forEach((project, index) => validateCrossProjectInput(project, `${schemaId}.projects[${index}]`))
+
+    if (!Array.isArray(record.warnings)) {
+      throw new Error(`Record ${schemaId}.warnings must be an array`)
+    }
+
+    if (record.operatorGuidanceOnly !== true) {
+      throw new Error(`Record ${schemaId} must set operatorGuidanceOnly=true`)
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+    validateEdgeRuntimeFlags(record, schemaId)
+
+    if (record.providerTruth !== false) {
+      throw new Error(`Record ${schemaId} must set providerTruth=false`)
+    }
+  }
+
+  if (schemaId === artifactKinds.mediaCrossProjectOperatorIndexLocal) {
+    if (record.mode !== 'standalone-local') {
+      throw new Error(`Record ${schemaId} has invalid mode: ${record.mode}`)
+    }
+
+    validateInspectionRef(record.inputListRef, `${schemaId}.inputListRef`)
+
+    for (const collection of ['projectRefs', 'projectSummaries', 'warnings']) {
+      if (!Array.isArray(record[collection])) {
+        throw new Error(`Record ${schemaId}.${collection} must be an array`)
+      }
+    }
+
+    record.projectRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.projectRefs[${index}]`))
+    record.projectSummaries.forEach((summary, index) => validateCrossProjectSummary(summary, `${schemaId}.projectSummaries[${index}]`))
+
+    if (!record.summary || typeof record.summary !== 'object') {
+      throw new Error(`Record ${schemaId}.summary must be an object`)
+    }
+
+    if (record.operatorGuidanceOnly !== true || record.summary.operatorGuidanceOnly !== true) {
+      throw new Error(`Record ${schemaId} must set operatorGuidanceOnly=true`)
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+    validateEdgeRuntimeFlags(record, schemaId)
+
+    if (record.providerTruth !== false) {
+      throw new Error(`Record ${schemaId} must set providerTruth=false`)
     }
   }
 
@@ -2138,6 +2243,62 @@ function validateHandoffDiagnosis(diagnosis, label) {
 
   for (const flag of ['meshTruth', 'distributedProof', 'ratifiedSharedState', 'edgeRuntimeVerified']) {
     if (diagnosis[flag] !== false) {
+      throw new Error(`${label} must set ${flag}=false`)
+    }
+  }
+}
+
+function validateCrossProjectInput(project, label) {
+  if (!project || typeof project !== 'object') {
+    throw new Error(`${label} must be an object`)
+  }
+
+  if (!isNonEmptyString(project.projectId)) {
+    throw new Error(`${label}.projectId must be a string`)
+  }
+
+  validateInspectionRef(project.rootRef, `${label}.rootRef`)
+
+  if (!project.artifactRefs || typeof project.artifactRefs !== 'object') {
+    throw new Error(`${label}.artifactRefs must be an object`)
+  }
+
+  for (const [name, ref] of Object.entries(project.artifactRefs)) {
+    validateInspectionRef(ref, `${label}.artifactRefs.${name}`)
+  }
+}
+
+function validateCrossProjectSummary(summary, label) {
+  if (!summary || typeof summary !== 'object') {
+    throw new Error(`${label} must be an object`)
+  }
+
+  if (!isNonEmptyString(summary.projectId)) {
+    throw new Error(`${label}.projectId must be a string`)
+  }
+
+  validateInspectionRef(summary.rootRef, `${label}.rootRef`)
+
+  if (!summary.refs || typeof summary.refs !== 'object') {
+    throw new Error(`${label}.refs must be an object`)
+  }
+
+  for (const [name, ref] of Object.entries(summary.refs)) {
+    validateInspectionRef(ref, `${label}.refs.${name}`)
+  }
+
+  for (const collection of ['blockingIssues', 'nextActions', 'warnings']) {
+    if (!Array.isArray(summary[collection])) {
+      throw new Error(`${label}.${collection} must be an array`)
+    }
+  }
+
+  if (summary.operatorGuidanceOnly !== true || summary.localOnly !== true) {
+    throw new Error(`${label} must remain local operator guidance`)
+  }
+
+  for (const flag of ['meshTruth', 'distributedProof', 'ratifiedSharedState', 'edgeRuntimeBuilt', 'edgeRuntimeVerified']) {
+    if (summary[flag] !== false) {
       throw new Error(`${label} must set ${flag}=false`)
     }
   }
