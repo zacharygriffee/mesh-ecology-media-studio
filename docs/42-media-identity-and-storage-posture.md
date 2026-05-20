@@ -197,6 +197,38 @@ The same content does not imply the same Studio meaning. An accepted candidate
 and a reference asset may share bytes while carrying different review,
 production, and handoff semantics.
 
+## Shared Basis, Fork, And Divergence
+
+A fork may share content and origin, but once its situation branch diverges it
+must receive its own situation/resource identity.
+
+Studio uses this framing:
+
+- `contentId`: same bytes.
+- `basisRef` / `originRef`: shared basis or source ancestry.
+- `situationRef`: deterministic identity of the referent/artifact situated in a
+  context, role, surface, and rule-book basis.
+- `observerSituationViewRef`: optional future observer-specific view when
+  visibility, affordances, permissions, or local materialization differ.
+- `placementRef`: concrete local path/container/slot/lifecycle subtype of
+  `situationRef`.
+- `resourceRefCandidateId`: proposed resource subject for the specific
+  descriptor/situation/placement.
+
+The fixture at
+`examples/identity-fixtures/shared-basis-divergent-situations/` captures this
+pressure with identical test bytes copied into accepted and reference roles. It
+keeps one shared `contentId`, `originRef`, `basisRef`, and byte descriptor
+proposal while assigning separate `situationRef`, `placementRef`, and
+`resourceRefCandidateId` values.
+
+Observer view identity is separate from situation identity. Two operators
+inspecting the same accepted candidate in the same Studio project can share the
+same `situationRef`; they only need distinct `observerSituationViewRef` values
+when the observer-specific view changes. Importing the same content into a
+different project, role, surface, or rule-book basis creates a new
+`situationRef`.
+
 ## Current Migration Note
 
 Current Studio records still derive `assetId` from content hash in several
@@ -240,8 +272,9 @@ repair does not collapse one placement into the other
 causal/linkage fields are shaped or explicitly deferred
 ```
 
-That fixture is deferred until the descriptor/resource schema migration can be
-done cleanly.
+The committed fixture proves the model shape. Runtime byte/resource writers
+still need a later migration before `repair:local-posture` can repair every
+same-content divergent-situation project without residual attention.
 
 ## Storage Stack Posture
 

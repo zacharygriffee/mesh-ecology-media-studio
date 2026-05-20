@@ -363,6 +363,9 @@ should be descriptor/situation/placement-oriented, and causal records should
 link the layers without collapsing them. This now ties directly to Spine's
 family-wide
 `../mesh-ecology-spine/docs/identity-layering-and-storage-posture.md` posture.
+`examples/identity-fixtures/shared-basis-divergent-situations/` is the current
+fixture pressure: accepted and reference copies share content/origin/basis but
+use distinct situation, placement, and resource candidate identities.
 
 ## Command Surface Inventory
 

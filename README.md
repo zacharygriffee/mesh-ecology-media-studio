@@ -353,7 +353,10 @@ issues without inventing reviews, approvals, provider results, or authority.
 The media identity and storage posture now ties Studio's same-byte asset issue
 to Spine's family-wide identity layering doctrine so content, publication,
 descriptor, situation, placement, resource, causal, materialization, and
-authority layers do not collapse into one Studio meaning.
+authority layers do not collapse into one Studio meaning. The shared-basis
+identity fixture shows identical bytes forked into accepted and reference roles
+with shared content/origin but distinct situation, placement, and resource
+candidate identities.
 The command surface inventory maps compact command output, machine-readable
 artifact output, JSON stdout support, stable refs, and known churn posture for
 current operational commands.

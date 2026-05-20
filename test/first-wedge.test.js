@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -107,6 +108,10 @@ async function captureConsole(fn) {
 
 function ref(kind, id, schema) {
   return { kind, id, schema }
+}
+
+function sha256Hex(bytes) {
+  return createHash('sha256').update(bytes).digest('hex')
 }
 
 function createTestOperationCandidate(overrides = {}) {
@@ -1482,6 +1487,82 @@ test('local posture repair regenerates stale production descriptors', async () =
   assert.equal(summary.repairs[0].publicationAuthorization, false)
   assert.equal(after.health.productionValidation.freshness.staleDescriptorIds.length, 0)
   assert.equal(after.health.operatorHealthExplanations.length, 0)
+})
+
+test('identity fixture keeps shared basis while divergent situations get distinct resource identities', async () => {
+  const root = path.resolve('examples/identity-fixtures/shared-basis-divergent-situations')
+  const expectedHash = '20fe25a95cc615686e07012a808a3c3a74cfd35430f437de345f4e3b4b18ebfd'
+  const contentId = `sha256:${expectedHash}`
+
+  const generatedBytes = await readFile(path.join(root, 'media/generated/candidate.txt'))
+  const acceptedBytes = await readFile(path.join(root, 'media/accepted/candidate.txt'))
+  const referenceBytes = await readFile(path.join(root, 'media/references/candidate.txt'))
+  assert.equal(sha256Hex(generatedBytes), expectedHash)
+  assert.equal(sha256Hex(acceptedBytes), expectedHash)
+  assert.equal(sha256Hex(referenceBytes), expectedHash)
+
+  const accepted = JSON.parse(await readFile(path.join(root, 'records/assets/accepted-candidate.local.json'), 'utf8'))
+  const reference = JSON.parse(await readFile(path.join(root, 'records/assets/reference-candidate.local.json'), 'utf8'))
+  const byteProposal = JSON.parse(await readFile(
+    path.join(root, `records/bytes/byte-descriptor-proposal-sha256-${expectedHash}.local.json`),
+    'utf8'
+  ))
+  const acceptedResource = JSON.parse(await readFile(
+    path.join(root, 'records/resources/resource-ref-candidate-accepted-candidate.local.json'),
+    'utf8'
+  ))
+  const referenceResource = JSON.parse(await readFile(
+    path.join(root, 'records/resources/resource-ref-candidate-reference-candidate.local.json'),
+    'utf8'
+  ))
+
+  for (const record of [accepted, reference, byteProposal, acceptedResource, referenceResource]) {
+    assert.equal(validateRequiredRecord(record), true)
+    assert.equal(record.localOnly, true)
+    assert.equal(record.meshTruth, false)
+    assert.equal(record.distributedProof, false)
+    assert.equal(record.ratifiedSharedState, false)
+  }
+
+  assert.equal(accepted.contentId, contentId)
+  assert.equal(reference.contentId, contentId)
+  assert.equal(byteProposal.contentId, contentId)
+  assert.equal(accepted.basisRef.id, reference.basisRef.id)
+  assert.equal(accepted.originRef.id, reference.originRef.id)
+  assert.notEqual(accepted.assetDescriptorRef.id, reference.assetDescriptorRef.id)
+  assert.notEqual(accepted.situationRef.id, reference.situationRef.id)
+  assert.notEqual(accepted.placementRef.id, reference.placementRef.id)
+  assert.notEqual(accepted.placementRef.path, reference.placementRef.path)
+
+  assert.equal(byteProposal.sharedBySituationRefs.length, 2)
+  assert.deepEqual(
+    byteProposal.sharedBySituationRefs.map((entry) => entry.id).sort(),
+    [accepted.situationRef.id, reference.situationRef.id].sort()
+  )
+  assert.equal(byteProposal.byteAvailabilityProof, false)
+  assert.equal(byteProposal.materializationProof, false)
+
+  assert.notEqual(acceptedResource.resourceRefCandidateId, referenceResource.resourceRefCandidateId)
+  assert.equal(acceptedResource.contentId, contentId)
+  assert.equal(referenceResource.contentId, contentId)
+  assert.equal(acceptedResource.proposedResourceRef.situationRef.id, accepted.situationRef.id)
+  assert.equal(referenceResource.proposedResourceRef.situationRef.id, reference.situationRef.id)
+  assert.equal(acceptedResource.proposedResourceRef.placementRef.id, accepted.placementRef.id)
+  assert.equal(referenceResource.proposedResourceRef.placementRef.id, reference.placementRef.id)
+  assert.equal(acceptedResource.proposedResourceRef.byteDescriptorProposalRef.id, byteProposal.byteDescriptorProposalId)
+  assert.equal(referenceResource.proposedResourceRef.byteDescriptorProposalRef.id, byteProposal.byteDescriptorProposalId)
+  assert.notEqual(acceptedResource.proposedResourceRef.identitySeed, referenceResource.proposedResourceRef.identitySeed)
+  assert.equal(acceptedResource.localLayerResourceRef, false)
+  assert.equal(referenceResource.localLayerResourceRef, false)
+  assert.equal(acceptedResource.promotionPosture.promotionAuthority, false)
+  assert.equal(referenceResource.promotionPosture.promotionAuthority, false)
+
+  assert.equal(accepted.causalRefs.deferred, true)
+  assert.equal(reference.causalRefs.deferred, true)
+  assert.equal(acceptedResource.causalRefs.deferred, true)
+  assert.equal(referenceResource.causalRefs.deferred, true)
+  assert.equal(accepted.observerSituationViewRef.deferred, true)
+  assert.equal(reference.observerSituationViewRef.deferred, true)
 })
 
 test('inspection summary and Edge bundle include project health records', async () => {

@@ -244,4 +244,6 @@ The media identity posture now ties Studio's same-byte asset issue to Spine's
 family-wide identity layering doctrine: content, byte publication, descriptor,
 situation, placement, resource, causal, materialization, and authority layers
 must remain distinct. `placementRef` is now documented as a concrete subtype of
-the broader `situationRef` concept.
+the broader `situationRef` concept. The shared-basis identity fixture shows one
+content basis diverging into accepted and reference situations without making
+one resource candidate satisfy both.

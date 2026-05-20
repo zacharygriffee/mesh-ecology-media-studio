@@ -1,0 +1,113 @@
+{
+  "schema": "media.asset.descriptor.v1",
+  "assetId": "asset-descriptor-reference-candidate",
+  "projectId": "identity-fixture",
+  "contentId": "sha256:20fe25a95cc615686e07012a808a3c3a74cfd35430f437de345f4e3b4b18ebfd",
+  "contentType": "text/plain",
+  "hash": {
+    "algorithm": "sha256",
+    "value": "20fe25a95cc615686e07012a808a3c3a74cfd35430f437de345f4e3b4b18ebfd"
+  },
+  "size": 29,
+  "localRef": {
+    "schema": "media.local_ref.v1",
+    "refKind": "local-file",
+    "path": "media/references/candidate.txt",
+    "placementClass": "media-reference",
+    "lifecycleState": "source",
+    "localOnly": true,
+    "meshTruth": false,
+    "distributedProof": false,
+    "ratifiedSharedState": false
+  },
+  "assetDescriptorRef": {
+    "kind": "media-asset-descriptor",
+    "id": "asset-descriptor-reference-candidate",
+    "schema": "media.asset.descriptor.v1"
+  },
+  "originRef": {
+    "kind": "media-generated-candidate",
+    "id": "generated:candidate"
+  },
+  "basisRef": {
+    "kind": "media-basis",
+    "id": "basis:generated-candidate"
+  },
+  "referentRef": {
+    "kind": "media-referent",
+    "id": "referent:generated-candidate"
+  },
+  "situationRef": {
+    "kind": "studio-media-situation",
+    "id": "situation:identity-fixture:reference-asset",
+    "role": "reference-asset",
+    "contextRef": {
+      "kind": "studio-project",
+      "id": "project:identity-fixture"
+    },
+    "surfaceRef": {
+      "kind": "media-project-local-layer",
+      "id": "surface:identity-fixture"
+    },
+    "ruleBookRef": {
+      "id": "rule-book:studio-local-media"
+    }
+  },
+  "observerSituationViewRef": {
+    "deferred": true,
+    "deferredReason": "observer-specific view identity is not needed for this shared project situation"
+  },
+  "placementRef": {
+    "kind": "path-placement",
+    "id": "placement:identity-fixture:media/references/candidate.txt",
+    "path": "media/references/candidate.txt",
+    "placementClass": "media-reference",
+    "lifecycleState": "source"
+  },
+  "resourceSubjectSeed": {
+    "contentId": "sha256:20fe25a95cc615686e07012a808a3c3a74cfd35430f437de345f4e3b4b18ebfd",
+    "assetDescriptorRef": "asset-descriptor-reference-candidate",
+    "situationRef": "situation:identity-fixture:reference-asset",
+    "placementRef": "placement:identity-fixture:media/references/candidate.txt"
+  },
+  "source": {
+    "kind": "fixture-copy",
+    "sourcePath": "media/generated/candidate.txt"
+  },
+  "lineage": {
+    "parentRefs": [
+      {
+        "kind": "media-generated-candidate",
+        "id": "generated:candidate"
+      }
+    ],
+    "referents": [
+      "referent:generated-candidate"
+    ],
+    "branchId": "branch:reference-asset",
+    "contextId": "project:identity-fixture",
+    "observerRef": "studio:identity-fixture",
+    "continuityClaims": [],
+    "transitionSummary": "Same content copied into reference-asset situation; causal adapter deferred."
+  },
+  "causalRefs": {
+    "deferred": true,
+    "deferredReason": "causal-substrate adapter not implemented"
+  },
+  "provenance": {
+    "localOnly": true,
+    "originRef": "generated:candidate",
+    "basisRef": "basis:generated-candidate"
+  },
+  "localTruthLabel": "local cache",
+  "truthStatus": "not mesh truth; not distributed proof; not ratified shared state",
+  "createdAt": "2026-05-20T00:00:00.000Z",
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "byteAvailabilityProof": false,
+  "materializationProof": false,
+  "resourceAdmission": false,
+  "causalTruth": false
+}

@@ -1,0 +1,120 @@
+{
+  "schema": "media.local_layer_resource_ref_candidate.local.v1",
+  "resourceRefCandidateId": "resource-ref-candidate-reference-candidate",
+  "projectId": "identity-fixture",
+  "contentId": "sha256:20fe25a95cc615686e07012a808a3c3a74cfd35430f437de345f4e3b4b18ebfd",
+  "sourceRef": {
+    "kind": "media-asset",
+    "id": "asset-descriptor-reference-candidate",
+    "schema": "media.asset.descriptor.v1"
+  },
+  "sourcePath": "records/assets/reference-candidate.local.json",
+  "resourceKind": "media-asset-by-situation",
+  "currentRefCategory": "device_dependent_scaffold",
+  "targetRefCategory": "local_layer_resource_ref",
+  "proposedResourceRef": {
+    "kind": "local-layer-resource-ref-candidate",
+    "id": "media-asset:identity-fixture:situation:reference-asset:placement:reference",
+    "resourceKind": "media-asset-by-situation",
+    "contentId": "sha256:20fe25a95cc615686e07012a808a3c3a74cfd35430f437de345f4e3b4b18ebfd",
+    "basisRef": {
+      "kind": "media-basis",
+      "id": "basis:generated-candidate"
+    },
+    "originRef": {
+      "kind": "media-generated-candidate",
+      "id": "generated:candidate"
+    },
+    "assetDescriptorRef": {
+      "kind": "media-asset-descriptor",
+      "id": "asset-descriptor-reference-candidate",
+      "schema": "media.asset.descriptor.v1"
+    },
+    "situationRef": {
+      "kind": "studio-media-situation",
+      "id": "situation:identity-fixture:reference-asset"
+    },
+    "placementRef": {
+      "kind": "path-placement",
+      "id": "placement:identity-fixture:media/references/candidate.txt",
+      "path": "media/references/candidate.txt",
+      "placementClass": "media-reference",
+      "lifecycleState": "source"
+    },
+    "hash": {
+      "algorithm": "sha256",
+      "value": "20fe25a95cc615686e07012a808a3c3a74cfd35430f437de345f4e3b4b18ebfd"
+    },
+    "localRef": {
+      "schema": "media.local_ref.v1",
+      "refKind": "local-file",
+      "path": "media/references/candidate.txt",
+      "placementClass": "media-reference",
+      "lifecycleState": "source",
+      "localOnly": true,
+      "meshTruth": false,
+      "distributedProof": false,
+      "ratifiedSharedState": false
+    },
+    "byteDescriptorProposalRef": {
+      "kind": "media-byte-descriptor-proposal",
+      "id": "byte-descriptor-proposal-sha256-20fe25a95cc615686e07012a808a3c3a74cfd35430f437de345f4e3b4b18ebfd",
+      "schema": "media.byte_descriptor_proposal.local.v1",
+      "path": "records/bytes/byte-descriptor-proposal-sha256-20fe25a95cc615686e07012a808a3c3a74cfd35430f437de345f4e3b4b18ebfd.local.json",
+      "localOnly": true
+    },
+    "identitySeed": "content:sha256:20fe25a95cc615686e07012a808a3c3a74cfd35430f437de345f4e3b4b18ebfd|descriptor:asset-descriptor-reference-candidate|situation:situation:identity-fixture:reference-asset|placement:placement:identity-fixture:media/references/candidate.txt",
+    "candidateOnly": true,
+    "promotionStatus": "candidate-only",
+    "promotionAuthority": false
+  },
+  "byteDescriptorAlignment": {
+    "status": "aligned",
+    "byteDescriptorProposalRef": {
+      "kind": "media-byte-descriptor-proposal",
+      "id": "byte-descriptor-proposal-sha256-20fe25a95cc615686e07012a808a3c3a74cfd35430f437de345f4e3b4b18ebfd",
+      "schema": "media.byte_descriptor_proposal.local.v1",
+      "path": "records/bytes/byte-descriptor-proposal-sha256-20fe25a95cc615686e07012a808a3c3a74cfd35430f437de345f4e3b4b18ebfd.local.json",
+      "localOnly": true
+    },
+    "requiredBeforePromotion": true
+  },
+  "promotionPosture": {
+    "status": "candidate-only",
+    "admissionRequired": true,
+    "requiredTargetCategory": "local_layer_resource_ref",
+    "byteDescriptorRequired": true,
+    "promotionAuthority": false,
+    "localLayerResourceRef": false,
+    "replicatedPointerRef": false,
+    "causalReviewableRef": false,
+    "notes": [
+      "This resource candidate is scoped to the reference-asset situation.",
+      "It does not satisfy the accepted-candidate situation unless explicitly modeled."
+    ]
+  },
+  "resolvabilityPosture": {
+    "currentCategory": "device_dependent_scaffold",
+    "targetCategory": "local_layer_resource_ref",
+    "reason": "Situation-specific fixture resource candidate; not an admitted local-layer resource.",
+    "localJsonIsScaffold": true,
+    "localPathIsScaffold": true,
+    "operatorFacingIdentityBoundary": false,
+    "spineDoctrineRef": "../mesh-ecology-spine/docs/identity-layering-and-storage-posture.md"
+  },
+  "causalRefs": {
+    "deferred": true,
+    "deferredReason": "causal-substrate adapter not implemented"
+  },
+  "status": "candidate",
+  "localLayerResourceRef": false,
+  "replicatedPointerRef": false,
+  "causalReviewableRef": false,
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "localTruthLabel": "local proposal",
+  "truthStatus": "not mesh truth; not distributed proof; not ratified shared state",
+  "createdAt": "2026-05-20T00:00:00.000Z"
+}

@@ -1,0 +1,89 @@
+{
+  "schema": "media.byte_descriptor_proposal.local.v1",
+  "byteDescriptorProposalId": "byte-descriptor-proposal-sha256-20fe25a95cc615686e07012a808a3c3a74cfd35430f437de345f4e3b4b18ebfd",
+  "projectId": "identity-fixture",
+  "contentId": "sha256:20fe25a95cc615686e07012a808a3c3a74cfd35430f437de345f4e3b4b18ebfd",
+  "sourceAssetRef": {
+    "kind": "media-content",
+    "id": "sha256:20fe25a95cc615686e07012a808a3c3a74cfd35430f437de345f4e3b4b18ebfd",
+    "schema": "media.content_ref.local.v1"
+  },
+  "assetRecordRef": {
+    "kind": "media-asset-descriptor",
+    "id": "asset-descriptor-accepted-candidate",
+    "schema": "media.asset.descriptor.v1",
+    "path": "records/assets/accepted-candidate.local.json",
+    "localOnly": true
+  },
+  "basisRef": {
+    "kind": "media-basis",
+    "id": "basis:generated-candidate"
+  },
+  "originRef": {
+    "kind": "media-generated-candidate",
+    "id": "generated:candidate"
+  },
+  "sharedBySituationRefs": [
+    {
+      "kind": "studio-media-situation",
+      "id": "situation:identity-fixture:accepted-candidate"
+    },
+    {
+      "kind": "studio-media-situation",
+      "id": "situation:identity-fixture:reference-asset"
+    }
+  ],
+  "localRef": {
+    "schema": "media.local_ref.v1",
+    "refKind": "local-file",
+    "path": "media/generated/candidate.txt",
+    "placementClass": "media-generated",
+    "lifecycleState": "generated",
+    "localOnly": true,
+    "meshTruth": false,
+    "distributedProof": false,
+    "ratifiedSharedState": false
+  },
+  "hash": {
+    "algorithm": "sha256",
+    "value": "20fe25a95cc615686e07012a808a3c3a74cfd35430f437de345f4e3b4b18ebfd"
+  },
+  "size": 29,
+  "contentType": "text/plain",
+  "proposedByteDescriptor": {
+    "intendedSchema": "media.byte_descriptor.v1",
+    "descriptorKind": "sha256-local-file-proposal",
+    "contentId": "sha256:20fe25a95cc615686e07012a808a3c3a74cfd35430f437de345f4e3b4b18ebfd",
+    "digest": {
+      "algorithm": "sha256",
+      "value": "20fe25a95cc615686e07012a808a3c3a74cfd35430f437de345f4e3b4b18ebfd"
+    },
+    "size": 29,
+    "contentType": "text/plain",
+    "localRef": {
+      "schema": "media.local_ref.v1",
+      "refKind": "local-file",
+      "path": "media/generated/candidate.txt",
+      "placementClass": "media-generated",
+      "lifecycleState": "generated",
+      "localOnly": true,
+      "meshTruth": false,
+      "distributedProof": false,
+      "ratifiedSharedState": false
+    },
+    "materializationRequired": true,
+    "byteAvailabilityProof": false,
+    "materializationProof": false
+  },
+  "status": "proposed",
+  "byteAvailabilityProof": false,
+  "materializationProof": false,
+  "byteAuthority": false,
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "localTruthLabel": "local proposal",
+  "truthStatus": "not mesh truth; not distributed proof; not ratified shared state",
+  "createdAt": "2026-05-20T00:00:00.000Z"
+}
