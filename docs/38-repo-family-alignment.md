@@ -157,7 +157,7 @@ operator baseline rule book
 = effective Studio media rule book
 ```
 
-Studio may later produce these candidate local artifacts:
+Studio now produces these candidate local artifacts:
 
 - `media.operation_candidate.local.v1`
 - `media.rule_resolution_trace.local.v1`
@@ -469,10 +469,13 @@ guidance. They are not shared authority.
 
 ## Future Promotion Candidates
 
-Future candidate artifact names:
+Current local mediation artifact names:
 
 - `media.operation_candidate.local.v1`
 - `media.rule_resolution_trace.local.v1`
+
+Future projection candidate artifact name:
+
 - `media.local_layer_projection_candidate.local.v1`
 
 Candidate promotion path:

@@ -40,6 +40,7 @@ Read in this order:
 32. [Cross Project Inspection Index](36-cross-project-inspection-index.md)
 33. [Comprehensive State](37-comprehensive-state.md)
 34. [Repo Family Alignment](38-repo-family-alignment.md)
+35. [Operation Candidate And Rule Resolution](39-operation-candidate-and-rule-resolution.md)
 
 The first executable path is:
 
@@ -73,6 +74,7 @@ npm run inspect:index -- --project-dir examples/card-to-candidate
 npm run inspect:provider-runs -- --project-dir examples/card-to-candidate
 npm run operator:index -- --project-dir examples/card-to-candidate
 npm run operator:cross-project-index
+npm run rule:example
 ```
 
 Create a local Edge-handoff preview bundle with:
@@ -189,3 +191,7 @@ candidates remain candidate-only and cannot be mistaken for admitted resource
 identity.
 Phase 29 aligns Studio with Spine, Edge, Packs, Bytes, causal-substrate,
 Platform, mesh-v0-2, Identity, and Testbed without adding runtime behavior.
+Phase 39 adds local media operation candidates and rule-resolution traces for
+`auto_prepare`, `ask_operator`, and `forbid` mediation pressure without
+implementing `auto_execute`, provider calls, Edge calls, mesh publication, or
+deletion execution.

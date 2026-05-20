@@ -73,6 +73,12 @@ import {
   writeLocalLayerResourceRefCandidates
 } from '../src/local/resource-ref-candidates.js'
 import {
+  createMediaOperationCandidate
+} from '../src/contracts/operation-candidates.js'
+import {
+  resolveMediaOperationCandidate
+} from '../src/contracts/rule-resolution.js'
+import {
   createProductionUnit,
   createSceneDescriptor,
   refForProductionRecord
@@ -81,6 +87,29 @@ import { writeProductionRecordsFromCard } from '../src/production/create-product
 import { validateProductionRecordsInProject } from '../src/production/validate-production-records.js'
 
 const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+
+function ref(kind, id, schema) {
+  return { kind, id, schema }
+}
+
+function createTestOperationCandidate(overrides = {}) {
+  return createMediaOperationCandidate({
+    operationId: 'operation-test',
+    projectId: 'project-test',
+    artifactClass: 'media.provider_job',
+    operationClass: 'prepare_provider_job',
+    subjectRef: ref('media-card', 'card-test', 'media.card.v1'),
+    scopeDelta: 'local_record_only',
+    riskTier: 'low',
+    reversibility: 'reversible',
+    authorityBoundary: 'local_project',
+    evidenceRequirement: 'card_required',
+    requestedBy: 'operator-test',
+    sourceRefs: [ref('media-card', 'card-test', 'media.card.v1')],
+    createdAt: '2026-05-19T00:00:00.000Z',
+    ...overrides
+  })
+}
 
 async function createFixtureProject() {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-wedge-'))
@@ -2115,4 +2144,228 @@ test('validator rejects invalid decision type', async () => {
     () => validateRequiredRecord(record),
     /invalid decision type/
   )
+})
+
+test('valid operation candidate construction', () => {
+  const candidate = createTestOperationCandidate()
+
+  assert.equal(candidate.schema, 'media.operation_candidate.local.v1')
+  assert.equal(candidate.localOnly, true)
+  assert.equal(candidate.meshTruth, false)
+  assert.equal(candidate.distributedProof, false)
+  assert.equal(candidate.ratifiedSharedState, false)
+  assert.equal(validateRequiredRecord(candidate), true)
+})
+
+test('missing operation id rejected', () => {
+  const candidate = createTestOperationCandidate()
+  delete candidate.operationId
+
+  assert.throws(
+    () => validateRequiredRecord(candidate),
+    /missing required fields: operationId/
+  )
+})
+
+test('invalid operation class rejected', () => {
+  assert.throws(
+    () => createTestOperationCandidate({ operationClass: 'magic_media' }),
+    /Invalid media operation operationClass/
+  )
+})
+
+test('invalid risk tier rejected', () => {
+  assert.throws(
+    () => createTestOperationCandidate({ riskTier: 'reckless' }),
+    /Invalid media operation riskTier/
+  )
+})
+
+test('submit_live_provider_job resolves ask_operator', () => {
+  const candidate = createTestOperationCandidate({
+    operationClass: 'submit_live_provider_job',
+    scopeDelta: 'external_provider_call',
+    riskTier: 'high',
+    reversibility: 'irreversible_cost',
+    authorityBoundary: 'external_provider',
+    evidenceRequirement: 'operator_decision_required'
+  })
+
+  const trace = resolveMediaOperationCandidate(candidate)
+
+  assert.equal(trace.schema, 'media.rule_resolution_trace.local.v1')
+  assert.equal(trace.resolutionMode, 'ask_operator')
+  assert.equal(trace.deliveryMode, 'urgent')
+  assert.ok(trace.reasons.some((reason) => reason.includes('external provider boundary')))
+  assert.equal(validateRequiredRecord(trace), true)
+})
+
+test('prepare_provider_job resolves auto_prepare', () => {
+  const candidate = createTestOperationCandidate()
+  const trace = resolveMediaOperationCandidate(candidate)
+
+  assert.equal(trace.resolutionMode, 'auto_prepare')
+  assert.equal(trace.deliveryMode, 'log_only')
+  assert.equal(validateRequiredRecord(trace), true)
+})
+
+test('move_candidate_to_accepted with evidence resolves auto_prepare', () => {
+  const candidate = createTestOperationCandidate({
+    artifactClass: 'media.asset',
+    operationClass: 'move_candidate_to_accepted',
+    subjectRef: ref('media-asset', 'asset-test', 'media.asset.descriptor.v1'),
+    scopeDelta: 'local_record_only',
+    riskTier: 'medium',
+    reversibility: 'partially_reversible',
+    authorityBoundary: 'local_project',
+    evidenceRequirement: 'review_evidence_required',
+    sourceRefs: [ref('media-evidence', 'evidence-test', 'media.evidence.v1')]
+  })
+
+  const trace = resolveMediaOperationCandidate(candidate)
+
+  assert.equal(trace.resolutionMode, 'auto_prepare')
+  assert.equal(trace.deliveryMode, 'log_only')
+  assert.equal(validateRequiredRecord(trace), true)
+})
+
+test('move_candidate_to_accepted without evidence resolves ask_operator', () => {
+  const candidate = createTestOperationCandidate({
+    artifactClass: 'media.asset',
+    operationClass: 'move_candidate_to_accepted',
+    subjectRef: ref('media-asset', 'asset-test', 'media.asset.descriptor.v1'),
+    scopeDelta: 'local_record_only',
+    riskTier: 'medium',
+    reversibility: 'partially_reversible',
+    authorityBoundary: 'local_project',
+    evidenceRequirement: 'review_evidence_required',
+    sourceRefs: []
+  })
+
+  const trace = resolveMediaOperationCandidate(candidate)
+
+  assert.equal(trace.resolutionMode, 'ask_operator')
+  assert.equal(trace.deliveryMode, 'inbox')
+  assert.equal(validateRequiredRecord(trace), true)
+})
+
+test('delete_local_media resolves forbid', () => {
+  const candidate = createTestOperationCandidate({
+    artifactClass: 'media.local_file',
+    operationClass: 'delete_local_media',
+    subjectRef: ref('local-media-file', 'media/accepted/candidate.txt', 'media.local_ref.v1'),
+    scopeDelta: 'local_file_change',
+    riskTier: 'critical',
+    reversibility: 'irreversible',
+    authorityBoundary: 'local_project',
+    evidenceRequirement: 'backup_or_materialization_required',
+    sourceRefs: []
+  })
+
+  const trace = resolveMediaOperationCandidate(candidate)
+
+  assert.equal(trace.resolutionMode, 'forbid')
+  assert.equal(trace.deliveryMode, 'urgent')
+  assert.ok(trace.reasons.some((reason) => reason.includes('destructive local media operation')))
+  assert.equal(validateRequiredRecord(trace), true)
+})
+
+test('propose_byte_descriptor resolves auto_prepare but with non-claims', () => {
+  const candidate = createTestOperationCandidate({
+    artifactClass: 'media.byte_descriptor_proposal',
+    operationClass: 'propose_byte_descriptor',
+    subjectRef: ref('media-asset', 'asset-test', 'media.asset.descriptor.v1'),
+    scopeDelta: 'byte_reference_candidate',
+    riskTier: 'low',
+    reversibility: 'reversible',
+    authorityBoundary: 'bytes_boundary',
+    evidenceRequirement: 'none'
+  })
+
+  const trace = resolveMediaOperationCandidate(candidate)
+
+  assert.equal(trace.resolutionMode, 'auto_prepare')
+  assert.equal(trace.byteAvailabilityProven, false)
+  assert.equal(trace.materializationProven, false)
+  assert.equal(trace.nonClaims.byteAvailabilityProven, false)
+  assert.ok(trace.blockedClaims.includes('byte availability proof'))
+  assert.equal(validateRequiredRecord(trace), true)
+})
+
+test('prepare_export resolves ask_operator', () => {
+  const candidate = createTestOperationCandidate({
+    artifactClass: 'media.export',
+    operationClass: 'prepare_export',
+    subjectRef: ref('media-export', 'export-test', 'media.production_descriptor.local.v1'),
+    scopeDelta: 'export_artifact',
+    riskTier: 'high',
+    reversibility: 'partially_reversible',
+    authorityBoundary: 'operator_boundary',
+    evidenceRequirement: 'operator_decision_required'
+  })
+
+  const trace = resolveMediaOperationCandidate(candidate)
+
+  assert.equal(trace.resolutionMode, 'ask_operator')
+  assert.equal(trace.deliveryMode, 'inbox')
+  assert.ok(trace.reasons.some((reason) => reason.includes('publication or downstream distribution')))
+  assert.equal(validateRequiredRecord(trace), true)
+})
+
+test('generate_proxy resolves auto_prepare', () => {
+  const candidate = createTestOperationCandidate({
+    artifactClass: 'media.asset',
+    operationClass: 'generate_proxy',
+    subjectRef: ref('media-asset', 'asset-test', 'media.asset.descriptor.v1'),
+    scopeDelta: 'local_file_change',
+    riskTier: 'low',
+    reversibility: 'reversible',
+    authorityBoundary: 'local_project',
+    evidenceRequirement: 'none'
+  })
+
+  const trace = resolveMediaOperationCandidate(candidate)
+
+  assert.equal(trace.resolutionMode, 'auto_prepare')
+  assert.equal(trace.deliveryMode, 'log_only')
+  assert.equal(validateRequiredRecord(trace), true)
+})
+
+test('trace always has execution edge and mesh non-claims', () => {
+  const candidates = [
+    createTestOperationCandidate(),
+    createTestOperationCandidate({
+      operationClass: 'submit_live_provider_job',
+      scopeDelta: 'external_provider_call',
+      riskTier: 'high',
+      reversibility: 'irreversible_cost',
+      authorityBoundary: 'external_provider',
+      evidenceRequirement: 'operator_decision_required'
+    }),
+    createTestOperationCandidate({
+      artifactClass: 'media.local_file',
+      operationClass: 'delete_local_media',
+      subjectRef: ref('local-media-file', 'media/accepted/candidate.txt', 'media.local_ref.v1'),
+      scopeDelta: 'local_file_change',
+      riskTier: 'critical',
+      reversibility: 'irreversible',
+      authorityBoundary: 'local_project',
+      evidenceRequirement: 'backup_or_materialization_required',
+      sourceRefs: []
+    })
+  ]
+
+  for (const candidate of candidates) {
+    const trace = resolveMediaOperationCandidate(candidate)
+
+    assert.equal(trace.executionPerformed, false)
+    assert.equal(trace.edgeCalled, false)
+    assert.equal(trace.meshPublished, false)
+    assert.equal(trace.authorityGranted, false)
+    assert.equal(trace.publicationAuthorized, false)
+    assert.equal(trace.nonClaims.executionPerformed, false)
+    assert.equal(trace.nonClaims.edgeCalled, false)
+    assert.equal(trace.nonClaims.meshPublished, false)
+    assert.equal(validateRequiredRecord(trace), true)
+  }
 })

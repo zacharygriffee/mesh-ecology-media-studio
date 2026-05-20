@@ -115,6 +115,8 @@ The repo currently defines and validates records for:
 - approval proposals
 - byte descriptor proposals
 - local-layer resource-ref candidates
+- media operation candidates
+- rule-resolution traces
 - cross-project inspection input lists and operator indexes
 
 The artifact registry is kept in:
@@ -330,6 +332,7 @@ npm test
 npm run wedge:example
 npm run fixture:unhealthy:check
 npm run operator:cross-project-index
+npm run rule:example
 ```
 
 The repo also uses schema JSON parse checks and secret scans before commit.
@@ -410,16 +413,18 @@ Current risks to manage:
 Recommended next objectives:
 
 1. Add concise CLI summaries for operator records:
-   `operator:index`, `handoff:edge`, `operator:decision-request`, and
-   `operator:cross-project-index`.
-2. Add missing-artifact behavior to cross-project inspection fixtures so bad
+   `operator:index`, `handoff:edge`, `operator:decision-request`,
+   `operator:cross-project-index`, and `rule:example`.
+2. Feed rule-resolution traces into Edge-readable inspection packets without
+   treating them as execution or approval.
+3. Add missing-artifact behavior to cross-project inspection fixtures so bad
    input lists are visible separately from unhealthy projects.
-3. Reduce fixture generator console noise with a quiet mode.
-4. Strengthen health summaries with per-asset explanations for missing byte
+4. Reduce fixture generator console noise with a quiet mode.
+5. Strengthen health summaries with per-asset explanations for missing byte
    proposals, missing resource candidates, unresolved candidates, and stale
    candidates.
-5. Keep broad production strategy moving without adding UI.
-6. Defer provider expansion until Venice posture and local inspection remain
+6. Keep broad production strategy moving without adding UI.
+7. Defer provider expansion until Venice posture and local inspection remain
    stable under these operator summaries.
 
 ## Repo Vector Statement

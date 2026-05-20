@@ -324,6 +324,9 @@ Phase 29 aligns Studio with the repo family: Spine rule-book and projection
 posture, Edge operator seams, Packs control-surface doctrine, Bytes references,
 causal-substrate continuity, Platform activation boundaries, mesh-v0-2 actor
 hygiene, Identity authority, and Testbed proof scope.
+Phase 39 adds local media operation candidates and rule-resolution traces so
+Studio can describe `auto_prepare`, `ask_operator`, and `forbid` mediation
+pressure without executing media operations or calling Edge.
 
 ## Start Here
 
@@ -359,3 +362,4 @@ hygiene, Identity authority, and Testbed proof scope.
 - [docs/36-cross-project-inspection-index.md](docs/36-cross-project-inspection-index.md)
 - [docs/37-comprehensive-state.md](docs/37-comprehensive-state.md)
 - [docs/38-repo-family-alignment.md](docs/38-repo-family-alignment.md)
+- [docs/39-operation-candidate-and-rule-resolution.md](docs/39-operation-candidate-and-rule-resolution.md)

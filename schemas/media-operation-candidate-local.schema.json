@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-operation-candidate-local.schema.json",
+  "title": "media.operation_candidate.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "operationId",
+    "projectId",
+    "artifactClass",
+    "operationClass",
+    "subjectRef",
+    "scopeDelta",
+    "riskTier",
+    "reversibility",
+    "authorityBoundary",
+    "evidenceRequirement",
+    "requestedBy",
+    "sourceRefs",
+    "createdAt",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "localTruthLabel",
+    "truthStatus"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.operation_candidate.local.v1"
+    },
+    "operationId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "artifactClass": {
+      "enum": [
+        "media.card",
+        "media.asset",
+        "media.provider_job",
+        "media.review",
+        "media.production",
+        "media.byte_descriptor_proposal",
+        "media.resource_ref_candidate",
+        "media.export",
+        "media.local_file"
+      ]
+    },
+    "operationClass": {
+      "enum": [
+        "prepare_provider_job",
+        "submit_live_provider_job",
+        "move_candidate_to_accepted",
+        "move_candidate_to_rejected",
+        "propose_byte_descriptor",
+        "propose_resource_ref",
+        "prepare_export",
+        "delete_local_media",
+        "generate_proxy",
+        "generate_thumbnail"
+      ]
+    },
+    "subjectRef": {
+      "type": "object"
+    },
+    "scopeDelta": {
+      "enum": [
+        "local_record_only",
+        "local_file_change",
+        "external_provider_call",
+        "byte_reference_candidate",
+        "resource_candidate",
+        "export_artifact",
+        "mesh_facing_candidate"
+      ]
+    },
+    "riskTier": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "reversibility": {
+      "enum": [
+        "reversible",
+        "partially_reversible",
+        "irreversible",
+        "irreversible_cost"
+      ]
+    },
+    "authorityBoundary": {
+      "enum": [
+        "local_project",
+        "operator_boundary",
+        "external_provider",
+        "bytes_boundary",
+        "edge_boundary",
+        "mesh_boundary",
+        "platform_boundary"
+      ]
+    },
+    "evidenceRequirement": {
+      "enum": [
+        "none",
+        "card_required",
+        "review_evidence_required",
+        "quote_required",
+        "byte_descriptor_required",
+        "resource_candidate_required",
+        "operator_decision_required",
+        "backup_or_materialization_required"
+      ]
+    },
+    "requestedBy": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceRefs": {
+      "type": "array"
+    },
+    "createdAt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    }
+  }
+}

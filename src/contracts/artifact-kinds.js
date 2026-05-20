@@ -45,14 +45,14 @@ export const artifactKinds = Object.freeze({
   mediaProductionDescriptorLocal: 'media.production_descriptor.local.v1',
   mediaApprovalProposalLocal: 'media.approval_proposal.local.v1',
   mediaByteDescriptorProposalLocal: 'media.byte_descriptor_proposal.local.v1',
-  mediaLocalLayerResourceRefCandidateLocal: 'media.local_layer_resource_ref_candidate.local.v1'
+  mediaLocalLayerResourceRefCandidateLocal: 'media.local_layer_resource_ref_candidate.local.v1',
+  mediaOperationCandidateLocal: 'media.operation_candidate.local.v1',
+  mediaRuleResolutionTraceLocal: 'media.rule_resolution_trace.local.v1'
 })
 
 export const knownArtifactKinds = Object.freeze(Object.values(artifactKinds))
 
 export const futureCandidateArtifactKinds = Object.freeze({
-  mediaOperationCandidateLocal: 'media.operation_candidate.local.v1',
-  mediaRuleResolutionTraceLocal: 'media.rule_resolution_trace.local.v1',
   mediaLocalLayerProjectionCandidateLocal: 'media.local_layer_projection_candidate.local.v1'
 })
 

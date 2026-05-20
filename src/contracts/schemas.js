@@ -15,6 +15,19 @@ import {
   validateProviderCapability
 } from '../providers/provider-neutral.js'
 import {
+  operationArtifactClasses,
+  operationAuthorityBoundaries,
+  operationClasses,
+  operationEvidenceRequirements,
+  operationReversibility,
+  operationRiskTiers,
+  operationScopeDeltas
+} from './operation-candidates.js'
+import {
+  ruleDeliveryModes,
+  ruleResolutionModes
+} from './rule-resolution.js'
+import {
   validateProviderEndpointShape,
   validateProviderMapping,
   validateProviderShape
@@ -67,7 +80,9 @@ export const schemaFiles = {
   'media.production_descriptor.local.v1': 'schemas/media-production-descriptor-local.schema.json',
   'media.approval_proposal.local.v1': 'schemas/media-approval-proposal-local.schema.json',
   'media.byte_descriptor_proposal.local.v1': 'schemas/media-byte-descriptor-proposal-local.schema.json',
-  'media.local_layer_resource_ref_candidate.local.v1': 'schemas/media-local-layer-resource-ref-candidate-local.schema.json'
+  'media.local_layer_resource_ref_candidate.local.v1': 'schemas/media-local-layer-resource-ref-candidate-local.schema.json',
+  'media.operation_candidate.local.v1': 'schemas/media-operation-candidate-local.schema.json',
+  'media.rule_resolution_trace.local.v1': 'schemas/media-rule-resolution-trace-local.schema.json'
 }
 
 export const requiredFields = {
@@ -900,6 +915,60 @@ export const requiredFields = {
     'localTruthLabel',
     'truthStatus',
     'createdAt'
+  ],
+  'media.operation_candidate.local.v1': [
+    'schema',
+    'operationId',
+    'projectId',
+    'artifactClass',
+    'operationClass',
+    'subjectRef',
+    'scopeDelta',
+    'riskTier',
+    'reversibility',
+    'authorityBoundary',
+    'evidenceRequirement',
+    'requestedBy',
+    'sourceRefs',
+    'createdAt',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'localTruthLabel',
+    'truthStatus'
+  ],
+  'media.rule_resolution_trace.local.v1': [
+    'schema',
+    'traceId',
+    'operationRef',
+    'projectId',
+    'effectiveRuleBookRef',
+    'resolutionMode',
+    'deliveryMode',
+    'reasons',
+    'appliedRules',
+    'blockedClaims',
+    'createdAt',
+    'localOnly',
+    'operatorGuidanceOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'authorityGranted',
+    'executionPerformed',
+    'edgeCalled',
+    'meshPublished',
+    'truthClaimed',
+    'completionClaimed',
+    'providerTruthClaimed',
+    'byteAvailabilityProven',
+    'materializationProven',
+    'causalTruthClaimed',
+    'publicationAuthorized',
+    'nonClaims',
+    'localTruthLabel',
+    'truthStatus'
   ]
 }
 
@@ -950,7 +1019,9 @@ const idFields = {
   [artifactKinds.mediaProductionDescriptorLocal]: 'descriptorId',
   [artifactKinds.mediaApprovalProposalLocal]: 'proposalId',
   [artifactKinds.mediaByteDescriptorProposalLocal]: 'byteDescriptorProposalId',
-  [artifactKinds.mediaLocalLayerResourceRefCandidateLocal]: 'resourceRefCandidateId'
+  [artifactKinds.mediaLocalLayerResourceRefCandidateLocal]: 'resourceRefCandidateId',
+  [artifactKinds.mediaOperationCandidateLocal]: 'operationId',
+  [artifactKinds.mediaRuleResolutionTraceLocal]: 'traceId'
 }
 
 const domainProjectSchemas = new Set([
@@ -981,7 +1052,9 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaProductionDescriptorLocal,
   artifactKinds.mediaApprovalProposalLocal,
   artifactKinds.mediaByteDescriptorProposalLocal,
-  artifactKinds.mediaLocalLayerResourceRefCandidateLocal
+  artifactKinds.mediaLocalLayerResourceRefCandidateLocal,
+  artifactKinds.mediaOperationCandidateLocal,
+  artifactKinds.mediaRuleResolutionTraceLocal
 ])
 
 const localGeneratedSchemas = new Set([
@@ -1018,7 +1091,9 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaProductionDescriptorLocal,
   artifactKinds.mediaApprovalProposalLocal,
   artifactKinds.mediaByteDescriptorProposalLocal,
-  artifactKinds.mediaLocalLayerResourceRefCandidateLocal
+  artifactKinds.mediaLocalLayerResourceRefCandidateLocal,
+  artifactKinds.mediaOperationCandidateLocal,
+  artifactKinds.mediaRuleResolutionTraceLocal
 ])
 
 const readinessStates = new Set(['draft', 'blocked', 'ready', 'caution', 'complete'])
@@ -1957,6 +2032,43 @@ export function validateRecordShape(record, schemaId = record.schema) {
     validateLocalFalseFlags(record, schemaId)
   }
 
+  if (schemaId === artifactKinds.mediaOperationCandidateLocal) {
+    assertSetValue(record.artifactClass, operationArtifactClasses, `${schemaId}.artifactClass`)
+    assertSetValue(record.operationClass, operationClasses, `${schemaId}.operationClass`)
+    assertSetValue(record.scopeDelta, operationScopeDeltas, `${schemaId}.scopeDelta`)
+    assertSetValue(record.riskTier, operationRiskTiers, `${schemaId}.riskTier`)
+    assertSetValue(record.reversibility, operationReversibility, `${schemaId}.reversibility`)
+    assertSetValue(record.authorityBoundary, operationAuthorityBoundaries, `${schemaId}.authorityBoundary`)
+    assertSetValue(record.evidenceRequirement, operationEvidenceRequirements, `${schemaId}.evidenceRequirement`)
+    validateRef(record.subjectRef, `${schemaId}.subjectRef`)
+    validateRefArray(record.sourceRefs, `${schemaId}.sourceRefs`)
+    validateLocalFalseFlags(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaRuleResolutionTraceLocal) {
+    assertSetValue(record.resolutionMode, ruleResolutionModes, `${schemaId}.resolutionMode`)
+    assertSetValue(record.deliveryMode, ruleDeliveryModes, `${schemaId}.deliveryMode`)
+    validateRef(record.operationRef, `${schemaId}.operationRef`)
+    validateRef(record.effectiveRuleBookRef, `${schemaId}.effectiveRuleBookRef`)
+
+    for (const collection of ['reasons', 'appliedRules', 'blockedClaims']) {
+      if (!Array.isArray(record[collection])) {
+        throw new Error(`Record ${schemaId}.${collection} must be an array`)
+      }
+    }
+
+    if (record.reasons.length === 0 || record.appliedRules.length === 0) {
+      throw new Error(`Record ${schemaId} must include reasons and appliedRules`)
+    }
+
+    if (record.operatorGuidanceOnly !== true) {
+      throw new Error(`Record ${schemaId} must set operatorGuidanceOnly=true`)
+    }
+
+    validateTraceNonClaims(record, schemaId)
+    validateLocalFalseFlags(record, schemaId)
+  }
+
   if (localGeneratedSchemas.has(schemaId)) {
     validateLocalDoctrineFlags(record, schemaId)
   }
@@ -1981,6 +2093,38 @@ function validateLocalFalseFlags(record, schemaId) {
 
   for (const flag of falseFlags) {
     if (record[flag] !== false) {
+      throw new Error(`Record ${schemaId} must set ${flag}=false`)
+    }
+  }
+}
+
+function assertSetValue(value, allowed, label) {
+  if (!allowed.includes(value)) {
+    throw new Error(`${label} has invalid value: ${value}`)
+  }
+}
+
+function validateTraceNonClaims(record, schemaId) {
+  const requiredFalseFlags = [
+    'authorityGranted',
+    'executionPerformed',
+    'edgeCalled',
+    'meshPublished',
+    'truthClaimed',
+    'completionClaimed',
+    'providerTruthClaimed',
+    'byteAvailabilityProven',
+    'materializationProven',
+    'causalTruthClaimed',
+    'publicationAuthorized'
+  ]
+
+  if (!record.nonClaims || typeof record.nonClaims !== 'object') {
+    throw new Error(`Record ${schemaId} must include nonClaims`)
+  }
+
+  for (const flag of requiredFalseFlags) {
+    if (record[flag] !== false || record.nonClaims[flag] !== false) {
       throw new Error(`Record ${schemaId} must set ${flag}=false`)
     }
   }

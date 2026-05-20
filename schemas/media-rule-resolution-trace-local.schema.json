@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-rule-resolution-trace-local.schema.json",
+  "title": "media.rule_resolution_trace.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "traceId",
+    "operationRef",
+    "projectId",
+    "effectiveRuleBookRef",
+    "resolutionMode",
+    "deliveryMode",
+    "reasons",
+    "appliedRules",
+    "blockedClaims",
+    "createdAt",
+    "localOnly",
+    "operatorGuidanceOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "authorityGranted",
+    "executionPerformed",
+    "edgeCalled",
+    "meshPublished",
+    "truthClaimed",
+    "completionClaimed",
+    "providerTruthClaimed",
+    "byteAvailabilityProven",
+    "materializationProven",
+    "causalTruthClaimed",
+    "publicationAuthorized",
+    "nonClaims",
+    "localTruthLabel",
+    "truthStatus"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.rule_resolution_trace.local.v1"
+    },
+    "traceId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "operationRef": {
+      "type": "object"
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "effectiveRuleBookRef": {
+      "type": "object"
+    },
+    "resolutionMode": {
+      "enum": [
+        "auto_prepare",
+        "ask_operator",
+        "forbid"
+      ]
+    },
+    "deliveryMode": {
+      "enum": [
+        "log_only",
+        "inbox",
+        "urgent",
+        "critical",
+        "digest"
+      ]
+    },
+    "reasons": {
+      "type": "array",
+      "minItems": 1
+    },
+    "appliedRules": {
+      "type": "array",
+      "minItems": 1
+    },
+    "blockedClaims": {
+      "type": "array"
+    },
+    "operatorGuidanceOnly": {
+      "const": true
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    },
+    "authorityGranted": {
+      "const": false
+    },
+    "executionPerformed": {
+      "const": false
+    },
+    "edgeCalled": {
+      "const": false
+    },
+    "meshPublished": {
+      "const": false
+    },
+    "truthClaimed": {
+      "const": false
+    },
+    "completionClaimed": {
+      "const": false
+    },
+    "providerTruthClaimed": {
+      "const": false
+    },
+    "byteAvailabilityProven": {
+      "const": false
+    },
+    "materializationProven": {
+      "const": false
+    },
+    "causalTruthClaimed": {
+      "const": false
+    },
+    "publicationAuthorized": {
+      "const": false
+    },
+    "nonClaims": {
+      "type": "object"
+    }
+  }
+}
