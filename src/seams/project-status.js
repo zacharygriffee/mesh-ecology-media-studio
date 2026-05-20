@@ -90,18 +90,31 @@ export async function writeProjectStatus({
   if (print) {
     console.log(JSON.stringify(status, null, 2))
   } else if (!quiet) {
-    console.log(`project status: ${output}`)
-    for (const [name, count] of Object.entries(counts)) {
-      console.log(`${name}: ${count}`)
+    console.log(formatProjectStatusSummary(status, output))
+    for (const asset of assetResourceConsistency.assetExplanations.filter((entry) => entry.state !== 'ready-for-local-inspection')) {
+      console.log(`asset attention: ${asset.assetId} | reason=${asset.reasons[0]}`)
     }
-    console.log(`assetResourceReady: ${assetResourceConsistency.readyForEdgeInspection}`)
-    console.log(`assetResourceWarnings: ${assetResourceConsistency.warningCount}`)
   }
 
   return {
     status,
     output
   }
+}
+
+function formatProjectStatusSummary(status, output) {
+  const nonZeroCounts = Object.entries(status.counts)
+    .filter(([, count]) => count > 0)
+    .map(([name, count]) => `${name}=${count}`)
+    .join(',') || 'none'
+
+  return [
+    `project status: ${status.projectId}`,
+    `assetReady=${status.assetResourceConsistency.readyForEdgeInspection}`,
+    `assetWarnings=${status.assetResourceConsistency.warningCount}`,
+    `records=${nonZeroCounts}`,
+    `output=${output}`
+  ].join(' | ')
 }
 
 function summarizeAssetResourceConsistency(records) {

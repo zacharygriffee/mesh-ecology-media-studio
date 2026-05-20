@@ -26,6 +26,16 @@ The default output is:
 examples/inspection-fixtures/cross-project/media-cross-project-operator-index.local.json
 ```
 
+A separate missing-artifact fixture is available at:
+
+```text
+examples/inspection-fixtures/cross-project-missing-artifact/
+```
+
+It intentionally points one artifact ref at a missing local file so the index
+shows `missingArtifacts` and `missingArtifactRefs` separately from ordinary
+unhealthy project posture.
+
 ## Boundary
 
 This is a local scanning aid only:

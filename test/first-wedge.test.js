@@ -1648,6 +1648,23 @@ test('committed cross-project inspection fixture validates', async () => {
   assert.equal(index.meshTruth, false)
 })
 
+test('committed cross-project missing-artifact fixture validates', async () => {
+  const inputList = JSON.parse(
+    await readFile('examples/inspection-fixtures/cross-project-missing-artifact/input-list.local.json', 'utf8')
+  )
+  const index = JSON.parse(
+    await readFile('examples/inspection-fixtures/cross-project-missing-artifact/media-cross-project-operator-index.local.json', 'utf8')
+  )
+
+  assert.equal(validateRequiredRecord(inputList), true)
+  assert.equal(validateRequiredRecord(index), true)
+  assert.equal(index.summary.projects, 1)
+  assert.equal(index.summary.missingArtifacts, 1)
+  assert.equal(index.projectSummaries[0].missingArtifactRefs.length, 1)
+  assert.equal(index.projectSummaries[0].requestKind, 'none')
+  assert.equal(index.meshTruth, false)
+})
+
 test('Venice smoke inspection packet fails on missing records', async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-venice-inspect-missing-'))
 

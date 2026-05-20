@@ -412,21 +412,15 @@ Current risks to manage:
 
 Recommended next objectives:
 
-1. Add concise CLI summaries for operator records:
-   `handoff:edge`, `operator:decision-request`, and
-   `operator:cross-project-index`.
-2. Add missing-artifact behavior to cross-project inspection fixtures so bad
-   input lists are visible separately from unhealthy projects.
-3. Reduce fixture generator console noise with a quiet mode.
-4. Strengthen health summaries with per-asset explanations for missing byte
-   proposals, missing resource candidates, unresolved candidates, and stale
-   candidates.
-5. Add committed operation-candidate fixture sets for provider submit, provider
-   prepare, accept candidate, delete local media, export prepare, and proxy
-   generation.
-6. Keep broad production strategy moving without adding UI.
-7. Defer provider expansion until Venice posture and local inspection remain
-   stable under these operator summaries.
+1. Keep broad production strategy moving without adding UI.
+2. Add compact production/operator summaries where existing commands are still
+   too verbose.
+3. Exercise the committed missing-artifact cross-project fixture in review
+   workflows.
+4. Keep Venice provider posture stable before adding another provider.
+5. Continue avoiding new artifact kinds unless a command or test consumes them.
+6. Defer UI, Edge runtime calls, mesh publication, and broader provider
+   expansion until operator inspection remains boring under repeated local runs.
 
 ## Repo Vector Statement
 
