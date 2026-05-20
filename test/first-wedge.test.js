@@ -999,6 +999,67 @@ test('Venice smoke inspection packet exports local refs without provider calls',
   assert.equal(written.recordRefs.providerResult.path, 'records/provider-results/venice-live-smoke-provider-result.local.json')
 })
 
+test('Venice smoke inspection summarizes promoted assets derivatives and resource posture', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-venice-operational-'))
+
+  await runVeniceLiveSmoke({
+    env: {
+      VENICE_LIVE: '1',
+      VENICE_INFERENCE_KEY: 'test-key'
+    },
+    envPath: path.join(dir, '.env-missing'),
+    projectDir: dir,
+    fetchImpl: async () => ({
+      status: 200,
+      async json() {
+        return {
+          id: 'venice-live-test-response',
+          images: [onePixelPngBase64],
+          request: { format: 'png' }
+        }
+      }
+    })
+  })
+  await generateThumbnailDerivatives({ projectDir: dir })
+  await promoteCandidate({
+    projectDir: dir,
+    assetRecord: 'records/assets/venice-live-smoke-asset-0.local.json',
+    providerResultRecord: 'records/provider-results/venice-live-smoke-provider-result.local.json',
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await generateThumbnailDerivatives({ projectDir: dir })
+  await writeByteDescriptorProposals({ projectDir: dir, quiet: true })
+  await writeLocalLayerResourceRefCandidates({ projectDir: dir, quiet: true })
+
+  const repair = await repairLocalPosture({ projectDir: dir })
+  const result = await inspectVeniceSmoke({ projectDir: dir })
+
+  assert.equal(repair.remainingAttention, 0)
+  assert.ok(repair.skippedIssues.some((entry) =>
+    entry.issueCode === 'inspection_refresh_skipped' &&
+    entry.nonBlocking === true &&
+    entry.nextAction.includes('inspect:venice-smoke')
+  ))
+  assert.equal(result.packet.operationalSummary.generatedCandidates.total, 1)
+  assert.equal(result.packet.operationalSummary.generatedCandidates.promotedAccepted, 1)
+  assert.equal(result.packet.operationalSummary.derivativeReadiness.readyAssets, 2)
+  assert.equal(result.packet.operationalSummary.identity.byteContent.coveredContentIds, 1)
+  assert.equal(result.packet.operationalSummary.identity.resourceSituations.coveredSituationPlacements, 1)
+  assert.equal(result.packet.operationalSummary.recordCounts.promotedAssets, 1)
+  assert.equal(result.packet.operationalSummary.recordCounts.derivatives, 2)
+  assert.equal(result.packet.operationalSummary.recordCounts.byteDescriptorProposals, 1)
+  assert.equal(result.packet.operationalSummary.recordCounts.resourceRefCandidates, 1)
+  assert.equal(result.packet.operationalSummary.recordRefs.promotedAssets.length, 1)
+  assert.equal(result.packet.operationalSummary.recordRefs.derivatives.length, 2)
+  assert.equal(result.packet.operationalSummary.recordRefs.byteDescriptorProposals.length, 1)
+  assert.equal(result.packet.operationalSummary.recordRefs.resourceRefCandidates.length, 1)
+  assert.ok(result.packet.generatedArtifactRefs.some((ref) => ref.kind === 'media-promoted-asset'))
+  assert.ok(result.packet.generatedArtifactRefs.some((ref) => ref.kind === 'media-derivative'))
+  assert.equal(result.packet.operationalSummary.materializationProof, false)
+  assert.equal(validateRequiredRecord(result.packet), true)
+})
+
 test('generic local-run inspection packet exports first-wedge records', async () => {
   const dir = await createFixtureProject()
   await runFirstWedge({

@@ -7,8 +7,11 @@ import {
   createEdgeInspectionPacket,
   makeRef
 } from '../contracts/constructors.js'
+import { artifactKinds } from '../contracts/artifact-kinds.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
+import { createMediaSummary } from '../assets/media-summary.js'
+import { readProjectRecords } from './project-status.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 
@@ -80,6 +83,21 @@ export async function inspectVeniceSmoke({
 
   await assertLocalFileExists(root, assetLocalRef.path)
   const assetRef = makeRef('media-asset', records.assetDescriptor.assetId, records.assetDescriptor.schema)
+  const projectRecords = await readProjectRecords(root)
+  const mediaSummary = await createMediaSummary({ projectDir })
+  const promotedAssets = projectRecords
+    .filter((entry) => entry.record.schema === artifactKinds.mediaAssetDescriptor)
+    .filter((entry) => ['media-accepted', 'media-rejected'].includes(entry.record.localRef?.placementClass))
+    .filter((entry) => entry.record.source?.sourceType === 'provider-result')
+  const derivatives = projectRecords
+    .filter((entry) => entry.record.schema === artifactKinds.mediaDerivativeLocal)
+  const byteProposals = projectRecords
+    .filter((entry) => entry.record.schema === artifactKinds.mediaByteDescriptorProposalLocal)
+  const resourceCandidates = projectRecords
+    .filter((entry) => entry.record.schema === artifactKinds.mediaLocalLayerResourceRefCandidateLocal)
+  const optionalWarnings = []
+  const promotedArtifactRefs = await optionalPromotedArtifactRefs({ root, promotedAssets, warnings: optionalWarnings })
+  const derivativeArtifactRefs = await optionalDerivativeArtifactRefs({ root, derivatives, warnings: optionalWarnings })
 
   const packet = createEdgeInspectionPacket({
     sourceRunRef: localRecordRef('media-local-run-manifest', recordPaths.manifest, records.manifest.schema),
@@ -108,6 +126,10 @@ export async function inspectVeniceSmoke({
       records.reviewEvidence.schema,
       records.readiness.schema,
       records.operatorDecision.schema,
+      ...promotedAssets.map((entry) => entry.record.schema),
+      ...derivatives.map((entry) => entry.record.schema),
+      ...byteProposals.map((entry) => entry.record.schema),
+      ...resourceCandidates.map((entry) => entry.record.schema),
       'media.byte_reference.preview.local.v1',
       'media.edge_inspection_packet.local.v1'
     ].filter(Boolean),
@@ -130,14 +152,23 @@ export async function inspectVeniceSmoke({
           ? localRecordRef('media-image-metadata', recordPaths.imageMetadata, records.imageMetadata.schema)
           : undefined,
         localOnly: true
-      }
+      },
+      ...promotedArtifactRefs,
+      ...derivativeArtifactRefs
     ],
     warnings: [
       'Local inspection packet only; not Edge integration.',
       'All refs are local paths and not mesh truth.',
       'Local file existence and hash are not byte availability proof.',
-      'Local operator decision is not ratifier authority.'
+      'Local operator decision is not ratifier authority.',
+      ...optionalWarnings
     ]
+  })
+  packet.operationalSummary = createVeniceOperationalSummary(mediaSummary, {
+    promotedAssets,
+    derivatives,
+    byteProposals,
+    resourceCandidates
   })
 
   validateRequiredRecord(packet)
@@ -150,6 +181,7 @@ export async function inspectVeniceSmoke({
     console.log(JSON.stringify(packet, null, 2))
   } else {
     console.log(`Wrote Venice smoke inspection packet: ${output}`)
+    printVeniceInspectionSummary(packet.operationalSummary)
   }
 
   return {
@@ -179,6 +211,129 @@ async function readOptionalJson(root, relativePath) {
   }
 }
 
+async function optionalPromotedArtifactRefs({ root, promotedAssets, warnings }) {
+  const refs = []
+
+  for (const entry of promotedAssets) {
+    const asset = entry.record
+    if (!asset.localRef?.path || !await localFileExists(root, asset.localRef.path)) {
+      warnings.push(`Promoted asset local file was not found for inspection: ${asset.localRef?.path ?? entry.path}`)
+      continue
+    }
+    const assetRef = makeRef('media-asset', asset.assetId, asset.schema)
+    refs.push({
+      kind: 'media-promoted-asset',
+      id: asset.assetId,
+      schema: asset.schema,
+      path: asset.localRef.path,
+      placementClass: asset.localRef.placementClass,
+      lifecycleState: asset.provenance?.lifecycle?.state,
+      hash: asset.hash,
+      contentType: asset.contentType,
+      byteRefPreview: createByteReferencePreview({
+        sourceRef: assetRef,
+        localRef: asset.localRef,
+        hash: asset.hash,
+        size: asset.size,
+        contentType: asset.contentType
+      }),
+      localOnly: true,
+      meshTruth: false,
+      byteAvailabilityProof: false,
+      materializationProof: false,
+      resourceAdmission: false
+    })
+  }
+
+  return refs
+}
+
+async function optionalDerivativeArtifactRefs({ root, derivatives, warnings }) {
+  const refs = []
+
+  for (const entry of derivatives) {
+    const derivative = entry.record
+    const localRef = derivative.derivativeLocalRef
+    if (!localRef?.path || !await localFileExists(root, localRef.path)) {
+      warnings.push(`Derivative local file was not found for inspection: ${localRef?.path ?? entry.path}`)
+      continue
+    }
+    refs.push({
+      kind: 'media-derivative',
+      id: derivative.derivativeId,
+      schema: derivative.schema,
+      derivativeKind: derivative.derivativeKind,
+      path: localRef.path,
+      sourceLocalRef: derivative.sourceLocalRef,
+      derivativeSubjectRef: derivative.derivativeSubjectRef,
+      localOnly: true,
+      meshTruth: false,
+      byteAvailabilityProof: false,
+      materializationProof: false,
+      resourceAdmission: false
+    })
+  }
+
+  return refs
+}
+
+function createVeniceOperationalSummary(mediaSummary, {
+  promotedAssets,
+  derivatives,
+  byteProposals,
+  resourceCandidates
+}) {
+  return {
+    summaryKind: 'venice-smoke-operational-summary',
+    projectId: mediaSummary.projectId,
+    generatedCandidates: mediaSummary.generatedCandidates,
+    derivativeReadiness: {
+      readyAssets: mediaSummary.derivativeReadiness.readyAssets,
+      evaluatedAssets: mediaSummary.derivativeReadiness.evaluatedAssets,
+      attentionAssets: mediaSummary.derivativeReadiness.attentionAssets,
+      issueCodes: mediaSummary.derivativeReadiness.issueCodes
+    },
+    derivatives: mediaSummary.derivatives,
+    identity: {
+      byteContent: mediaSummary.identity.byteContent,
+      resourceSituations: mediaSummary.identity.resourceSituations
+    },
+    recordCounts: {
+      promotedAssets: promotedAssets.length,
+      derivatives: derivatives.length,
+      byteDescriptorProposals: byteProposals.length,
+      resourceRefCandidates: resourceCandidates.length
+    },
+    recordRefs: {
+      promotedAssets: promotedAssets.map((entry) => localRecordRef('media-asset', entry.path, entry.record.schema)),
+      derivatives: derivatives.map((entry) => localRecordRef('media-derivative', entry.path, entry.record.schema)),
+      byteDescriptorProposals: byteProposals.map((entry) => localRecordRef('media-byte-descriptor-proposal', entry.path, entry.record.schema)),
+      resourceRefCandidates: resourceCandidates.map((entry) => localRecordRef('media-resource-ref-candidate', entry.path, entry.record.schema))
+    },
+    localOnly: true,
+    operatorGuidanceOnly: true,
+    meshTruth: false,
+    providerTruth: false,
+    byteAvailabilityProof: false,
+    materializationProof: false,
+    resourceAdmission: false,
+    publicationAuthorization: false
+  }
+}
+
+function printVeniceInspectionSummary(summary) {
+  console.log([
+    `venice smoke summary: generated=${summary.generatedCandidates.total}`,
+    `reviewed=${summary.generatedCandidates.reviewed}`,
+    `promotedAccepted=${summary.generatedCandidates.promotedAccepted}`,
+    `promotedRejected=${summary.generatedCandidates.promotedRejected}`,
+    `derivatives=${summary.derivativeReadiness.readyAssets}/${summary.derivativeReadiness.evaluatedAssets}`,
+    `byteContent=${summary.identity.byteContent.coveredContentIds}/${summary.identity.byteContent.expectedContentIds}`,
+    `resourceSituations=${summary.identity.resourceSituations.coveredSituationPlacements}/${summary.identity.resourceSituations.expectedSituationPlacements}`
+  ].join(' | '))
+  console.log('nonClaims: local-only; no Edge call; no mesh truth; no byte/materialization proof; no resource admission')
+}
+
 async function assertLocalFileExists(root, relativePath) {
   assertSafeLocalPath(relativePath)
 
@@ -189,6 +344,18 @@ async function assertLocalFileExists(root, relativePath) {
       throw new Error(`Missing Venice smoke generated artifact: ${relativePath}`)
     }
 
+    throw error
+  }
+}
+
+async function localFileExists(root, relativePath) {
+  assertSafeLocalPath(relativePath)
+
+  try {
+    await access(path.join(root, relativePath))
+    return true
+  } catch (error) {
+    if (error.code === 'ENOENT') return false
     throw error
   }
 }

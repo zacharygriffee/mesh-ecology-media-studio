@@ -187,6 +187,35 @@ derivative identity is descriptor/situation/placement-specific. A thumbnail
 receipt for the generated candidate does not automatically satisfy the promoted
 accepted/rejected placement.
 
+## Full Local Generated-Image Loop
+
+The current operational loop for one Venice-generated image is:
+
+```bash
+VENICE_LIVE=1 npm run provider:venice:smoke
+npm run media:summary -- --project-dir examples/venice-smoke
+npm run derivatives:thumbnail -- --project-dir examples/venice-smoke
+npm run promote:candidate -- --project-dir examples/venice-smoke --asset-record records/assets/venice-live-smoke-asset-0.local.json --provider-result-record records/provider-results/venice-live-smoke-provider-result.local.json --decision accepted
+npm run derivatives:thumbnail -- --project-dir examples/venice-smoke
+npm run bytes:proposal -- --project-dir examples/venice-smoke
+npm run resource:refs -- --project-dir examples/venice-smoke
+npm run repair:local-posture -- --project-dir examples/venice-smoke
+npm run inspect:venice-smoke
+npm run media:summary -- --project-dir examples/venice-smoke
+```
+
+Expected final summary shape:
+
+```text
+derivatives: ready=2/2
+generated candidates: total=1 | reviewed=1 | pending=0 | promotedAccepted=1
+identity: byteContent=1/1 | resourceSituations=1/1
+```
+
+`repair:local-posture` may report that local-run inspection refresh was skipped
+for Venice smoke projects. That is non-blocking when `inspect:venice-smoke`
+is the intended inspection surface.
+
 ## Non-Claims
 
 Local media intake and derivative readiness do not claim:

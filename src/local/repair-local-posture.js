@@ -139,44 +139,40 @@ export async function repairLocalPosture({
       const inspection = await withQuietLogs(() => inspectLocalRun({ projectDir }))
       refreshed.inspectionPacket = inspection.output
     } catch (error) {
-      skipped.push({
+      skipped.push(operatorRefreshSkip({
         issueCode: 'inspection_refresh_skipped',
-        reason: error.message,
-        localOnly: true
-      })
+        error
+      }))
     }
 
     try {
       const projection = await withQuietLogs(() => writeControlSurfaceProjection({ projectDir }))
       refreshed.controlSurfaceProjection = projection.output
     } catch (error) {
-      skipped.push({
+      skipped.push(operatorRefreshSkip({
         issueCode: 'control_surface_refresh_skipped',
-        reason: error.message,
-        localOnly: true
-      })
+        error
+      }))
     }
 
     try {
       const bundle = await withQuietLogs(() => writeEdgeCompatibilityBundle({ projectDir }))
       refreshed.edgeCompatibilityBundle = bundle.output
     } catch (error) {
-      skipped.push({
+      skipped.push(operatorRefreshSkip({
         issueCode: 'edge_compatibility_refresh_skipped',
-        reason: error.message,
-        localOnly: true
-      })
+        error
+      }))
     }
 
     try {
       const index = await withQuietLogs(() => writeOperatorPacketIndex({ projectDir }))
       refreshed.operatorPacketIndex = index.output
     } catch (error) {
-      skipped.push({
+      skipped.push(operatorRefreshSkip({
         issueCode: 'operator_index_refresh_skipped',
-        reason: error.message,
-        localOnly: true
-      })
+        error
+      }))
     }
   }
 
@@ -242,10 +238,35 @@ function printRepairSummary(summary) {
   }
 
   for (const skipped of summary.skippedIssues) {
-    console.log(`skipped: ${skipped.issueCode} | nonBlocking=${skipped.nonBlocking === true} | reason=${skipped.reason}`)
+    const nextAction = skipped.nextAction ? ` | nextAction=${skipped.nextAction}` : ''
+    console.log(`skipped: ${skipped.issueCode} | nonBlocking=${skipped.nonBlocking === true} | reason=${skipped.reason}${nextAction}`)
   }
 
   console.log('nonClaims: local-only; no mesh truth; no byte/materialization proof; no resource admission')
+}
+
+function operatorRefreshSkip({ issueCode, error }) {
+  const message = error?.message ?? 'unknown refresh error'
+  const localRunManifestMissing = message.includes('records/manifests/media-local-run-manifest.local.json')
+  const localRunInspectionMissing = message.includes('records/exports/local-run-edge-inspection-packet.local.json')
+
+  if (localRunManifestMissing || localRunInspectionMissing) {
+    return {
+      issueCode,
+      reason: 'Operator refresh expects first-wedge local-run artifacts, but this project appears to use a different inspection surface.',
+      nextAction: 'For Venice smoke projects, run npm run inspect:venice-smoke; otherwise run the local-run inspection path first or pass --no-refresh-operator.',
+      originalReason: message,
+      nonBlocking: true,
+      localOnly: true
+    }
+  }
+
+  return {
+    issueCode,
+    reason: message,
+    nonBlocking: false,
+    localOnly: true
+  }
 }
 
 function collectIssueCodes(explanations = []) {

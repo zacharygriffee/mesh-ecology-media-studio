@@ -166,6 +166,24 @@ calling Venice:
 npm run inspect:venice-smoke
 ```
 
+The Venice smoke inspector now summarizes generated candidates, promoted
+accepted/rejected assets, derivative readiness, and byte/resource posture when
+those local records exist.
+
+Current full local generated-image loop:
+
+```bash
+VENICE_LIVE=1 npm run provider:venice:smoke
+npm run derivatives:thumbnail -- --project-dir examples/venice-smoke
+npm run promote:candidate -- --project-dir examples/venice-smoke --asset-record records/assets/venice-live-smoke-asset-0.local.json --provider-result-record records/provider-results/venice-live-smoke-provider-result.local.json --decision accepted
+npm run derivatives:thumbnail -- --project-dir examples/venice-smoke
+npm run bytes:proposal -- --project-dir examples/venice-smoke
+npm run resource:refs -- --project-dir examples/venice-smoke
+npm run repair:local-posture -- --project-dir examples/venice-smoke
+npm run inspect:venice-smoke
+npm run media:summary -- --project-dir examples/venice-smoke
+```
+
 Export any manifest-backed local run:
 
 ```bash
