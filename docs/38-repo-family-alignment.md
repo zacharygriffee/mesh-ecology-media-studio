@@ -332,6 +332,10 @@ Control-surface implications:
 
 Studio should continue producing Packs-aligned control-surface projections
 without implementing a UI until Edge/operator handback semantics are clearer.
+Those projections should target machine-readable artifacts, refs, status views,
+inspection packets, operator-loop contracts, and Packs semantic component
+posture. Studio should not wrap Edge REPL command strings, transcript state,
+session memory, or renderer output as a control-surface contract.
 
 ## Bytes And Media Artifact Storage
 

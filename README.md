@@ -327,6 +327,10 @@ hygiene, Identity authority, and Testbed proof scope.
 Phase 39 adds local media operation candidates and rule-resolution traces so
 Studio can describe `auto_prepare`, `ask_operator`, and `forbid` mediation
 pressure without executing media operations or calling Edge.
+The REPL posture note clarifies that REPL is a transitional lab/debug surface;
+Studio should target CLI/status JSON, artifacts, refs, inspection packets,
+handoff candidates, decision requests, and Packs-aligned projections instead of
+wrapping Edge REPL output.
 
 ## Start Here
 
@@ -363,3 +367,4 @@ pressure without executing media operations or calling Edge.
 - [docs/37-comprehensive-state.md](docs/37-comprehensive-state.md)
 - [docs/38-repo-family-alignment.md](docs/38-repo-family-alignment.md)
 - [docs/39-operation-candidate-and-rule-resolution.md](docs/39-operation-candidate-and-rule-resolution.md)
+- [docs/40-repl-posture-and-control-surface-target.md](docs/40-repl-posture-and-control-surface-target.md)

@@ -15,6 +15,11 @@ The repo is still intentionally not a full studio application. There is no UI,
 no default live provider flow, no Edge runtime call, no mesh publication, no
 active ratifier lane, and no admitted local-layer resource backend.
 
+REPL is not the Studio app target. It remains a transitional lab/debug surface
+for adjacent operability work. Studio should target durable CLI/status JSON,
+artifacts, refs, inspection packets, operator indexes, handoff candidates,
+decision requests, readiness records, and Packs-aligned projections.
+
 ## Broad Vector
 
 The repo is moving from local media execution toward inspectable local media
@@ -249,6 +254,8 @@ Current posture:
 - The projection is readonly observer posture.
 - There is no renderer contract.
 - There is no authority surface.
+- There is no dependency on Edge REPL command text, transcript state, session
+  memory, or renderer output.
 
 UI remains deferred until the control-surface and Edge-handback semantics are
 stable enough to avoid baking in a premature workflow.

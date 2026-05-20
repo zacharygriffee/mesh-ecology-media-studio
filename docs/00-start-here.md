@@ -42,6 +42,7 @@ Read in this order:
 34. [Repo Family Alignment](38-repo-family-alignment.md)
 35. [Operation Candidate And Rule Resolution](39-operation-candidate-and-rule-resolution.md)
 36. [Edge Mediation Handoff Semantics](40-edge-mediation-handoff-semantics.md)
+37. [REPL Posture And Control-Surface Target](40-repl-posture-and-control-surface-target.md)
 
 The first executable path is:
 
@@ -141,6 +142,10 @@ npm run operator:decision-request -- --project-dir examples/card-to-candidate
 
 For the command-level meaning of local mediation traces in handoff surfaces,
 read [Edge Mediation Handoff Semantics](40-edge-mediation-handoff-semantics.md).
+For the durable control-surface target, read
+[REPL Posture And Control-Surface Target](40-repl-posture-and-control-surface-target.md):
+Studio should project over machine-readable artifacts, refs, status views, and
+operator-loop contracts rather than Edge REPL command text or transcript state.
 
 Phase 2 hardened the local wedge with a local run manifest, artifact-kind
 registry, and modest malformed-record checks. Phase 3 defines the local project
