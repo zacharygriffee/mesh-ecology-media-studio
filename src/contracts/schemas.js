@@ -2036,6 +2036,12 @@ export function validateRecordShape(record, schemaId = record.schema) {
       }
     }
 
+    for (const flag of ['resourceAdmission', 'materializationProof', 'promotionAuthority']) {
+      if (record[flag] !== undefined && record[flag] !== false) {
+        throw new Error(`Record ${schemaId} must set ${flag}=false when present`)
+      }
+    }
+
     validateLocalFalseFlags(record, schemaId)
   }
 
@@ -2377,6 +2383,12 @@ function validateResourcePromotionPosture(record, schemaId) {
 
   if (proposed.promotionAuthority !== false) {
     throw new Error(`Record ${schemaId}.proposedResourceRef must set promotionAuthority=false`)
+  }
+
+  for (const flag of ['resourceAdmission', 'materializationProof']) {
+    if (proposed[flag] !== undefined && proposed[flag] !== false) {
+      throw new Error(`Record ${schemaId}.proposedResourceRef must set ${flag}=false when present`)
+    }
   }
 
   if (!posture || typeof posture !== 'object') {

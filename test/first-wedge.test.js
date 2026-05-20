@@ -1214,6 +1214,12 @@ test('resource ref candidate marks local asset refs as scaffold only', async () 
   const candidate = candidates[0].candidate
   assert.equal(candidate.schema, 'media.local_layer_resource_ref_candidate.local.v1')
   assert.equal(candidate.sourceRef.id, result.outputs.assetDescriptor.assetId)
+  assert.equal(candidate.contentId, result.outputs.assetDescriptor.contentId)
+  assert.equal(candidate.sourceContentRef.id, result.outputs.assetDescriptor.contentId)
+  assert.equal(candidate.sourceAssetDescriptorRef.id, result.outputs.assetDescriptor.assetDescriptorRef.id)
+  assert.equal(candidate.sourceSituationRef.id, result.outputs.assetDescriptor.situationRef.id)
+  assert.equal(candidate.sourcePlacementRef.id, result.outputs.assetDescriptor.placementRef.id)
+  assert.equal(candidate.resourceKind, 'media-asset-by-situation')
   assert.equal(candidate.currentRefCategory, 'device_dependent_scaffold')
   assert.equal(candidate.targetRefCategory, 'local_layer_resource_ref')
   assert.equal(candidate.localLayerResourceRef, false)
@@ -1222,6 +1228,8 @@ test('resource ref candidate marks local asset refs as scaffold only', async () 
   assert.equal(candidate.proposedResourceRef.candidateOnly, true)
   assert.equal(candidate.proposedResourceRef.promotionStatus, 'candidate-only')
   assert.equal(candidate.proposedResourceRef.promotionAuthority, false)
+  assert.equal(candidate.resourceAdmission, false)
+  assert.equal(candidate.materializationProof, false)
   assert.equal(candidate.promotionPosture.status, 'candidate-only')
   assert.equal(candidate.promotionPosture.admissionRequired, true)
   assert.equal(candidate.promotionPosture.promotionAuthority, false)
@@ -1247,7 +1255,101 @@ test('resource ref candidate aligns with byte descriptor proposal when present',
   assert.equal(candidate.byteDescriptorAlignment.status, 'aligned')
   assert.equal(candidate.byteDescriptorAlignment.byteDescriptorProposalRef.schema, 'media.byte_descriptor_proposal.local.v1')
   assert.equal(candidate.proposedResourceRef.byteDescriptorProposalRef.id, `byte-descriptor-proposal-sha256-${result.outputs.assetDescriptor.hash.value}`)
+  assert.equal(candidate.proposedResourceRef.id.startsWith('media-resource:'), true)
+  assert.equal(candidate.proposedResourceRef.contentId, result.outputs.assetDescriptor.contentId)
+  assert.equal(candidate.proposedResourceRef.assetDescriptorRef.id, result.outputs.assetDescriptor.assetDescriptorRef.id)
+  assert.equal(candidate.proposedResourceRef.situationRef.id, result.outputs.assetDescriptor.situationRef.id)
+  assert.equal(candidate.proposedResourceRef.placementRef.id, result.outputs.assetDescriptor.placementRef.id)
+  assert.equal(candidate.proposedResourceRef.identitySeed.includes(result.outputs.assetDescriptor.situationRef.id), true)
+  assert.equal(candidate.proposedResourceRef.identitySeed.includes(result.outputs.assetDescriptor.placementRef.id), true)
   assert.equal(validateRequiredRecord(candidate), true)
+})
+
+test('resource candidates stay situation specific for same-content accepted and reference descriptors', async () => {
+  const dir = await createFixtureProject()
+  const result = await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await mkdir(path.join(dir, 'media', 'references'), { recursive: true })
+  await writeFile(path.join(dir, 'media', 'references', 'candidate.txt'), 'candidate bytes')
+  const referenceAsset = structuredClone(result.outputs.assetDescriptor)
+  referenceAsset.localRef = {
+    ...referenceAsset.localRef,
+    placementClass: 'media-reference',
+    path: 'media/references/candidate.txt'
+  }
+  referenceAsset.placementRef = {
+    ...referenceAsset.placementRef,
+    id: `placement:${referenceAsset.projectId}:media/references/candidate.txt`,
+    path: 'media/references/candidate.txt',
+    placementClass: 'media-reference',
+    lifecycleState: 'source'
+  }
+  referenceAsset.situationRef = {
+    ...referenceAsset.situationRef,
+    id: `situation:${referenceAsset.projectId}:reference-asset:${referenceAsset.placementRef.id}`,
+    role: 'reference-asset',
+    placementRef: {
+      kind: referenceAsset.placementRef.kind,
+      id: referenceAsset.placementRef.id
+    }
+  }
+  await writeFile(
+    path.join(dir, 'records', 'assets', 'reference-same-content.local.json'),
+    `${JSON.stringify(referenceAsset, null, 2)}\n`
+  )
+
+  const { proposals } = await writeByteDescriptorProposals({ projectDir: dir })
+  const repair = await repairLocalPosture({ projectDir: dir, refreshOperator: false })
+  const resourceFiles = (await readdir(path.join(dir, 'records', 'resources')))
+    .filter((file) => file.endsWith('.json'))
+    .sort()
+  const resourceCandidates = await Promise.all(resourceFiles.map(async (file) =>
+    JSON.parse(await readFile(path.join(dir, 'records', 'resources', file), 'utf8'))
+  ))
+  const status = await writeProjectStatus({ projectDir: dir, quiet: true })
+  const readiness = await writeEdgeReadinessGuidance({ projectDir: dir, quiet: true })
+
+  assert.equal(proposals.length, 1)
+  assert.equal(repair.repairs.find((entry) => entry.repairKind === 'local_layer_resource_ref_candidates')?.recordsWritten, 2)
+  assert.equal(resourceCandidates.length, 2)
+  assert.notEqual(resourceCandidates[0].resourceRefCandidateId, resourceCandidates[1].resourceRefCandidateId)
+  assert.notEqual(resourceCandidates[0].proposedResourceRef.id, resourceCandidates[1].proposedResourceRef.id)
+  assert.deepEqual(
+    resourceCandidates.map((candidate) => candidate.sourceRef.id),
+    [result.outputs.assetDescriptor.assetId, result.outputs.assetDescriptor.assetId]
+  )
+  assert.deepEqual(
+    resourceCandidates.map((candidate) => candidate.sourceContentRef.id),
+    [result.outputs.assetDescriptor.contentId, result.outputs.assetDescriptor.contentId]
+  )
+  assert.deepEqual(
+    resourceCandidates.map((candidate) => candidate.sourceSituationRef.id).sort(),
+    [result.outputs.assetDescriptor.situationRef.id, referenceAsset.situationRef.id].sort()
+  )
+  assert.deepEqual(
+    resourceCandidates.map((candidate) => candidate.sourcePlacementRef.id).sort(),
+    [result.outputs.assetDescriptor.placementRef.id, referenceAsset.placementRef.id].sort()
+  )
+  assert.deepEqual(
+    resourceCandidates.map((candidate) => candidate.proposedResourceRef.byteDescriptorProposalRef.id),
+    [proposals[0].proposal.byteDescriptorProposalId, proposals[0].proposal.byteDescriptorProposalId]
+  )
+  for (const candidate of resourceCandidates) {
+    assert.equal(candidate.proposedResourceRef.candidateOnly, true)
+    assert.equal(candidate.proposedResourceRef.promotionAuthority, false)
+    assert.equal(candidate.proposedResourceRef.resourceAdmission, false)
+    assert.equal(candidate.proposedResourceRef.materializationProof, false)
+    assert.equal(candidate.resourceAdmission, false)
+    assert.equal(candidate.materializationProof, false)
+    assert.equal(candidate.localLayerResourceRef, false)
+    assert.equal(candidate.meshTruth, false)
+    assert.equal(validateRequiredRecord(candidate), true)
+  }
+  assert.equal(status.status.assetResourceConsistency.readyForEdgeInspection, true)
+  assert.equal(readiness.readiness.state, 'ready')
 })
 
 test('resource ref candidate rejects promoted-resource claims', async () => {

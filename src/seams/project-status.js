@@ -124,9 +124,11 @@ function summarizeAssetResourceConsistency(records) {
   const byteProposalByAssetId = indexByteDescriptorProposalsByAssetId(records
     .filter((entry) => entry.record.schema === artifactKinds.mediaByteDescriptorProposalLocal)
     .map((entry) => entry.record))
-  const resourceCandidateByAssetId = new Map(records
+  const resourceCandidateRecords = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaLocalLayerResourceRefCandidateLocal)
-    .map((entry) => [entry.record.sourceRef.id, entry.record]))
+    .map((entry) => entry.record)
+  const resourceCandidateBySubject = indexResourceCandidatesBySubject(resourceCandidateRecords)
+  const resourceCandidateByAssetId = new Map(resourceCandidateRecords.map((record) => [record.sourceRef.id, record]))
   const missingByteDescriptorProposalAssetIds = []
   const missingResourceRefCandidateAssetIds = []
   const unresolvedResourceCandidateIds = []
@@ -138,7 +140,8 @@ function summarizeAssetResourceConsistency(records) {
   for (const entry of acceptedOrReferenceAssets) {
     const assetId = entry.record.assetId
     const byteProposal = byteProposalByAssetId.get(assetId)
-    const resourceCandidate = resourceCandidateByAssetId.get(assetId)
+    const resourceCandidate = resourceCandidateBySubject.get(resourceSubjectKeyForAsset(entry.record)) ??
+      resourceCandidateByAssetId.get(assetId)
     const reasons = []
     const nextActions = []
     const issueCodes = []
@@ -228,7 +231,7 @@ function summarizeAssetResourceConsistency(records) {
   return {
     acceptedOrReferenceAssets: acceptedOrReferenceAssets.length,
     byteDescriptorProposalCoverage: byteProposalByAssetId.size,
-    resourceRefCandidateCoverage: resourceCandidateByAssetId.size,
+    resourceRefCandidateCoverage: resourceCandidateBySubject.size,
     alignedResourceCandidateIds,
     missingByteDescriptorProposalAssetIds,
     missingResourceRefCandidateAssetIds,
@@ -317,7 +320,11 @@ function byteProposalMatchesAsset(byteProposal, assetDescriptor) {
 }
 
 function resourceCandidateMatchesAsset(resourceCandidate, assetDescriptor) {
-  return JSON.stringify(resourceCandidate.proposedResourceRef?.hash ?? null) === JSON.stringify(assetDescriptor.hash ?? null) &&
+  return contentIdForRecord(resourceCandidate) === contentIdForRecord(assetDescriptor) &&
+    JSON.stringify(resourceCandidate.proposedResourceRef?.hash ?? null) === JSON.stringify(assetDescriptor.hash ?? null) &&
+    resourceCandidateIncludesAssetDescriptor(resourceCandidate, assetDescriptor) &&
+    resourceCandidateIncludesSituation(resourceCandidate, assetDescriptor) &&
+    resourceCandidateIncludesPlacement(resourceCandidate, assetDescriptor) &&
     JSON.stringify(resourceCandidate.proposedResourceRef?.localRef ?? null) === JSON.stringify(assetDescriptor.localRef ?? null)
 }
 
@@ -362,6 +369,57 @@ function byteProposalIncludesAsset(byteProposal, assetId) {
 
 function contentIdForRecord(record) {
   return record.contentId ?? (record.hash?.algorithm === 'sha256' ? `sha256:${record.hash.value}` : undefined)
+}
+
+function indexResourceCandidatesBySubject(records) {
+  const index = new Map()
+
+  for (const record of records) {
+    const key = resourceSubjectKeyForCandidate(record)
+    if (key && !index.has(key)) index.set(key, record)
+  }
+
+  return index
+}
+
+function resourceSubjectKeyForAsset(assetDescriptor) {
+  return [
+    contentIdForRecord(assetDescriptor),
+    assetDescriptor.assetDescriptorRef?.id ?? assetDescriptor.assetId,
+    assetDescriptor.situationRef?.id ?? 'missing-situation',
+    assetDescriptor.placementRef?.id ?? 'missing-placement',
+    assetDescriptor.placementRef?.path ?? assetDescriptor.localRef?.path ?? 'missing-path'
+  ].join('|')
+}
+
+function resourceSubjectKeyForCandidate(resourceCandidate) {
+  const proposed = resourceCandidate.proposedResourceRef ?? {}
+
+  return [
+    contentIdForRecord(resourceCandidate) ?? proposed.contentId,
+    resourceCandidate.sourceAssetDescriptorRef?.id ?? proposed.assetDescriptorRef?.id ?? resourceCandidate.sourceRef?.id,
+    resourceCandidate.sourceSituationRef?.id ?? proposed.situationRef?.id ?? 'missing-situation',
+    resourceCandidate.sourcePlacementRef?.id ?? proposed.placementRef?.id ?? 'missing-placement',
+    resourceCandidate.sourcePlacementRef?.path ?? proposed.placementRef?.path ?? proposed.localRef?.path ?? 'missing-path'
+  ].join('|')
+}
+
+function resourceCandidateIncludesAssetDescriptor(resourceCandidate, assetDescriptor) {
+  const assetDescriptorId = assetDescriptor.assetDescriptorRef?.id ?? assetDescriptor.assetId
+  const candidateAssetDescriptorId = resourceCandidate.sourceAssetDescriptorRef?.id ??
+    resourceCandidate.proposedResourceRef?.assetDescriptorRef?.id ??
+    resourceCandidate.sourceRef?.id
+  return candidateAssetDescriptorId === assetDescriptorId
+}
+
+function resourceCandidateIncludesSituation(resourceCandidate, assetDescriptor) {
+  if (!assetDescriptor.situationRef?.id) return true
+  return (resourceCandidate.sourceSituationRef?.id ?? resourceCandidate.proposedResourceRef?.situationRef?.id) === assetDescriptor.situationRef.id
+}
+
+function resourceCandidateIncludesPlacement(resourceCandidate, assetDescriptor) {
+  if (!assetDescriptor.placementRef?.id) return true
+  return (resourceCandidate.sourcePlacementRef?.id ?? resourceCandidate.proposedResourceRef?.placementRef?.id) === assetDescriptor.placementRef.id
 }
 
 async function readProjectRecords(root) {

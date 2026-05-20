@@ -1,9 +1,10 @@
+import { createHash } from 'node:crypto'
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { artifactKinds } from '../contracts/artifact-kinds.js'
-import { makeRef, nowIso } from '../contracts/constructors.js'
+import { createContentId, makeRef, nowIso } from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from './project-layout.js'
 import { createScaffoldResolvabilityPosture } from './resolvability.js'
@@ -81,7 +82,19 @@ export function createLocalLayerResourceRefCandidate({
   createdAt = nowIso()
 }) {
   const sourceRef = makeRef('media-asset', assetDescriptor.assetId, assetDescriptor.schema)
-  const hashValue = assetDescriptor.hash?.value ?? assetDescriptor.assetId
+  const contentId = contentIdForAsset(assetDescriptor)
+  const sourceContentRef = makeRef('media-content', contentId, 'media.content_ref.local.v1')
+  const sourceAssetDescriptorRef = assetDescriptor.assetDescriptorRef ?? makeRef('media-asset-descriptor', assetDescriptor.assetId, assetDescriptor.schema)
+  const sourceSituationRef = refForSituation(assetDescriptor.situationRef)
+  const sourcePlacementRef = refForPlacement(assetDescriptor.placementRef)
+  const resourceSubjectSeed = createResourceSubjectSeed({
+    projectId: assetDescriptor.projectId,
+    contentId,
+    assetDescriptorRef: sourceAssetDescriptorRef,
+    situationRef: sourceSituationRef,
+    placementRef: sourcePlacementRef
+  })
+  const resourceSubjectId = stableId(resourceSubjectSeed)
   const byteDescriptorProposalRef = byteDescriptorProposalEntry
     ? {
         ...makeRef(
@@ -95,24 +108,39 @@ export function createLocalLayerResourceRefCandidate({
     : null
   const candidate = {
     schema: artifactKinds.mediaLocalLayerResourceRefCandidateLocal,
-    resourceRefCandidateId: `resource-ref-candidate-${assetDescriptor.assetId}`,
+    resourceRefCandidateId: `resource-ref-candidate-${resourceSubjectId}`,
     projectId: assetDescriptor.projectId,
+    contentId,
     sourceRef,
+    sourceContentRef,
+    sourceAssetDescriptorRef,
+    sourceSituationRef,
+    sourcePlacementRef,
     sourcePath: assetRecordPath,
-    resourceKind: 'media-asset-by-hash',
+    resourceKind: 'media-asset-by-situation',
     currentRefCategory: 'device_dependent_scaffold',
     targetRefCategory: 'local_layer_resource_ref',
     proposedResourceRef: {
       kind: 'local-layer-resource-ref-candidate',
-      id: `media-asset:${assetDescriptor.projectId}:${assetDescriptor.assetId}`,
-      resourceKind: 'media-asset-by-hash',
+      id: `media-resource:${resourceSubjectId}`,
+      resourceKind: 'media-asset-by-situation',
+      contentId,
+      sourceContentRef,
+      sourceRef,
+      assetDescriptorRef: sourceAssetDescriptorRef,
+      situationRef: sourceSituationRef,
+      placementRef: sourcePlacementRef,
+      basisRef: assetDescriptor.basisRef,
+      originRef: assetDescriptor.originRef,
       hash: assetDescriptor.hash,
       localRef: assetDescriptor.localRef,
       byteDescriptorProposalRef,
-      identitySeed: `sha256:${hashValue}`,
+      identitySeed: resourceSubjectSeed,
       candidateOnly: true,
       promotionStatus: 'candidate-only',
-      promotionAuthority: false
+      promotionAuthority: false,
+      resourceAdmission: false,
+      materializationProof: false
     },
     byteDescriptorAlignment: {
       status: byteDescriptorProposalRef ? 'aligned' : 'missing-byte-descriptor-proposal',
@@ -130,6 +158,7 @@ export function createLocalLayerResourceRefCandidate({
       causalReviewableRef: false,
       notes: [
         'This record proposes a local-layer resource ref candidate only.',
+        'This resource candidate is scoped to one asset descriptor and situation/placement subject.',
         'Promotion must be performed by a later local-layer or Edge-mediated lane.',
         'This candidate does not prove resource admission, replication, materialization, or authority.'
       ]
@@ -138,6 +167,11 @@ export function createLocalLayerResourceRefCandidate({
       reason: 'Asset descriptor and local file path are Mode 0 scaffold inputs until a local-layer resource ref is admitted.'
     }),
     status: 'candidate',
+    candidateOnly: true,
+    promotionStatus: 'candidate-only',
+    promotionAuthority: false,
+    resourceAdmission: false,
+    materializationProof: false,
     localLayerResourceRef: false,
     replicatedPointerRef: false,
     causalReviewableRef: false,
@@ -152,6 +186,55 @@ export function createLocalLayerResourceRefCandidate({
 
   validateRequiredRecord(candidate)
   return candidate
+}
+
+function contentIdForAsset(assetDescriptor) {
+  return assetDescriptor.contentId ?? createContentId(assetDescriptor.hash)
+}
+
+function refForSituation(situationRef) {
+  if (!situationRef) return undefined
+
+  return {
+    kind: situationRef.kind,
+    id: situationRef.id,
+    role: situationRef.role,
+    localOnly: true
+  }
+}
+
+function refForPlacement(placementRef) {
+  if (!placementRef) return undefined
+
+  return {
+    kind: placementRef.kind,
+    id: placementRef.id,
+    path: placementRef.path,
+    placementClass: placementRef.placementClass,
+    lifecycleState: placementRef.lifecycleState,
+    localOnly: true
+  }
+}
+
+function createResourceSubjectSeed({
+  projectId,
+  contentId,
+  assetDescriptorRef,
+  situationRef,
+  placementRef
+}) {
+  return [
+    `project:${projectId}`,
+    `content:${contentId}`,
+    `descriptor:${assetDescriptorRef?.id ?? 'missing-descriptor'}`,
+    `situation:${situationRef?.id ?? 'missing-situation'}`,
+    `placement:${placementRef?.id ?? 'missing-placement'}`,
+    `placementPath:${placementRef?.path ?? 'missing-path'}`
+  ].join('|')
+}
+
+function stableId(seed) {
+  return createHash('sha256').update(seed).digest('hex').slice(0, 24)
 }
 
 async function readAssetDescriptors(root) {
