@@ -887,6 +887,7 @@ export const requiredFields = {
     'targetRefCategory',
     'proposedResourceRef',
     'byteDescriptorAlignment',
+    'promotionPosture',
     'resolvabilityPosture',
     'status',
     'localLayerResourceRef',
@@ -1944,6 +1945,7 @@ export function validateRecordShape(record, schemaId = record.schema) {
       throw new Error(`Record ${schemaId} must include proposedResourceRef`)
     }
 
+    validateResourcePromotionPosture(record, schemaId)
     validateByteDescriptorAlignment(record.byteDescriptorAlignment, `${schemaId}.byteDescriptorAlignment`)
 
     for (const flag of ['localLayerResourceRef', 'replicatedPointerRef', 'causalReviewableRef']) {
@@ -2207,6 +2209,49 @@ function validateByteDescriptorAlignment(alignment, label) {
     validateInspectionRef(alignment.byteDescriptorProposalRef, `${label}.byteDescriptorProposalRef`)
   } else if (alignment.byteDescriptorProposalRef !== null && alignment.byteDescriptorProposalRef !== undefined) {
     throw new Error(`${label}.byteDescriptorProposalRef must be null when missing`)
+  }
+}
+
+function validateResourcePromotionPosture(record, schemaId) {
+  const proposed = record.proposedResourceRef
+  const posture = record.promotionPosture
+
+  if (proposed.candidateOnly !== true) {
+    throw new Error(`Record ${schemaId}.proposedResourceRef must set candidateOnly=true`)
+  }
+
+  if (proposed.promotionStatus !== 'candidate-only') {
+    throw new Error(`Record ${schemaId}.proposedResourceRef must set promotionStatus=candidate-only`)
+  }
+
+  if (proposed.promotionAuthority !== false) {
+    throw new Error(`Record ${schemaId}.proposedResourceRef must set promotionAuthority=false`)
+  }
+
+  if (!posture || typeof posture !== 'object') {
+    throw new Error(`Record ${schemaId} must include promotionPosture`)
+  }
+
+  if (posture.status !== 'candidate-only') {
+    throw new Error(`Record ${schemaId}.promotionPosture must set status=candidate-only`)
+  }
+
+  if (posture.admissionRequired !== true || posture.byteDescriptorRequired !== true) {
+    throw new Error(`Record ${schemaId}.promotionPosture must require admission and byte descriptor alignment`)
+  }
+
+  if (posture.requiredTargetCategory !== 'local_layer_resource_ref') {
+    throw new Error(`Record ${schemaId}.promotionPosture must target local_layer_resource_ref`)
+  }
+
+  for (const flag of ['promotionAuthority', 'localLayerResourceRef', 'replicatedPointerRef', 'causalReviewableRef']) {
+    if (posture[flag] !== false) {
+      throw new Error(`Record ${schemaId}.promotionPosture must set ${flag}=false`)
+    }
+  }
+
+  if (!Array.isArray(posture.notes)) {
+    throw new Error(`Record ${schemaId}.promotionPosture.notes must be an array`)
   }
 }
 

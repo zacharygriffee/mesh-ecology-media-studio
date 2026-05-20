@@ -66,6 +66,15 @@ These records classify current local JSON/path refs as
 `local_layer_resource_ref` posture. They are not admitted local-layer resources,
 replicated pointer refs, or causal-reviewable refs.
 
+They must also keep explicit candidate-only promotion posture:
+
+```text
+proposedResourceRef.candidateOnly: true
+promotionPosture.status: candidate-only
+promotionPosture.admissionRequired: true
+promotionPosture.promotionAuthority: false
+```
+
 When byte descriptor proposals exist, resource-ref candidates record alignment
 to those proposals. Missing alignment remains visible for later Edge inspection
 as local readiness guidance only.

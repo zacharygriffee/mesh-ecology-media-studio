@@ -317,6 +317,9 @@ stale resource refs, and stale production descriptors.
 Phase 27 adds an explicit cross-project inspection input list and local
 operator index so several project handoff postures can be scanned without
 project discovery or Edge runtime calls.
+Phase 28 makes resource promotion posture explicit so local resource-ref
+candidates remain candidate-only and cannot be mistaken for admitted resource
+identity.
 
 ## Start Here
 

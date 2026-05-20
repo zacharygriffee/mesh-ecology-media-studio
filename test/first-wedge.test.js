@@ -986,6 +986,12 @@ test('resource ref candidate marks local asset refs as scaffold only', async () 
   assert.equal(candidate.localLayerResourceRef, false)
   assert.equal(candidate.replicatedPointerRef, false)
   assert.equal(candidate.causalReviewableRef, false)
+  assert.equal(candidate.proposedResourceRef.candidateOnly, true)
+  assert.equal(candidate.proposedResourceRef.promotionStatus, 'candidate-only')
+  assert.equal(candidate.proposedResourceRef.promotionAuthority, false)
+  assert.equal(candidate.promotionPosture.status, 'candidate-only')
+  assert.equal(candidate.promotionPosture.admissionRequired, true)
+  assert.equal(candidate.promotionPosture.promotionAuthority, false)
   assert.equal(candidate.byteDescriptorAlignment.status, 'missing-byte-descriptor-proposal')
   assert.equal(candidate.byteDescriptorAlignment.requiredBeforePromotion, true)
   assert.equal(candidate.resolvabilityPosture.operatorFacingIdentityBoundary, false)
@@ -1028,6 +1034,24 @@ test('resource ref candidate rejects promoted-resource claims', async () => {
   assert.throws(
     () => validateRequiredRecord(candidate),
     /localLayerResourceRef=false/
+  )
+
+  const proposedClaim = structuredClone(candidate)
+  proposedClaim.localLayerResourceRef = false
+  proposedClaim.proposedResourceRef.candidateOnly = false
+
+  assert.throws(
+    () => validateRequiredRecord(proposedClaim),
+    /candidateOnly=true/
+  )
+
+  const postureClaim = structuredClone(candidate)
+  postureClaim.localLayerResourceRef = false
+  postureClaim.promotionPosture.status = 'promoted'
+
+  assert.throws(
+    () => validateRequiredRecord(postureClaim),
+    /status=candidate-only/
   )
 })
 

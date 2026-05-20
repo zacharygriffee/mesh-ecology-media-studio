@@ -38,6 +38,25 @@ Mode 0 JSON records and local file paths begin as
 `local_layer_resource_ref`, but it does not claim that ref has been admitted or
 replicated.
 
+## Promotion Posture
+
+Resource-ref candidates carry explicit promotion posture so they cannot be
+mistaken for admitted resource identity:
+
+```text
+proposedResourceRef.candidateOnly: true
+proposedResourceRef.promotionStatus: candidate-only
+proposedResourceRef.promotionAuthority: false
+promotionPosture.status: candidate-only
+promotionPosture.admissionRequired: true
+promotionPosture.byteDescriptorRequired: true
+promotionPosture.promotionAuthority: false
+```
+
+Promotion is deferred to a later local-layer or Edge-mediated lane. A Studio
+candidate can help that lane decide what to admit, but the candidate itself is
+not the admitted ref.
+
 ## Command
 
 After a local asset exists, write candidates with:
@@ -73,6 +92,7 @@ Resource-ref candidates must keep:
 localLayerResourceRef: false
 replicatedPointerRef: false
 causalReviewableRef: false
+promotionPosture.promotionAuthority: false
 localOnly: true
 meshTruth: false
 distributedProof: false

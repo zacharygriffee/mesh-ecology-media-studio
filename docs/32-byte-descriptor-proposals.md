@@ -48,3 +48,8 @@ ratifiedSharedState: false
 
 They make later inspection easier by carrying the asset ref, local ref, hash,
 size, and content type in one proposal record.
+
+Byte descriptor proposal alignment is required before a resource-ref candidate
+can be considered ready for a future admission lane. Alignment still does not
+promote the candidate: `media.local_layer_resource_ref_candidate.local.v1`
+remains `candidate-only` until another layer admits it.

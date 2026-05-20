@@ -106,12 +106,29 @@ export function createLocalLayerResourceRefCandidate({
       localRef: assetDescriptor.localRef,
       byteDescriptorProposalRef,
       identitySeed: `sha256:${hashValue}`,
-      candidateOnly: true
+      candidateOnly: true,
+      promotionStatus: 'candidate-only',
+      promotionAuthority: false
     },
     byteDescriptorAlignment: {
       status: byteDescriptorProposalRef ? 'aligned' : 'missing-byte-descriptor-proposal',
       byteDescriptorProposalRef,
       requiredBeforePromotion: true
+    },
+    promotionPosture: {
+      status: 'candidate-only',
+      admissionRequired: true,
+      requiredTargetCategory: 'local_layer_resource_ref',
+      byteDescriptorRequired: true,
+      promotionAuthority: false,
+      localLayerResourceRef: false,
+      replicatedPointerRef: false,
+      causalReviewableRef: false,
+      notes: [
+        'This record proposes a local-layer resource ref candidate only.',
+        'Promotion must be performed by a later local-layer or Edge-mediated lane.',
+        'This candidate does not prove resource admission, replication, materialization, or authority.'
+      ]
     },
     resolvabilityPosture: createScaffoldResolvabilityPosture({
       reason: 'Asset descriptor and local file path are Mode 0 scaffold inputs until a local-layer resource ref is admitted.'
