@@ -5,7 +5,17 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { artifactKinds } from '../contracts/artifact-kinds.js'
-import { makeRef, nowIso } from '../contracts/constructors.js'
+import {
+  createAssetDescriptorRef,
+  createBasisRef,
+  createContentId,
+  createDeferredCausalRefs,
+  createOriginRef,
+  createPlacementRef,
+  createSituationRef,
+  makeRef,
+  nowIso
+} from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import {
   assertSafeFilename,
@@ -153,14 +163,47 @@ export function createReferenceAssetDescriptor({
   operatorRef,
   createdAt = nowIso()
 }) {
+  const contentId = createContentId(hash)
+  const assetDescriptorRef = createAssetDescriptorRef({ assetId })
+  const originRef = createOriginRef({
+    kind: 'local-file',
+    id: source,
+    path: source
+  })
+  const basisRef = createBasisRef({
+    id: `basis:${projectId}:reference:${source}`,
+    refs: [originRef]
+  })
+  const placementRef = createPlacementRef({
+    projectId,
+    localRef,
+    lifecycleState: lifecycle?.state
+  })
+  const situationRef = createSituationRef({
+    projectId,
+    role: 'reference-asset',
+    placementRef,
+    contextRef: {
+      kind: 'studio-project',
+      id: `project:${projectId}`
+    }
+  })
   const descriptor = {
     schema: artifactKinds.mediaAssetDescriptor,
     assetId,
     projectId,
+    contentId,
     contentType,
     hash,
     size,
     localRef,
+    assetDescriptorRef,
+    artifactDescriptorRef: assetDescriptorRef,
+    originRef,
+    basisRef,
+    situationRef,
+    placementRef,
+    causalRefs: createDeferredCausalRefs(),
     source: {
       sourceType: 'local-reference-ingest',
       sourceRef: {

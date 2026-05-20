@@ -114,6 +114,31 @@ function sha256Hex(bytes) {
   return createHash('sha256').update(bytes).digest('hex')
 }
 
+function assertLayeredAssetIdentity(assetDescriptor, {
+  expectedPlacementClass,
+  expectedPath,
+  expectedRole
+} = {}) {
+  assert.equal(assetDescriptor.contentId, `sha256:${assetDescriptor.hash.value}`)
+  assert.equal(assetDescriptor.assetId, `asset-${assetDescriptor.hash.value.slice(0, 16)}`)
+  assert.equal(assetDescriptor.assetDescriptorRef.kind, 'media-asset-descriptor')
+  assert.equal(assetDescriptor.assetDescriptorRef.id, assetDescriptor.assetId)
+  assert.equal(assetDescriptor.assetDescriptorRef.schema, assetDescriptor.schema)
+  assert.deepEqual(assetDescriptor.artifactDescriptorRef, assetDescriptor.assetDescriptorRef)
+  assert.equal(assetDescriptor.placementRef.kind, 'path-placement')
+  assert.equal(assetDescriptor.placementRef.id, `placement:${assetDescriptor.projectId}:${assetDescriptor.localRef.path}`)
+  assert.equal(assetDescriptor.placementRef.path, expectedPath ?? assetDescriptor.localRef.path)
+  assert.equal(assetDescriptor.placementRef.placementClass, expectedPlacementClass ?? assetDescriptor.localRef.placementClass)
+  assert.equal(assetDescriptor.situationRef.kind, 'studio-media-situation')
+  assert.equal(assetDescriptor.situationRef.role, expectedRole ?? assetDescriptor.provenance?.lifecycle?.state)
+  assert.equal(assetDescriptor.situationRef.placementRef.id, assetDescriptor.placementRef.id)
+  assert.equal(assetDescriptor.situationRef.contextRef.id, `project:${assetDescriptor.projectId}`)
+  assert.equal(assetDescriptor.basisRef.kind, 'media-basis')
+  assert.equal(assetDescriptor.originRef.localOnly, true)
+  assert.equal(assetDescriptor.causalRefs.deferred, true)
+  assert.equal(assetDescriptor.causalRefs.causalTruth, false)
+}
+
 function createTestOperationCandidate(overrides = {}) {
   return createMediaOperationCandidate({
     operationId: 'operation-test',
@@ -271,6 +296,11 @@ test('first wedge creates local records without claiming mesh truth', async () =
   assert.equal(result.outputs.assetDescriptor.localRef.schema, 'media.local_ref.v1')
   assert.equal(result.outputs.assetDescriptor.localRef.placementClass, 'media-accepted')
   assert.equal(result.outputs.assetDescriptor.localRef.path, 'media/accepted/candidate.txt')
+  assertLayeredAssetIdentity(result.outputs.assetDescriptor, {
+    expectedPlacementClass: 'media-accepted',
+    expectedPath: 'media/accepted/candidate.txt',
+    expectedRole: 'accepted'
+  })
   assert.equal(result.outputs.workPacket.meshTruth, false)
   assert.equal(result.outputs.providerResult.schema, 'media.provider_result.v1')
   assert.equal(result.outputs.providerResult.providerTruth, false)
@@ -731,6 +761,11 @@ test('Venice live smoke command path can be tested without network by injected f
   assert.equal(assetRecord.schema, 'media.asset.descriptor.v1')
   assert.equal(assetRecord.source.apiCalled, true)
   assert.equal(assetRecord.localRef.placementClass, 'media-generated')
+  assertLayeredAssetIdentity(assetRecord, {
+    expectedPlacementClass: 'media-generated',
+    expectedPath: 'media/generated/provider-smoke/venice-live-smoke-0.png',
+    expectedRole: 'generated'
+  })
   assert.equal(assetRecord.meshTruth, false)
   assert.equal(imageMetadata.width, 1)
   assert.equal(validateRequiredRecord(imageMetadata), true)
@@ -922,6 +957,14 @@ test('reference ingest writes asset descriptor and local ingest receipt', async 
   assert.equal(result.assetDescriptor.schema, 'media.asset.descriptor.v1')
   assert.equal(result.assetDescriptor.localRef.placementClass, 'media-reference')
   assert.equal(result.assetDescriptor.localRef.path, 'media/references/reference.txt')
+  assertLayeredAssetIdentity(result.assetDescriptor, {
+    expectedPlacementClass: 'media-reference',
+    expectedPath: 'media/references/reference.txt',
+    expectedRole: 'reference-asset'
+  })
+  assert.equal(result.assetDescriptor.originRef.kind, 'local-file')
+  assert.equal(result.assetDescriptor.originRef.path, 'media/generated/reference.txt')
+  assert.equal(result.assetDescriptor.basisRef.refs[0].id, 'media/generated/reference.txt')
   assert.equal(result.assetDescriptor.source.apiCalled, false)
   assert.equal(result.ingestRecord.schema, 'media.reference_ingest.local.v1')
   assert.equal(result.ingestRecord.providerTruth, false)
@@ -1815,6 +1858,11 @@ test('promote candidate copies placement and records local decision without prov
   })
 
   assert.equal(result.assetDescriptor.localRef.path, 'media/rejected/candidate.txt')
+  assertLayeredAssetIdentity(result.assetDescriptor, {
+    expectedPlacementClass: 'media-rejected',
+    expectedPath: 'media/rejected/candidate.txt',
+    expectedRole: 'rejected'
+  })
   assert.equal(result.assetDescriptor.source.apiCalled, false)
   assert.equal(result.review.operatorDecision.decisionType, 'reject')
   assert.equal(result.exportRecord.packet.schema, 'media.edge_inspection_packet.local.v1')

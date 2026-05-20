@@ -23,6 +23,94 @@ export function makeRef(kind, id, schema) {
   }
 }
 
+export function createContentId(hash) {
+  if (!hash || hash.algorithm !== 'sha256' || typeof hash.value !== 'string' || hash.value.length === 0) {
+    throw new Error('contentId requires a sha256 hash')
+  }
+
+  return `sha256:${hash.value}`
+}
+
+export function createAssetDescriptorRef({ assetId, schema = artifactKinds.mediaAssetDescriptor }) {
+  return makeRef('media-asset-descriptor', assetId, schema)
+}
+
+export function createOriginRef({ kind = 'media-origin', id, path, localOnly = true }) {
+  const ref = {
+    kind,
+    id,
+    localOnly
+  }
+
+  if (path) ref.path = path
+  return ref
+}
+
+export function createBasisRef({ kind = 'media-basis', id, refs = [] }) {
+  return {
+    kind,
+    id,
+    refs
+  }
+}
+
+export function createPlacementRef({ projectId, localRef, placementClass, lifecycleState }) {
+  const localPath = localRef?.path
+  const resolvedPlacementClass = placementClass ?? localRef?.placementClass ?? 'unknown'
+  const resolvedLifecycleState = lifecycleState ?? 'unknown'
+
+  return {
+    kind: 'path-placement',
+    id: `placement:${projectId}:${localPath ?? 'unknown'}`,
+    projectId,
+    path: localPath,
+    placementClass: resolvedPlacementClass,
+    lifecycleState: resolvedLifecycleState
+  }
+}
+
+export function createSituationRef({
+  projectId,
+  role,
+  placementRef,
+  contextRef,
+  surfaceRef = {
+    kind: 'media-project-local-layer',
+    id: `surface:${projectId}`
+  },
+  ruleBookRef = {
+    id: 'rule-book:studio-local-media'
+  }
+}) {
+  const resolvedRole = role ?? placementRef?.lifecycleState ?? placementRef?.placementClass ?? 'local-media-asset'
+
+  return {
+    kind: 'studio-media-situation',
+    id: `situation:${projectId}:${resolvedRole}:${placementRef?.id ?? 'no-placement'}`,
+    role: resolvedRole,
+    contextRef: contextRef ?? {
+      kind: 'studio-project',
+      id: `project:${projectId}`
+    },
+    surfaceRef,
+    placementRef: placementRef
+      ? {
+          kind: placementRef.kind,
+          id: placementRef.id
+        }
+      : undefined,
+    ruleBookRef
+  }
+}
+
+export function createDeferredCausalRefs(reason = 'causal-substrate adapter not implemented') {
+  return {
+    deferred: true,
+    deferredReason: reason,
+    causalTruth: false
+  }
+}
+
 export function intentFamilyForCard(card) {
   if (card.kind === 'video') return 'video-generation'
   if (card.kind === 'audio') return 'audio-generation'
@@ -73,19 +161,61 @@ export function createAssetDescriptor({
   lifecycle,
   sourceApiCalled = false,
   transitionSummary = 'local candidate ingested from first wedge',
+  originRef,
+  basisRef,
+  causalRefs,
   createdAt = nowIso()
 }) {
+  const assetId = `asset-${hash.value.slice(0, 16)}`
+  const resolvedLocalRef = localRef ?? {
+    refKind: 'local-file',
+    path: localPath
+  }
+  const contentId = createContentId(hash)
+  const assetDescriptorRef = createAssetDescriptorRef({ assetId })
+  const placementRef = createPlacementRef({
+    projectId: card.projectId,
+    localRef: resolvedLocalRef,
+    placementClass: resolvedLocalRef.placementClass,
+    lifecycleState: lifecycle?.state
+  })
+  const situationRef = createSituationRef({
+    projectId: card.projectId,
+    role: lifecycle?.state ?? resolvedLocalRef.placementClass,
+    placementRef,
+    contextRef: {
+      kind: 'studio-project',
+      id: `project:${card.projectId}`
+    }
+  })
+  const resolvedBasisRef = basisRef ?? createBasisRef({
+    id: `basis:${card.projectId}:${card.cardId}`,
+    refs: [
+      makeRef('media-card', card.cardId, card.schema),
+      makeRef('media-work-packet', workPacket.packetId, workPacket.schema)
+    ]
+  })
+  const resolvedOriginRef = originRef ?? createOriginRef({
+    kind: 'media-provider-result',
+    id: idForRecord(providerResult)
+  })
+
   return {
     schema: 'media.asset.descriptor.v1',
-    assetId: `asset-${hash.value.slice(0, 16)}`,
+    assetId,
     projectId: card.projectId,
+    contentId,
     contentType,
     hash,
     size,
-    localRef: localRef ?? {
-      refKind: 'local-file',
-      path: localPath
-    },
+    localRef: resolvedLocalRef,
+    assetDescriptorRef,
+    artifactDescriptorRef: assetDescriptorRef,
+    originRef: resolvedOriginRef,
+    basisRef: resolvedBasisRef,
+    situationRef,
+    placementRef,
+    causalRefs: causalRefs ?? createDeferredCausalRefs(),
     source: {
       sourceType: 'provider-result',
       providerResultRef: makeRef('provider-result', idForRecord(providerResult), providerResult.schema),
