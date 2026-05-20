@@ -51,6 +51,11 @@ Studio must not depend on:
 If Studio needs Edge compatibility, it should target machine-readable artifacts,
 status records, explicit refs, and handoff seams.
 
+Current Edge integration guidance lives in
+`../mesh-ecology-edge/docs/app-facing-seams.md`. Older Edge `docs/phase-*.md`
+files are implementation history unless a current posture document explicitly
+promotes one for a specific current seam.
+
 ## Edge Compatibility Without REPL Dependency
 
 Studio should continue emitting or consuming local-only, Edge-inspectable

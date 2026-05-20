@@ -17,13 +17,17 @@ The compatibility bundle targets these documented Edge shapes:
 - `edge_operator_return_surface.v1`
 - `edge_operator_decision.v1`
 
-The source docs are:
+The current source posture docs are:
 
-- `../mesh-ecology-edge/docs/phase-139-cross-project-readiness-view.md`
-- `../mesh-ecology-edge/docs/phase-140-cross-project-work-packet.md`
-- `../mesh-ecology-edge/docs/phase-142-cross-project-evidence-import.md`
-- `../mesh-ecology-edge/docs/phase-146-operator-return-surface.md`
-- `../mesh-ecology-edge/docs/phase-150-operator-decision-builder.md`
+- `../mesh-ecology-edge/docs/app-facing-seams.md`
+- `../mesh-ecology-edge/docs/operator-interface-and-extraction-posture.md`
+- `../mesh-ecology-edge/docs/transport-phaseout-classification.md`
+- `../mesh-ecology-spine/docs/device-surface-rulebook-alignment.md`
+- `../mesh-ecology-spine/docs/device-dependent-scaffold-audit.md`
+
+Older Edge phase docs remain implementation history. Studio should not use them
+as current doctrine unless a current posture document explicitly points at a
+specific phase artifact.
 
 ## Command
 
@@ -101,6 +105,7 @@ This phase does not:
 
 - call Edge
 - invoke an Edge REPL command
+- wrap Edge REPL command text, transcript state, or session memory
 - create browser endpoints
 - mutate repos
 - execute provider work

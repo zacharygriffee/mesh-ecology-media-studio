@@ -337,6 +337,9 @@ The REPL posture note clarifies that REPL is a transitional lab/debug surface;
 Studio should target CLI/status JSON, artifacts, refs, inspection packets,
 handoff candidates, decision requests, and Packs-aligned projections instead of
 wrapping Edge REPL output.
+Studio's Edge compatibility bundle now points at current Edge app-facing seam
+guidance and Spine device/surface/rule-book posture, not old Edge phase docs as
+live doctrine.
 Per-asset health explanations now make unhealthy accepted assets and stale
 production descriptors visible in existing health, inspection, handoff, and
 cross-project operator summaries without adding a new artifact family.

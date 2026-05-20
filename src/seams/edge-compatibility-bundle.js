@@ -13,11 +13,11 @@ const defaultOutput = 'records/exports/media-edge-compatibility-bundle.local.jso
 const truthStatus = 'not mesh truth; not distributed proof; not ratified shared state'
 
 const edgeDoctrineRefs = Object.freeze([
-  '../mesh-ecology-edge/docs/phase-139-cross-project-readiness-view.md',
-  '../mesh-ecology-edge/docs/phase-140-cross-project-work-packet.md',
-  '../mesh-ecology-edge/docs/phase-142-cross-project-evidence-import.md',
-  '../mesh-ecology-edge/docs/phase-146-operator-return-surface.md',
-  '../mesh-ecology-edge/docs/phase-150-operator-decision-builder.md'
+  '../mesh-ecology-edge/docs/app-facing-seams.md',
+  '../mesh-ecology-edge/docs/operator-interface-and-extraction-posture.md',
+  '../mesh-ecology-edge/docs/transport-phaseout-classification.md',
+  '../mesh-ecology-spine/docs/device-surface-rulebook-alignment.md',
+  '../mesh-ecology-spine/docs/device-dependent-scaffold-audit.md'
 ])
 
 const sourceRecordPaths = Object.freeze({

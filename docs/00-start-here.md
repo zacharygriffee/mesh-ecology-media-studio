@@ -153,6 +153,9 @@ For the durable control-surface target, read
 [REPL Posture And Control-Surface Target](40-repl-posture-and-control-surface-target.md):
 Studio should project over machine-readable artifacts, refs, status views, and
 operator-loop contracts rather than Edge REPL command text or transcript state.
+For current Edge app-facing integration posture, use
+`../mesh-ecology-edge/docs/app-facing-seams.md`; old Edge phase docs are history
+unless a current posture doc explicitly points at them.
 
 Phase 2 hardened the local wedge with a local run manifest, artifact-kind
 registry, and modest malformed-record checks. Phase 3 defines the local project
