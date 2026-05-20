@@ -32,7 +32,8 @@ const sourceRecordPaths = Object.freeze({
 const optionalSourceRecordPaths = Object.freeze({
   approvalProposal: 'records/approvals/media-approval-proposal.local.json',
   operatorPacketIndex: 'records/exports/media-operator-packet-index.local.json',
-  edgeHandoffCandidate: 'records/exports/media-edge-handoff-candidate.local.json'
+  edgeHandoffCandidate: 'records/exports/media-edge-handoff-candidate.local.json',
+  operatorDecisionRequest: 'records/requests/media-operator-decision-request.local.json'
 })
 const optionalSourceRoots = Object.freeze([
   'records/bytes',
@@ -547,6 +548,7 @@ function kindForSchema(schema) {
     [artifactKinds.mediaProjectHealthLocal]: 'media-project-health',
     [artifactKinds.mediaOperatorPacketIndexLocal]: 'media-operator-packet-index',
     [artifactKinds.mediaEdgeHandoffCandidateLocal]: 'media-edge-handoff-candidate',
+    [artifactKinds.mediaOperatorDecisionRequestLocal]: 'media-operator-decision-request',
     [artifactKinds.mediaReadiness]: 'media-readiness',
     [artifactKinds.mediaProviderRunLedgerLocal]: 'media-provider-run-ledger',
     [artifactKinds.mediaProductionUnit]: 'media-production-unit',
@@ -570,6 +572,7 @@ function idForRecord(record) {
     record.healthId ??
     record.indexId ??
     record.handoffCandidateId ??
+    record.requestId ??
     record.readinessId ??
     record.ledgerId ??
     record.productionUnitId ??

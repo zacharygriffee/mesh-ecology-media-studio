@@ -21,6 +21,7 @@ operator authority, publish to the mesh, or ratify state.
 ```bash
 npm run operator:index -- --project-dir examples/card-to-candidate
 npm run handoff:edge -- --project-dir examples/card-to-candidate
+npm run operator:decision-request -- --project-dir examples/card-to-candidate
 ```
 
 If the handoff candidate is created after the first index, run the index again
@@ -52,3 +53,13 @@ when it is older than the production unit it describes, or older than a parent
 production unit it references. Staleness is local operator guidance only: it
 does not prove the descriptor is wrong, and it does not authorize automatic
 repair.
+
+## Decision Requests
+
+`media.operator_decision_request.local.v1` records describe the operator
+attention Studio will eventually ask Edge to mediate. A ready handoff produces
+a `review-ready-handoff` request. A blocked or stale handoff produces a
+`resolve-local-attention` request carrying the diagnosis next actions.
+
+These records are not approvals, ratifier outputs, or Edge decisions. They are
+request-only local guidance and require a later operator boundary.

@@ -11,6 +11,7 @@ import { ingestReferenceAsset } from '../src/assets/ingest-reference.js'
 import { createByteDescriptorProposal, writeByteDescriptorProposals } from '../src/assets/byte-descriptor-proposal.js'
 import { writeCandidateReview } from '../src/review/candidate-review.js'
 import { createApprovalProposal, writeApprovalProposal } from '../src/review/approval-proposal.js'
+import { writeOperatorDecisionRequest } from '../src/review/operator-decision-request.js'
 import { validateRequiredRecord } from '../src/contracts/schemas.js'
 import { executeProviderAdapter } from '../src/providers/adapter-runner.js'
 import {
@@ -1189,6 +1190,7 @@ test('operator packet index and Edge handoff candidate stay local-only', async (
 
   const firstIndex = await writeOperatorPacketIndex({ projectDir: dir })
   const handoffResult = await writeEdgeHandoffCandidate({ projectDir: dir })
+  const requestResult = await writeOperatorDecisionRequest({ projectDir: dir })
   const secondIndex = await writeOperatorPacketIndex({ projectDir: dir })
   await inspectLocalRun({ projectDir: dir })
   const summary = await summarizeInspectionPacket({
@@ -1212,8 +1214,18 @@ test('operator packet index and Edge handoff candidate stay local-only', async (
   assert.equal(handoffResult.handoff.providerTruth, false)
   assert.equal(validateRequiredRecord(handoffResult.handoff), true)
 
+  assert.equal(requestResult.request.schema, 'media.operator_decision_request.local.v1')
+  assert.equal(requestResult.request.requestKind, 'review-ready-handoff')
+  assert.equal(requestResult.request.requestOnly, true)
+  assert.equal(requestResult.request.edgeRuntimeBuilt, false)
+  assert.equal(requestResult.request.approvalAuthority, false)
+  assert.equal(validateRequiredRecord(requestResult.request), true)
+
   assert.equal(secondIndex.index.handoffCandidateRefs.length, 1)
+  assert.equal(secondIndex.index.operatorDecisionRequestRefs.length, 1)
+  assert.equal(secondIndex.index.summary.operatorDecisionRequests, 1)
   assert.ok(summary.familyRows.some((row) => row[0] === 'handoff' && Number(row[1]) >= 2))
+  assert.ok(summary.familyRows.some((row) => row[0] === 'requests' && Number(row[1]) === 1))
 })
 
 test('Edge handoff diagnosis explains stale production descriptors', async () => {
@@ -1237,6 +1249,7 @@ test('Edge handoff diagnosis explains stale production descriptors', async () =>
   await writeEdgeCompatibilityBundle({ projectDir: dir })
   await writeOperatorPacketIndex({ projectDir: dir })
   const handoffResult = await writeEdgeHandoffCandidate({ projectDir: dir })
+  const requestResult = await writeOperatorDecisionRequest({ projectDir: dir })
 
   assert.equal(healthResult.health.healthState, 'needs-local-attention')
   assert.ok(healthResult.health.blockingIssues.includes('production-freshness-stale'))
@@ -1246,6 +1259,10 @@ test('Edge handoff diagnosis explains stale production descriptors', async () =>
   assert.ok(handoffResult.handoff.readinessDiagnosis.reasons.some((reason) => reason.includes('production descriptors are stale')))
   assert.ok(handoffResult.handoff.readinessDiagnosis.nextActions.some((action) => action.includes('Regenerate or update production descriptors')))
   assert.equal(validateRequiredRecord(handoffResult.handoff), true)
+  assert.equal(requestResult.request.requestKind, 'resolve-local-attention')
+  assert.ok(requestResult.request.requestedDecisionTypes.includes('resolve_blockers'))
+  assert.ok(requestResult.request.nextActions.some((action) => action.includes('Regenerate or update production descriptors')))
+  assert.equal(validateRequiredRecord(requestResult.request), true)
 })
 
 test('promote candidate copies placement and records local decision without provider work', async () => {

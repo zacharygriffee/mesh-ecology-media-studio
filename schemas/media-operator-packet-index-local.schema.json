@@ -15,6 +15,7 @@
     "bundleRefs",
     "healthRefs",
     "handoffCandidateRefs",
+    "operatorDecisionRequestRefs",
     "summary",
     "warnings",
     "operatorGuidanceOnly",
@@ -55,6 +56,9 @@
       "type": "array"
     },
     "handoffCandidateRefs": {
+      "type": "array"
+    },
+    "operatorDecisionRequestRefs": {
       "type": "array"
     },
     "summary": {

@@ -202,6 +202,7 @@ function countRecordFamilies(recordRefs) {
 
 function familyForSchema(schema) {
   if (schema.includes('approval_proposal')) return 'approvals'
+  if (schema.includes('operator_decision_request')) return 'requests'
   if (schema.includes('byte_descriptor_proposal') || schema.includes('byte_reference')) return 'bytes'
   if (schema.includes('edge_handoff_candidate') || schema.includes('operator_packet_index')) return 'handoff'
   if (schema.includes('resource_ref_candidate')) return 'resources'

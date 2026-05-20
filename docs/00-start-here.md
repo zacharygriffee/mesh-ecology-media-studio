@@ -128,6 +128,7 @@ Write a local Edge compatibility bundle without calling Edge:
 npm run edge:compat -- --project-dir examples/card-to-candidate
 npm run operator:index -- --project-dir examples/card-to-candidate
 npm run handoff:edge -- --project-dir examples/card-to-candidate
+npm run operator:decision-request -- --project-dir examples/card-to-candidate
 ```
 
 Phase 2 hardened the local wedge with a local run manifest, artifact-kind
@@ -170,3 +171,6 @@ distributed proof, byte materialization proof, provider truth, causal truth,
 publication authorization, or ratifier authority. Phase 24 adds production
 descriptor freshness checks and handoff readiness diagnosis so stale local
 production records are visible before broader integration work.
+Phase 25 adds request-only operator decision request records for future
+Edge-mediated attention without granting approval, ratifier, or publication
+authority.

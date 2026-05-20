@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-operator-decision-request-local.schema.json",
+  "title": "media.operator_decision_request.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "requestId",
+    "projectId",
+    "createdAt",
+    "mode",
+    "requestKind",
+    "targetSurface",
+    "subjectRef",
+    "sourceRefs",
+    "requestedDecisionTypes",
+    "reason",
+    "nextActions",
+    "status",
+    "operatorGuidanceOnly",
+    "requestOnly",
+    "authorityRequired",
+    "edgeRuntimeBuilt",
+    "edgeRuntimeVerified",
+    "approvalAuthority",
+    "ratifierAuthority",
+    "publicationAuthorization",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "providerTruth",
+    "localTruthLabel",
+    "truthStatus"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.operator_decision_request.local.v1"
+    },
+    "requestId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "requestKind": {
+      "enum": [
+        "review-ready-handoff",
+        "resolve-local-attention"
+      ]
+    },
+    "targetSurface": {
+      "const": "media-edge-operator-seam"
+    },
+    "subjectRef": {
+      "type": "object"
+    },
+    "sourceRefs": {
+      "type": "array"
+    },
+    "requestedDecisionTypes": {
+      "type": "array"
+    },
+    "nextActions": {
+      "type": "array"
+    },
+    "status": {
+      "enum": [
+        "proposed",
+        "withdrawn",
+        "superseded"
+      ]
+    },
+    "operatorGuidanceOnly": {
+      "const": true
+    },
+    "requestOnly": {
+      "const": true
+    },
+    "authorityRequired": {
+      "const": true
+    },
+    "edgeRuntimeBuilt": {
+      "const": false
+    },
+    "edgeRuntimeVerified": {
+      "const": false
+    },
+    "approvalAuthority": {
+      "const": false
+    },
+    "ratifierAuthority": {
+      "const": false
+    },
+    "publicationAuthorization": {
+      "const": false
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    },
+    "providerTruth": {
+      "const": false
+    }
+  }
+}

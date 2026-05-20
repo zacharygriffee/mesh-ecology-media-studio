@@ -57,6 +57,7 @@ export const schemaFiles = {
   'media.edge_compatibility_bundle.local.v1': 'schemas/media-edge-compatibility-bundle-local.schema.json',
   'media.operator_packet_index.local.v1': 'schemas/media-operator-packet-index-local.schema.json',
   'media.edge_handoff_candidate.local.v1': 'schemas/media-edge-handoff-candidate-local.schema.json',
+  'media.operator_decision_request.local.v1': 'schemas/media-operator-decision-request-local.schema.json',
   'media.production_unit.v1': 'schemas/media-production-unit.schema.json',
   'media.reference_primitive.v1': 'schemas/media-reference-primitive.schema.json',
   'media.continuity_band.v1': 'schemas/media-continuity-band.schema.json',
@@ -614,6 +615,7 @@ export const requiredFields = {
     'bundleRefs',
     'healthRefs',
     'handoffCandidateRefs',
+    'operatorDecisionRequestRefs',
     'summary',
     'warnings',
     'operatorGuidanceOnly',
@@ -652,6 +654,36 @@ export const requiredFields = {
     'providerTruth',
     'edgeRuntimeBuilt',
     'edgeRuntimeVerified',
+    'localTruthLabel',
+    'truthStatus'
+  ],
+  'media.operator_decision_request.local.v1': [
+    'schema',
+    'requestId',
+    'projectId',
+    'createdAt',
+    'mode',
+    'requestKind',
+    'targetSurface',
+    'subjectRef',
+    'sourceRefs',
+    'requestedDecisionTypes',
+    'reason',
+    'nextActions',
+    'status',
+    'operatorGuidanceOnly',
+    'requestOnly',
+    'authorityRequired',
+    'edgeRuntimeBuilt',
+    'edgeRuntimeVerified',
+    'approvalAuthority',
+    'ratifierAuthority',
+    'publicationAuthorization',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'providerTruth',
     'localTruthLabel',
     'truthStatus'
   ],
@@ -865,6 +897,7 @@ const idFields = {
   [artifactKinds.mediaEdgeCompatibilityBundleLocal]: 'compatibilityBundleId',
   [artifactKinds.mediaOperatorPacketIndexLocal]: 'indexId',
   [artifactKinds.mediaEdgeHandoffCandidateLocal]: 'handoffCandidateId',
+  [artifactKinds.mediaOperatorDecisionRequestLocal]: 'requestId',
   [artifactKinds.mediaProductionUnit]: 'productionUnitId',
   [artifactKinds.mediaReferencePrimitive]: 'primitiveId',
   [artifactKinds.mediaContinuityBand]: 'bandId',
@@ -895,6 +928,7 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaEdgeCompatibilityBundleLocal,
   artifactKinds.mediaOperatorPacketIndexLocal,
   artifactKinds.mediaEdgeHandoffCandidateLocal,
+  artifactKinds.mediaOperatorDecisionRequestLocal,
   artifactKinds.mediaProductionUnit,
   artifactKinds.mediaReferencePrimitive,
   artifactKinds.mediaContinuityBand,
@@ -929,6 +963,7 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaEdgeCompatibilityBundleLocal,
   artifactKinds.mediaOperatorPacketIndexLocal,
   artifactKinds.mediaEdgeHandoffCandidateLocal,
+  artifactKinds.mediaOperatorDecisionRequestLocal,
   artifactKinds.mediaProductionUnit,
   artifactKinds.mediaReferencePrimitive,
   artifactKinds.mediaContinuityBand,
@@ -1008,6 +1043,9 @@ const approvalProposalTypes = new Set([
   'publication-approval'
 ])
 const approvalProposalStatuses = new Set(['proposed', 'withdrawn', 'superseded'])
+const operatorDecisionRequestKinds = new Set(['review-ready-handoff', 'resolve-local-attention'])
+const operatorDecisionRequestStatuses = new Set(['proposed', 'withdrawn', 'superseded'])
+const requestedOperatorDecisionTypes = new Set(['review_handoff', 'resolve_blockers', 'request_changes', 'defer'])
 
 export async function readSchema(schemaId, options = {}) {
   const rootDir = options.rootDir ?? process.cwd()
@@ -1501,7 +1539,7 @@ export function validateRecordShape(record, schemaId = record.schema) {
 
     validateInspectionRef(record.indexedRootRef, `${schemaId}.indexedRootRef`)
 
-    for (const collection of ['packetRefs', 'bundleRefs', 'healthRefs', 'handoffCandidateRefs', 'warnings']) {
+    for (const collection of ['packetRefs', 'bundleRefs', 'healthRefs', 'handoffCandidateRefs', 'operatorDecisionRequestRefs', 'warnings']) {
       if (!Array.isArray(record[collection])) {
         throw new Error(`Record ${schemaId}.${collection} must be an array`)
       }
@@ -1511,6 +1549,7 @@ export function validateRecordShape(record, schemaId = record.schema) {
     record.bundleRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.bundleRefs[${index}]`))
     record.healthRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.healthRefs[${index}]`))
     record.handoffCandidateRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.handoffCandidateRefs[${index}]`))
+    record.operatorDecisionRequestRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.operatorDecisionRequestRefs[${index}]`))
 
     if (!record.summary || typeof record.summary !== 'object') {
       throw new Error(`Record ${schemaId}.summary must be an object`)
@@ -1570,6 +1609,57 @@ export function validateRecordShape(record, schemaId = record.schema) {
     validateEdgeRuntimeFlags(record, schemaId)
 
     for (const flag of ['providerTruth']) {
+      if (record[flag] !== false) {
+        throw new Error(`Record ${schemaId} must set ${flag}=false`)
+      }
+    }
+  }
+
+  if (schemaId === artifactKinds.mediaOperatorDecisionRequestLocal) {
+    if (record.mode !== 'standalone-local') {
+      throw new Error(`Record ${schemaId} has invalid mode: ${record.mode}`)
+    }
+
+    if (!operatorDecisionRequestKinds.has(record.requestKind)) {
+      throw new Error(`Record ${schemaId} has invalid requestKind: ${record.requestKind}`)
+    }
+
+    if (!operatorDecisionRequestStatuses.has(record.status)) {
+      throw new Error(`Record ${schemaId} has invalid status: ${record.status}`)
+    }
+
+    if (record.targetSurface !== 'media-edge-operator-seam') {
+      throw new Error(`Record ${schemaId} must target media-edge-operator-seam`)
+    }
+
+    validateRef(record.subjectRef, `${schemaId}.subjectRef`)
+    if (!Array.isArray(record.sourceRefs)) {
+      throw new Error(`Record ${schemaId}.sourceRefs must be an array`)
+    }
+    record.sourceRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.sourceRefs[${index}]`))
+
+    if (!Array.isArray(record.requestedDecisionTypes)) {
+      throw new Error(`Record ${schemaId}.requestedDecisionTypes must be an array`)
+    }
+
+    for (const decisionType of record.requestedDecisionTypes) {
+      if (!requestedOperatorDecisionTypes.has(decisionType)) {
+        throw new Error(`Record ${schemaId} has invalid requested decision type: ${decisionType}`)
+      }
+    }
+
+    if (!Array.isArray(record.nextActions)) {
+      throw new Error(`Record ${schemaId}.nextActions must be an array`)
+    }
+
+    if (record.operatorGuidanceOnly !== true || record.requestOnly !== true || record.authorityRequired !== true) {
+      throw new Error(`Record ${schemaId} must remain request-only operator guidance requiring authority`)
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+    validateEdgeRuntimeFlags(record, schemaId)
+
+    for (const flag of ['approvalAuthority', 'ratifierAuthority', 'publicationAuthorization', 'providerTruth']) {
       if (record[flag] !== false) {
         throw new Error(`Record ${schemaId} must set ${flag}=false`)
       }

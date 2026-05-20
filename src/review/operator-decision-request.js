@@ -1,0 +1,144 @@
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import { artifactKinds } from '../contracts/artifact-kinds.js'
+import { makeRef, nowIso } from '../contracts/constructors.js'
+import { validateRequiredRecord } from '../contracts/schemas.js'
+import { assertSafeLocalPath } from '../local/project-layout.js'
+
+const modulePath = fileURLToPath(import.meta.url)
+const truthStatus = 'not mesh truth; not distributed proof; not ratified shared state'
+const defaultProjectDir = 'examples/card-to-candidate'
+const defaultHandoff = 'records/exports/media-edge-handoff-candidate.local.json'
+const defaultOutput = 'records/requests/media-operator-decision-request.local.json'
+
+function parseArgs(argv) {
+  const args = {
+    projectDir: defaultProjectDir,
+    handoff: defaultHandoff,
+    output: defaultOutput,
+    print: false
+  }
+
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i]
+    const next = argv[i + 1]
+
+    if (arg === '--project-dir') {
+      args.projectDir = next
+      i += 1
+    } else if (arg === '--handoff') {
+      args.handoff = next
+      i += 1
+    } else if (arg === '--output') {
+      args.output = next
+      i += 1
+    } else if (arg === '--print') {
+      args.print = true
+    }
+  }
+
+  return args
+}
+
+export async function writeOperatorDecisionRequest({
+  projectDir = defaultProjectDir,
+  handoff = defaultHandoff,
+  output = defaultOutput,
+  print = false
+} = {}) {
+  assertSafeLocalPath(handoff)
+  assertSafeLocalPath(output)
+
+  const root = path.resolve(projectDir)
+  const handoffRecord = JSON.parse(await readFile(path.join(root, handoff), 'utf8'))
+  validateRequiredRecord(handoffRecord, artifactKinds.mediaEdgeHandoffCandidateLocal)
+
+  const request = createOperatorDecisionRequest({
+    handoff: handoffRecord,
+    handoffPath: handoff
+  })
+
+  const outputPath = path.join(root, output)
+  await mkdir(path.dirname(outputPath), { recursive: true })
+  await writeFile(outputPath, `${JSON.stringify(request, null, 2)}\n`)
+
+  if (print) {
+    console.log(JSON.stringify(request, null, 2))
+  } else {
+    console.log(`operator decision request: ${output}`)
+    console.log(`requestKind: ${request.requestKind}`)
+  }
+
+  return {
+    request,
+    output
+  }
+}
+
+export function createOperatorDecisionRequest({
+  handoff,
+  handoffPath,
+  createdAt = nowIso()
+}) {
+  const ready = handoff.handoffState === 'ready-for-edge-inspection'
+  const requestKind = ready ? 'review-ready-handoff' : 'resolve-local-attention'
+  const requestedDecisionTypes = ready
+    ? ['review_handoff', 'defer']
+    : ['resolve_blockers', 'request_changes', 'defer']
+  const reason = ready
+    ? 'Studio local handoff is ready for future Edge-mediated operator review.'
+    : 'Studio local handoff needs operator attention before future Edge-mediated review.'
+  const nextActions = handoff.readinessDiagnosis?.nextActions?.length > 0
+    ? handoff.readinessDiagnosis.nextActions
+    : ['Review handoff diagnosis and decide whether to defer or request local changes.']
+
+  const request = {
+    schema: artifactKinds.mediaOperatorDecisionRequestLocal,
+    requestId: `operator-decision-request-${handoff.projectId}`,
+    projectId: handoff.projectId,
+    createdAt,
+    mode: 'standalone-local',
+    requestKind,
+    targetSurface: 'media-edge-operator-seam',
+    subjectRef: makeRef('media-edge-handoff-candidate', handoff.handoffCandidateId, handoff.schema),
+    sourceRefs: [
+      {
+        ...makeRef('media-edge-handoff-candidate', handoff.handoffCandidateId, handoff.schema),
+        path: handoffPath,
+        localOnly: true
+      },
+      handoff.inspectionPacketRef,
+      handoff.compatibilityBundleRef,
+      handoff.projectHealthRef,
+      handoff.operatorPacketIndexRef
+    ],
+    requestedDecisionTypes,
+    reason,
+    nextActions,
+    status: 'proposed',
+    operatorGuidanceOnly: true,
+    requestOnly: true,
+    authorityRequired: true,
+    edgeRuntimeBuilt: false,
+    edgeRuntimeVerified: false,
+    approvalAuthority: false,
+    ratifierAuthority: false,
+    publicationAuthorization: false,
+    localOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    providerTruth: false,
+    localTruthLabel: 'local request',
+    truthStatus
+  }
+
+  validateRequiredRecord(request)
+  return request
+}
+
+if (process.argv[1] === modulePath) {
+  await writeOperatorDecisionRequest(parseArgs(process.argv.slice(2)))
+}

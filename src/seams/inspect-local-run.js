@@ -21,6 +21,7 @@ const extraInspectionRoots = Object.freeze([
   'records/manifests',
   'records/production',
   'records/approvals',
+  'records/requests',
   'records/bytes',
   'records/resources',
   'records/exports'
@@ -39,7 +40,8 @@ const extraInspectionSchemas = new Set([
   'media.byte_descriptor_proposal.local.v1',
   'media.local_layer_resource_ref_candidate.local.v1',
   'media.operator_packet_index.local.v1',
-  'media.edge_handoff_candidate.local.v1'
+  'media.edge_handoff_candidate.local.v1',
+  'media.operator_decision_request.local.v1'
 ])
 
 function parseArgs(argv) {
@@ -229,7 +231,8 @@ function nameForSchema(schema, relativePath) {
     'media.byte_descriptor_proposal.local.v1': `byteDescriptorProposal:${path.basename(relativePath, '.json')}`,
     'media.local_layer_resource_ref_candidate.local.v1': `resourceRefCandidate:${path.basename(relativePath, '.json')}`,
     'media.operator_packet_index.local.v1': `operatorPacketIndex:${path.basename(relativePath, '.json')}`,
-    'media.edge_handoff_candidate.local.v1': `edgeHandoffCandidate:${path.basename(relativePath, '.json')}`
+    'media.edge_handoff_candidate.local.v1': `edgeHandoffCandidate:${path.basename(relativePath, '.json')}`,
+    'media.operator_decision_request.local.v1': `operatorDecisionRequest:${path.basename(relativePath, '.json')}`
   }
 
   return schemaNames[schema] ?? path.basename(relativePath, '.json')
@@ -257,7 +260,8 @@ function kindForSchema(schema) {
     'media.byte_descriptor_proposal.local.v1': 'media-byte-descriptor-proposal',
     'media.local_layer_resource_ref_candidate.local.v1': 'media-local-layer-resource-ref-candidate',
     'media.operator_packet_index.local.v1': 'media-operator-packet-index',
-    'media.edge_handoff_candidate.local.v1': 'media-edge-handoff-candidate'
+    'media.edge_handoff_candidate.local.v1': 'media-edge-handoff-candidate',
+    'media.operator_decision_request.local.v1': 'media-operator-decision-request'
   }
 
   return schemaKinds[schema] ?? schema

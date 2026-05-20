@@ -251,6 +251,7 @@ Write a local Edge compatibility bundle without calling Edge:
 npm run edge:compat -- --project-dir examples/card-to-candidate
 npm run operator:index -- --project-dir examples/card-to-candidate
 npm run handoff:edge -- --project-dir examples/card-to-candidate
+npm run operator:decision-request -- --project-dir examples/card-to-candidate
 ```
 
 Regenerate the committed inspection fixture:
@@ -305,6 +306,9 @@ candidates so inspection artifacts are easier to scan without adding UI,
 calling Edge, or claiming authority. Phase 24 adds production descriptor
 freshness checks and handoff readiness diagnosis so stale local production
 records explain why a handoff needs attention.
+Phase 25 adds request-only operator decision request records so Studio can ask
+for later Edge-mediated attention without granting approval, ratifier, or
+publication authority.
 
 ## Start Here
 

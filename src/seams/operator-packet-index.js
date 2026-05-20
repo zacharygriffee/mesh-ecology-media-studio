@@ -59,6 +59,9 @@ export async function writeOperatorPacketIndex({
   const handoffCandidateRefs = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaEdgeHandoffCandidateLocal)
     .map(toInspectionRef)
+  const operatorDecisionRequestRefs = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaOperatorDecisionRequestLocal)
+    .map(toInspectionRef)
   const readinessStates = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProjectHealthLocal)
     .map((entry) => entry.record.healthState)
@@ -78,11 +81,13 @@ export async function writeOperatorPacketIndex({
     bundleRefs,
     healthRefs,
     handoffCandidateRefs,
+    operatorDecisionRequestRefs,
     summary: {
       packets: packetRefs.length,
       bundles: bundleRefs.length,
       healthRecords: healthRefs.length,
       handoffCandidates: handoffCandidateRefs.length,
+      operatorDecisionRequests: operatorDecisionRequestRefs.length,
       readyHealthRecords: readinessStates.filter((state) => state === 'ready-for-local-inspection').length,
       needsAttentionHealthRecords: readinessStates.filter((state) => state === 'needs-local-attention').length,
       newestRecordPath: newestPath(records),
@@ -117,6 +122,7 @@ export async function writeOperatorPacketIndex({
     console.log(`packets: ${packetRefs.length}`)
     console.log(`bundles: ${bundleRefs.length}`)
     console.log(`handoffCandidates: ${handoffCandidateRefs.length}`)
+    console.log(`operatorDecisionRequests: ${operatorDecisionRequestRefs.length}`)
   }
 
   return {
@@ -128,7 +134,8 @@ export async function writeOperatorPacketIndex({
 async function readIndexableRecords(root) {
   const candidates = [
     ...(await findJsonFiles(root, 'records/exports')),
-    ...(await findJsonFiles(root, 'records/manifests'))
+    ...(await findJsonFiles(root, 'records/manifests')),
+    ...(await findJsonFiles(root, 'records/requests'))
   ]
   const entries = []
 
@@ -147,7 +154,8 @@ const indexableSchemas = new Set([
   artifactKinds.mediaEdgeExportBundleLocal,
   artifactKinds.mediaEdgeCompatibilityBundleLocal,
   artifactKinds.mediaProjectHealthLocal,
-  artifactKinds.mediaEdgeHandoffCandidateLocal
+  artifactKinds.mediaEdgeHandoffCandidateLocal,
+  artifactKinds.mediaOperatorDecisionRequestLocal
 ])
 
 async function findJsonFiles(root, relativeRoot) {
@@ -209,7 +217,8 @@ function kindForSchema(schema) {
     [artifactKinds.mediaEdgeExportBundleLocal]: 'media-edge-export-bundle',
     [artifactKinds.mediaEdgeCompatibilityBundleLocal]: 'media-edge-compatibility-bundle',
     [artifactKinds.mediaProjectHealthLocal]: 'media-project-health',
-    [artifactKinds.mediaEdgeHandoffCandidateLocal]: 'media-edge-handoff-candidate'
+    [artifactKinds.mediaEdgeHandoffCandidateLocal]: 'media-edge-handoff-candidate',
+    [artifactKinds.mediaOperatorDecisionRequestLocal]: 'media-operator-decision-request'
   }[schema] ?? schema
 }
 
@@ -218,7 +227,8 @@ function idForRecord(record) {
     record.bundleId ??
     record.compatibilityBundleId ??
     record.healthId ??
-    record.handoffCandidateId
+    record.handoffCandidateId ??
+    record.requestId
 }
 
 if (process.argv[1] === modulePath) {
