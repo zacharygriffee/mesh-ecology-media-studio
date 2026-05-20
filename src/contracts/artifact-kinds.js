@@ -50,6 +50,12 @@ export const artifactKinds = Object.freeze({
 
 export const knownArtifactKinds = Object.freeze(Object.values(artifactKinds))
 
+export const futureCandidateArtifactKinds = Object.freeze({
+  mediaOperationCandidateLocal: 'media.operation_candidate.local.v1',
+  mediaRuleResolutionTraceLocal: 'media.rule_resolution_trace.local.v1',
+  mediaLocalLayerProjectionCandidateLocal: 'media.local_layer_projection_candidate.local.v1'
+})
+
 export function assertKnownArtifactKind(kind) {
   if (!knownArtifactKinds.includes(kind)) {
     throw new Error(`Unknown artifact kind: ${kind}`)

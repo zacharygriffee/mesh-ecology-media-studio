@@ -50,6 +50,13 @@ Known Studio artifact kinds:
 - `media.byte_descriptor_proposal.local.v1`
 - `media.local_layer_resource_ref_candidate.local.v1`
 
+Future candidate artifact kinds, not implemented and not active schema
+contracts:
+
+- `media.operation_candidate.local.v1`
+- `media.rule_resolution_trace.local.v1`
+- `media.local_layer_projection_candidate.local.v1`
+
 This registry is intentionally small. It prevents naming drift while the local
 wedge remains standalone-local and Edge-compatible without implementing Edge
 integration.

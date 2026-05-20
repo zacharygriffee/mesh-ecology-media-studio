@@ -320,6 +320,10 @@ project discovery or Edge runtime calls.
 Phase 28 makes resource promotion posture explicit so local resource-ref
 candidates remain candidate-only and cannot be mistaken for admitted resource
 identity.
+Phase 29 aligns Studio with the repo family: Spine rule-book and projection
+posture, Edge operator seams, Packs control-surface doctrine, Bytes references,
+causal-substrate continuity, Platform activation boundaries, mesh-v0-2 actor
+hygiene, Identity authority, and Testbed proof scope.
 
 ## Start Here
 
@@ -354,3 +358,4 @@ identity.
 - [docs/35-operator-packet-index-and-handoff.md](docs/35-operator-packet-index-and-handoff.md)
 - [docs/36-cross-project-inspection-index.md](docs/36-cross-project-inspection-index.md)
 - [docs/37-comprehensive-state.md](docs/37-comprehensive-state.md)
+- [docs/38-repo-family-alignment.md](docs/38-repo-family-alignment.md)

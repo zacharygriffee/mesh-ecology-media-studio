@@ -39,6 +39,7 @@ Read in this order:
 31. [Operator Packet Index And Handoff](35-operator-packet-index-and-handoff.md)
 32. [Cross Project Inspection Index](36-cross-project-inspection-index.md)
 33. [Comprehensive State](37-comprehensive-state.md)
+34. [Repo Family Alignment](38-repo-family-alignment.md)
 
 The first executable path is:
 
@@ -180,3 +181,11 @@ Edge-mediated attention without granting approval, ratifier, or publication
 authority.
 Phase 26 adds compact unhealthy inspection fixtures for missing byte proposals,
 stale resource refs, and stale production descriptors.
+Phase 27 adds an explicit cross-project inspection input list and local
+operator index so several project handoff postures can be scanned without
+project discovery or Edge runtime calls.
+Phase 28 makes resource promotion posture explicit so local resource-ref
+candidates remain candidate-only and cannot be mistaken for admitted resource
+identity.
+Phase 29 aligns Studio with Spine, Edge, Packs, Bytes, causal-substrate,
+Platform, mesh-v0-2, Identity, and Testbed without adding runtime behavior.

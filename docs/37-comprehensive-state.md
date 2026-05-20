@@ -334,6 +334,41 @@ npm run operator:cross-project-index
 
 The repo also uses schema JSON parse checks and secret scans before commit.
 
+## Repo Family Alignment
+
+The current alignment map is:
+
+```text
+Studio:
+  media-domain semantics and local media records
+
+Spine:
+  rule-book posture, mediation posture, projection-event posture,
+  storage-lane direction, and proof standards
+
+Edge:
+  operator workbench/control loop and later inspection of Studio handoff
+  artifacts
+
+Packs:
+  media intent families and control-surface semantic vocabulary
+
+Bytes:
+  portable byte descriptors, byte references, and materialization request
+  posture
+
+Causal Substrate:
+  optional continuity interpretation grammar
+
+Platform:
+  host-local activation and lifecycle consequences
+
+mesh-v0-2:
+  canonical mesh participation and actor hygiene
+```
+
+See [Repo Family Alignment](38-repo-family-alignment.md).
+
 ## Deferred Work
 
 Deferred deliberately:
