@@ -45,6 +45,8 @@ Read in this order:
 37. [REPL Posture And Control-Surface Target](40-repl-posture-and-control-surface-target.md)
 38. [Command Surface Inventory](41-command-surface-inventory.md)
 39. [Media Identity And Storage Posture](42-media-identity-and-storage-posture.md)
+40. [AssetId Usage Audit](43-asset-id-usage-audit.md)
+41. [Identity Migration Boundary](44-identity-migration-boundary.md)
 
 The first executable path is:
 
@@ -165,6 +167,13 @@ For the identity split behind future byte/resource repair work, read
 It applies Spine's family-wide
 `../mesh-ecology-spine/docs/identity-layering-and-storage-posture.md` posture
 to Studio media assets.
+For the current hybrid identity boundary, read
+[Identity Migration Boundary](44-identity-migration-boundary.md): `assetId`
+remains content-derived for compatibility, `contentId` keys byte sameness, and
+resource posture uses descriptor/situation/placement resource subjects. Do not
+migrate `assetId` generation until storage/backend promotion,
+virtual-drive/materialization work, or a deliberate descriptor-id schema
+transition.
 
 To normalize safe local media posture after health inspection, run:
 

@@ -219,6 +219,22 @@ promotionPosture.promotionAuthority: false
 Resource candidates are not admitted resources, replicated pointers,
 causal-reviewable refs, or authority-bearing refs.
 
+## Identity Migration Boundary
+
+Studio is intentionally in a hybrid compatibility state:
+
+- `assetId` remains the descriptor id field for compatibility and is still
+  content-derived in active generation paths.
+- `contentId` is the explicit byte/content sameness field.
+- byte descriptor proposals are keyed by `contentId`.
+- resource-ref candidates are keyed by descriptor/situation/placement resource
+  subjects.
+
+Changing active `assetId` generation remains deferred until storage/backend
+promotion, virtual-drive/materialization work, or a deliberate descriptor-id
+schema transition. The current boundary is documented in
+[Identity Migration Boundary](44-identity-migration-boundary.md).
+
 ## Edge-Seam State
 
 Studio has mature local Edge-inspection artifacts, but no Edge runtime
@@ -366,6 +382,9 @@ family-wide
 `examples/identity-fixtures/shared-basis-divergent-situations/` is the current
 fixture pressure: accepted and reference copies share content/origin/basis but
 use distinct situation, placement, and resource candidate identities.
+
+The remaining active `assetId` generation migration is Step 5 and is explicitly
+not required for the current Mode 0 wedge.
 
 ## Command Surface Inventory
 

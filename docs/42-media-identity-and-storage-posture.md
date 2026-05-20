@@ -231,10 +231,26 @@ different project, role, surface, or rule-book basis creates a new
 
 ## Current Migration Note
 
-Current Studio records still derive `assetId` from content hash in several
-paths. Current byte/resource proposal writers and health checks map too much by
-`assetId`. This is known and should be migrated deliberately rather than patched
-opportunistically.
+Current Studio records still derive `assetId` from content hash in active
+generation paths. That compatibility state is deliberate for now and is
+stabilized in [Identity Migration Boundary](44-identity-migration-boundary.md).
+
+The important current behavior has already moved to layered identity:
+
+```text
+byte descriptor proposals:
+  keyed by contentId
+
+resource-ref candidates:
+  keyed by descriptor/situation/placement resource subject
+
+operator health/readiness/repair summaries:
+  byteContent by contentId
+  resourceSituations by situation/placement subject
+```
+
+Step 5, changing active `assetId` generation, should be migrated deliberately
+rather than patched opportunistically.
 
 The collision happened because one content-derived ID was being asked to answer
 too many questions:
@@ -252,6 +268,11 @@ same authority state?
 The fix is not simply to replace `assetId` with `placementRef`. The fix is to
 separate layered refs: `contentId`, `artifactDescriptorRef`, `referentRef`,
 `situationRef`, `placementRef`, `resourceRef`, and `causalRefs`.
+
+High-risk compatibility paths have been hardened without changing active
+`assetId` generation: reference ingest filenames no longer key only on
+`assetId`, candidate review rejects ambiguous `selectedAssetId`, and project
+status warns when one content-derived `assetId` appears in multiple situations.
 
 The preferred future test fixture is:
 
@@ -485,15 +506,14 @@ Repo: `mesh-ecology-media-studio`
 Concept: Migration from content-derived `assetId` as catch-all identity toward
 content-oriented byte proposals and descriptor/situation/placement-oriented
 resource candidates.
-Current issue: Current writers and health checks still map too much by
-`assetId`.
+Current issue: Active `assetId` generation remains content-derived for
+compatibility, while byte and resource posture now use layered identity.
 Suggested owner: Studio.
-Suggested file/doc: future schema and repair migration; this document is the
-current posture anchor.
-Blocking status: Blocks the same-content/two-placement repair fixture, but not
-Mode 0 local wedge operation.
-Risk: Repair or readiness may keep treating same-byte assets in different
-situations/placements as one resource subject.
+Suggested file/doc: [Identity Migration Boundary](44-identity-migration-boundary.md)
+and a future descriptor-id schema transition.
+Blocking status: Does not block the current Mode 0 local wedge.
+Risk: A future storage/backend or authority lane may treat descriptor identity
+as content identity if Step 5 is not handled deliberately before promotion.
 
 ## Non-Claims
 

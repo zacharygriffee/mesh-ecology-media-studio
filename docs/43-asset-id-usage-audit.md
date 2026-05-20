@@ -9,6 +9,9 @@ The audit is intentionally non-implementation work. It does not change
 `assetId` generation, runtime behavior, storage posture, resource admission,
 Edge integration, or causal posture.
 
+The current implementation boundary after Step 4.5 is summarized in
+[Identity Migration Boundary](44-identity-migration-boundary.md).
+
 ## Current Conclusion
 
 Step 5, meaning active `assetId` generation migration, is still needed later,
@@ -51,8 +54,8 @@ identity, materialization identity, or authority.
 | Byte proposal compatibility refs | retained only for compatibility | acceptable |
 | Resource candidate compatibility refs | retained only for compatibility | acceptable |
 | Operator health legacy arrays | retained with content/resource posture added | acceptable |
-| Review selection by `assetId` | still active | behaviorally ambiguous with same-content descriptors |
-| File naming by `assetId` | still active in some ingest paths | behaviorally dangerous when same content is ingested more than once |
+| Review selection by `assetId` | compatibility only; ambiguous matches rejected | acceptable for now |
+| File naming by `assetId` | high-risk reference ingest paths hardened | lower; still avoid new assetId-only paths |
 | Schema id field | still active | acceptable until schema migration |
 
 ## Active Generation Sites
@@ -90,8 +93,12 @@ storage/backend promotion.
 
 ### Reference Ingest
 
-`src/assets/ingest-reference.js` derives the same content-based `assetId` and
-uses it in record paths such as:
+`src/assets/ingest-reference.js` derives the same content-based `assetId`, but
+Step 4.5 stopped using only that `assetId` for reference output record paths.
+Reference record filenames now include a deterministic project/source/target
+token.
+
+Old risky shape:
 
 ```txt
 records/assets/reference-${assetId}.local.json
@@ -102,15 +109,15 @@ records/assets/reference-${assetId}-image-metadata.local.json
 Risk:
 
 ```txt
-Ingesting the same bytes as multiple distinct reference situations can overwrite
-or collapse record placement if the path is reused.
+The same bytes can still share `assetId`, but repeated reference ingest no
+longer overwrites those local JSON paths merely because content matches.
 ```
 
 Current severity:
 
 ```txt
-High for repeated local ingest workflows. This is the clearest behaviorally
-dangerous remaining usage.
+Lower after Step 4.5. The remaining descriptor identity concern belongs to the
+deferred Step 5 migration, not to current reference file output safety.
 ```
 
 Recommended Step 5 target:
