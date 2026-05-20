@@ -37,11 +37,14 @@ const optionalSourceRecordPaths = Object.freeze({
 })
 const optionalSourceRoots = Object.freeze([
   'records/bytes',
-  'records/resources'
+  'records/resources',
+  'records/rule-traces'
 ])
 const optionalSourceSchemas = new Set([
   artifactKinds.mediaByteDescriptorProposalLocal,
-  artifactKinds.mediaLocalLayerResourceRefCandidateLocal
+  artifactKinds.mediaLocalLayerResourceRefCandidateLocal,
+  artifactKinds.mediaOperationCandidateLocal,
+  artifactKinds.mediaRuleResolutionTraceLocal
 ])
 const productionSourceSchemas = new Set([
   artifactKinds.mediaProductionUnit,
@@ -558,7 +561,9 @@ function kindForSchema(schema) {
     [artifactKinds.mediaProductionDescriptorLocal]: 'media-production-descriptor',
     [artifactKinds.mediaApprovalProposalLocal]: 'media-approval-proposal',
     [artifactKinds.mediaByteDescriptorProposalLocal]: 'media-byte-descriptor-proposal',
-    [artifactKinds.mediaLocalLayerResourceRefCandidateLocal]: 'media-local-layer-resource-ref-candidate'
+    [artifactKinds.mediaLocalLayerResourceRefCandidateLocal]: 'media-local-layer-resource-ref-candidate',
+    [artifactKinds.mediaOperationCandidateLocal]: 'media-operation-candidate',
+    [artifactKinds.mediaRuleResolutionTraceLocal]: 'media-rule-resolution-trace'
   }
 
   return schemaKinds[schema] ?? schema
@@ -583,6 +588,8 @@ function idForRecord(record) {
     record.proposalId ??
     record.byteDescriptorProposalId ??
     record.resourceRefCandidateId ??
+    record.operationId ??
+    record.traceId ??
     record.schema
 }
 

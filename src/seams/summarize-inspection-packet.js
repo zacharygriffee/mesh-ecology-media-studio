@@ -66,6 +66,7 @@ export async function summarizeInspectionPacket({
     .map(([family, count]) => [family, String(count)])
   const readinessRows = await readinessPostureRows(root, record.recordRefs)
   const healthRows = await healthRowsForPacket(root, record.recordRefs)
+  const mediationRows = await mediationRowsForPacket(root, record.recordRefs)
 
   printTable(['field', 'value'], rows)
   if (familyRows.length > 0) {
@@ -88,6 +89,11 @@ export async function summarizeInspectionPacket({
     printTable(['health', 'state', 'blockingIssues', 'assetResourceReady'], healthRows)
   }
 
+  if (mediationRows.length > 0) {
+    console.log('')
+    printTable(['operation', 'resolution', 'delivery', 'blockedClaims'], mediationRows)
+  }
+
   if (artifactRows.length > 0) {
     console.log('')
     printTable(['artifact', 'contentType', 'path', 'bytePreview'], artifactRows)
@@ -100,6 +106,7 @@ export async function summarizeInspectionPacket({
     schemaRows,
     readinessRows,
     healthRows,
+    mediationRows,
     artifactRows
   }
 }
@@ -147,6 +154,27 @@ async function healthRowsForPacket(root, recordRefs) {
       health.healthState,
       String(health.blockingIssues.length),
       String(health.assetResourceConsistency?.readyForEdgeInspection ?? false)
+    ])
+  }
+
+  return rows
+}
+
+async function mediationRowsForPacket(root, recordRefs) {
+  const traceRefs = Object.values(recordRefs)
+    .filter((ref) => ref.schema === 'media.rule_resolution_trace.local.v1' && ref.path)
+    .sort((left, right) => left.path.localeCompare(right.path))
+  const rows = []
+
+  for (const ref of traceRefs) {
+    assertSafeLocalPath(ref.path)
+    const trace = JSON.parse(await readFile(path.join(root, ref.path), 'utf8'))
+    validateRequiredRecord(trace, 'media.rule_resolution_trace.local.v1')
+    rows.push([
+      trace.operationRef?.id ?? 'unknown',
+      trace.resolutionMode,
+      trace.deliveryMode,
+      trace.blockedClaims.join(',')
     ])
   }
 
@@ -202,6 +230,7 @@ function countRecordFamilies(recordRefs) {
 
 function familyForSchema(schema) {
   if (schema.includes('approval_proposal')) return 'approvals'
+  if (schema.includes('operation_candidate') || schema.includes('rule_resolution_trace')) return 'mediation'
   if (schema.includes('operator_decision_request')) return 'requests'
   if (schema.includes('byte_descriptor_proposal') || schema.includes('byte_reference')) return 'bytes'
   if (schema.includes('edge_handoff_candidate') || schema.includes('operator_packet_index')) return 'handoff'

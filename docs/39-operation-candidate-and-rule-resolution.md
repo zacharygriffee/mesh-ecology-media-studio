@@ -142,6 +142,19 @@ The command writes ignored runtime outputs under:
 examples/card-to-candidate/records/rule-traces/
 ```
 
+## Inspection Visibility
+
+Local inspection now scans `records/rule-traces/` and includes operation
+candidates and rule-resolution traces in:
+
+- `media.edge_inspection_packet.local.v1`
+- inspection summary mediation rows
+- `media.operator_packet_index.local.v1` mediation refs
+- `media.edge_compatibility_bundle.local.v1` Studio source refs
+
+This makes mediation pressure visible to later Edge review without making Edge
+required and without treating traces as execution, approval, or authority.
+
 ## Non-Execution Boundary
 
 This phase does not implement:

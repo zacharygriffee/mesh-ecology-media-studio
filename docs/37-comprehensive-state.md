@@ -413,16 +413,17 @@ Current risks to manage:
 Recommended next objectives:
 
 1. Add concise CLI summaries for operator records:
-   `operator:index`, `handoff:edge`, `operator:decision-request`,
-   `operator:cross-project-index`, and `rule:example`.
-2. Feed rule-resolution traces into Edge-readable inspection packets without
-   treating them as execution or approval.
-3. Add missing-artifact behavior to cross-project inspection fixtures so bad
+   `handoff:edge`, `operator:decision-request`, and
+   `operator:cross-project-index`.
+2. Add missing-artifact behavior to cross-project inspection fixtures so bad
    input lists are visible separately from unhealthy projects.
-4. Reduce fixture generator console noise with a quiet mode.
-5. Strengthen health summaries with per-asset explanations for missing byte
+3. Reduce fixture generator console noise with a quiet mode.
+4. Strengthen health summaries with per-asset explanations for missing byte
    proposals, missing resource candidates, unresolved candidates, and stale
    candidates.
+5. Add committed operation-candidate fixture sets for provider submit, provider
+   prepare, accept candidate, delete local media, export prepare, and proxy
+   generation.
 6. Keep broad production strategy moving without adding UI.
 7. Defer provider expansion until Venice posture and local inspection remain
    stable under these operator summaries.

@@ -1672,6 +1672,13 @@ export function validateRecordShape(record, schemaId = record.schema) {
     record.healthRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.healthRefs[${index}]`))
     record.handoffCandidateRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.handoffCandidateRefs[${index}]`))
     record.operatorDecisionRequestRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.operatorDecisionRequestRefs[${index}]`))
+    if (record.mediationRefs !== undefined) {
+      if (!Array.isArray(record.mediationRefs)) {
+        throw new Error(`Record ${schemaId}.mediationRefs must be an array`)
+      }
+
+      record.mediationRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.mediationRefs[${index}]`))
+    }
 
     if (!record.summary || typeof record.summary !== 'object') {
       throw new Error(`Record ${schemaId}.summary must be an object`)

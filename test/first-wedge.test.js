@@ -76,7 +76,8 @@ import {
   createMediaOperationCandidate
 } from '../src/contracts/operation-candidates.js'
 import {
-  resolveMediaOperationCandidate
+  resolveMediaOperationCandidate,
+  writeRuleResolutionExample
 } from '../src/contracts/rule-resolution.js'
 import {
   createProductionUnit,
@@ -794,6 +795,23 @@ test('inspection packet summary and index commands report local records', async 
   assert.equal(index.inspectionPackets.length, 1)
 })
 
+test('local inspection surfaces rule-resolution traces as mediation pressure', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({ projectDir: dir })
+  const rules = await writeRuleResolutionExample({ projectDir: dir, createdAt: '2026-05-19T00:00:00.000Z' })
+  await inspectLocalRun({ projectDir: dir })
+
+  const summary = await summarizeInspectionPacket({
+    projectDir: dir,
+    packet: 'records/exports/local-run-edge-inspection-packet.local.json'
+  })
+
+  assert.equal(rules.traces.length, 3)
+  assert.ok(summary.schemaRows.some(([schema, count]) => schema === 'media.rule_resolution_trace.local.v1' && count === '3'))
+  assert.ok(summary.familyRows.some(([family, count]) => family === 'mediation' && Number(count) === 6))
+  assert.ok(summary.mediationRows.some((row) => row[1] === 'forbid' && row[2] === 'urgent'))
+})
+
 test('provider run ledger indexes local provider attempts without truth claims', async () => {
   const dir = await createFixtureProject()
   await runFirstWedge({ projectDir: dir })
@@ -1298,10 +1316,11 @@ test('operator packet index and Edge handoff candidate stay local-only', async (
   await writeByteDescriptorProposals({ projectDir: dir })
   await writeLocalLayerResourceRefCandidates({ projectDir: dir })
   await writeProductionRecordsFromCard({ projectDir: dir })
+  await writeRuleResolutionExample({ projectDir: dir, createdAt: '2026-05-19T00:00:00.000Z' })
   await writeProjectHealth({ projectDir: dir, summary: true })
   await inspectLocalRun({ projectDir: dir })
   await writeControlSurfaceProjection({ projectDir: dir })
-  await writeEdgeCompatibilityBundle({ projectDir: dir })
+  const compatibility = await writeEdgeCompatibilityBundle({ projectDir: dir })
 
   const firstIndex = await writeOperatorPacketIndex({ projectDir: dir })
   const handoffResult = await writeEdgeHandoffCandidate({ projectDir: dir })
@@ -1318,6 +1337,7 @@ test('operator packet index and Edge handoff candidate stay local-only', async (
   assert.ok(firstIndex.index.bundleRefs.some((ref) => ref.schema === 'media.edge_compatibility_bundle.local.v1'))
   assert.equal(firstIndex.index.meshTruth, false)
   assert.equal(validateRequiredRecord(firstIndex.index), true)
+  assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.rule_resolution_trace.local.v1'))
 
   assert.equal(handoffResult.handoff.schema, 'media.edge_handoff_candidate.local.v1')
   assert.equal(handoffResult.handoff.handoffState, 'ready-for-edge-inspection')
@@ -1338,9 +1358,12 @@ test('operator packet index and Edge handoff candidate stay local-only', async (
 
   assert.equal(secondIndex.index.handoffCandidateRefs.length, 1)
   assert.equal(secondIndex.index.operatorDecisionRequestRefs.length, 1)
+  assert.equal(secondIndex.index.mediationRefs.length, 3)
   assert.equal(secondIndex.index.summary.operatorDecisionRequests, 1)
+  assert.equal(secondIndex.index.summary.ruleResolutionTraces, 3)
   assert.ok(summary.familyRows.some((row) => row[0] === 'handoff' && Number(row[1]) >= 2))
   assert.ok(summary.familyRows.some((row) => row[0] === 'requests' && Number(row[1]) === 1))
+  assert.ok(summary.familyRows.some((row) => row[0] === 'mediation' && Number(row[1]) === 6))
 })
 
 test('Edge handoff diagnosis explains stale production descriptors', async () => {

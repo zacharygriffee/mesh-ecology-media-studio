@@ -24,6 +24,7 @@ const extraInspectionRoots = Object.freeze([
   'records/requests',
   'records/bytes',
   'records/resources',
+  'records/rule-traces',
   'records/exports'
 ])
 const extraInspectionSchemas = new Set([
@@ -39,6 +40,8 @@ const extraInspectionSchemas = new Set([
   'media.approval_proposal.local.v1',
   'media.byte_descriptor_proposal.local.v1',
   'media.local_layer_resource_ref_candidate.local.v1',
+  'media.operation_candidate.local.v1',
+  'media.rule_resolution_trace.local.v1',
   'media.operator_packet_index.local.v1',
   'media.edge_handoff_candidate.local.v1',
   'media.operator_decision_request.local.v1'
@@ -230,6 +233,8 @@ function nameForSchema(schema, relativePath) {
     'media.approval_proposal.local.v1': `approvalProposal:${path.basename(relativePath, '.json')}`,
     'media.byte_descriptor_proposal.local.v1': `byteDescriptorProposal:${path.basename(relativePath, '.json')}`,
     'media.local_layer_resource_ref_candidate.local.v1': `resourceRefCandidate:${path.basename(relativePath, '.json')}`,
+    'media.operation_candidate.local.v1': `operationCandidate:${path.basename(relativePath, '.json')}`,
+    'media.rule_resolution_trace.local.v1': `ruleResolutionTrace:${path.basename(relativePath, '.json')}`,
     'media.operator_packet_index.local.v1': `operatorPacketIndex:${path.basename(relativePath, '.json')}`,
     'media.edge_handoff_candidate.local.v1': `edgeHandoffCandidate:${path.basename(relativePath, '.json')}`,
     'media.operator_decision_request.local.v1': `operatorDecisionRequest:${path.basename(relativePath, '.json')}`
@@ -259,6 +264,8 @@ function kindForSchema(schema) {
     'media.approval_proposal.local.v1': 'media-approval-proposal',
     'media.byte_descriptor_proposal.local.v1': 'media-byte-descriptor-proposal',
     'media.local_layer_resource_ref_candidate.local.v1': 'media-local-layer-resource-ref-candidate',
+    'media.operation_candidate.local.v1': 'media-operation-candidate',
+    'media.rule_resolution_trace.local.v1': 'media-rule-resolution-trace',
     'media.operator_packet_index.local.v1': 'media-operator-packet-index',
     'media.edge_handoff_candidate.local.v1': 'media-edge-handoff-candidate',
     'media.operator_decision_request.local.v1': 'media-operator-decision-request'
