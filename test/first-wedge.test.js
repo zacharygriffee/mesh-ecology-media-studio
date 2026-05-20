@@ -10,7 +10,12 @@ import { promoteCandidate } from '../src/local/promote-candidate.js'
 import { readLocalImageMetadata } from '../src/assets/image-metadata.js'
 import { ingestReferenceAsset } from '../src/assets/ingest-reference.js'
 import { importMediaAsset } from '../src/assets/import-media.js'
-import { derivativeIssueCodesForContentType } from '../src/assets/media-metadata.js'
+import {
+  derivativeIssueCodesForContentType,
+  normalizeFfprobeProbeResult,
+  probeLocalMediaMetadata,
+  summarizeFfprobe
+} from '../src/assets/media-metadata.js'
 import { createByteDescriptorProposal, writeByteDescriptorProposals } from '../src/assets/byte-descriptor-proposal.js'
 import { writeCandidateReview } from '../src/review/candidate-review.js'
 import { createApprovalProposal, writeApprovalProposal } from '../src/review/approval-proposal.js'
@@ -1083,7 +1088,7 @@ test('media import records unsupported metadata posture without failing import',
   assert.equal(result.assetDescriptor.metadataProbe.metadataProbeState, 'unsupported')
   assert.equal(result.assetDescriptor.metadataProbe.materializationProof, false)
   assert.deepEqual(result.assetDescriptor.derivativeReadiness.issueCodes, ['unsupported_media_type'])
-  assert.equal(status.status.mediaDerivativeReadiness.assetExplanations[0].nextAction, 'Review content type before derivative preparation.')
+  assert.equal(status.status.mediaDerivativeReadiness.assetExplanations[0].nextAction, 'No derivative preparation is defined for this content type.')
 })
 
 test('media derivative readiness maps image video audio and unsupported types', () => {
@@ -1091,6 +1096,101 @@ test('media derivative readiness maps image video audio and unsupported types', 
   assert.deepEqual(derivativeIssueCodesForContentType('video/mp4'), ['missing_thumbnail', 'missing_proxy'])
   assert.deepEqual(derivativeIssueCodesForContentType('audio/wav'), ['missing_waveform'])
   assert.deepEqual(derivativeIssueCodesForContentType('text/plain'), ['unsupported_media_type'])
+})
+
+test('committed tiny PNG media import fixture stays deterministic', async () => {
+  const projectDir = 'examples/media-import-fixtures/tiny-png'
+
+  const result = await importMediaAsset({
+    projectDir,
+    source: 'media/generated/tiny.png',
+    placement: 'source',
+    filename: 'tiny-source.png',
+    operatorRef: 'operator-test',
+    ffprobe: false
+  })
+  const status = await writeProjectStatus({ projectDir, quiet: true })
+
+  assert.equal(result.assetDescriptor.projectId, 'media-import-tiny-png')
+  assert.equal(result.assetDescriptor.localRef.path, 'media/source/tiny-source.png')
+  assert.equal(result.assetDescriptor.metadataProbe.image.width, 1)
+  assert.equal(result.assetDescriptor.metadataProbe.image.height, 1)
+  assert.deepEqual(result.assetDescriptor.derivativeReadiness.issueCodes, ['missing_thumbnail'])
+  assert.equal(status.status.mediaDerivativeReadiness.evaluatedAssets, 1)
+  assert.equal(status.status.mediaDerivativeReadiness.assetExplanations[0].path, 'media/source/tiny-source.png')
+  assert.equal(status.status.mediaDerivativeReadiness.assetExplanations[0].nonClaims.byteAvailabilityProof, false)
+  assert.equal(status.status.mediaDerivativeReadiness.assetExplanations[0].nonClaims.materializationProof, false)
+})
+
+test('ffprobe posture normalizes unavailable failed and available results without real video', async () => {
+  const dir = await createFixtureProject()
+  const filePath = path.join(dir, 'media', 'generated', 'candidate.txt')
+  const hash = {
+    algorithm: 'sha256',
+    value: sha256Hex('candidate bytes')
+  }
+  const localRef = {
+    path: 'media/generated/candidate.txt',
+    placementClass: 'media-generated',
+    localOnly: true
+  }
+  const unavailable = await probeLocalMediaMetadata({
+    filePath,
+    localRef,
+    contentType: 'video/mp4',
+    hash,
+    size: 15,
+    ffprobe: false
+  })
+  const failed = normalizeFfprobeProbeResult({
+    status: 'failed',
+    reason: 'synthetic ffprobe failure'
+  })
+  const summary = summarizeFfprobe({
+    format: {
+      duration: '2.500000',
+      format_name: 'mov,mp4,m4a,3gp,3g2,mj2'
+    },
+    streams: [
+      {
+        codec_type: 'video',
+        codec_name: 'h264',
+        width: 1920,
+        height: 1080,
+        avg_frame_rate: '30000/1001'
+      },
+      {
+        codec_type: 'audio',
+        codec_name: 'aac',
+        sample_rate: '48000',
+        channels: 2
+      }
+    ]
+  })
+  const available = await probeLocalMediaMetadata({
+    filePath,
+    localRef,
+    contentType: 'video/mp4',
+    hash,
+    size: 15,
+    ffprobe: async () => ({
+      status: 'available',
+      summary
+    })
+  })
+
+  assert.equal(unavailable.metadataProbeState, 'unavailable')
+  assert.equal(unavailable.toolRefs[0].status, 'unavailable')
+  assert.equal(unavailable.materializationProof, false)
+  assert.equal(failed.status, 'failed')
+  assert.equal(failed.reason, 'synthetic ffprobe failure')
+  assert.equal(summary.duration, 2.5)
+  assert.equal(summary.video.codec, 'h264')
+  assert.equal(Math.round(summary.video.fps), 30)
+  assert.equal(summary.audio.sampleRate, 48000)
+  assert.equal(available.metadataProbeState, 'available')
+  assert.equal(available.ffprobe.video.width, 1920)
+  assert.equal(available.ffprobe.materializationProof, false)
 })
 
 test('media import blocks unsafe refs and unsupported placements', async () => {

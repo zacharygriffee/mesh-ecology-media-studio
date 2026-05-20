@@ -94,9 +94,7 @@ export async function probeLocalMediaMetadata({
       probe.warnings.push(`image metadata probe failed: ${error.message}`)
     }
   } else if (mediaKind === 'video' || mediaKind === 'audio') {
-    const ffprobeResult = ffprobe
-      ? await probeWithFfprobe(filePath)
-      : { status: 'unavailable', reason: 'ffprobe disabled' }
+    const ffprobeResult = await resolveFfprobeResult({ filePath, ffprobe })
     probe.toolRefs.push({
       tool: 'ffprobe',
       status: ffprobeResult.status,
@@ -114,6 +112,16 @@ export async function probeLocalMediaMetadata({
   }
 
   return probe
+}
+
+async function resolveFfprobeResult({ filePath, ffprobe }) {
+  if (ffprobe === false) {
+    return { status: 'unavailable', reason: 'ffprobe disabled' }
+  }
+  if (typeof ffprobe === 'function') {
+    return normalizeFfprobeProbeResult(await ffprobe(filePath))
+  }
+  return probeWithFfprobe(filePath)
 }
 
 async function probeWithFfprobe(filePath) {
@@ -149,7 +157,35 @@ async function probeWithFfprobe(filePath) {
   }
 }
 
-function summarizeFfprobe(parsed) {
+export function normalizeFfprobeProbeResult(result) {
+  if (!result || typeof result !== 'object') {
+    return {
+      status: 'failed',
+      reason: 'ffprobe adapter returned no result'
+    }
+  }
+
+  if (result.status === 'available') {
+    return {
+      status: 'available',
+      summary: result.summary ?? summarizeFfprobe(result.raw ?? result)
+    }
+  }
+
+  if (['unavailable', 'failed'].includes(result.status)) {
+    return {
+      status: result.status,
+      reason: result.reason ?? 'no reason supplied'
+    }
+  }
+
+  return {
+    status: 'failed',
+    reason: `unsupported ffprobe status: ${result.status ?? 'missing'}`
+  }
+}
+
+export function summarizeFfprobe(parsed) {
   const streams = Array.isArray(parsed.streams) ? parsed.streams : []
   const primaryVideo = streams.find((stream) => stream.codec_type === 'video')
   const primaryAudio = streams.find((stream) => stream.codec_type === 'audio')

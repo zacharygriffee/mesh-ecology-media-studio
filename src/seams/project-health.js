@@ -161,6 +161,8 @@ function printHealthSummary(health, output) {
   console.log(`assetResourceWarnings: ${health.assetResourceConsistency.warningCount}`)
   console.log(`staleByteDescriptorProposals: ${health.assetResourceConsistency.staleByteDescriptorProposalIds.length}`)
   console.log(`staleResourceCandidates: ${health.assetResourceConsistency.staleResourceCandidateIds.length}`)
+  console.log(`derivativeReadiness: ${health.mediaDerivativeReadiness?.readyAssets ?? 0}/${health.mediaDerivativeReadiness?.evaluatedAssets ?? 0}`)
+  console.log(`derivativeAttention: ${health.mediaDerivativeReadiness?.attentionAssets ?? 0}`)
   for (const explanation of health.operatorHealthExplanations ?? []) {
     console.log(formatHealthExplanation(explanation))
   }

@@ -30,6 +30,14 @@ const productionRepairIssues = new Set([
   'production_descriptor_missing_unit'
 ])
 
+const derivativeGuidanceIssues = new Set([
+  'missing_thumbnail',
+  'missing_proxy',
+  'missing_waveform',
+  'metadata_probe_unavailable',
+  'unsupported_media_type'
+])
+
 function parseArgs(argv) {
   const args = {
     projectDir: defaultProjectDir,
@@ -110,9 +118,13 @@ export async function repairLocalPosture({
     .sort()
 
   for (const issueCode of unrepairable) {
+    const derivativeGuidance = derivativeGuidanceIssues.has(issueCode)
     skipped.push({
       issueCode,
-      reason: 'No safe local posture repair is defined for this issue.',
+      reason: derivativeGuidance
+        ? 'Derivative readiness is guidance-only; derivative generation is not implemented.'
+        : 'No safe local posture repair is defined for this issue.',
+      nonBlocking: derivativeGuidance,
       localOnly: true
     })
   }
@@ -230,7 +242,7 @@ function printRepairSummary(summary) {
   }
 
   for (const skipped of summary.skippedIssues) {
-    console.log(`skipped: ${skipped.issueCode} | reason=${skipped.reason}`)
+    console.log(`skipped: ${skipped.issueCode} | nonBlocking=${skipped.nonBlocking === true} | reason=${skipped.reason}`)
   }
 
   console.log('nonClaims: local-only; no mesh truth; no byte/materialization proof; no resource admission')

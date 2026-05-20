@@ -35,6 +35,10 @@ Optional flags:
 The command rejects absolute paths, traversal, URL-like refs, home expansion,
 backslash paths, and filenames with path separators.
 
+The committed fixture at `examples/media-import-fixtures/tiny-png/` contains a
+tiny PNG source for deterministic import tests. Runtime import outputs remain
+ignored.
+
 ## Records Written
 
 `media:import` writes a normal `media.asset.descriptor.v1` under
@@ -93,6 +97,9 @@ unsupported_media_type
 These issue codes appear in project status and health summaries as operator
 guidance. They do not generate derivatives.
 
+Unsupported media types are reported as guidance, not errors. They mean Studio
+does not yet know which local derivative preparation applies.
+
 ## Operator Surfaces
 
 These commands surface derivative readiness rows:
@@ -107,6 +114,9 @@ Example row shape:
 ```text
 media-asset-derivative-readiness: media/source/source-pixel.png | state=needs-local-attention | issues=missing_thumbnail | nextAction=Prepare local derivatives when derivative generation exists.
 ```
+
+`repair:local-posture` treats derivative readiness issues as non-blocking
+skips until a derivative generator exists.
 
 ## Non-Claims
 

@@ -1,0 +1,17 @@
+{
+  "schema": "media.card.v1",
+  "cardId": "card-media-import-tiny-png",
+  "projectId": "media-import-tiny-png",
+  "kind": "image",
+  "prompt": "Tiny PNG import fixture.",
+  "referenceAssetRefs": [],
+  "target": {
+    "contentType": "image/png"
+  },
+  "providerHints": {},
+  "acceptanceCriteria": [
+    "image metadata is recorded",
+    "derivative readiness is guidance only"
+  ],
+  "createdAt": "2026-05-20T00:00:00.000Z"
+}

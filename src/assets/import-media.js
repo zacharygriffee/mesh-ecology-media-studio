@@ -325,7 +325,7 @@ function requiredDerivativeKindsFor(mediaKind) {
 
 function nextDerivativeAction(issueCodes) {
   if (issueCodes.includes('unsupported_media_type')) {
-    return 'Review content type before derivative preparation.'
+    return 'No derivative preparation is defined for this content type.'
   }
   if (issueCodes.includes('metadata_probe_unavailable')) {
     return 'Install or repair local metadata tools before derivative preparation.'

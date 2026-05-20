@@ -100,7 +100,7 @@ export async function writeProjectStatus({
       console.log(`asset attention: ${asset.assetId} | reason=${asset.reasons[0]}`)
     }
     for (const asset of mediaDerivativeReadiness.assetExplanations.filter((entry) => entry.state !== 'ready-for-local-inspection')) {
-      console.log(`derivative attention: ${asset.path} | issues=${asset.issueCodes.join(',')}`)
+      console.log(`derivative guidance: ${asset.path} | issues=${asset.issueCodes.join(',')} | nextAction=${asset.nextAction}`)
     }
   }
 
@@ -415,7 +415,7 @@ function derivativeReason(code) {
 
 function nextDerivativeAction(issueCodes) {
   if (issueCodes.includes('unsupported_media_type')) {
-    return 'Review content type before derivative preparation.'
+    return 'No derivative preparation is defined for this content type.'
   }
   if (issueCodes.includes('metadata_probe_unavailable')) {
     return 'Install or repair local metadata tools before derivative preparation.'
