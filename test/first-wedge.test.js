@@ -79,6 +79,7 @@ import {
   resolveMediaOperationCandidate,
   writeRuleResolutionExample
 } from '../src/contracts/rule-resolution.js'
+
 import {
   createProductionUnit,
   createSceneDescriptor,
@@ -88,6 +89,20 @@ import { writeProductionRecordsFromCard } from '../src/production/create-product
 import { validateProductionRecordsInProject } from '../src/production/validate-production-records.js'
 
 const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+
+async function captureConsole(fn) {
+  const original = console.log
+  const lines = []
+  console.log = (...args) => {
+    lines.push(args.join(' '))
+  }
+  try {
+    const result = await fn()
+    return { result, lines }
+  } finally {
+    console.log = original
+  }
+}
 
 function ref(kind, id, schema) {
   return { kind, id, schema }
@@ -1251,8 +1266,53 @@ test('project status flags unresolved byte and resource coverage', async () => {
   assert.equal(result.status.assetResourceConsistency.assetExplanations.length, 1)
   assert.equal(result.status.assetResourceConsistency.assetExplanations[0].state, 'needs-local-attention')
   assert.ok(result.status.assetResourceConsistency.assetExplanations[0].reasons.includes('missing byte descriptor proposal'))
+  assert.deepEqual(result.status.assetResourceConsistency.assetExplanations[0].issueCodes, [
+    'missing_byte_descriptor_proposal',
+    'missing_resource_ref_candidate',
+    'accepted_asset_without_byte_resource_posture'
+  ])
+  assert.equal(result.status.assetResourceConsistency.assetExplanations[0].nextAction, 'Run npm run bytes:proposal, then npm run resource:refs.')
+  assert.equal(result.status.assetResourceConsistency.assetExplanations[0].nonClaims.byteAvailabilityProof, false)
+  assert.equal(result.status.assetResourceConsistency.assetExplanations[0].nonClaims.materializationProof, false)
+  assert.equal(result.status.assetResourceConsistency.assetExplanations[0].nonClaims.resourceAdmission, false)
   assert.ok(result.status.warnings.some((warning) => warning.includes('missing byte proposals')))
   assert.equal(validateRequiredRecord(result.status), true)
+})
+
+test('project health and inspection summaries include per-asset attention rows', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+
+  const { result: healthResult, lines } = await captureConsole(() => writeProjectHealth({
+    projectDir: dir,
+    summary: true
+  }))
+  await inspectLocalRun({ projectDir: dir })
+  const summary = await summarizeInspectionPacket({
+    projectDir: dir,
+    packet: 'records/exports/local-run-edge-inspection-packet.local.json'
+  })
+
+  assert.equal(healthResult.health.healthState, 'needs-local-attention')
+  assert.equal(healthResult.health.assetHealthExplanations.length, 1)
+  assert.deepEqual(healthResult.health.assetHealthExplanations[0].issueCodes, [
+    'missing_byte_descriptor_proposal',
+    'missing_resource_ref_candidate',
+    'accepted_asset_without_byte_resource_posture'
+  ])
+  assert.equal(healthResult.health.assetHealthExplanations[0].nextAction, 'Run npm run bytes:proposal, then npm run resource:refs.')
+  assert.equal(healthResult.health.assetHealthExplanations[0].nonClaims.byteAvailabilityProof, false)
+  assert.equal(healthResult.health.assetHealthExplanations[0].nonClaims.resourceAdmission, false)
+  assert.ok(lines.some((line) => line.includes('media-asset: media/accepted/candidate.txt') && line.includes('missing_byte_descriptor_proposal')))
+  assert.ok(summary.healthAttentionRows.some((row) =>
+    row[0] === 'media/accepted/candidate.txt' &&
+    row[2].includes('missing_byte_descriptor_proposal') &&
+    row[3].includes('bytes:proposal')
+  ))
 })
 
 test('project status and readiness flag stale byte proposals and resource candidates', async () => {
@@ -1278,6 +1338,9 @@ test('project status and readiness flag stale byte proposals and resource candid
   assert.equal(status.status.assetResourceConsistency.readyForEdgeInspection, false)
   assert.equal(status.status.assetResourceConsistency.staleByteDescriptorProposalIds.length, 1)
   assert.equal(status.status.assetResourceConsistency.staleResourceCandidateIds.length, 1)
+  assert.ok(status.status.assetResourceConsistency.assetExplanations[0].issueCodes.includes('stale_byte_descriptor_proposal'))
+  assert.ok(status.status.assetResourceConsistency.assetExplanations[0].issueCodes.includes('stale_resource_ref_candidate'))
+  assert.equal(status.status.assetResourceConsistency.assetExplanations[0].nextAction, 'Run npm run bytes:proposal.')
   assert.equal(readiness.readiness.state, 'caution')
   assert.equal(readiness.readiness.resolvabilitySummary.staleByteDescriptorProposalIds.length, 1)
   assert.equal(readiness.readiness.resolvabilitySummary.staleResourceCandidateIds.length, 1)
@@ -1300,6 +1363,9 @@ test('project health combines status readiness and production validation', async
   assert.equal(result.health.healthState, 'ready-for-local-inspection')
   assert.equal(result.health.assetResourceConsistency.readyForEdgeInspection, true)
   assert.equal(result.health.assetResourceConsistency.assetExplanations[0].state, 'ready-for-local-inspection')
+  assert.deepEqual(result.health.assetHealthExplanations, [])
+  assert.deepEqual(result.health.productionHealthExplanations, [])
+  assert.deepEqual(result.health.operatorHealthExplanations, [])
   assert.equal(result.health.productionValidation.valid, true)
   assert.equal(result.health.meshTruth, false)
   assert.equal(result.health.edgeRuntimeVerified, false)
@@ -1325,6 +1391,7 @@ test('inspection summary and Edge bundle include project health records', async 
   })
 
   assert.ok(summary.healthRows.some((row) => row[1] === 'ready-for-local-inspection' && row[3] === 'true'))
+  assert.deepEqual(summary.healthAttentionRows, [])
 
   await writeControlSurfaceProjection({ projectDir: dir })
   const { bundle } = await writeEdgeCompatibilityBundle({ projectDir: dir })
@@ -1417,9 +1484,14 @@ test('Edge handoff diagnosis explains stale production descriptors', async () =>
 
   assert.equal(healthResult.health.healthState, 'needs-local-attention')
   assert.ok(healthResult.health.blockingIssues.includes('production-freshness-stale'))
+  assert.equal(healthResult.health.productionHealthExplanations.length, 2)
+  assert.ok(healthResult.health.productionHealthExplanations.every((entry) => entry.issueCodes.includes('stale_production_descriptor')))
+  assert.equal(healthResult.health.productionHealthExplanations[0].nonClaims.publicationAuthorization, false)
+  assert.equal(healthResult.health.productionHealthExplanations[0].nonClaims.causalTruth, false)
   assert.equal(handoffResult.handoff.handoffState, 'needs-local-attention')
   assert.equal(handoffResult.handoff.readinessDiagnosis.readyForEdgeInspection, false)
   assert.equal(handoffResult.handoff.readinessDiagnosis.productionFreshness.fresh, false)
+  assert.equal(handoffResult.handoff.readinessDiagnosis.operatorHealthExplanations.length, 2)
   assert.ok(handoffResult.handoff.readinessDiagnosis.reasons.some((reason) => reason.includes('production descriptors are stale')))
   assert.ok(handoffResult.handoff.readinessDiagnosis.nextActions.some((action) => action.includes('Regenerate or update production descriptors')))
   assert.equal(validateRequiredRecord(handoffResult.handoff), true)
@@ -1569,16 +1641,19 @@ test('cross-project operator index summarizes explicit local project inputs', as
   ])
   await writeFile(inputListPath, `${JSON.stringify(inputList, null, 2)}\n`)
 
-  const result = await writeCrossProjectOperatorIndex({
+  const { result, lines } = await captureConsole(() => writeCrossProjectOperatorIndex({
     baseDir,
     inputList: slash(path.relative(baseDir, inputListPath)),
     output: slash(path.relative(baseDir, outputPath))
-  })
+  }))
 
   assert.equal(result.index.schema, 'media.cross_project_operator_index.local.v1')
   assert.equal(result.index.summary.projects, 2)
   assert.equal(result.index.summary.readyForEdgeInspection, 1)
   assert.equal(result.index.summary.needsLocalAttention, 1)
+  assert.equal(result.index.projectSummaries[1].operatorHealthExplanations.length, 1)
+  assert.ok(result.index.projectSummaries[1].operatorHealthExplanations[0].issueCodes.includes('missing_byte_descriptor_proposal'))
+  assert.ok(lines.some((line) => line.includes('subject: media/accepted/candidate.txt') && line.includes('missing_resource_ref_candidate')))
   assert.equal(result.index.meshTruth, false)
   assert.equal(result.index.edgeRuntimeVerified, false)
   assert.equal(validateRequiredRecord(inputList), true)

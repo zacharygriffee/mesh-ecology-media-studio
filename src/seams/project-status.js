@@ -141,19 +141,23 @@ function summarizeAssetResourceConsistency(records) {
     const resourceCandidate = resourceCandidateByAssetId.get(assetId)
     const reasons = []
     const nextActions = []
+    const issueCodes = []
 
     if (!byteProposal) {
       missingByteDescriptorProposalAssetIds.push(assetId)
+      issueCodes.push('missing_byte_descriptor_proposal')
       reasons.push('missing byte descriptor proposal')
       nextActions.push('Run npm run bytes:proposal for this project.')
     } else if (!byteProposalMatchesAsset(byteProposal, entry.record)) {
       staleByteDescriptorProposalIds.push(byteProposal.byteDescriptorProposalId)
+      issueCodes.push('stale_byte_descriptor_proposal')
       reasons.push('stale byte descriptor proposal')
       nextActions.push('Regenerate byte descriptor proposals after asset changes.')
     }
 
     if (!resourceCandidate) {
       missingResourceRefCandidateAssetIds.push(assetId)
+      issueCodes.push('missing_resource_ref_candidate')
       reasons.push('missing resource-ref candidate')
       nextActions.push('Run npm run resource:refs after byte proposals exist.')
     } else if (resourceCandidate.byteDescriptorAlignment?.status === 'aligned') {
@@ -161,28 +165,57 @@ function summarizeAssetResourceConsistency(records) {
         alignedResourceCandidateIds.push(resourceCandidate.resourceRefCandidateId)
       } else {
         staleResourceCandidateIds.push(resourceCandidate.resourceRefCandidateId)
+        issueCodes.push('stale_resource_ref_candidate')
         reasons.push('stale resource-ref candidate')
         nextActions.push('Regenerate resource-ref candidates after asset changes.')
       }
     } else {
       unresolvedResourceCandidateIds.push(resourceCandidate.resourceRefCandidateId)
+      issueCodes.push('unresolved_resource_ref_candidate')
       reasons.push(`resource-ref candidate alignment is ${resourceCandidate.byteDescriptorAlignment?.status ?? 'unknown'}`)
       nextActions.push('Resolve byte proposal/resource candidate alignment before handoff.')
     }
 
+    if (isAcceptedAsset(entry.record) && !byteProposal && !resourceCandidate) {
+      issueCodes.push('accepted_asset_without_byte_resource_posture')
+      reasons.push('accepted asset has no byte/resource posture')
+    }
+
+    const healthState = reasons.length === 0 ? 'ready-for-local-inspection' : 'needs-local-attention'
     assetExplanations.push({
+      subjectKind: 'media-asset',
+      subjectRef: makeRef('media-asset', assetId, artifactKinds.mediaAssetDescriptor),
       assetId,
       path: entry.record.localRef?.path ?? entry.path,
       placementClass: entry.record.localRef?.placementClass ?? 'unknown',
-      state: reasons.length === 0 ? 'ready-for-local-inspection' : 'needs-local-attention',
+      state: healthState,
+      healthState,
+      issueCodes,
       reasons: reasons.length === 0 ? ['asset has aligned byte proposal and resource-ref candidate'] : reasons,
       nextActions: Array.from(new Set(nextActions)),
+      nextAction: nextAssetAction(issueCodes),
+      summary: assetHealthSummary({
+        assetId,
+        path: entry.record.localRef?.path ?? entry.path,
+        issueCodes
+      }),
+      sourceRefs: assetHealthSourceRefs({
+        assetEntry: entry,
+        byteProposal,
+        resourceCandidate
+      }),
+      nonClaims: healthNonClaims({
+        resourceAdmission: false,
+        providerTruth: false
+      }),
       localOnly: true,
       meshTruth: false,
       distributedProof: false,
       ratifiedSharedState: false,
+      providerTruth: false,
       byteAvailabilityProof: false,
-      materializationProof: false
+      materializationProof: false,
+      resourceAdmission: false
     })
   }
 
@@ -214,6 +247,68 @@ function summarizeAssetResourceConsistency(records) {
   }
 }
 
+function assetHealthSummary({ assetId, path, issueCodes }) {
+  if (issueCodes.length === 0) {
+    return `${assetId} has current local byte/resource posture for inspection.`
+  }
+
+  return `${path} needs local attention: ${issueCodes.join(', ')}.`
+}
+
+function nextAssetAction(issueCodes) {
+  if (issueCodes.includes('missing_byte_descriptor_proposal') && issueCodes.includes('missing_resource_ref_candidate')) {
+    return 'Run npm run bytes:proposal, then npm run resource:refs.'
+  }
+
+  if (issueCodes.includes('missing_byte_descriptor_proposal') || issueCodes.includes('stale_byte_descriptor_proposal')) {
+    return 'Run npm run bytes:proposal.'
+  }
+
+  if (issueCodes.includes('missing_resource_ref_candidate') || issueCodes.includes('stale_resource_ref_candidate') || issueCodes.includes('unresolved_resource_ref_candidate')) {
+    return 'Run npm run resource:refs after byte proposals are current.'
+  }
+
+  return 'No local asset health action needed.'
+}
+
+function assetHealthSourceRefs({ assetEntry, byteProposal, resourceCandidate }) {
+  return [
+    {
+      ...makeRef('media-asset-descriptor', assetEntry.record.assetId, assetEntry.record.schema),
+      path: assetEntry.path,
+      localOnly: true
+    },
+    byteProposal
+      ? {
+          ...makeRef('media-byte-descriptor-proposal', byteProposal.byteDescriptorProposalId, byteProposal.schema),
+          localOnly: true
+        }
+      : null,
+    resourceCandidate
+      ? {
+          ...makeRef('media-local-layer-resource-ref-candidate', resourceCandidate.resourceRefCandidateId, resourceCandidate.schema),
+          localOnly: true
+        }
+      : null
+  ].filter(Boolean)
+}
+
+function healthNonClaims(extra = {}) {
+  return {
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    byteAvailabilityProof: false,
+    materializationProof: false,
+    resourceAdmission: false,
+    providerTruth: false,
+    causalTruth: false,
+    publicationAuthorization: false,
+    edgeApproval: false,
+    ...extra
+  }
+}
+
 function byteProposalMatchesAsset(byteProposal, assetDescriptor) {
   return JSON.stringify(byteProposal.hash ?? null) === JSON.stringify(assetDescriptor.hash ?? null) &&
     JSON.stringify(byteProposal.localRef ?? null) === JSON.stringify(assetDescriptor.localRef ?? null) &&
@@ -233,6 +328,12 @@ function isAcceptedOrReferenceAsset(record) {
     placementClass === 'media-reference' ||
     localPath?.startsWith('media/accepted/') ||
     localPath?.startsWith('media/references/')
+}
+
+function isAcceptedAsset(record) {
+  const placementClass = record.localRef?.placementClass
+  const localPath = record.localRef?.path
+  return placementClass === 'media-accepted' || localPath?.startsWith('media/accepted/')
 }
 
 async function readProjectRecords(root) {

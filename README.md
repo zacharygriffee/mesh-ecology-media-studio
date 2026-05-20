@@ -203,6 +203,12 @@ npm run health:project -- --project-dir examples/card-to-candidate
 npm run health:summary -- --project-dir examples/card-to-candidate
 ```
 
+Project health, inspection summaries, handoff candidates, and cross-project
+indexes include compact per-asset attention rows when an asset is missing or
+stale against byte proposal, resource-ref candidate, or production descriptor
+posture. These rows suggest safe local next actions only; they do not prove byte
+availability, materialization, resource admission, or authority.
+
 Write local continuity evidence:
 
 ```bash
@@ -331,6 +337,9 @@ The REPL posture note clarifies that REPL is a transitional lab/debug surface;
 Studio should target CLI/status JSON, artifacts, refs, inspection packets,
 handoff candidates, decision requests, and Packs-aligned projections instead of
 wrapping Edge REPL output.
+Per-asset health explanations now make unhealthy accepted assets and stale
+production descriptors visible in existing health, inspection, handoff, and
+cross-project operator summaries without adding a new artifact family.
 
 ## Start Here
 

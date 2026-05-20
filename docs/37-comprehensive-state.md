@@ -20,6 +20,13 @@ for adjacent operability work. Studio should target durable CLI/status JSON,
 artifacts, refs, inspection packets, operator indexes, handoff candidates,
 decision requests, readiness records, and Packs-aligned projections.
 
+Project health now carries per-asset and production attention explanations into
+existing health, inspection, handoff, and cross-project operator summaries. The
+rows identify the unhealthy subject, issue codes, a safe local next action, and
+non-claims. They remain local guidance and do not prove byte availability,
+materialization, resource admission, causal truth, publication authorization, or
+Edge approval.
+
 ## Broad Vector
 
 The repo is moving from local media execution toward inspectable local media
@@ -326,6 +333,10 @@ The unhealthy fixtures cover:
 - missing byte proposal
 - stale resource ref
 - stale production descriptor
+
+Health summaries now expand those fixture states into subject-level attention
+rows, such as an accepted asset missing byte/resource posture or a stale
+production descriptor needing regeneration.
 
 The cross-project fixture aggregates unhealthy project handoff posture through
 an explicit input list. It does not discover projects.

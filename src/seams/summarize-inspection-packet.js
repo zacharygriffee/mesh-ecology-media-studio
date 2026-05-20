@@ -66,6 +66,7 @@ export async function summarizeInspectionPacket({
     .map(([family, count]) => [family, String(count)])
   const readinessRows = await readinessPostureRows(root, record.recordRefs)
   const healthRows = await healthRowsForPacket(root, record.recordRefs)
+  const healthAttentionRows = await healthAttentionRowsForPacket(root, record.recordRefs)
   const mediationRows = await mediationRowsForPacket(root, record.recordRefs)
 
   printTable(['field', 'value'], rows)
@@ -89,6 +90,11 @@ export async function summarizeInspectionPacket({
     printTable(['health', 'state', 'blockingIssues', 'assetResourceReady'], healthRows)
   }
 
+  if (healthAttentionRows.length > 0) {
+    console.log('')
+    printTable(['subject', 'state', 'issues', 'nextAction'], healthAttentionRows)
+  }
+
   if (mediationRows.length > 0) {
     console.log('')
     printTable(['operation', 'resolution', 'delivery', 'blockedClaims'], mediationRows)
@@ -106,6 +112,7 @@ export async function summarizeInspectionPacket({
     schemaRows,
     readinessRows,
     healthRows,
+    healthAttentionRows,
     mediationRows,
     artifactRows
   }
@@ -155,6 +162,30 @@ async function healthRowsForPacket(root, recordRefs) {
       String(health.blockingIssues.length),
       String(health.assetResourceConsistency?.readyForEdgeInspection ?? false)
     ])
+  }
+
+  return rows
+}
+
+async function healthAttentionRowsForPacket(root, recordRefs) {
+  const healthRefs = Object.values(recordRefs)
+    .filter((ref) => ref.schema === 'media.project_health.local.v1' && ref.path)
+    .sort((left, right) => left.path.localeCompare(right.path))
+  const rows = []
+
+  for (const ref of healthRefs) {
+    assertSafeLocalPath(ref.path)
+    const health = JSON.parse(await readFile(path.join(root, ref.path), 'utf8'))
+    validateRequiredRecord(health, 'media.project_health.local.v1')
+    for (const explanation of health.operatorHealthExplanations ?? []) {
+      if ((explanation.healthState ?? explanation.state) === 'ready-for-local-inspection') continue
+      rows.push([
+        explanation.path ?? `${explanation.subjectKind}:${explanation.subjectRef?.id ?? 'unknown'}`,
+        explanation.healthState ?? explanation.state,
+        (explanation.issueCodes ?? []).join(',') || 'none',
+        explanation.nextAction ?? 'none'
+      ])
+    }
   }
 
   return rows

@@ -103,6 +103,9 @@ export async function writeCrossProjectOperatorIndex({
     console.log(formatCrossProjectSummary(index, output))
     for (const project of attentionRows(index.projectSummaries)) {
       console.log(`attention: ${project.label} | handoff=${project.handoffState} | blockers=${project.blockingIssues.length} | warnings=${project.warnings.length}`)
+      for (const explanation of project.operatorHealthExplanations ?? []) {
+        console.log(`  subject: ${explanation.path ?? `${explanation.subjectKind}:${explanation.subjectRef?.id ?? 'unknown'}`} | issues=${(explanation.issueCodes ?? []).join(',') || 'none'} | nextAction=${explanation.nextAction ?? 'none'}`)
+      }
     }
   }
 
@@ -164,12 +167,15 @@ async function summarizeProject(root, projectInput) {
   const handoff = loaded.handoffCandidate
   const decisionRequest = loaded.operatorDecisionRequest
   const blockingIssues = health?.blockingIssues ?? []
+  const operatorHealthExplanations = health?.operatorHealthExplanations ??
+    handoff?.readinessDiagnosis?.operatorHealthExplanations ??
+    []
   const nextActions = Array.from(new Set([
     ...(handoff?.readinessDiagnosis?.nextActions ?? []),
     ...(decisionRequest?.nextActions ?? [])
   ]))
 
-  return {
+  const summary = {
     projectId: projectInput.projectId,
     label: projectInput.label ?? projectInput.projectId,
     rootRef: projectInput.rootRef,
@@ -189,6 +195,12 @@ async function summarizeProject(root, projectInput) {
     edgeRuntimeBuilt: false,
     edgeRuntimeVerified: false
   }
+
+  if (operatorHealthExplanations.length > 0) {
+    summary.operatorHealthExplanations = operatorHealthExplanations
+  }
+
+  return summary
 }
 
 async function readOptionalRecord(projectRoot, relativePath) {

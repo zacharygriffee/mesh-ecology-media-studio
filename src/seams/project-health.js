@@ -56,6 +56,9 @@ export async function writeProjectHealth({
   const productionValidation = await validateProductionRecordsInProject({ projectDir, quiet: summary })
   const projectId = statusResult.status.projectId
   const blockingIssues = []
+  const assetHealthExplanations = (statusResult.status.assetResourceConsistency.assetExplanations ?? [])
+    .filter((entry) => entry.state !== 'ready-for-local-inspection')
+  const productionHealthExplanations = buildProductionHealthExplanations(productionValidation)
 
   if (statusResult.status.assetResourceConsistency.readyForEdgeInspection !== true) {
     blockingIssues.push('asset-resource-consistency-not-ready')
@@ -96,6 +99,7 @@ export async function writeProjectHealth({
       localOnly: true
     },
     assetResourceConsistency: statusResult.status.assetResourceConsistency,
+    assetHealthExplanations,
     edgeReadinessState: readinessResult.readiness.state,
     productionValidation: {
       valid: productionValidation.valid,
@@ -103,6 +107,11 @@ export async function writeProjectHealth({
       freshness: productionValidation.freshness,
       localOnly: true
     },
+    productionHealthExplanations,
+    operatorHealthExplanations: [
+      ...assetHealthExplanations,
+      ...productionHealthExplanations
+    ],
     operatorGuidanceOnly: true,
     localOnly: true,
     meshTruth: false,
@@ -147,12 +156,95 @@ function printHealthSummary(health, output) {
   console.log(`assetResourceWarnings: ${health.assetResourceConsistency.warningCount}`)
   console.log(`staleByteDescriptorProposals: ${health.assetResourceConsistency.staleByteDescriptorProposalIds.length}`)
   console.log(`staleResourceCandidates: ${health.assetResourceConsistency.staleResourceCandidateIds.length}`)
-  for (const asset of health.assetResourceConsistency.assetExplanations ?? []) {
-    console.log(`asset: ${asset.assetId} | state=${asset.state} | reason=${asset.reasons[0]}`)
+  for (const explanation of health.operatorHealthExplanations ?? []) {
+    console.log(formatHealthExplanation(explanation))
   }
   console.log(`productionGraphValid: ${health.productionValidation.valid}`)
   console.log(`staleProductionDescriptors: ${health.productionValidation.freshness?.staleDescriptorIds?.length ?? 0}`)
   console.log(`blockingIssues: ${health.blockingIssues.length}`)
+}
+
+function formatHealthExplanation(explanation) {
+  const subject = explanation.path ?? `${explanation.subjectKind}:${explanation.subjectRef?.id ?? 'unknown'}`
+  return [
+    `${explanation.subjectKind}: ${subject}`,
+    `state=${explanation.healthState ?? explanation.state}`,
+    `issues=${(explanation.issueCodes ?? []).join(',') || 'none'}`,
+    `nextAction=${explanation.nextAction ?? 'none'}`
+  ].join(' | ')
+}
+
+function buildProductionHealthExplanations(productionValidation) {
+  const freshness = productionValidation.freshness ?? {}
+  const recordsByDescriptorId = new Map((productionValidation.records ?? [])
+    .filter((record) => record.schema === artifactKinds.mediaProductionDescriptorLocal)
+    .map((record) => [record.descriptorId, record]))
+  const descriptorIds = Array.from(new Set([
+    ...(freshness.staleDescriptorIds ?? []),
+    ...(freshness.parentMismatchDescriptorIds ?? []),
+    ...(freshness.missingUnitDescriptorIds ?? [])
+  ])).sort()
+
+  return descriptorIds.map((descriptorId) => {
+    const descriptor = recordsByDescriptorId.get(descriptorId)
+    const issueCodes = [
+      freshness.staleDescriptorIds?.includes(descriptorId) ? 'stale_production_descriptor' : null,
+      freshness.parentMismatchDescriptorIds?.includes(descriptorId) ? 'production_descriptor_parent_mismatch' : null,
+      freshness.missingUnitDescriptorIds?.includes(descriptorId) ? 'production_descriptor_missing_unit' : null
+    ].filter(Boolean)
+
+    return {
+      subjectKind: 'media-production-descriptor',
+      subjectRef: {
+        kind: 'media-production-descriptor',
+        id: descriptorId,
+        schema: descriptor?.schema ?? artifactKinds.mediaProductionDescriptorLocal
+      },
+      healthState: 'needs-local-attention',
+      issueCodes,
+      summary: `${descriptorId} needs local production descriptor attention: ${issueCodes.join(', ')}.`,
+      nextAction: 'Regenerate production descriptors from current production units.',
+      sourceRefs: [
+        descriptor
+          ? {
+              kind: 'media-production-descriptor',
+              id: descriptorId,
+              schema: descriptor.schema,
+              localOnly: true
+            }
+          : {
+              kind: 'media-production-descriptor',
+              id: descriptorId,
+              schema: artifactKinds.mediaProductionDescriptorLocal,
+              localOnly: true
+            }
+      ],
+      nonClaims: healthNonClaims(),
+      localOnly: true,
+      meshTruth: false,
+      distributedProof: false,
+      ratifiedSharedState: false,
+      byteAvailabilityProof: false,
+      materializationProof: false,
+      providerTruth: false,
+      resourceAdmission: false
+    }
+  })
+}
+
+function healthNonClaims() {
+  return {
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    byteAvailabilityProof: false,
+    materializationProof: false,
+    resourceAdmission: false,
+    providerTruth: false,
+    causalTruth: false,
+    publicationAuthorization: false,
+    edgeApproval: false
+  }
 }
 
 function validateProjectHealth(health) {

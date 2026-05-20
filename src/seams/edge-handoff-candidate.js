@@ -193,6 +193,7 @@ function createHandoffDiagnosis({ health, bundle }) {
     assetResourceReady: readinessSummary.assetResourceReady === true,
     productionGraphValid: health.productionValidation?.valid === true,
     productionFreshness,
+    operatorHealthExplanations: health.operatorHealthExplanations ?? [],
     blockingIssues: health.blockingIssues,
     reasons,
     nextActions: Array.from(new Set(nextActions)),

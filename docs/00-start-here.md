@@ -125,6 +125,13 @@ npm run resource:refs -- --project-dir examples/card-to-candidate
 npm run readiness:edge -- --project-dir examples/card-to-candidate
 ```
 
+`npm run health:summary`, `npm run inspect:summary`, handoff candidates, and
+`npm run operator:cross-project-index` surface per-asset attention rows for
+missing byte proposals, missing or stale resource-ref candidates, accepted
+assets without byte/resource posture, and stale production descriptors. These
+rows are operator guidance only and do not prove byte availability,
+materialization, resource admission, or authority.
+
 Write a local Packs-aligned control-surface projection without adding UI:
 
 ```bash
@@ -204,3 +211,5 @@ Phase 39 adds local media operation candidates and rule-resolution traces for
 `auto_prepare`, `ask_operator`, and `forbid` mediation pressure without
 implementing `auto_execute`, provider calls, Edge calls, mesh publication, or
 deletion execution.
+Per-asset health explanations now improve existing health and inspection
+surfaces without adding a new record family.
