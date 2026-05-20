@@ -29,6 +29,10 @@ Older Edge phase docs remain implementation history. Studio should not use them
 as current doctrine unless a current posture document explicitly points at a
 specific phase artifact.
 
+The emitted `edgeDoctrineRefs` keep their adjacent repo owner explicit. Edge
+docs are owned by `mesh-ecology-edge`; Spine posture docs are owned by
+`mesh-ecology-spine`.
+
 ## Command
 
 Run the local wedge and inspection commands first:

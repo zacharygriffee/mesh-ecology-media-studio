@@ -71,6 +71,17 @@
             "path": "examples/inspection-fixtures/unhealthy/missing-byte-proposal/missing-media-operator-decision-request.local.json",
             "localOnly": true
           },
+          "issueCode": "missing_cross_project_artifact_ref",
+          "healthState": "needs-local-attention",
+          "summary": "Expected local artifact operatorDecisionRequest is missing at missing-media-operator-decision-request.local.json.",
+          "nextAction": "Run npm run operator:decision-request for the project.",
+          "nonClaims": {
+            "meshTruth": false,
+            "distributedProof": false,
+            "ratifiedSharedState": false,
+            "edgeRuntimeVerified": false,
+            "operatorAuthorization": false
+          },
           "localOnly": true,
           "meshTruth": false,
           "distributedProof": false,

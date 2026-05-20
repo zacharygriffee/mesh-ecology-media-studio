@@ -60,10 +60,12 @@ export async function writeCrossProjectOperatorIndex({
     projectSummaries.push(await summarizeProject(root, projectInput))
   }
 
+  const indexId = `cross-project-operator-index-${inputListRecord.inputListId}`
+  const createdAt = await existingCreatedAtForOutput(root, output, indexId) ?? nowIso()
   const index = {
     schema: artifactKinds.mediaCrossProjectOperatorIndexLocal,
-    indexId: `cross-project-operator-index-${inputListRecord.inputListId}`,
-    createdAt: nowIso(),
+    indexId,
+    createdAt,
     mode: 'standalone-local',
     inputListRef: localRef(
       'media-cross-project-inspection-input-list',
@@ -106,6 +108,9 @@ export async function writeCrossProjectOperatorIndex({
       for (const explanation of project.operatorHealthExplanations ?? []) {
         console.log(`  subject: ${explanation.path ?? `${explanation.subjectKind}:${explanation.subjectRef?.id ?? 'unknown'}`} | issues=${(explanation.issueCodes ?? []).join(',') || 'none'} | nextAction=${explanation.nextAction ?? 'none'}`)
       }
+      for (const missing of project.missingArtifactRefs ?? []) {
+        console.log(`  missing: ${missing.name} | expected=${missing.expectedRef.path} | nextAction=${missing.nextAction}`)
+      }
     }
   }
 
@@ -113,6 +118,13 @@ export async function writeCrossProjectOperatorIndex({
     index,
     output
   }
+}
+
+async function existingCreatedAtForOutput(root, output, indexId) {
+  const existing = await readOptionalRecord(root, output)
+  if (existing?.schema !== artifactKinds.mediaCrossProjectOperatorIndexLocal) return null
+  if (existing.indexId !== indexId) return null
+  return typeof existing.createdAt === 'string' ? existing.createdAt : null
 }
 
 function formatCrossProjectSummary(index, output) {
@@ -150,6 +162,11 @@ async function summarizeProject(root, projectInput) {
       missingArtifactRefs.push({
         name,
         expectedRef: localRef(ref.kind, ref.id, ref.schema, path.posix.join(projectInput.rootRef.path, ref.path)),
+        issueCode: 'missing_cross_project_artifact_ref',
+        healthState: 'needs-local-attention',
+        summary: `Expected local artifact ${name} is missing at ${ref.path}.`,
+        nextAction: nextActionForMissingArtifact(name),
+        nonClaims: missingArtifactNonClaims(),
         localOnly: true,
         meshTruth: false,
         distributedProof: false,
@@ -211,6 +228,36 @@ async function readOptionalRecord(projectRoot, relativePath) {
   } catch (error) {
     if (error.code !== 'ENOENT') throw error
     return null
+  }
+}
+
+function nextActionForMissingArtifact(name) {
+  if (name === 'projectHealth') {
+    return 'Run npm run health:project for the project.'
+  }
+
+  if (name === 'handoffCandidate') {
+    return 'Run npm run handoff:edge for the project.'
+  }
+
+  if (name === 'operatorDecisionRequest') {
+    return 'Run npm run operator:decision-request for the project.'
+  }
+
+  if (name === 'operatorPacketIndex') {
+    return 'Run npm run operator:index for the project.'
+  }
+
+  return 'Regenerate the missing local artifact for the project.'
+}
+
+function missingArtifactNonClaims() {
+  return {
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    edgeRuntimeVerified: false,
+    operatorAuthorization: false
   }
 }
 

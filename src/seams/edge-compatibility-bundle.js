@@ -146,9 +146,9 @@ export async function writeEdgeCompatibilityBundle({
     targetRepo: 'mesh-ecology-media-studio',
     targetSurface: 'media-edge-operator-seam',
     edgeDoctrineRefs: edgeDoctrineRefs.map((docPath) => ({
-      kind: 'read-only-adjacent-edge-doctrine',
+      kind: doctrineKindForPath(docPath),
       path: docPath,
-      owner: 'mesh-ecology-edge'
+      owner: doctrineOwnerForPath(docPath)
     })),
     studioSourceRefs,
     edgeShapeTargets: [
@@ -198,6 +198,18 @@ export async function writeEdgeCompatibilityBundle({
     bundle,
     output
   }
+}
+
+function doctrineKindForPath(docPath) {
+  return docPath.includes('../mesh-ecology-spine/')
+    ? 'read-only-adjacent-spine-doctrine'
+    : 'read-only-adjacent-edge-doctrine'
+}
+
+function doctrineOwnerForPath(docPath) {
+  return docPath.includes('../mesh-ecology-spine/')
+    ? 'mesh-ecology-spine'
+    : 'mesh-ecology-edge'
 }
 
 async function readSourceRecords(root) {

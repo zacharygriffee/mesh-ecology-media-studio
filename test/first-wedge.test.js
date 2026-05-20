@@ -1658,6 +1658,13 @@ test('cross-project operator index summarizes explicit local project inputs', as
   assert.equal(result.index.edgeRuntimeVerified, false)
   assert.equal(validateRequiredRecord(inputList), true)
   assert.equal(validateRequiredRecord(result.index), true)
+
+  const { result: secondResult } = await captureConsole(() => writeCrossProjectOperatorIndex({
+    baseDir,
+    inputList: slash(path.relative(baseDir, inputListPath)),
+    output: slash(path.relative(baseDir, outputPath))
+  }))
+  assert.equal(secondResult.index.createdAt, result.index.createdAt)
 })
 
 test('cross-project operator index reports missing artifact refs without failing scan', async () => {
@@ -1683,16 +1690,20 @@ test('cross-project operator index reports missing artifact refs without failing
   ])
   await writeFile(inputListPath, `${JSON.stringify(inputList, null, 2)}\n`)
 
-  const result = await writeCrossProjectOperatorIndex({
+  const { result, lines } = await captureConsole(() => writeCrossProjectOperatorIndex({
     baseDir,
     inputList: slash(path.relative(baseDir, inputListPath)),
     output: slash(path.relative(baseDir, outputPath))
-  })
+  }))
 
   assert.equal(result.index.summary.projects, 1)
   assert.equal(result.index.summary.missingArtifacts, 1)
   assert.equal(result.index.projectSummaries[0].missingArtifactRefs.length, 1)
   assert.equal(result.index.projectSummaries[0].missingArtifactRefs[0].name, 'operatorDecisionRequest')
+  assert.equal(result.index.projectSummaries[0].missingArtifactRefs[0].issueCode, 'missing_cross_project_artifact_ref')
+  assert.equal(result.index.projectSummaries[0].missingArtifactRefs[0].nextAction, 'Run npm run operator:decision-request for the project.')
+  assert.equal(result.index.projectSummaries[0].missingArtifactRefs[0].nonClaims.edgeRuntimeVerified, false)
+  assert.ok(lines.some((line) => line.includes('missing: operatorDecisionRequest') && line.includes('operator:decision-request')))
   assert.match(result.index.projectSummaries[0].warnings[0], /media-operator-decision-request/)
   assert.equal(validateRequiredRecord(result.index), true)
 })
@@ -1737,6 +1748,9 @@ test('committed cross-project missing-artifact fixture validates', async () => {
   assert.equal(index.summary.missingArtifacts, 1)
   assert.equal(index.projectSummaries[0].missingArtifactRefs.length, 1)
   assert.equal(index.projectSummaries[0].requestKind, 'none')
+  assert.equal(index.projectSummaries[0].missingArtifactRefs[0].issueCode, 'missing_cross_project_artifact_ref')
+  assert.equal(index.projectSummaries[0].missingArtifactRefs[0].nextAction, 'Run npm run operator:decision-request for the project.')
+  assert.equal(index.projectSummaries[0].missingArtifactRefs[0].nonClaims.edgeRuntimeVerified, false)
   assert.equal(index.meshTruth, false)
 })
 
@@ -2020,6 +2034,11 @@ test('edge compatibility bundle targets Edge review shapes without runtime claim
 
   assert.equal(bundle.schema, 'media.edge_compatibility_bundle.local.v1')
   assert.equal(bundle.targetSurface, 'media-edge-operator-seam')
+  assert.ok(bundle.edgeDoctrineRefs.some((ref) => ref.path === '../mesh-ecology-edge/docs/app-facing-seams.md'))
+  assert.ok(bundle.edgeDoctrineRefs.every((ref) => !ref.path.includes('/phase-')))
+  assert.ok(bundle.edgeDoctrineRefs
+    .filter((ref) => ref.path.includes('../mesh-ecology-spine/'))
+    .every((ref) => ref.owner === 'mesh-ecology-spine' && ref.kind === 'read-only-adjacent-spine-doctrine'))
   assert.equal(bundle.edgeRuntimeBuilt, false)
   assert.equal(bundle.edgeRuntimeVerified, false)
   assert.equal(bundle.studioReviewEvidence.schema, 'media.edge_review_evidence.local.v1')

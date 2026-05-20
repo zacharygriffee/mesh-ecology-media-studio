@@ -36,6 +36,16 @@ It intentionally points one artifact ref at a missing local file so the index
 shows `missingArtifacts` and `missingArtifactRefs` separately from ordinary
 unhealthy project posture.
 
+The compact command output prints missing artifact rows under the affected
+project:
+
+```text
+missing: operatorDecisionRequest | expected=... | nextAction=Run npm run operator:decision-request for the project.
+```
+
+Missing-artifact rows are local repair guidance only. They do not prove Edge
+runtime state, operator authorization, mesh truth, or ratified shared state.
+
 ## Boundary
 
 This is a local scanning aid only:
