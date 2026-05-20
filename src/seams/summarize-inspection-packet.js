@@ -213,17 +213,41 @@ async function mediationRowsForPacket(root, recordRefs) {
 }
 
 function resourcePostureLabel(summary) {
-  const missingByte = summary.missingByteDescriptorProposalAssetIds?.length ?? 0
-  const missingResource = summary.missingResourceRefCandidateAssetIds?.length ?? 0
+  const missingByte = summary.bytePosture?.missingContentIds?.length ??
+    summary.missingByteDescriptorProposalContentIds?.length ??
+    summary.missingByteDescriptorProposalAssetIds?.length ??
+    0
+  const missingResource = summary.resourcePosture?.missingSubjectRefs?.length ??
+    summary.missingResourceRefCandidateSubjectRefs?.length ??
+    summary.missingResourceRefCandidateAssetIds?.length ??
+    0
   const unresolved = summary.unresolvedResourceCandidateIds?.length ?? 0
   const staleByte = summary.staleByteDescriptorProposalIds?.length ?? 0
   const staleResource = summary.staleResourceCandidateIds?.length ?? 0
+  const byteCoverage = summary.bytePosture
+    ? `byte-content:${summary.bytePosture.coveredContentIds}/${summary.bytePosture.expectedContentIds}`
+    : null
+  const resourceCoverage = summary.resourcePosture
+    ? `resource-situations:${summary.resourcePosture.coveredSituationPlacements}/${summary.resourcePosture.expectedSituationPlacements}`
+    : null
 
   if (missingByte === 0 && missingResource === 0 && unresolved === 0 && staleByte === 0 && staleResource === 0) {
-    return `${summary.currentCategory ?? 'unknown'}->${summary.targetCategory ?? 'unknown'} aligned`
+    return [
+      `${summary.currentCategory ?? 'unknown'}->${summary.targetCategory ?? 'unknown'} aligned`,
+      byteCoverage,
+      resourceCoverage
+    ].filter(Boolean).join(' ')
   }
 
-  return `missing-byte:${missingByte} missing-resource:${missingResource} unresolved:${unresolved} stale-byte:${staleByte} stale-resource:${staleResource}`
+  return [
+    byteCoverage,
+    resourceCoverage,
+    `missing-byte-content:${missingByte}`,
+    `missing-resource-situations:${missingResource}`,
+    `unresolved:${unresolved}`,
+    `stale-byte:${staleByte}`,
+    `stale-resource:${staleResource}`
+  ].filter(Boolean).join(' ')
 }
 
 function countRecordSchemas(recordRefs) {

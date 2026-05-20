@@ -55,44 +55,69 @@ export async function writeEdgeReadinessGuidance({
   const resourceRefCandidates = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaLocalLayerResourceRefCandidateLocal)
   const byteProposalByAssetId = indexByteDescriptorProposalsByAssetId(byteDescriptorProposals)
+  const byteProposalByContentId = indexByteDescriptorProposalsByContentId(byteDescriptorProposals)
   const resourceCandidateBySubject = indexResourceCandidatesBySubject(resourceRefCandidates)
   const resourceCandidateByAssetId = new Map(resourceRefCandidates.map((entry) => [entry.record.sourceRef.id, entry]))
   const missingByteDescriptorProposalAssetIds = []
+  const missingByteDescriptorProposalContentIds = new Set()
   const missingResourceRefCandidateAssetIds = []
+  const missingResourceRefCandidateSubjectRefs = new Set()
   const unresolvedResourceCandidateIds = []
   const staleByteDescriptorProposalIds = []
   const staleResourceCandidateIds = []
+  const expectedContentIds = new Set()
+  const expectedResourceSubjectRefs = new Set()
+  const coveredContentIds = new Set()
+  const coveredResourceSubjectRefs = new Set()
 
   for (const entry of acceptedOrReferenceAssets) {
     const assetId = entry.record.assetId
+    const contentId = contentIdForRecord(entry.record)
+    const resourceSubjectRef = resourceSubjectKeyForAsset(entry.record)
+    expectedContentIds.add(contentId)
+    expectedResourceSubjectRefs.add(resourceSubjectRef)
     const byteProposalEntry = byteProposalByAssetId.get(assetId)
     if (!byteProposalEntry) {
       missingByteDescriptorProposalAssetIds.push(assetId)
+      missingByteDescriptorProposalContentIds.add(contentId)
     } else if (!byteProposalMatchesAsset(byteProposalEntry.record, entry.record)) {
       staleByteDescriptorProposalIds.push(byteProposalEntry.record.byteDescriptorProposalId)
+    } else {
+      coveredContentIds.add(contentId)
     }
 
-    const resourceCandidateEntry = resourceCandidateBySubject.get(resourceSubjectKeyForAsset(entry.record)) ??
+    const resourceCandidateEntry = resourceCandidateBySubject.get(resourceSubjectRef) ??
       resourceCandidateByAssetId.get(assetId)
     if (!resourceCandidateEntry) {
       missingResourceRefCandidateAssetIds.push(assetId)
+      missingResourceRefCandidateSubjectRefs.add(resourceSubjectRef)
     } else if (resourceCandidateEntry.record.byteDescriptorAlignment?.status !== 'aligned') {
       unresolvedResourceCandidateIds.push(resourceCandidateEntry.record.resourceRefCandidateId)
     } else if (!resourceCandidateMatchesAsset(resourceCandidateEntry.record, entry.record)) {
       staleResourceCandidateIds.push(resourceCandidateEntry.record.resourceRefCandidateId)
+    } else {
+      coveredResourceSubjectRefs.add(resourceSubjectRef)
     }
   }
 
   const state = readinessState({
     acceptedOrReferenceAssets,
+    expectedContentIds,
+    expectedResourceSubjectRefs,
+    byteProposalByContentId,
+    resourceCandidateBySubject,
     missingByteDescriptorProposalAssetIds,
+    missingByteDescriptorProposalContentIds,
     missingResourceRefCandidateAssetIds,
+    missingResourceRefCandidateSubjectRefs,
     unresolvedResourceCandidateIds,
     staleByteDescriptorProposalIds,
     staleResourceCandidateIds
   })
   const reasons = readinessReasons({
     acceptedOrReferenceAssets,
+    missingByteDescriptorProposalContentIds,
+    missingResourceRefCandidateSubjectRefs,
     missingByteDescriptorProposalAssetIds,
     missingResourceRefCandidateAssetIds,
     unresolvedResourceCandidateIds,
@@ -117,8 +142,31 @@ export async function writeEdgeReadinessGuidance({
     acceptedOrReferenceAssets: acceptedOrReferenceAssets.length,
     byteDescriptorProposals: byteDescriptorProposals.length,
     resourceRefCandidates: resourceRefCandidates.length,
+    bytePosture: {
+      keyKind: 'contentId',
+      expectedContentIds: expectedContentIds.size,
+      coveredContentIds: coveredContentIds.size,
+      missingContentIds: Array.from(missingByteDescriptorProposalContentIds).sort(),
+      staleProposalIds: staleByteDescriptorProposalIds,
+      localOnly: true,
+      byteAvailabilityProof: false,
+      materializationProof: false
+    },
+    resourcePosture: {
+      keyKind: 'assetDescriptorRef+situationRef+placementRef',
+      expectedSituationPlacements: expectedResourceSubjectRefs.size,
+      coveredSituationPlacements: coveredResourceSubjectRefs.size,
+      missingSubjectRefs: Array.from(missingResourceRefCandidateSubjectRefs).sort(),
+      unresolvedCandidateIds: unresolvedResourceCandidateIds,
+      staleCandidateIds: staleResourceCandidateIds,
+      localOnly: true,
+      resourceAdmission: false,
+      materializationProof: false
+    },
     missingByteDescriptorProposalAssetIds,
+    missingByteDescriptorProposalContentIds: Array.from(missingByteDescriptorProposalContentIds).sort(),
     missingResourceRefCandidateAssetIds,
+    missingResourceRefCandidateSubjectRefs: Array.from(missingResourceRefCandidateSubjectRefs).sort(),
     unresolvedResourceCandidateIds,
     staleByteDescriptorProposalIds,
     staleResourceCandidateIds,
@@ -219,6 +267,8 @@ function readinessState({
 
 function readinessReasons({
   acceptedOrReferenceAssets,
+  missingByteDescriptorProposalContentIds,
+  missingResourceRefCandidateSubjectRefs,
   missingByteDescriptorProposalAssetIds,
   missingResourceRefCandidateAssetIds,
   unresolvedResourceCandidateIds,
@@ -235,11 +285,11 @@ function readinessReasons({
   }
 
   if (missingByteDescriptorProposalAssetIds.length > 0) {
-    reasons.push(`${missingByteDescriptorProposalAssetIds.length} accepted/reference assets are missing byte descriptor proposals.`)
+    reasons.push(`${missingByteDescriptorProposalContentIds.size ?? missingByteDescriptorProposalContentIds.length} content ids are missing byte descriptor proposals.`)
   }
 
   if (missingResourceRefCandidateAssetIds.length > 0) {
-    reasons.push(`${missingResourceRefCandidateAssetIds.length} accepted/reference assets are missing resource-ref candidates.`)
+    reasons.push(`${missingResourceRefCandidateSubjectRefs.size ?? missingResourceRefCandidateSubjectRefs.length} situation/placement resource subjects are missing resource-ref candidates.`)
   }
 
   if (unresolvedResourceCandidateIds.length > 0) {
@@ -255,7 +305,7 @@ function readinessReasons({
   }
 
   if (reasons.length === 2) {
-    reasons.push('Accepted/reference assets have byte proposal and resource-ref candidate coverage for later Edge inspection.')
+    reasons.push('Accepted/reference assets have content-keyed byte posture and situation/placement resource posture for later Edge inspection.')
   }
 
   return reasons
@@ -271,11 +321,11 @@ function readinessNextActions({
   const actions = []
 
   if (missingByteDescriptorProposalAssetIds.length > 0 || unresolvedResourceCandidateIds.length > 0 || staleByteDescriptorProposalIds.length > 0 || staleResourceCandidateIds.length > 0) {
-    actions.push('Run npm run bytes:proposal before treating resource refs as aligned candidates.')
+    actions.push('Run npm run bytes:proposal to refresh contentId-keyed byte posture before treating resource refs as aligned candidates.')
   }
 
   if (missingResourceRefCandidateAssetIds.length > 0 || unresolvedResourceCandidateIds.length > 0 || staleResourceCandidateIds.length > 0) {
-    actions.push('Run npm run resource:refs after byte descriptor proposals are current.')
+    actions.push('Run npm run resource:refs to refresh situation/placement resource candidates after byte descriptor proposals are current.')
   }
 
   if (actions.length === 0) {
@@ -309,6 +359,17 @@ function indexByteDescriptorProposalsByAssetId(entries) {
     for (const ref of assetRefsForByteProposal(entry.record)) {
       if (!index.has(ref.id)) index.set(ref.id, entry)
     }
+  }
+
+  return index
+}
+
+function indexByteDescriptorProposalsByContentId(entries) {
+  const index = new Map()
+
+  for (const entry of entries) {
+    const contentId = contentIdForRecord(entry.record)
+    if (contentId && !index.has(contentId)) index.set(contentId, entry)
   }
 
   return index

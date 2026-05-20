@@ -1349,7 +1349,13 @@ test('resource candidates stay situation specific for same-content accepted and 
     assert.equal(validateRequiredRecord(candidate), true)
   }
   assert.equal(status.status.assetResourceConsistency.readyForEdgeInspection, true)
+  assert.equal(status.status.assetResourceConsistency.bytePosture.coveredContentIds, 1)
+  assert.equal(status.status.assetResourceConsistency.bytePosture.expectedContentIds, 1)
+  assert.equal(status.status.assetResourceConsistency.resourcePosture.coveredSituationPlacements, 2)
+  assert.equal(status.status.assetResourceConsistency.resourcePosture.expectedSituationPlacements, 2)
   assert.equal(readiness.readiness.state, 'ready')
+  assert.equal(readiness.readiness.resolvabilitySummary.bytePosture.coveredContentIds, 1)
+  assert.equal(readiness.readiness.resolvabilitySummary.resourcePosture.coveredSituationPlacements, 2)
 })
 
 test('resource ref candidate rejects promoted-resource claims', async () => {
@@ -1404,6 +1410,9 @@ test('edge readiness guidance flags unresolved resource prerequisites', async ()
   assert.equal(result.readiness.schema, 'media.readiness.v1')
   assert.equal(result.readiness.state, 'caution')
   assert.equal(result.readiness.resolvabilitySummary.missingByteDescriptorProposalAssetIds.length, 1)
+  assert.equal(result.readiness.resolvabilitySummary.missingByteDescriptorProposalContentIds.length, 1)
+  assert.equal(result.readiness.resolvabilitySummary.bytePosture.keyKind, 'contentId')
+  assert.equal(result.readiness.resolvabilitySummary.resourcePosture.keyKind, 'assetDescriptorRef+situationRef+placementRef')
   assert.equal(result.readiness.resolvabilitySummary.unresolvedResourceCandidateIds.length, 1)
   assert.equal(result.readiness.edgeInspectionGuidance.edgeRequired, false)
   assert.equal(validateRequiredRecord(result.readiness), true)
@@ -1423,6 +1432,8 @@ test('edge readiness guidance is ready when byte proposals and resource refs ali
 
   assert.equal(result.readiness.state, 'ready')
   assert.equal(result.readiness.resolvabilitySummary.missingByteDescriptorProposalAssetIds.length, 0)
+  assert.equal(result.readiness.resolvabilitySummary.bytePosture.coveredContentIds, 1)
+  assert.equal(result.readiness.resolvabilitySummary.resourcePosture.coveredSituationPlacements, 1)
   assert.equal(result.readiness.resolvabilitySummary.unresolvedResourceCandidateIds.length, 0)
   assert.equal(validateRequiredRecord(result.readiness), true)
 })
@@ -1494,6 +1505,8 @@ test('project status summarizes local records without truth claims', async () =>
   assert.equal(result.status.counts.resourceRefCandidates, 1)
   assert.equal(result.status.assetResourceConsistency.readyForEdgeInspection, true)
   assert.equal(result.status.assetResourceConsistency.warningCount, 0)
+  assert.equal(result.status.assetResourceConsistency.bytePosture.coveredContentIds, 1)
+  assert.equal(result.status.assetResourceConsistency.resourcePosture.coveredSituationPlacements, 1)
   assert.equal(result.status.assetResourceConsistency.alignedResourceCandidateIds.length, 1)
   assert.equal(result.status.meshTruth, false)
   assert.equal(result.status.providerTruth, false)
@@ -1513,9 +1526,15 @@ test('project status flags unresolved byte and resource coverage', async () => {
   assert.equal(result.status.assetResourceConsistency.readyForEdgeInspection, false)
   assert.equal(result.status.assetResourceConsistency.warningCount, 2)
   assert.equal(result.status.assetResourceConsistency.missingByteDescriptorProposalAssetIds.length, 1)
+  assert.equal(result.status.assetResourceConsistency.missingByteDescriptorProposalContentIds.length, 1)
   assert.equal(result.status.assetResourceConsistency.missingResourceRefCandidateAssetIds.length, 1)
+  assert.equal(result.status.assetResourceConsistency.missingResourceRefCandidateSubjectRefs.length, 1)
+  assert.equal(result.status.assetResourceConsistency.bytePosture.keyKind, 'contentId')
+  assert.equal(result.status.assetResourceConsistency.resourcePosture.keyKind, 'assetDescriptorRef+situationRef+placementRef')
   assert.equal(result.status.assetResourceConsistency.assetExplanations.length, 1)
   assert.equal(result.status.assetResourceConsistency.assetExplanations[0].state, 'needs-local-attention')
+  assert.equal(result.status.assetResourceConsistency.assetExplanations[0].bytePosture.contentId.startsWith('sha256:'), true)
+  assert.equal(result.status.assetResourceConsistency.assetExplanations[0].resourcePosture.resourceSubjectRef.includes('placement:'), true)
   assert.ok(result.status.assetResourceConsistency.assetExplanations[0].reasons.includes('missing byte descriptor proposal'))
   assert.deepEqual(result.status.assetResourceConsistency.assetExplanations[0].issueCodes, [
     'missing_byte_descriptor_proposal',
@@ -1526,7 +1545,7 @@ test('project status flags unresolved byte and resource coverage', async () => {
   assert.equal(result.status.assetResourceConsistency.assetExplanations[0].nonClaims.byteAvailabilityProof, false)
   assert.equal(result.status.assetResourceConsistency.assetExplanations[0].nonClaims.materializationProof, false)
   assert.equal(result.status.assetResourceConsistency.assetExplanations[0].nonClaims.resourceAdmission, false)
-  assert.ok(result.status.warnings.some((warning) => warning.includes('missing byte proposals')))
+  assert.ok(result.status.warnings.some((warning) => warning.includes('content-keyed byte posture')))
   assert.equal(validateRequiredRecord(result.status), true)
 })
 
@@ -1594,6 +1613,8 @@ test('project status and readiness keep content byte proposals while flagging st
   assert.equal(readiness.readiness.state, 'caution')
   assert.equal(readiness.readiness.resolvabilitySummary.staleByteDescriptorProposalIds.length, 0)
   assert.equal(readiness.readiness.resolvabilitySummary.staleResourceCandidateIds.length, 1)
+  assert.equal(readiness.readiness.resolvabilitySummary.bytePosture.staleProposalIds.length, 0)
+  assert.equal(readiness.readiness.resolvabilitySummary.resourcePosture.staleCandidateIds.length, 1)
 })
 
 test('project health combines status readiness and production validation', async () => {

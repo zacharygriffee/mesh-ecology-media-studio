@@ -177,6 +177,8 @@ export async function repairLocalPosture({
     repairGroups: repairs.length,
     skipped: skipped.length,
     remainingAttention: after.health.operatorHealthExplanations.length,
+    bytePosture: after.health.assetResourceConsistency?.bytePosture,
+    resourcePosture: after.health.assetResourceConsistency?.resourcePosture,
     repairs,
     skippedIssues: skipped,
     refreshed,
@@ -206,12 +208,20 @@ export async function repairLocalPosture({
 }
 
 function printRepairSummary(summary) {
+  const bytePosture = summary.bytePosture
+    ? `${summary.bytePosture.coveredContentIds}/${summary.bytePosture.expectedContentIds}`
+    : 'unknown'
+  const resourcePosture = summary.resourcePosture
+    ? `${summary.resourcePosture.coveredSituationPlacements}/${summary.resourcePosture.expectedSituationPlacements}`
+    : 'unknown'
   console.log([
     `local posture repair: project=${summary.projectId}`,
     `repaired=${summary.repaired}`,
     `repairGroups=${summary.repairGroups}`,
     `skipped=${summary.skipped}`,
     `remainingAttention=${summary.remainingAttention}`,
+    `byteContent=${bytePosture}`,
+    `resourceSituations=${resourcePosture}`,
     `health=${summary.startedHealthState}->${summary.finalHealthState}`
   ].join(' | '))
 
