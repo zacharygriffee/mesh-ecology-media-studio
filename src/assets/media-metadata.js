@@ -57,6 +57,35 @@ export function derivativeIssueCodesForContentType(contentType) {
   return ['unsupported_media_type']
 }
 
+export function createDerivativeReadinessForMedia({ contentType, metadataProbe }) {
+  const mediaKind = mediaKindForContentType(contentType)
+  const issueCodes = [
+    ...derivativeIssueCodesForContentType(contentType),
+    ['unavailable', 'failed'].includes(metadataProbe.metadataProbeState)
+      ? 'metadata_probe_unavailable'
+      : null
+  ].filter(Boolean)
+
+  return {
+    evaluate: true,
+    mediaKind,
+    state: issueCodes.length === 0 ? 'ready-for-local-inspection' : 'needs-local-attention',
+    issueCodes,
+    requiredDerivativeKinds: requiredDerivativeKindsFor(mediaKind),
+    metadataProbeState: metadataProbe.metadataProbeState,
+    nextAction: nextDerivativeAction(issueCodes),
+    localOnly: true,
+    operatorGuidanceOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    byteAvailabilityProof: false,
+    materializationProof: false,
+    resourceAdmission: false,
+    publicationAuthorization: false
+  }
+}
+
 export async function probeLocalMediaMetadata({
   filePath,
   localRef,
@@ -112,6 +141,28 @@ export async function probeLocalMediaMetadata({
   }
 
   return probe
+}
+
+function requiredDerivativeKindsFor(mediaKind) {
+  if (mediaKind === 'image') return ['thumbnail']
+  if (mediaKind === 'video') return ['thumbnail', 'proxy']
+  if (mediaKind === 'audio') return ['waveform']
+  return []
+}
+
+function nextDerivativeAction(issueCodes) {
+  if (issueCodes.includes('unsupported_media_type')) {
+    return 'No derivative preparation is defined for this content type.'
+  }
+  if (issueCodes.includes('metadata_probe_unavailable')) {
+    return 'Install or repair local metadata tools before derivative preparation.'
+  }
+  if (issueCodes.some((code) => ['missing_thumbnail', 'missing_proxy', 'missing_waveform'].includes(code))) {
+    return issueCodes.includes('missing_thumbnail')
+      ? 'Run npm run derivatives:thumbnail for image thumbnails.'
+      : 'Prepare local derivatives when derivative generation exists.'
+  }
+  return 'No local derivative readiness action needed.'
 }
 
 async function resolveFfprobeResult({ filePath, ffprobe }) {

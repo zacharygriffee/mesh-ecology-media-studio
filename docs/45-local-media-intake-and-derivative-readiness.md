@@ -3,7 +3,9 @@
 ## Purpose
 
 Studio can import project-local media files into the Mode 0 project layout and
-make derivative readiness visible to operators.
+make derivative readiness visible to operators. Provider-generated image outputs
+enter the same local metadata and derivative readiness path after provider
+result normalization.
 
 This is an operational local-media slice. It does not add provider APIs, Edge
 runtime calls, storage backends, virtual drives, causal adapters, proxy
@@ -41,8 +43,8 @@ ignored.
 
 ## Records Written
 
-`media:import` writes a normal `media.asset.descriptor.v1` under
-`records/assets/`.
+`media:import` and provider-output ingest write normal
+`media.asset.descriptor.v1` records under `records/assets/`.
 
 The descriptor includes the current layered identity fields:
 
@@ -59,8 +61,9 @@ causalRefs deferred
 `assetId` remains content-derived for compatibility. Do not use it as byte or
 resource identity in new behavior.
 
-PNG imports may also write `media.image_metadata.local.v1` when dimensions can
-be probed by the existing lightweight PNG reader.
+PNG imports and generated provider PNG outputs may also write
+`media.image_metadata.local.v1` when dimensions can be probed by the existing
+lightweight PNG reader.
 
 ## Thumbnail Generation
 
@@ -85,7 +88,8 @@ authorization, or mesh truth.
 
 ## Metadata Posture
 
-Imported descriptors carry a descriptor-level `metadataProbe` object with:
+Imported descriptors and generated provider-output descriptors carry a
+descriptor-level `metadataProbe` object with:
 
 ```text
 mediaKind
@@ -103,7 +107,8 @@ does not fail import.
 
 ## Derivative Readiness
 
-Imported descriptors also carry `derivativeReadiness`.
+Imported descriptors and generated provider-output descriptors also carry
+`derivativeReadiness`.
 
 Initial issue codes:
 

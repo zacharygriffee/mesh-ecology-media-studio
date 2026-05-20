@@ -159,6 +159,8 @@ export function createAssetDescriptor({
   localPath,
   localRef,
   lifecycle,
+  metadataProbe,
+  derivativeReadiness,
   sourceApiCalled = false,
   transitionSummary = 'local candidate ingested from first wedge',
   originRef,
@@ -216,6 +218,8 @@ export function createAssetDescriptor({
     situationRef,
     placementRef,
     causalRefs: causalRefs ?? createDeferredCausalRefs(),
+    ...(metadataProbe ? { metadataProbe } : {}),
+    ...(derivativeReadiness ? { derivativeReadiness } : {}),
     source: {
       sourceType: 'provider-result',
       providerResultRef: makeRef('provider-result', idForRecord(providerResult), providerResult.schema),

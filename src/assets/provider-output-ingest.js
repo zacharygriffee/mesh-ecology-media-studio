@@ -16,6 +16,10 @@ import {
   placementDirectory
 } from '../local/project-layout.js'
 import { writeLocalImageMetadataRecord } from './image-metadata.js'
+import {
+  createDerivativeReadinessForMedia,
+  probeLocalMediaMetadata
+} from './media-metadata.js'
 
 export async function writeProviderOutputAssets({
   projectDir,
@@ -30,6 +34,7 @@ export async function writeProviderOutputAssets({
   filenamePrefix = 'provider-output',
   recordPrefix = 'provider-output',
   lifecycleState = 'generated',
+  ffprobe = true,
   sourceApiCalled = false,
   lifecycleReason = 'Provider output placed locally after provider result normalization.',
   transitionSummary = 'Provider output decoded and placed as a local generated asset.'
@@ -69,6 +74,18 @@ export async function writeProviderOutputAssets({
       hash,
       size: fileStat.size
     })
+    const metadataProbe = await probeLocalMediaMetadata({
+      filePath: outputPath,
+      localRef,
+      contentType: output.contentType,
+      hash,
+      size: fileStat.size,
+      ffprobe
+    })
+    const derivativeReadiness = createDerivativeReadinessForMedia({
+      contentType: output.contentType,
+      metadataProbe
+    })
     const assetId = `asset-${hash.value.slice(0, 16)}`
     const lifecycle = createAssetLifecycle({
       assetId,
@@ -91,6 +108,8 @@ export async function writeProviderOutputAssets({
       localPath: relativePath,
       localRef,
       lifecycle,
+      metadataProbe,
+      derivativeReadiness,
       sourceApiCalled,
       transitionSummary
     })

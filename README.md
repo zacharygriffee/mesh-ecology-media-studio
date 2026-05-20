@@ -155,7 +155,9 @@ The command reads `VENICE_INFERENCE_KEY` from the environment or ignored `.env`,
 uses a constrained image request, writes decoded bytes under
 `media/generated/provider-smoke/`, and records only local non-truth-bearing
 provider result, asset descriptor, review evidence, readiness, and operator
-decision records.
+decision records. Generated image descriptors also carry local metadata probe
+and derivative readiness posture so `media:summary` and
+`derivatives:thumbnail` can inspect them like other imported image assets.
 
 Export an existing Venice smoke run for local Edge-readable inspection without
 calling Venice:
@@ -214,8 +216,9 @@ Import source, generated, or reference media into the local project layout:
 npm run media:import -- --project-dir examples/card-to-candidate --source media/generated/candidate.txt --placement source
 ```
 
-The import writes a local asset descriptor with metadata probe posture and
-derivative readiness guidance. Generate image thumbnails explicitly with:
+The import and provider-output ingest paths write local asset descriptors with
+metadata probe posture and derivative readiness guidance. Generate image
+thumbnails explicitly with:
 
 ```bash
 npm run derivatives:thumbnail -- --project-dir examples/card-to-candidate

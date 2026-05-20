@@ -10,6 +10,7 @@ import { promoteCandidate } from '../src/local/promote-candidate.js'
 import { readLocalImageMetadata } from '../src/assets/image-metadata.js'
 import { ingestReferenceAsset } from '../src/assets/ingest-reference.js'
 import { importMediaAsset } from '../src/assets/import-media.js'
+import { writeProviderOutputAssets } from '../src/assets/provider-output-ingest.js'
 import { generateThumbnailDerivatives } from '../src/assets/generate-thumbnails.js'
 import { createMediaSummary, writeMediaSummary } from '../src/assets/media-summary.js'
 import {
@@ -480,6 +481,79 @@ test('provider adapter runner wraps replaceable providers without provider truth
   assert.equal(result.adapterRun.providerTruth, false)
   assert.equal(result.adapterRun.mode, 'dry-run')
   assert.equal(validateRequiredRecord(result.adapterRun), true)
+})
+
+test('provider output ingest gives generated images derivative readiness', async () => {
+  const dir = await createFixtureProject()
+  const card = JSON.parse(await readFile(path.join(dir, 'cards', 'card.json'), 'utf8'))
+  const generationRequest = createGenerationRequestFromCard({ card })
+  const providerResult = normalizeProviderResult({
+    generationRequest,
+    providerId: 'local-test-provider',
+    providerJobRef: {
+      kind: 'local-provider-job',
+      id: 'job-provider-output-test',
+      localOnly: true
+    },
+    status: 'succeeded',
+    outputRefs: [
+      {
+        kind: 'provider-output',
+        id: 'provider-output-0',
+        outputDelivery: 'inline-base64',
+        contentType: 'image/png',
+        localOnly: true,
+        providerTruth: false
+      }
+    ]
+  })
+
+  const generated = await writeProviderOutputAssets({
+    projectDir: dir,
+    card,
+    generationRequest,
+    providerResult,
+    outputs: [
+      {
+        index: 0,
+        bytes: Buffer.from(onePixelPngBase64, 'base64'),
+        contentType: 'image/png',
+        extension: 'png'
+      }
+    ],
+    filenamePrefix: 'provider-generated',
+    recordPrefix: 'provider-generated'
+  })
+  const before = await createMediaSummary({ projectDir: dir })
+  const thumbnails = await generateThumbnailDerivatives({ projectDir: dir, maxSize: 64 })
+  const after = await createMediaSummary({ projectDir: dir })
+  const asset = generated.assets[0].assetDescriptor
+
+  assert.equal(generated.assets.length, 1)
+  assert.equal(asset.localRef.path, 'media/generated/provider-generated-0.png')
+  assert.equal(asset.localRef.placementClass, 'media-generated')
+  assertLayeredAssetIdentity(asset, {
+    expectedPlacementClass: 'media-generated',
+    expectedPath: 'media/generated/provider-generated-0.png',
+    expectedRole: 'generated'
+  })
+  assert.equal(asset.source.apiCalled, false)
+  assert.equal(asset.provenance.providerResultLocalOnly, true)
+  assert.equal(asset.metadataProbe.mediaKind, 'image')
+  assert.equal(asset.metadataProbe.image.width, 1)
+  assert.deepEqual(asset.derivativeReadiness.issueCodes, ['missing_thumbnail'])
+  assert.equal(asset.derivativeReadiness.materializationProof, false)
+  assert.equal(before.assets.byMediaKind.image, 1)
+  assert.equal(before.derivativeReadiness.evaluatedAssets, 1)
+  assert.equal(before.derivativeReadiness.attentionAssets, 1)
+  assert.equal(before.derivativeReadiness.attentionRows[0].path, 'media/generated/provider-generated-0.png')
+  assert.equal(thumbnails.generated.length, 1)
+  assert.equal(after.derivativeReadiness.readyAssets, 1)
+  assert.equal(after.derivativeReadiness.attentionAssets, 0)
+  assert.equal(after.derivatives.byKind.thumbnail, 1)
+  assert.equal(after.byteAvailabilityProof, false)
+  assert.equal(after.materializationProof, false)
+  assert.equal(after.resourceAdmission, false)
 })
 
 test('provider shape registry validates endpoint shape and provider shape', () => {
