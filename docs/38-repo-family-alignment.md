@@ -83,6 +83,7 @@ Edge local/operator layer:
 Spine:
   reusable rule-book posture
   mediation posture
+  identity layering and storage posture
   local-layer projection-event posture
   Autobase/equivalent storage-lane direction
   non-claim doctrine
@@ -96,6 +97,9 @@ Studio adopts these Spine concepts directly:
 - mediation pressure should be explicit and operator-visible
 - rule resolution should eventually produce a trace
 - projection events are derived/source-referenced, not truth
+- content identity, byte publication identity, artifact descriptor identity,
+  placement identity, resource identity, causal referent identity,
+  materialization identity, and authority state must not collapse
 - local JSON exports are renderings or scaffolds, not durable local-layer state
 - Autobase or an equivalent linearized lane is a direction, not a promoted
   Studio backend

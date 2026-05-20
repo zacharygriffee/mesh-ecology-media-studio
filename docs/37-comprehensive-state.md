@@ -360,7 +360,8 @@ different Studio placements. The adopted posture is documented in
 [Media Identity And Storage Posture](42-media-identity-and-storage-posture.md):
 byte descriptor proposals should be content-oriented, resource-ref candidates
 should be descriptor/placement-oriented, and causal records should link the
-layers without collapsing them.
+layers without collapsing them. This now ties directly to Spine's family-wide
+`../mesh-ecology-spine/docs/identity-layering-and-storage-posture.md` posture.
 
 ## Command Surface Inventory
 

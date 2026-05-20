@@ -162,6 +162,9 @@ For a compact map of command outputs, JSON modes, ref posture, and fixture
 churn, read [Command Surface Inventory](41-command-surface-inventory.md).
 For the identity split behind future byte/resource repair work, read
 [Media Identity And Storage Posture](42-media-identity-and-storage-posture.md).
+It applies Spine's family-wide
+`../mesh-ecology-spine/docs/identity-layering-and-storage-posture.md` posture
+to Studio media assets.
 
 To normalize safe local media posture after health inspection, run:
 
@@ -237,6 +240,7 @@ surfaces without adding a new record family.
 Local posture repair now closes the safe local loop for missing/stale byte,
 resource, and production posture while preserving the same local-only
 non-claims.
-The media identity posture now documents that content identity, byte
-publication refs, Studio descriptor identity, placement refs, resource
-candidates, causal referents, and materialization refs must remain distinct.
+The media identity posture now ties Studio's same-byte asset issue to Spine's
+family-wide identity layering doctrine: content, byte publication, descriptor,
+placement, resource, causal, materialization, and authority layers must remain
+distinct.

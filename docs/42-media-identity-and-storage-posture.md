@@ -12,9 +12,28 @@ use one identifier for content identity, descriptor identity, placement
 identity, resource identity, byte publication identity, materialization
 identity, and causal history.
 
+Spine has now adopted this as family-wide doctrine in
+`../mesh-ecology-spine/docs/identity-layering-and-storage-posture.md`
+(`5bafd47 Add identity layering storage posture`). Studio is the media-domain
+application and discovery evidence for that posture, not the owner of the
+family-wide rule.
+
+The family rule from Spine is:
+
+```text
+content identity
+!= byte publication identity
+!= artifact descriptor identity
+!= placement identity
+!= resource identity
+!= causal referent identity
+!= materialization identity
+!= authority state
+```
+
 ## Layered Identity Model
 
-Studio adopts a layered identity model:
+Studio applies Spine's layered identity model in media-domain terms:
 
 | Layer | Answers | Current posture |
 | --- | --- | --- |
@@ -25,6 +44,7 @@ Studio adopts a layered identity model:
 | `resourceRefCandidateId` | What exact local-layer resource subject is being proposed? | Should be descriptor/placement-specific. |
 | `causalReferentId` / `causalRefs` | What happened across import, copy, fork, transform, publish, materialize, or export? | Future causal-shaped linkage; causal-substrate remains optional. |
 | `materializationRef` | Where was this asset materialized for a script, app, or tool? | Local execution/view path only, not truth. |
+| `authorityState` | What was admitted, ratified, approved, authorized, or materialized by a valid authority lane? | Not implied by any local Studio record. |
 
 ## Byte And Resource Posture
 
@@ -247,17 +267,9 @@ health/repair code consumes them directly.
 
 ## Adjacent Repo Recommendations
 
-Repo: `mesh-ecology-spine`
-Concept: Identity layering across content, byte publication, artifact meaning,
-resource subject, and materialization.
-Current issue: Studio needs the distinction so local projection/resource lanes
-do not collapse meaning into hash identity.
-Suggested owner: Spine doctrine.
-Suggested file/doc: local-layer/proof/local-resource posture docs.
-Blocking status: Optional for Studio docs; important before shared
-local-layer promotion.
-Risk: Different repos may use `id`, `hash`, and `resourceRef` with incompatible
-meanings.
+Spine has resolved the family-wide doctrine location in
+`docs/identity-layering-and-storage-posture.md`. Remaining recommendations are
+repo-specific adoption work, not blockers for this Studio posture document.
 
 Repo: `mesh-ecology-bytes`
 Concept: Multiple byte references/publications for the same content hash.
@@ -289,6 +301,20 @@ Suggested file/doc: consumer adoption / referent docs.
 Blocking status: Optional until adapter work begins.
 Risk: Causal history may collapse copy/fork/materialization events into one
 artifact identity.
+
+Repo: `mesh-ecology-media-studio`
+Concept: Migration from content-derived `assetId` as catch-all identity toward
+content-oriented byte proposals and descriptor/placement-oriented resource
+candidates.
+Current issue: Current writers and health checks still map too much by
+`assetId`.
+Suggested owner: Studio.
+Suggested file/doc: future schema and repair migration; this document is the
+current posture anchor.
+Blocking status: Blocks the same-content/two-placement repair fixture, but not
+Mode 0 local wedge operation.
+Risk: Repair or readiness may keep treating same-byte assets in different
+placements as one resource subject.
 
 ## Non-Claims
 
