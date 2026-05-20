@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
@@ -72,6 +72,7 @@ import {
   createLocalLayerResourceRefCandidate,
   writeLocalLayerResourceRefCandidates
 } from '../src/local/resource-ref-candidates.js'
+import { repairLocalPosture } from '../src/local/repair-local-posture.js'
 import {
   createMediaOperationCandidate
 } from '../src/contracts/operation-candidates.js'
@@ -153,6 +154,37 @@ async function createFixtureProject() {
 
 function slash(value) {
   return value.split(path.sep).join('/')
+}
+
+async function countJsonFiles(dir) {
+  let dirents
+  try {
+    dirents = await readdir(dir, { withFileTypes: true })
+  } catch (error) {
+    if (error.code === 'ENOENT') return 0
+    throw error
+  }
+
+  let count = 0
+  for (const dirent of dirents) {
+    const child = path.join(dir, dirent.name)
+    if (dirent.isDirectory()) {
+      count += await countJsonFiles(child)
+    } else if (dirent.isFile() && dirent.name.endsWith('.json')) {
+      count += 1
+    }
+  }
+
+  return count
+}
+
+async function firstJsonFile(dir) {
+  const entries = await readdir(dir)
+  const file = entries.filter((entry) => entry.endsWith('.json')).sort()[0]
+  if (!file) {
+    throw new Error(`Expected a JSON file in ${dir}`)
+  }
+  return path.join(dir, file)
 }
 
 function createCrossProjectInputList(projects) {
@@ -1370,6 +1402,86 @@ test('project health combines status readiness and production validation', async
   assert.equal(result.health.meshTruth, false)
   assert.equal(result.health.edgeRuntimeVerified, false)
   assert.equal(validateRequiredRecord(result.health), true)
+})
+
+test('local posture repair generates missing byte and resource records without new decisions', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  const decisionCountBefore = await countJsonFiles(path.join(dir, 'records', 'decisions'))
+
+  const summary = await repairLocalPosture({ projectDir: dir })
+  const health = await writeProjectHealth({ projectDir: dir, summary: true })
+  const decisionCountAfter = await countJsonFiles(path.join(dir, 'records', 'decisions'))
+
+  assert.equal(summary.repairGroups, 2)
+  assert.equal(summary.repaired, 2)
+  assert.equal(summary.remainingAttention, 0)
+  assert.deepEqual(summary.remainingIssueCodes, [])
+  assert.equal(summary.nonClaims.meshTruth, false)
+  assert.equal(summary.nonClaims.byteAvailabilityProof, false)
+  assert.equal(summary.nonClaims.materializationProof, false)
+  assert.equal(summary.nonClaims.resourceAdmission, false)
+  assert.equal(decisionCountAfter, decisionCountBefore)
+  assert.equal(health.health.assetResourceConsistency.readyForEdgeInspection, true)
+  assert.equal(health.health.operatorHealthExplanations.length, 0)
+})
+
+test('local posture repair regenerates stale resource candidates', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await writeByteDescriptorProposals({ projectDir: dir, quiet: true })
+  await writeLocalLayerResourceRefCandidates({ projectDir: dir, quiet: true })
+  const resourceCandidatePath = await firstJsonFile(path.join(dir, 'records', 'resources'))
+  const resourceCandidate = JSON.parse(await readFile(resourceCandidatePath, 'utf8'))
+  resourceCandidate.proposedResourceRef.localRef.path = 'media/accepted/stale-candidate.txt'
+  await writeFile(resourceCandidatePath, `${JSON.stringify(resourceCandidate, null, 2)}\n`)
+
+  const before = await writeProjectHealth({ projectDir: dir, summary: true })
+  const summary = await repairLocalPosture({ projectDir: dir })
+  const after = await writeProjectHealth({ projectDir: dir, summary: true })
+
+  assert.ok(before.health.operatorHealthExplanations[0].issueCodes.includes('stale_resource_ref_candidate'))
+  assert.equal(summary.repairGroups, 1)
+  assert.equal(summary.repairs[0].repairKind, 'local_layer_resource_ref_candidates')
+  assert.equal(summary.nonClaims.resourceAdmission, false)
+  assert.equal(after.health.assetResourceConsistency.staleResourceCandidateIds.length, 0)
+  assert.equal(after.health.operatorHealthExplanations.length, 0)
+})
+
+test('local posture repair regenerates stale production descriptors', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await writeByteDescriptorProposals({ projectDir: dir, quiet: true })
+  await writeLocalLayerResourceRefCandidates({ projectDir: dir, quiet: true })
+  await writeProductionRecordsFromCard({ projectDir: dir, quiet: true })
+  const sceneUnitPath = path.join(dir, 'records', 'production', 'sceneUnit.local.json')
+  const sceneUnit = JSON.parse(await readFile(sceneUnitPath, 'utf8'))
+  sceneUnit.createdAt = '2099-01-01T00:00:00.000Z'
+  await writeFile(sceneUnitPath, `${JSON.stringify(sceneUnit, null, 2)}\n`)
+
+  const before = await writeProjectHealth({ projectDir: dir, summary: true })
+  const summary = await repairLocalPosture({ projectDir: dir })
+  const after = await writeProjectHealth({ projectDir: dir, summary: true })
+
+  assert.ok(before.health.operatorHealthExplanations.some((entry) => entry.issueCodes.includes('stale_production_descriptor')))
+  assert.equal(summary.repairGroups, 1)
+  assert.equal(summary.repairs[0].repairKind, 'production_descriptors')
+  assert.equal(summary.repairs[0].causalTruth, false)
+  assert.equal(summary.repairs[0].publicationAuthorization, false)
+  assert.equal(after.health.productionValidation.freshness.staleDescriptorIds.length, 0)
+  assert.equal(after.health.operatorHealthExplanations.length, 0)
 })
 
 test('inspection summary and Edge bundle include project health records', async () => {

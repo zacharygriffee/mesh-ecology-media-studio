@@ -343,6 +343,9 @@ live doctrine.
 Per-asset health explanations now make unhealthy accepted assets and stale
 production descriptors visible in existing health, inspection, handoff, and
 cross-project operator summaries without adding a new artifact family.
+Local posture repair can now regenerate safe missing/stale byte proposal,
+resource-ref candidate, and production descriptor records from existing health
+issues without inventing reviews, approvals, provider results, or authority.
 The command surface inventory maps compact command output, machine-readable
 artifact output, JSON stdout support, stable refs, and known churn posture for
 current operational commands.

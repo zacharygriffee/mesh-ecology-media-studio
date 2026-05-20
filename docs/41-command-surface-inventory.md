@@ -31,6 +31,7 @@ text is not the durable contract.
 | --- | --- | --- | --- | --- | --- |
 | `npm run bytes:proposal` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
 | `npm run resource:refs` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
+| `npm run repair:local-posture` | yes | updates existing local artifacts | `--print` | yes | repaired records and refreshed summaries use fresh ids/timestamps |
 | `npm run readiness:edge` | yes | yes | `--print` | yes | runtime records use fresh ids/timestamps |
 
 ## Inspection And Operator Surfaces

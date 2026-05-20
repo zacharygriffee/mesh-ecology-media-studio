@@ -341,6 +341,19 @@ production descriptor needing regeneration.
 The cross-project fixture aggregates unhealthy project handoff posture through
 an explicit input list. It does not discover projects.
 
+## Local Posture Repair
+
+`npm run repair:local-posture -- --project-dir examples/card-to-candidate`
+turns safe health explanations into bounded local regeneration. It can repair
+missing/stale byte descriptor proposals, missing/stale/unresolved local-layer
+resource-ref candidates, and stale card-derived production descriptors.
+
+The command does not create a new artifact family. It rewrites existing
+local-only records, refreshes project health plus operator inspection surfaces,
+and returns a machine-readable summary for tests/callers. It does not invent
+reviews, approvals, provider results, byte availability proof, resource
+admission, causal truth, Edge approval, or publication authorization.
+
 ## Command Surface Inventory
 
 The current command surface map lives at

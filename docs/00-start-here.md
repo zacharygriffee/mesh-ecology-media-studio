@@ -160,6 +160,18 @@ unless a current posture doc explicitly points at them.
 For a compact map of command outputs, JSON modes, ref posture, and fixture
 churn, read [Command Surface Inventory](41-command-surface-inventory.md).
 
+To normalize safe local media posture after health inspection, run:
+
+```bash
+npm run repair:local-posture -- --project-dir examples/card-to-candidate
+```
+
+This command regenerates existing local-only byte proposal, resource-ref
+candidate, and card-derived production descriptor records when health
+explanations show they are missing or stale. It does not invent review
+decisions, call providers, call Edge, publish to mesh, or prove byte
+availability/materialization.
+
 Phase 2 hardened the local wedge with a local run manifest, artifact-kind
 registry, and modest malformed-record checks. Phase 3 defines the local project
 layout, safe local refs, placement classes, and asset lifecycle states. Phase 4
@@ -219,3 +231,6 @@ implementing `auto_execute`, provider calls, Edge calls, mesh publication, or
 deletion execution.
 Per-asset health explanations now improve existing health and inspection
 surfaces without adding a new record family.
+Local posture repair now closes the safe local loop for missing/stale byte,
+resource, and production posture while preserving the same local-only
+non-claims.

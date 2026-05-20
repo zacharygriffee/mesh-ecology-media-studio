@@ -15,7 +15,8 @@ const eligiblePlacementClasses = new Set(['media-accepted', 'media-reference'])
 
 function parseArgs(argv) {
   const args = {
-    projectDir: defaultProjectDir
+    projectDir: defaultProjectDir,
+    quiet: false
   }
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -25,6 +26,8 @@ function parseArgs(argv) {
     if (arg === '--project-dir') {
       args.projectDir = next
       i += 1
+    } else if (arg === '--quiet') {
+      args.quiet = true
     }
   }
 
@@ -32,7 +35,8 @@ function parseArgs(argv) {
 }
 
 export async function writeLocalLayerResourceRefCandidates({
-  projectDir = defaultProjectDir
+  projectDir = defaultProjectDir,
+  quiet = false
 } = {}) {
   const root = path.resolve(projectDir)
   const assetEntries = await readAssetDescriptors(root)
@@ -64,8 +68,10 @@ export async function writeLocalLayerResourceRefCandidates({
     candidates.push({ candidate, output })
   }
 
-  console.log(`resource ref candidates: ${candidates.length}`)
-  console.log('resource identity: candidate only')
+  if (!quiet) {
+    console.log(`resource ref candidates: ${candidates.length}`)
+    console.log('resource identity: candidate only')
+  }
 
   return { candidates }
 }

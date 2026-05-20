@@ -36,6 +36,7 @@
     "production:from-card": "node src/production/create-production-records.js",
     "production:validate": "node src/production/validate-production-records.js",
     "resource:refs": "node src/local/resource-ref-candidates.js",
+    "repair:local-posture": "node src/local/repair-local-posture.js",
     "reference:ingest": "node src/assets/ingest-reference.js",
     "fixture:inspection": "node src/local/generate-inspection-fixture.js",
     "fixture:inspection:check": "node src/local/generate-inspection-fixture.js --check",
