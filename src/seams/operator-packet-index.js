@@ -68,6 +68,10 @@ export async function writeOperatorPacketIndex({
   const readinessStates = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProjectHealthLocal)
     .map((entry) => entry.record.healthState)
+  const operatorHealthExplanations = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaProjectHealthLocal)
+    .flatMap((entry) => entry.record.operatorHealthExplanations ?? [])
+    .filter((entry) => (entry.healthState ?? entry.state) !== 'ready-for-local-inspection')
 
   const index = {
     schema: artifactKinds.mediaOperatorPacketIndexLocal,
@@ -86,6 +90,7 @@ export async function writeOperatorPacketIndex({
     handoffCandidateRefs,
     operatorDecisionRequestRefs,
     mediationRefs,
+    operatorHealthExplanations,
     summary: {
       packets: packetRefs.length,
       bundles: bundleRefs.length,
@@ -95,6 +100,7 @@ export async function writeOperatorPacketIndex({
       ruleResolutionTraces: mediationRefs.length,
       readyHealthRecords: readinessStates.filter((state) => state === 'ready-for-local-inspection').length,
       needsAttentionHealthRecords: readinessStates.filter((state) => state === 'needs-local-attention').length,
+      operatorHealthExplanations: operatorHealthExplanations.length,
       newestRecordPath: newestPath(records),
       operatorGuidanceOnly: true
     },
@@ -125,6 +131,9 @@ export async function writeOperatorPacketIndex({
     console.log(JSON.stringify(index, null, 2))
   } else {
     console.log(formatOperatorPacketIndexSummary(index, output))
+    for (const explanation of index.operatorHealthExplanations) {
+      console.log(formatHealthExplanation(explanation))
+    }
   }
 
   return {
@@ -141,7 +150,18 @@ function formatOperatorPacketIndexSummary(index, output) {
     `handoffs=${summary.handoffCandidates}`,
     `decisionRequests=${summary.operatorDecisionRequests}`,
     `ruleTraces=${summary.ruleResolutionTraces}`,
+    `attention=${summary.operatorHealthExplanations}`,
     `output=${output}`
+  ].join(' | ')
+}
+
+function formatHealthExplanation(explanation) {
+  const subject = explanation.path ?? `${explanation.subjectKind}:${explanation.subjectRef?.id ?? 'unknown'}`
+  return [
+    `attention: ${subject}`,
+    `state=${explanation.healthState ?? explanation.state}`,
+    `issues=${(explanation.issueCodes ?? []).join(',') || 'none'}`,
+    `nextAction=${explanation.nextAction ?? 'none'}`
   ].join(' | ')
 }
 

@@ -8,6 +8,9 @@ This phase adds two local-only control-surface artifacts:
 The packet index is a compact scanning record for local inspection packets,
 export bundles, compatibility bundles, project health records, and handoff
 candidates. It is an operator aid, not a UI contract and not shared truth.
+When project health has asset or production attention rows, the packet index
+also carries those `operatorHealthExplanations` and prints compact attention
+rows with subject, issue codes, and safe local next action.
 
 The handoff candidate gathers the local inspection packet, Edge compatibility
 bundle, project health snapshot, and packet index into one Edge-facing review
@@ -30,6 +33,17 @@ to include the handoff candidate in the packet index:
 ```bash
 npm run operator:index -- --project-dir examples/card-to-candidate
 ```
+
+The compact `operator:index` output follows the same local attention pattern as
+health, handoff, and cross-project summaries:
+
+```text
+attention: media/accepted/candidate.txt | state=needs-local-attention | issues=... | nextAction=...
+```
+
+Attention rows remain operator guidance only. They do not prove Edge runtime
+state, byte availability, materialization, resource admission, mesh truth, or
+operator authorization.
 
 ## Doctrine
 
