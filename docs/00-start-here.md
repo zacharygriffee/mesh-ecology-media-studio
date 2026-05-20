@@ -44,6 +44,7 @@ Read in this order:
 36. [Edge Mediation Handoff Semantics](40-edge-mediation-handoff-semantics.md)
 37. [REPL Posture And Control-Surface Target](40-repl-posture-and-control-surface-target.md)
 38. [Command Surface Inventory](41-command-surface-inventory.md)
+39. [Media Identity And Storage Posture](42-media-identity-and-storage-posture.md)
 
 The first executable path is:
 
@@ -159,6 +160,8 @@ For current Edge app-facing integration posture, use
 unless a current posture doc explicitly points at them.
 For a compact map of command outputs, JSON modes, ref posture, and fixture
 churn, read [Command Surface Inventory](41-command-surface-inventory.md).
+For the identity split behind future byte/resource repair work, read
+[Media Identity And Storage Posture](42-media-identity-and-storage-posture.md).
 
 To normalize safe local media posture after health inspection, run:
 
@@ -234,3 +237,6 @@ surfaces without adding a new record family.
 Local posture repair now closes the safe local loop for missing/stale byte,
 resource, and production posture while preserving the same local-only
 non-claims.
+The media identity posture now documents that content identity, byte
+publication refs, Studio descriptor identity, placement refs, resource
+candidates, causal referents, and materialization refs must remain distinct.

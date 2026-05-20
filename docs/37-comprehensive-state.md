@@ -354,6 +354,14 @@ and returns a machine-readable summary for tests/callers. It does not invent
 reviews, approvals, provider results, byte availability proof, resource
 admission, causal truth, Edge approval, or publication authorization.
 
+`repair:local-posture` also exposed a deterministic semantic identity collapse:
+same bytes can produce the same content-derived `assetId` while occupying
+different Studio placements. The adopted posture is documented in
+[Media Identity And Storage Posture](42-media-identity-and-storage-posture.md):
+byte descriptor proposals should be content-oriented, resource-ref candidates
+should be descriptor/placement-oriented, and causal records should link the
+layers without collapsing them.
+
 ## Command Surface Inventory
 
 The current command surface map lives at

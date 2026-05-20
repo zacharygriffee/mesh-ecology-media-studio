@@ -346,6 +346,10 @@ cross-project operator summaries without adding a new artifact family.
 Local posture repair can now regenerate safe missing/stale byte proposal,
 resource-ref candidate, and production descriptor records from existing health
 issues without inventing reviews, approvals, provider results, or authority.
+The media identity and storage posture now separates content identity, byte
+publication refs, Studio descriptor identity, placement refs, resource
+candidates, causal referents, and materialization refs so same-byte assets do
+not collapse into one Studio meaning.
 The command surface inventory maps compact command output, machine-readable
 artifact output, JSON stdout support, stable refs, and known churn posture for
 current operational commands.
@@ -387,3 +391,4 @@ current operational commands.
 - [docs/39-operation-candidate-and-rule-resolution.md](docs/39-operation-candidate-and-rule-resolution.md)
 - [docs/40-repl-posture-and-control-surface-target.md](docs/40-repl-posture-and-control-surface-target.md)
 - [docs/41-command-surface-inventory.md](docs/41-command-surface-inventory.md)
+- [docs/42-media-identity-and-storage-posture.md](docs/42-media-identity-and-storage-posture.md)
