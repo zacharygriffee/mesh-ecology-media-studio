@@ -147,6 +147,9 @@ function printHealthSummary(health, output) {
   console.log(`assetResourceWarnings: ${health.assetResourceConsistency.warningCount}`)
   console.log(`staleByteDescriptorProposals: ${health.assetResourceConsistency.staleByteDescriptorProposalIds.length}`)
   console.log(`staleResourceCandidates: ${health.assetResourceConsistency.staleResourceCandidateIds.length}`)
+  for (const asset of health.assetResourceConsistency.assetExplanations ?? []) {
+    console.log(`asset: ${asset.assetId} | state=${asset.state} | reason=${asset.reasons[0]}`)
+  }
   console.log(`productionGraphValid: ${health.productionValidation.valid}`)
   console.log(`staleProductionDescriptors: ${health.productionValidation.freshness?.staleDescriptorIds?.length ?? 0}`)
   console.log(`blockingIssues: ${health.blockingIssues.length}`)

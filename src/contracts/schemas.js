@@ -2489,6 +2489,27 @@ function validateCrossProjectSummary(summary, label) {
     }
   }
 
+  if (summary.missingArtifactRefs !== undefined) {
+    if (!Array.isArray(summary.missingArtifactRefs)) {
+      throw new Error(`${label}.missingArtifactRefs must be an array`)
+    }
+
+    summary.missingArtifactRefs.forEach((missing, index) => {
+      if (!missing || typeof missing !== 'object' || !isNonEmptyString(missing.name)) {
+        throw new Error(`${label}.missingArtifactRefs[${index}] must include name`)
+      }
+      validateInspectionRef(missing.expectedRef, `${label}.missingArtifactRefs[${index}].expectedRef`)
+      for (const flag of ['meshTruth', 'distributedProof', 'ratifiedSharedState']) {
+        if (missing[flag] !== false) {
+          throw new Error(`${label}.missingArtifactRefs[${index}] must set ${flag}=false`)
+        }
+      }
+      if (missing.localOnly !== true) {
+        throw new Error(`${label}.missingArtifactRefs[${index}] must set localOnly=true`)
+      }
+    })
+  }
+
   if (summary.operatorGuidanceOnly !== true || summary.localOnly !== true) {
     throw new Error(`${label} must remain local operator guidance`)
   }

@@ -120,29 +120,57 @@ function summarizeAssetResourceConsistency(records) {
   const alignedResourceCandidateIds = []
   const staleByteDescriptorProposalIds = []
   const staleResourceCandidateIds = []
+  const assetExplanations = []
 
   for (const entry of acceptedOrReferenceAssets) {
     const assetId = entry.record.assetId
     const byteProposal = byteProposalByAssetId.get(assetId)
     const resourceCandidate = resourceCandidateByAssetId.get(assetId)
+    const reasons = []
+    const nextActions = []
 
     if (!byteProposal) {
       missingByteDescriptorProposalAssetIds.push(assetId)
+      reasons.push('missing byte descriptor proposal')
+      nextActions.push('Run npm run bytes:proposal for this project.')
     } else if (!byteProposalMatchesAsset(byteProposal, entry.record)) {
       staleByteDescriptorProposalIds.push(byteProposal.byteDescriptorProposalId)
+      reasons.push('stale byte descriptor proposal')
+      nextActions.push('Regenerate byte descriptor proposals after asset changes.')
     }
 
     if (!resourceCandidate) {
       missingResourceRefCandidateAssetIds.push(assetId)
+      reasons.push('missing resource-ref candidate')
+      nextActions.push('Run npm run resource:refs after byte proposals exist.')
     } else if (resourceCandidate.byteDescriptorAlignment?.status === 'aligned') {
       if (resourceCandidateMatchesAsset(resourceCandidate, entry.record)) {
         alignedResourceCandidateIds.push(resourceCandidate.resourceRefCandidateId)
       } else {
         staleResourceCandidateIds.push(resourceCandidate.resourceRefCandidateId)
+        reasons.push('stale resource-ref candidate')
+        nextActions.push('Regenerate resource-ref candidates after asset changes.')
       }
     } else {
       unresolvedResourceCandidateIds.push(resourceCandidate.resourceRefCandidateId)
+      reasons.push(`resource-ref candidate alignment is ${resourceCandidate.byteDescriptorAlignment?.status ?? 'unknown'}`)
+      nextActions.push('Resolve byte proposal/resource candidate alignment before handoff.')
     }
+
+    assetExplanations.push({
+      assetId,
+      path: entry.record.localRef?.path ?? entry.path,
+      placementClass: entry.record.localRef?.placementClass ?? 'unknown',
+      state: reasons.length === 0 ? 'ready-for-local-inspection' : 'needs-local-attention',
+      reasons: reasons.length === 0 ? ['asset has aligned byte proposal and resource-ref candidate'] : reasons,
+      nextActions: Array.from(new Set(nextActions)),
+      localOnly: true,
+      meshTruth: false,
+      distributedProof: false,
+      ratifiedSharedState: false,
+      byteAvailabilityProof: false,
+      materializationProof: false
+    })
   }
 
   const warningCount = missingByteDescriptorProposalAssetIds.length +
@@ -161,6 +189,7 @@ function summarizeAssetResourceConsistency(records) {
     unresolvedResourceCandidateIds,
     staleByteDescriptorProposalIds,
     staleResourceCandidateIds,
+    assetExplanations,
     readyForEdgeInspection: acceptedOrReferenceAssets.length > 0 && warningCount === 0,
     warningCount,
     localOnly: true,

@@ -1,0 +1,305 @@
+{
+  "catalogId": "operation-candidate-fixture-catalog-local",
+  "description": "Deterministic local examples for the existing media operation resolver.",
+  "createdAt": "2026-05-19T00:00:00.000Z",
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "cases": [
+    {
+      "caseId": "prepare-provider-job",
+      "expected": {
+        "resolutionMode": "auto_prepare",
+        "deliveryMode": "log_only"
+      },
+      "candidate": {
+        "schema": "media.operation_candidate.local.v1",
+        "operationId": "operation-fixture-prepare-provider-job",
+        "projectId": "project-test",
+        "artifactClass": "media.provider_job",
+        "operationClass": "prepare_provider_job",
+        "subjectRef": {
+          "kind": "media-card",
+          "id": "card-test",
+          "schema": "media.card.v1"
+        },
+        "scopeDelta": "local_record_only",
+        "riskTier": "low",
+        "reversibility": "reversible",
+        "authorityBoundary": "local_project",
+        "evidenceRequirement": "card_required",
+        "requestedBy": "fixture-operator",
+        "sourceRefs": [
+          {
+            "kind": "media-card",
+            "id": "card-test",
+            "schema": "media.card.v1"
+          }
+        ],
+        "createdAt": "2026-05-19T00:00:00.000Z",
+        "localTruthLabel": "local draft",
+        "truthStatus": "not mesh truth; not distributed proof; not ratified shared state",
+        "localOnly": true,
+        "meshTruth": false,
+        "distributedProof": false,
+        "ratifiedSharedState": false
+      }
+    },
+    {
+      "caseId": "submit-live-provider-job",
+      "expected": {
+        "resolutionMode": "ask_operator",
+        "deliveryMode": "urgent"
+      },
+      "candidate": {
+        "schema": "media.operation_candidate.local.v1",
+        "operationId": "operation-fixture-submit-live-provider-job",
+        "projectId": "project-test",
+        "artifactClass": "media.provider_job",
+        "operationClass": "submit_live_provider_job",
+        "subjectRef": {
+          "kind": "media-card",
+          "id": "card-test",
+          "schema": "media.card.v1"
+        },
+        "scopeDelta": "external_provider_call",
+        "riskTier": "high",
+        "reversibility": "irreversible_cost",
+        "authorityBoundary": "external_provider",
+        "evidenceRequirement": "operator_decision_required",
+        "requestedBy": "fixture-operator",
+        "sourceRefs": [
+          {
+            "kind": "media-card",
+            "id": "card-test",
+            "schema": "media.card.v1"
+          }
+        ],
+        "createdAt": "2026-05-19T00:00:00.000Z",
+        "localTruthLabel": "local draft",
+        "truthStatus": "not mesh truth; not distributed proof; not ratified shared state",
+        "localOnly": true,
+        "meshTruth": false,
+        "distributedProof": false,
+        "ratifiedSharedState": false
+      }
+    },
+    {
+      "caseId": "accept-with-review-evidence",
+      "expected": {
+        "resolutionMode": "auto_prepare",
+        "deliveryMode": "log_only"
+      },
+      "candidate": {
+        "schema": "media.operation_candidate.local.v1",
+        "operationId": "operation-fixture-accept-with-review-evidence",
+        "projectId": "project-test",
+        "artifactClass": "media.review",
+        "operationClass": "move_candidate_to_accepted",
+        "subjectRef": {
+          "kind": "media-asset",
+          "id": "asset-test",
+          "schema": "media.asset.descriptor.v1"
+        },
+        "scopeDelta": "local_file_change",
+        "riskTier": "medium",
+        "reversibility": "partially_reversible",
+        "authorityBoundary": "local_project",
+        "evidenceRequirement": "review_evidence_required",
+        "requestedBy": "fixture-operator",
+        "sourceRefs": [
+          {
+            "kind": "media-evidence",
+            "id": "review-evidence-test",
+            "schema": "media.evidence.v1"
+          }
+        ],
+        "createdAt": "2026-05-19T00:00:00.000Z",
+        "localTruthLabel": "local draft",
+        "truthStatus": "not mesh truth; not distributed proof; not ratified shared state",
+        "localOnly": true,
+        "meshTruth": false,
+        "distributedProof": false,
+        "ratifiedSharedState": false
+      }
+    },
+    {
+      "caseId": "accept-without-review-evidence",
+      "expected": {
+        "resolutionMode": "ask_operator",
+        "deliveryMode": "inbox"
+      },
+      "candidate": {
+        "schema": "media.operation_candidate.local.v1",
+        "operationId": "operation-fixture-accept-without-review-evidence",
+        "projectId": "project-test",
+        "artifactClass": "media.review",
+        "operationClass": "move_candidate_to_accepted",
+        "subjectRef": {
+          "kind": "media-asset",
+          "id": "asset-test",
+          "schema": "media.asset.descriptor.v1"
+        },
+        "scopeDelta": "local_file_change",
+        "riskTier": "medium",
+        "reversibility": "partially_reversible",
+        "authorityBoundary": "local_project",
+        "evidenceRequirement": "review_evidence_required",
+        "requestedBy": "fixture-operator",
+        "sourceRefs": [],
+        "createdAt": "2026-05-19T00:00:00.000Z",
+        "localTruthLabel": "local draft",
+        "truthStatus": "not mesh truth; not distributed proof; not ratified shared state",
+        "localOnly": true,
+        "meshTruth": false,
+        "distributedProof": false,
+        "ratifiedSharedState": false
+      }
+    },
+    {
+      "caseId": "delete-local-media",
+      "expected": {
+        "resolutionMode": "forbid",
+        "deliveryMode": "urgent"
+      },
+      "candidate": {
+        "schema": "media.operation_candidate.local.v1",
+        "operationId": "operation-fixture-delete-local-media",
+        "projectId": "project-test",
+        "artifactClass": "media.local_file",
+        "operationClass": "delete_local_media",
+        "subjectRef": {
+          "kind": "local-media-file",
+          "id": "media/accepted/candidate.txt",
+          "schema": "media.local_ref.v1"
+        },
+        "scopeDelta": "local_file_change",
+        "riskTier": "critical",
+        "reversibility": "irreversible",
+        "authorityBoundary": "local_project",
+        "evidenceRequirement": "backup_or_materialization_required",
+        "requestedBy": "fixture-operator",
+        "sourceRefs": [],
+        "createdAt": "2026-05-19T00:00:00.000Z",
+        "localTruthLabel": "local draft",
+        "truthStatus": "not mesh truth; not distributed proof; not ratified shared state",
+        "localOnly": true,
+        "meshTruth": false,
+        "distributedProof": false,
+        "ratifiedSharedState": false
+      }
+    },
+    {
+      "caseId": "propose-byte-descriptor",
+      "expected": {
+        "resolutionMode": "auto_prepare",
+        "deliveryMode": "log_only"
+      },
+      "candidate": {
+        "schema": "media.operation_candidate.local.v1",
+        "operationId": "operation-fixture-propose-byte-descriptor",
+        "projectId": "project-test",
+        "artifactClass": "media.byte_descriptor_proposal",
+        "operationClass": "propose_byte_descriptor",
+        "subjectRef": {
+          "kind": "media-asset",
+          "id": "asset-test",
+          "schema": "media.asset.descriptor.v1"
+        },
+        "scopeDelta": "byte_reference_candidate",
+        "riskTier": "low",
+        "reversibility": "reversible",
+        "authorityBoundary": "bytes_boundary",
+        "evidenceRequirement": "byte_descriptor_required",
+        "requestedBy": "fixture-operator",
+        "sourceRefs": [
+          {
+            "kind": "media-asset",
+            "id": "asset-test",
+            "schema": "media.asset.descriptor.v1"
+          }
+        ],
+        "createdAt": "2026-05-19T00:00:00.000Z",
+        "localTruthLabel": "local draft",
+        "truthStatus": "not mesh truth; not distributed proof; not ratified shared state",
+        "localOnly": true,
+        "meshTruth": false,
+        "distributedProof": false,
+        "ratifiedSharedState": false
+      }
+    },
+    {
+      "caseId": "prepare-export",
+      "expected": {
+        "resolutionMode": "ask_operator",
+        "deliveryMode": "inbox"
+      },
+      "candidate": {
+        "schema": "media.operation_candidate.local.v1",
+        "operationId": "operation-fixture-prepare-export",
+        "projectId": "project-test",
+        "artifactClass": "media.export",
+        "operationClass": "prepare_export",
+        "subjectRef": {
+          "kind": "media-export",
+          "id": "export-test",
+          "schema": "media.local_ref.v1"
+        },
+        "scopeDelta": "export_artifact",
+        "riskTier": "high",
+        "reversibility": "partially_reversible",
+        "authorityBoundary": "operator_boundary",
+        "evidenceRequirement": "operator_decision_required",
+        "requestedBy": "fixture-operator",
+        "sourceRefs": [],
+        "createdAt": "2026-05-19T00:00:00.000Z",
+        "localTruthLabel": "local draft",
+        "truthStatus": "not mesh truth; not distributed proof; not ratified shared state",
+        "localOnly": true,
+        "meshTruth": false,
+        "distributedProof": false,
+        "ratifiedSharedState": false
+      }
+    },
+    {
+      "caseId": "generate-proxy",
+      "expected": {
+        "resolutionMode": "auto_prepare",
+        "deliveryMode": "log_only"
+      },
+      "candidate": {
+        "schema": "media.operation_candidate.local.v1",
+        "operationId": "operation-fixture-generate-proxy",
+        "projectId": "project-test",
+        "artifactClass": "media.asset",
+        "operationClass": "generate_proxy",
+        "subjectRef": {
+          "kind": "media-asset",
+          "id": "asset-test",
+          "schema": "media.asset.descriptor.v1"
+        },
+        "scopeDelta": "local_file_change",
+        "riskTier": "low",
+        "reversibility": "reversible",
+        "authorityBoundary": "local_project",
+        "evidenceRequirement": "none",
+        "requestedBy": "fixture-operator",
+        "sourceRefs": [
+          {
+            "kind": "media-asset",
+            "id": "asset-test",
+            "schema": "media.asset.descriptor.v1"
+          }
+        ],
+        "createdAt": "2026-05-19T00:00:00.000Z",
+        "localTruthLabel": "local draft",
+        "truthStatus": "not mesh truth; not distributed proof; not ratified shared state",
+        "localOnly": true,
+        "meshTruth": false,
+        "distributedProof": false,
+        "ratifiedSharedState": false
+      }
+    }
+  ]
+}

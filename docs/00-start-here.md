@@ -41,6 +41,7 @@ Read in this order:
 33. [Comprehensive State](37-comprehensive-state.md)
 34. [Repo Family Alignment](38-repo-family-alignment.md)
 35. [Operation Candidate And Rule Resolution](39-operation-candidate-and-rule-resolution.md)
+36. [Edge Mediation Handoff Semantics](40-edge-mediation-handoff-semantics.md)
 
 The first executable path is:
 
@@ -137,6 +138,9 @@ npm run operator:index -- --project-dir examples/card-to-candidate
 npm run handoff:edge -- --project-dir examples/card-to-candidate
 npm run operator:decision-request -- --project-dir examples/card-to-candidate
 ```
+
+For the command-level meaning of local mediation traces in handoff surfaces,
+read [Edge Mediation Handoff Semantics](40-edge-mediation-handoff-semantics.md).
 
 Phase 2 hardened the local wedge with a local run manifest, artifact-kind
 registry, and modest malformed-record checks. Phase 3 defines the local project

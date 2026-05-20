@@ -470,6 +470,28 @@ test('provider shape fixtures validate locally', async () => {
   }
 })
 
+test('committed operation candidate fixture catalog matches resolver behavior', async () => {
+  const catalog = JSON.parse(await readFile('examples/operation-candidates/catalog.local.json', 'utf8'))
+
+  assert.equal(catalog.localOnly, true)
+  assert.equal(catalog.meshTruth, false)
+  assert.ok(catalog.cases.length >= 8)
+
+  for (const item of catalog.cases) {
+    assert.equal(validateRequiredRecord(item.candidate), true)
+    const trace = resolveMediaOperationCandidate(item.candidate, {
+      createdAt: catalog.createdAt
+    })
+
+    assert.equal(trace.resolutionMode, item.expected.resolutionMode, item.caseId)
+    assert.equal(trace.deliveryMode, item.expected.deliveryMode, item.caseId)
+    assert.equal(trace.executionPerformed, false)
+    assert.equal(trace.edgeCalled, false)
+    assert.equal(trace.meshPublished, false)
+    assert.equal(validateRequiredRecord(trace), true)
+  }
+})
+
 test('Venice dry-run adapter maps Studio request to provider payload without network', async () => {
   const card = {
     schema: 'media.card.v1',
@@ -1226,6 +1248,9 @@ test('project status flags unresolved byte and resource coverage', async () => {
   assert.equal(result.status.assetResourceConsistency.warningCount, 2)
   assert.equal(result.status.assetResourceConsistency.missingByteDescriptorProposalAssetIds.length, 1)
   assert.equal(result.status.assetResourceConsistency.missingResourceRefCandidateAssetIds.length, 1)
+  assert.equal(result.status.assetResourceConsistency.assetExplanations.length, 1)
+  assert.equal(result.status.assetResourceConsistency.assetExplanations[0].state, 'needs-local-attention')
+  assert.ok(result.status.assetResourceConsistency.assetExplanations[0].reasons.includes('missing byte descriptor proposal'))
   assert.ok(result.status.warnings.some((warning) => warning.includes('missing byte proposals')))
   assert.equal(validateRequiredRecord(result.status), true)
 })
@@ -1274,6 +1299,7 @@ test('project health combines status readiness and production validation', async
   assert.equal(result.health.schema, 'media.project_health.local.v1')
   assert.equal(result.health.healthState, 'ready-for-local-inspection')
   assert.equal(result.health.assetResourceConsistency.readyForEdgeInspection, true)
+  assert.equal(result.health.assetResourceConsistency.assetExplanations[0].state, 'ready-for-local-inspection')
   assert.equal(result.health.productionValidation.valid, true)
   assert.equal(result.health.meshTruth, false)
   assert.equal(result.health.edgeRuntimeVerified, false)
@@ -1556,6 +1582,43 @@ test('cross-project operator index summarizes explicit local project inputs', as
   assert.equal(result.index.meshTruth, false)
   assert.equal(result.index.edgeRuntimeVerified, false)
   assert.equal(validateRequiredRecord(inputList), true)
+  assert.equal(validateRequiredRecord(result.index), true)
+})
+
+test('cross-project operator index reports missing artifact refs without failing scan', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({ projectDir: dir })
+  await writeEdgeReadinessGuidance({ projectDir: dir })
+  await inspectLocalRun({ projectDir: dir })
+  await writeProjectStatus({ projectDir: dir })
+  await writeProjectHealth({ projectDir: dir })
+  await writeControlSurfaceProjection({ projectDir: dir })
+  await writeEdgeCompatibilityBundle({ projectDir: dir })
+  await writeOperatorPacketIndex({ projectDir: dir })
+  await writeEdgeHandoffCandidate({ projectDir: dir })
+  await writeOperatorDecisionRequest({ projectDir: dir })
+  await rm(path.join(dir, 'records', 'requests', 'media-operator-decision-request.local.json'))
+
+  const baseDir = '/'
+  const indexRoot = await mkdtemp(path.join(os.tmpdir(), 'media-studio-cross-project-missing-'))
+  const inputListPath = path.join(indexRoot, 'input-list.local.json')
+  const outputPath = path.join(indexRoot, 'cross-project-index.local.json')
+  const inputList = createCrossProjectInputList([
+    { projectId: 'missing-request-project', rootPath: slash(path.relative(baseDir, dir)) }
+  ])
+  await writeFile(inputListPath, `${JSON.stringify(inputList, null, 2)}\n`)
+
+  const result = await writeCrossProjectOperatorIndex({
+    baseDir,
+    inputList: slash(path.relative(baseDir, inputListPath)),
+    output: slash(path.relative(baseDir, outputPath))
+  })
+
+  assert.equal(result.index.summary.projects, 1)
+  assert.equal(result.index.summary.missingArtifacts, 1)
+  assert.equal(result.index.projectSummaries[0].missingArtifactRefs.length, 1)
+  assert.equal(result.index.projectSummaries[0].missingArtifactRefs[0].name, 'operatorDecisionRequest')
+  assert.match(result.index.projectSummaries[0].warnings[0], /media-operator-decision-request/)
   assert.equal(validateRequiredRecord(result.index), true)
 })
 

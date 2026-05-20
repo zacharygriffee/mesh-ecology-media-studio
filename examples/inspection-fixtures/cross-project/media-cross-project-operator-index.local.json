@@ -80,6 +80,7 @@
         "Run npm run bytes:proposal and npm run resource:refs, then regenerate readiness and health."
       ],
       "warnings": [],
+      "missingArtifactRefs": [],
       "operatorGuidanceOnly": true,
       "localOnly": true,
       "meshTruth": false,
@@ -134,6 +135,7 @@
         "Run npm run bytes:proposal and npm run resource:refs, then regenerate readiness and health."
       ],
       "warnings": [],
+      "missingArtifactRefs": [],
       "operatorGuidanceOnly": true,
       "localOnly": true,
       "meshTruth": false,
@@ -186,6 +188,7 @@
         "Regenerate or update production descriptors after production-unit changes."
       ],
       "warnings": [],
+      "missingArtifactRefs": [],
       "operatorGuidanceOnly": true,
       "localOnly": true,
       "meshTruth": false,

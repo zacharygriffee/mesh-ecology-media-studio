@@ -137,12 +137,21 @@ async function summarizeProject(root, projectInput) {
   const refs = {}
   const loaded = {}
   const warnings = []
+  const missingArtifactRefs = []
 
   for (const [name, ref] of Object.entries(projectInput.artifactRefs)) {
     const record = await readOptionalRecord(projectRoot, ref.path)
 
     if (!record) {
-      warnings.push(`Missing artifact ref: ${name}`)
+      warnings.push(`Missing artifact ref: ${name} at ${ref.path}`)
+      missingArtifactRefs.push({
+        name,
+        expectedRef: localRef(ref.kind, ref.id, ref.schema, path.posix.join(projectInput.rootRef.path, ref.path)),
+        localOnly: true,
+        meshTruth: false,
+        distributedProof: false,
+        ratifiedSharedState: false
+      })
       continue
     }
 
@@ -171,6 +180,7 @@ async function summarizeProject(root, projectInput) {
     blockingIssues,
     nextActions,
     warnings,
+    missingArtifactRefs,
     operatorGuidanceOnly: true,
     localOnly: true,
     meshTruth: false,
