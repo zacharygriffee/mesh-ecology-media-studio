@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "media.derivative.local.v1",
+  "title": "Media Derivative Local",
+  "type": "object",
+  "required": [
+    "schema",
+    "derivativeId",
+    "projectId",
+    "derivativeKind",
+    "sourceAssetRef",
+    "sourceContentRef",
+    "sourceLocalRef",
+    "derivativeLocalRef",
+    "toolRef",
+    "status",
+    "createdAt",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "byteAvailabilityProof",
+    "materializationProof",
+    "resourceAdmission",
+    "localTruthLabel",
+    "truthStatus"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.derivative.local.v1"
+    },
+    "derivativeId": {
+      "type": "string"
+    },
+    "projectId": {
+      "type": "string"
+    },
+    "derivativeKind": {
+      "enum": [
+        "thumbnail"
+      ]
+    },
+    "status": {
+      "const": "ready-for-local-inspection"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    },
+    "byteAvailabilityProof": {
+      "const": false
+    },
+    "materializationProof": {
+      "const": false
+    },
+    "resourceAdmission": {
+      "const": false
+    }
+  },
+  "additionalProperties": true
+}

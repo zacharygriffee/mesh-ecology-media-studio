@@ -38,6 +38,7 @@
     "resource:refs": "node src/local/resource-ref-candidates.js",
     "repair:local-posture": "node src/local/repair-local-posture.js",
     "media:import": "node src/assets/import-media.js",
+    "derivatives:thumbnail": "node src/assets/generate-thumbnails.js",
     "reference:ingest": "node src/assets/ingest-reference.js",
     "fixture:inspection": "node src/local/generate-inspection-fixture.js",
     "fixture:inspection:check": "node src/local/generate-inspection-fixture.js --check",
@@ -49,5 +50,8 @@
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com:zacharygriffee/mesh-ecology-media-studio.git"
+  },
+  "dependencies": {
+    "sharp": "^0.33.5"
   }
 }

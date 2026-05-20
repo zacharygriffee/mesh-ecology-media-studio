@@ -30,7 +30,12 @@ Edge approval.
 `npm run media:import` imports safe project-relative media into `media/source`,
 `media/generated`, or `media/references`, writes an asset descriptor with local
 metadata probe posture, and exposes derivative readiness guidance for missing
-thumbnails, proxies, or waveforms. It does not generate those derivatives.
+thumbnails, proxies, or waveforms.
+
+`npm run derivatives:thumbnail` uses `sharp` to generate local PNG thumbnails
+for image descriptors and writes `media.derivative.local.v1` receipts. These
+receipts clear thumbnail readiness for the matching descriptor/situation/
+placement only. Proxy and waveform generation remain deferred.
 
 ## Broad Vector
 

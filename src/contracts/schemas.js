@@ -61,6 +61,7 @@ export const schemaFiles = {
   'media.edge_export_bundle.local.v1': 'schemas/media-edge-export-bundle-local.schema.json',
   'media.provider_run_ledger.local.v1': 'schemas/media-provider-run-ledger-local.schema.json',
   'media.reference_ingest.local.v1': 'schemas/media-reference-ingest-local.schema.json',
+  'media.derivative.local.v1': 'schemas/media-derivative-local.schema.json',
   'media.candidate_review.local.v1': 'schemas/media-candidate-review-local.schema.json',
   'media.project_status.local.v1': 'schemas/media-project-status-local.schema.json',
   'media.project_health.local.v1': 'schemas/media-project-health-local.schema.json',
@@ -462,6 +463,28 @@ export const requiredFields = {
     'providerTruth',
     'byteAvailabilityProof',
     'materializationProof',
+    'localTruthLabel',
+    'truthStatus'
+  ],
+  'media.derivative.local.v1': [
+    'schema',
+    'derivativeId',
+    'projectId',
+    'derivativeKind',
+    'sourceAssetRef',
+    'sourceContentRef',
+    'sourceLocalRef',
+    'derivativeLocalRef',
+    'toolRef',
+    'status',
+    'createdAt',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'byteAvailabilityProof',
+    'materializationProof',
+    'resourceAdmission',
     'localTruthLabel',
     'truthStatus'
   ],
@@ -1000,6 +1023,7 @@ const idFields = {
   [artifactKinds.mediaEdgeExportBundleLocal]: 'bundleId',
   [artifactKinds.mediaProviderRunLedgerLocal]: 'ledgerId',
   [artifactKinds.mediaReferenceIngestLocal]: 'ingestId',
+  [artifactKinds.mediaDerivativeLocal]: 'derivativeId',
   [artifactKinds.mediaCandidateReviewLocal]: 'candidateReviewId',
   [artifactKinds.mediaProjectStatusLocal]: 'statusId',
   [artifactKinds.mediaProjectHealthLocal]: 'healthId',
@@ -1035,6 +1059,7 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaGenerationRequest,
   artifactKinds.mediaProviderRunLedgerLocal,
   artifactKinds.mediaReferenceIngestLocal,
+  artifactKinds.mediaDerivativeLocal,
   artifactKinds.mediaCandidateReviewLocal,
   artifactKinds.mediaProjectStatusLocal,
   artifactKinds.mediaProjectHealthLocal,
@@ -1072,6 +1097,7 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaEdgeExportBundleLocal,
   artifactKinds.mediaProviderRunLedgerLocal,
   artifactKinds.mediaReferenceIngestLocal,
+  artifactKinds.mediaDerivativeLocal,
   artifactKinds.mediaCandidateReviewLocal,
   artifactKinds.mediaProjectStatusLocal,
   artifactKinds.mediaProjectHealthLocal,
@@ -1465,6 +1491,38 @@ export function validateRecordShape(record, schemaId = record.schema) {
     validateLocalFalseFlags(record, schemaId)
 
     for (const flag of ['providerTruth', 'byteAvailabilityProof', 'materializationProof']) {
+      if (record[flag] !== false) {
+        throw new Error(`Record ${schemaId} must set ${flag}=false`)
+      }
+    }
+  }
+
+  if (schemaId === artifactKinds.mediaDerivativeLocal) {
+    validateRef(record.sourceAssetRef, `${schemaId}.sourceAssetRef`)
+    validateRef(record.sourceContentRef, `${schemaId}.sourceContentRef`)
+
+    if (record.derivativeKind !== 'thumbnail') {
+      throw new Error(`Record ${schemaId} has invalid derivativeKind: ${record.derivativeKind}`)
+    }
+
+    if (record.status !== 'ready-for-local-inspection') {
+      throw new Error(`Record ${schemaId} must set status=ready-for-local-inspection`)
+    }
+
+    for (const localRefField of ['sourceLocalRef', 'derivativeLocalRef']) {
+      if (!record[localRefField] || typeof record[localRefField] !== 'object') {
+        throw new Error(`Record ${schemaId} must include ${localRefField}`)
+      }
+      assertSafeLocalPath(record[localRefField].path)
+    }
+
+    if (!record.toolRef || record.toolRef.tool !== 'sharp') {
+      throw new Error(`Record ${schemaId} must include sharp toolRef`)
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+
+    for (const flag of ['byteAvailabilityProof', 'materializationProof', 'resourceAdmission']) {
       if (record[flag] !== false) {
         throw new Error(`Record ${schemaId} must set ${flag}=false`)
       }

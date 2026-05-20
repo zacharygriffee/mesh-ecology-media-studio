@@ -116,8 +116,14 @@ npm run media:import -- --project-dir examples/card-to-candidate --source media/
 ```
 
 `media:import` writes a local asset descriptor with metadata probe posture and
-derivative readiness guidance. It does not generate thumbnails, proxies, or
-waveforms.
+derivative readiness guidance. Image thumbnails are generated explicitly:
+
+```bash
+npm run derivatives:thumbnail -- --project-dir examples/card-to-candidate
+```
+
+Thumbnail receipts remain local-only. Proxy and waveform generation remain
+deferred.
 
 Record a local candidate comparison and project status snapshot with:
 

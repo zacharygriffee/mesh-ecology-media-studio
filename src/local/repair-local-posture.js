@@ -122,7 +122,7 @@ export async function repairLocalPosture({
     skipped.push({
       issueCode,
       reason: derivativeGuidance
-        ? 'Derivative readiness is guidance-only; derivative generation is not implemented.'
+        ? 'Derivative readiness is guidance-only for repair; use derivative commands where available.'
         : 'No safe local posture repair is defined for this issue.',
       nonBlocking: derivativeGuidance,
       localOnly: true

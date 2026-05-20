@@ -10,6 +10,7 @@ import { promoteCandidate } from '../src/local/promote-candidate.js'
 import { readLocalImageMetadata } from '../src/assets/image-metadata.js'
 import { ingestReferenceAsset } from '../src/assets/ingest-reference.js'
 import { importMediaAsset } from '../src/assets/import-media.js'
+import { generateThumbnailDerivatives } from '../src/assets/generate-thumbnails.js'
 import {
   derivativeIssueCodesForContentType,
   normalizeFfprobeProbeResult,
@@ -1120,6 +1121,46 @@ test('committed tiny PNG media import fixture stays deterministic', async () => 
   assert.equal(status.status.mediaDerivativeReadiness.assetExplanations[0].path, 'media/source/tiny-source.png')
   assert.equal(status.status.mediaDerivativeReadiness.assetExplanations[0].nonClaims.byteAvailabilityProof, false)
   assert.equal(status.status.mediaDerivativeReadiness.assetExplanations[0].nonClaims.materializationProof, false)
+})
+
+test('thumbnail derivative generation clears image thumbnail readiness locally', async () => {
+  const dir = await createFixtureProject()
+  await writeFile(
+    path.join(dir, 'media', 'generated', 'pixel.png'),
+    Buffer.from(onePixelPngBase64, 'base64')
+  )
+
+  await importMediaAsset({
+    projectDir: dir,
+    source: 'media/generated/pixel.png',
+    placement: 'source',
+    filename: 'source-pixel.png',
+    operatorRef: 'operator-test',
+    ffprobe: false
+  })
+  const before = await writeProjectStatus({ projectDir: dir, quiet: true })
+  const result = await generateThumbnailDerivatives({ projectDir: dir, maxSize: 64 })
+  const after = await writeProjectStatus({ projectDir: dir, quiet: true })
+  const derivative = result.generated[0]
+  const thumbnailBytes = await readFile(path.join(dir, derivative.derivativeLocalRef.path))
+
+  assert.equal(before.status.mediaDerivativeReadiness.attentionAssets, 1)
+  assert.equal(result.generated.length, 1)
+  assert.equal(derivative.schema, 'media.derivative.local.v1')
+  assert.equal(derivative.derivativeKind, 'thumbnail')
+  assert.equal(derivative.toolRef.tool, 'sharp')
+  assert.equal(derivative.output.width, 1)
+  assert.equal(derivative.output.height, 1)
+  assert.equal(derivative.derivativeLocalRef.path.startsWith('media/thumbnails/thumbnail-'), true)
+  assert.equal(thumbnailBytes.length, derivative.output.bytes)
+  assert.equal(derivative.byteAvailabilityProof, false)
+  assert.equal(derivative.materializationProof, false)
+  assert.equal(validateRequiredRecord(derivative), true)
+  assert.equal(after.status.mediaDerivativeReadiness.readyAssets, 1)
+  assert.equal(after.status.mediaDerivativeReadiness.attentionAssets, 0)
+  assert.deepEqual(after.status.mediaDerivativeReadiness.assetExplanations[0].issueCodes, [])
+  assert.equal(after.status.mediaDerivativeReadiness.assetExplanations[0].derivativeRefs.length, 1)
+  assert.equal(after.status.mediaDerivativeReadiness.assetExplanations[0].nonClaims.materializationProof, false)
 })
 
 test('ffprobe posture normalizes unavailable failed and available results without real video', async () => {

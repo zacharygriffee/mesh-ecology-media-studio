@@ -331,13 +331,18 @@ function summarizeMediaDerivativeReadiness(records) {
   const derivativeAssets = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaAssetDescriptor)
     .filter((entry) => entry.record.derivativeReadiness?.evaluate === true)
-  const assetExplanations = derivativeAssets.map((entry) => derivativeHealthExplanation(entry))
+  const derivativeRecords = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaDerivativeLocal)
+    .map((entry) => entry.record)
+  const derivativeIndex = indexDerivativesBySubject(derivativeRecords)
+  const assetExplanations = derivativeAssets.map((entry) => derivativeHealthExplanation(entry, derivativeIndex))
   const attention = assetExplanations.filter((entry) => entry.state !== 'ready-for-local-inspection')
 
   return {
     evaluatedAssets: derivativeAssets.length,
     readyAssets: assetExplanations.length - attention.length,
     attentionAssets: attention.length,
+    derivativeRecords: derivativeRecords.length,
     issueCodes: Array.from(new Set(attention.flatMap((entry) => entry.issueCodes))).sort(),
     assetExplanations,
     localOnly: true,
@@ -352,9 +357,22 @@ function summarizeMediaDerivativeReadiness(records) {
   }
 }
 
-function derivativeHealthExplanation(entry) {
+function derivativeHealthExplanation(entry, derivativeIndex) {
   const readiness = entry.record.derivativeReadiness ?? {}
-  const issueCodes = Array.isArray(readiness.issueCodes) ? readiness.issueCodes : []
+  const originalIssueCodes = Array.isArray(readiness.issueCodes) ? readiness.issueCodes : []
+  const derivativeRefs = []
+  const issueCodes = originalIssueCodes.filter((code) => {
+    const derivativeKind = derivativeKindForIssue(code)
+    if (!derivativeKind) return true
+    const derivative = derivativeIndex.get(derivativeSubjectKeyForAsset(entry.record, derivativeKind))
+    if (!derivative) return true
+    derivativeRefs.push({
+      ...makeRef('media-derivative', derivative.derivativeId, derivative.schema),
+      path: derivative.derivativeLocalRef?.path,
+      localOnly: true
+    })
+    return false
+  })
   const pathRef = entry.record.localRef?.path ?? entry.path
   const state = issueCodes.length === 0 ? 'ready-for-local-inspection' : 'needs-local-attention'
 
@@ -369,6 +387,7 @@ function derivativeHealthExplanation(entry) {
     mediaKind: readiness.mediaKind ?? entry.record.metadataProbe?.mediaKind ?? 'unknown',
     metadataProbeState: readiness.metadataProbeState ?? entry.record.metadataProbe?.metadataProbeState ?? 'unknown',
     requiredDerivativeKinds: readiness.requiredDerivativeKinds ?? [],
+    derivativeRefs,
     state,
     healthState: state,
     issueCodes,
@@ -384,7 +403,8 @@ function derivativeHealthExplanation(entry) {
         ...makeRef('media-asset-descriptor', entry.record.assetId, entry.record.schema),
         path: entry.path,
         localOnly: true
-      }
+      },
+      ...derivativeRefs
     ],
     nonClaims: healthNonClaims({
       resourceAdmission: false,
@@ -404,6 +424,45 @@ function derivativeHealthExplanation(entry) {
   }
 }
 
+function derivativeKindForIssue(code) {
+  if (code === 'missing_thumbnail') return 'thumbnail'
+  return undefined
+}
+
+function indexDerivativesBySubject(records) {
+  const index = new Map()
+
+  for (const record of records) {
+    if (record.status !== 'ready-for-local-inspection') continue
+    const key = derivativeSubjectKeyForRecord(record)
+    if (key && !index.has(key)) index.set(key, record)
+  }
+
+  return index
+}
+
+function derivativeSubjectKeyForAsset(asset, derivativeKind) {
+  return [
+    derivativeKind,
+    contentIdForRecord(asset),
+    asset.assetDescriptorRef?.id ?? asset.assetId,
+    asset.situationRef?.id ?? 'missing-situation',
+    asset.placementRef?.id ?? 'missing-placement',
+    asset.localRef?.path ?? 'missing-path'
+  ].join('|')
+}
+
+function derivativeSubjectKeyForRecord(record) {
+  return [
+    record.derivativeKind,
+    record.sourceContentRef?.id,
+    record.sourceAssetDescriptorRef?.id ?? record.sourceAssetRef?.id,
+    record.sourceSituationRef?.id ?? 'missing-situation',
+    record.sourcePlacementRef?.id ?? 'missing-placement',
+    record.sourceLocalRef?.path ?? 'missing-path'
+  ].join('|')
+}
+
 function derivativeReason(code) {
   if (code === 'missing_thumbnail') return 'missing thumbnail derivative'
   if (code === 'missing_proxy') return 'missing proxy derivative'
@@ -420,7 +479,10 @@ function nextDerivativeAction(issueCodes) {
   if (issueCodes.includes('metadata_probe_unavailable')) {
     return 'Install or repair local metadata tools before derivative preparation.'
   }
-  if (issueCodes.some((code) => ['missing_thumbnail', 'missing_proxy', 'missing_waveform'].includes(code))) {
+  if (issueCodes.includes('missing_thumbnail')) {
+    return 'Run npm run derivatives:thumbnail for image thumbnails.'
+  }
+  if (issueCodes.some((code) => ['missing_proxy', 'missing_waveform'].includes(code))) {
     return 'Prepare local derivatives when derivative generation exists.'
   }
   return 'No local derivative readiness action needed.'
@@ -750,6 +812,7 @@ function countRecords(records) {
     approvalProposals: bySchema(artifactKinds.mediaApprovalProposalLocal),
     byteDescriptorProposals: bySchema(artifactKinds.mediaByteDescriptorProposalLocal),
     resourceRefCandidates: bySchema(artifactKinds.mediaLocalLayerResourceRefCandidateLocal),
+    derivatives: bySchema(artifactKinds.mediaDerivativeLocal),
     decisions: bySchema(artifactKinds.mediaOperatorDecision),
     manifests: bySchema(artifactKinds.mediaLocalRunManifest),
     inspectionPackets: bySchema(artifactKinds.mediaEdgeInspectionPacketLocal),

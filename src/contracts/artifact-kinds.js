@@ -26,6 +26,7 @@ export const artifactKinds = Object.freeze({
   mediaEdgeExportBundleLocal: 'media.edge_export_bundle.local.v1',
   mediaProviderRunLedgerLocal: 'media.provider_run_ledger.local.v1',
   mediaReferenceIngestLocal: 'media.reference_ingest.local.v1',
+  mediaDerivativeLocal: 'media.derivative.local.v1',
   mediaCandidateReviewLocal: 'media.candidate_review.local.v1',
   mediaProjectStatusLocal: 'media.project_status.local.v1',
   mediaProjectHealthLocal: 'media.project_health.local.v1',

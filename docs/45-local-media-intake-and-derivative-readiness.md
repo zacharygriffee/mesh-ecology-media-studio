@@ -6,8 +6,8 @@ Studio can import project-local media files into the Mode 0 project layout and
 make derivative readiness visible to operators.
 
 This is an operational local-media slice. It does not add provider APIs, Edge
-runtime calls, storage backends, virtual drives, causal adapters, or active
-derivative generation.
+runtime calls, storage backends, virtual drives, causal adapters, proxy
+generation, waveform generation, or video derivative generation.
 
 ## Command
 
@@ -62,6 +62,23 @@ resource identity in new behavior.
 PNG imports may also write `media.image_metadata.local.v1` when dimensions can
 be probed by the existing lightweight PNG reader.
 
+## Thumbnail Generation
+
+Image thumbnail generation is explicit and local:
+
+```bash
+npm run derivatives:thumbnail -- --project-dir examples/media-import-fixtures/tiny-png
+```
+
+The command uses `sharp` to write PNG thumbnails under `media/thumbnails/` and
+records `media.derivative.local.v1` receipts under `records/assets/`. The
+receipt lets status and health summaries clear `missing_thumbnail` for that
+specific descriptor/situation/placement when the derivative is current.
+
+This is still local derivative work. A generated thumbnail is not byte
+availability proof, materialization proof, resource admission, publication
+authorization, or mesh truth.
+
 ## Metadata Posture
 
 Imported descriptors carry a descriptor-level `metadataProbe` object with:
@@ -112,11 +129,12 @@ npm run health:summary -- --project-dir examples/card-to-candidate
 Example row shape:
 
 ```text
-media-asset-derivative-readiness: media/source/source-pixel.png | state=needs-local-attention | issues=missing_thumbnail | nextAction=Prepare local derivatives when derivative generation exists.
+media-asset-derivative-readiness: media/source/source-pixel.png | state=needs-local-attention | issues=missing_thumbnail | nextAction=Run npm run derivatives:thumbnail for image thumbnails.
 ```
 
 `repair:local-posture` treats derivative readiness issues as non-blocking
-skips until a derivative generator exists.
+skips. Thumbnail generation is handled by `npm run derivatives:thumbnail`;
+proxy and waveform generation remain deferred.
 
 ## Non-Claims
 
@@ -139,9 +157,9 @@ Edge approval
 
 Deferred deliberately:
 
-- thumbnail generation
 - proxy generation
 - waveform generation
+- video thumbnail generation
 - media preview UI
 - provider expansion
 - storage backend

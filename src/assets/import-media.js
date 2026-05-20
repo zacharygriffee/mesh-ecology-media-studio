@@ -331,7 +331,9 @@ function nextDerivativeAction(issueCodes) {
     return 'Install or repair local metadata tools before derivative preparation.'
   }
   if (issueCodes.some((code) => ['missing_thumbnail', 'missing_proxy', 'missing_waveform'].includes(code))) {
-    return 'Prepare local derivatives when derivative generation exists.'
+    return issueCodes.includes('missing_thumbnail')
+      ? 'Run npm run derivatives:thumbnail for image thumbnails.'
+      : 'Prepare local derivatives when derivative generation exists.'
   }
   return 'No local derivative readiness action needed.'
 }
