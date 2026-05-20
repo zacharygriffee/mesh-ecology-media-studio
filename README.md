@@ -353,3 +353,4 @@ identity.
 - [docs/34-json-exit-and-resolvability-posture.md](docs/34-json-exit-and-resolvability-posture.md)
 - [docs/35-operator-packet-index-and-handoff.md](docs/35-operator-packet-index-and-handoff.md)
 - [docs/36-cross-project-inspection-index.md](docs/36-cross-project-inspection-index.md)
+- [docs/37-comprehensive-state.md](docs/37-comprehensive-state.md)

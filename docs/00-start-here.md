@@ -38,6 +38,7 @@ Read in this order:
 30. [JSON Exit And Resolvability Posture](34-json-exit-and-resolvability-posture.md)
 31. [Operator Packet Index And Handoff](35-operator-packet-index-and-handoff.md)
 32. [Cross Project Inspection Index](36-cross-project-inspection-index.md)
+33. [Comprehensive State](37-comprehensive-state.md)
 
 The first executable path is:
 

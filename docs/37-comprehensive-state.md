@@ -1,0 +1,397 @@
+# Comprehensive State
+
+This document captures the current state of `mesh-ecology-media-studio` after
+the local wedge, Edge-inspection hardening, provider-neutral contracts,
+production posture, resource posture, and handoff inspection work.
+
+## Current Repo State
+
+Studio is a Mode 0 usable media-domain repo. It can run local media work from a
+card through candidate ingest, asset descriptor creation, review evidence,
+readiness, and local operator decision. It can also export local inspection
+records that later Edge surfaces may inspect.
+
+The repo is still intentionally not a full studio application. There is no UI,
+no default live provider flow, no Edge runtime call, no mesh publication, no
+active ratifier lane, and no admitted local-layer resource backend.
+
+## Broad Vector
+
+The repo is moving from local media execution toward inspectable local media
+work packets that can later be mediated by Edge and mesh-facing flows.
+
+The vector is:
+
+```text
+local media work
+-> explicit descriptors and evidence
+-> local inspection and health
+-> Edge-readable handoff posture
+-> future local-layer resource admission
+-> future byte references and mesh proposals
+-> future ratified/publication flows
+```
+
+The important constraint is that every step before a real authority lane stays
+honest about being local-only guidance, evidence, cache, receipt, proposal, or
+decision.
+
+## Working Surface
+
+The main local wedge is:
+
+```bash
+npm run wedge:example
+```
+
+That command uses:
+
+```text
+examples/card-to-candidate/cards/card.json
+examples/card-to-candidate/media/generated/candidate.txt
+```
+
+and writes local project records under:
+
+```text
+examples/card-to-candidate/records/
+```
+
+Those generated runtime records remain ignored by git.
+
+## Local Project Layout
+
+The local layout is:
+
+```text
+cards/
+media/
+  source/
+  generated/
+  accepted/
+  rejected/
+  references/
+  proxies/
+  thumbnails/
+  exports/
+records/
+  work-packets/
+  provider-results/
+  assets/
+  evidence/
+  readiness/
+  decisions/
+  manifests/
+  exports/
+  bytes/
+  resources/
+  production/
+  approvals/
+  requests/
+```
+
+Local refs are safe relative refs only. Absolute paths, traversal, home
+expansion, URL refs, and backslash paths are rejected.
+
+## Implemented Record Families
+
+The repo currently defines and validates records for:
+
+- media cards, work packets, and local run manifests
+- local refs, project layout, and asset lifecycle
+- provider-neutral generation requests, profiles, capabilities, and results
+- provider shape registry, mappings, adapter contracts, and failure taxonomy
+- Venice dry-run and gated live-smoke posture
+- asset descriptors, image metadata, reference ingest, and provider run ledger
+- local candidate review, review evidence, readiness, and operator decisions
+- local inspection packets and export bundles
+- project status, project health, and readiness/resource summaries
+- local continuity evidence
+- Packs-aligned control-surface projection
+- Edge compatibility bundles, handoff candidates, packet indexes, and operator
+  decision requests
+- production units, reference primitives, continuity bands, render strategies,
+  and local production descriptors
+- approval proposals
+- byte descriptor proposals
+- local-layer resource-ref candidates
+- cross-project inspection input lists and operator indexes
+
+The artifact registry is kept in:
+
+```text
+docs/artifact-kind-registry.md
+src/contracts/artifact-kinds.js
+```
+
+## Provider State
+
+Provider-specific work is deliberately narrow.
+
+Implemented:
+
+- provider-neutral request/profile/capability/result records
+- provider shape and mapping registry
+- Venice dry-run mapping
+- gated Venice live smoke path
+- provider failure fixture normalization
+- local provider run ledger
+
+Not implemented:
+
+- default live provider execution
+- broad provider adapter set
+- provider secrets in git
+- provider output as Studio authority
+- provider truth
+
+Venice live smoke requires explicit opt-in:
+
+```bash
+VENICE_LIVE=1 npm run provider:venice:smoke
+```
+
+Provider IDs and job IDs remain provenance only.
+
+## Production State
+
+The production model intentionally does not lock Studio into only classic video
+terms. It supports scene/shot/clip as one strategy while leaving room for:
+
+- worlds
+- panoramas
+- entity references
+- look variants
+- audio-first workflows
+- rough cuts
+- exports
+- reference primitives
+- continuity bands
+- render strategies
+
+Current production records are local descriptors and strategy guidance. They
+are not UI contracts, mesh truth, publication authority, or provider requests.
+
+## Resource And Byte State
+
+Studio now has a clear JSON-exit posture:
+
+```text
+device_dependent_scaffold
+-> local_layer_resource_ref candidate
+-> later admitted local-layer resource ref
+-> later replicated pointer ref
+-> later causal-reviewable ref
+```
+
+Current records stop at candidate posture.
+
+`media.byte_descriptor_proposal.local.v1` previews future byte descriptors but
+does not prove byte availability or materialization.
+
+`media.local_layer_resource_ref_candidate.local.v1` now carries explicit
+promotion posture:
+
+```text
+proposedResourceRef.candidateOnly: true
+proposedResourceRef.promotionStatus: candidate-only
+proposedResourceRef.promotionAuthority: false
+promotionPosture.status: candidate-only
+promotionPosture.admissionRequired: true
+promotionPosture.byteDescriptorRequired: true
+promotionPosture.promotionAuthority: false
+```
+
+Resource candidates are not admitted resources, replicated pointers,
+causal-reviewable refs, or authority-bearing refs.
+
+## Edge-Seam State
+
+Studio has mature local Edge-inspection artifacts, but no Edge runtime
+integration.
+
+Defined and exercised seams:
+
+- `media-edge-operator-seam`
+- `media-work-packet-seam`
+- `media-evidence-import-seam`
+- `media-readiness-guidance-seam`
+- `media-operator-decision-seam`
+- `media-byte-reference-seam`
+- `media-causal-evidence-seam`
+
+Current Edge-readable local artifacts include:
+
+- `media.edge_inspection_packet.local.v1`
+- `media.edge_export_bundle.local.v1`
+- `media.control_surface_projection.local.v1`
+- `media.edge_review_evidence.local.v1`
+- `media.edge_compatibility_bundle.local.v1`
+- `media.operator_packet_index.local.v1`
+- `media.edge_handoff_candidate.local.v1`
+- `media.operator_decision_request.local.v1`
+- `media.cross_project_inspection_input_list.local.v1`
+- `media.cross_project_operator_index.local.v1`
+
+These artifacts make Studio outputs easier for Edge to inspect later. They do
+not call Edge, verify Edge runtime behavior, or grant operator authority.
+
+## Packs And Control Surface State
+
+Studio has a Packs-aligned control-surface projection, but no UI.
+
+Current posture:
+
+- Packs vocabulary informs planes and action vocabulary.
+- Studio remains the media-domain owner.
+- The projection is readonly observer posture.
+- There is no renderer contract.
+- There is no authority surface.
+
+UI remains deferred until the control-surface and Edge-handback semantics are
+stable enough to avoid baking in a premature workflow.
+
+## Causal State
+
+Studio records causal-shaped fields in media records:
+
+- parent refs
+- referents
+- branch ids
+- context ids
+- observer/operator refs
+- continuity claims
+- transition summaries
+
+`causal-substrate` remains optional. There is no `media-causal-adapter`
+implementation yet.
+
+## Authority State
+
+Current local records may represent:
+
+- local draft
+- local receipt
+- local cache
+- local evidence
+- local proposal
+- local decision
+- operator guidance
+- request-only decision posture
+
+They do not represent:
+
+- mesh truth
+- distributed proof
+- ratified shared state
+- provider truth
+- byte availability proof
+- materialization proof
+- causal truth
+- approval authority
+- ratifier authority
+- publication authorization
+
+## Fixtures And Inspection State
+
+Committed fixtures include:
+
+```text
+examples/inspection-fixtures/card-to-candidate/
+examples/inspection-fixtures/unhealthy/
+examples/inspection-fixtures/cross-project/
+examples/provider-fixtures/
+examples/provider-shapes/
+```
+
+Useful commands:
+
+```bash
+npm run fixture:inspection:check
+npm run fixture:unhealthy:check
+npm run operator:cross-project-index
+```
+
+The unhealthy fixtures cover:
+
+- missing byte proposal
+- stale resource ref
+- stale production descriptor
+
+The cross-project fixture aggregates unhealthy project handoff posture through
+an explicit input list. It does not discover projects.
+
+## Current Verification Baseline
+
+The expected baseline is:
+
+```bash
+npm test
+npm run wedge:example
+npm run fixture:unhealthy:check
+npm run operator:cross-project-index
+```
+
+The repo also uses schema JSON parse checks and secret scans before commit.
+
+## Deferred Work
+
+Deferred deliberately:
+
+- UI
+- Electron or app shell
+- full provider adapter set
+- default live provider execution
+- provider secret management beyond ignored `.env`
+- Edge runtime calls
+- mesh publication
+- Hypercore, Hyperdrive, Hyperblob, or Autobase implementation
+- admitted local-layer resource refs
+- byte materialization proof
+- active organisms
+- active ratifiers
+- causal-substrate adapter
+- publication lane
+
+## Risks
+
+Current risks to manage:
+
+- JSON record volume can grow too large if every future concept is modeled as
+  hand-authored schema first.
+- Local fixture generation can become noisy unless command output is made more
+  compact.
+- Edge-facing artifacts can look more authoritative than they are unless
+  local-only flags and warnings stay strict.
+- Provider-specific semantics can leak into Studio if adapters are allowed to
+  define canonical media shapes.
+- Production vocabulary can become too rigid if scene/shot/clip becomes the
+  assumed root instead of one supported strategy.
+- Resource refs can be misread as admitted unless promotion posture remains
+  explicit.
+
+## Next Objectives
+
+Recommended next objectives:
+
+1. Add concise CLI summaries for operator records:
+   `operator:index`, `handoff:edge`, `operator:decision-request`, and
+   `operator:cross-project-index`.
+2. Add missing-artifact behavior to cross-project inspection fixtures so bad
+   input lists are visible separately from unhealthy projects.
+3. Reduce fixture generator console noise with a quiet mode.
+4. Strengthen health summaries with per-asset explanations for missing byte
+   proposals, missing resource candidates, unresolved candidates, and stale
+   candidates.
+5. Keep broad production strategy moving without adding UI.
+6. Defer provider expansion until Venice posture and local inspection remain
+   stable under these operator summaries.
+
+## Repo Vector Statement
+
+Studio is doing meaningful work toward becoming the mesh-facing media
+production frontier: it performs local media work, records media-specific
+meaning, exposes Edge-inspectable operator posture, and keeps every authority
+boundary explicit. The next work should continue improving inspectability and
+operator clarity before introducing UI, broad provider support, or runtime
+integration.
