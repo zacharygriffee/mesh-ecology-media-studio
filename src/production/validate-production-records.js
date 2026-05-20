@@ -53,10 +53,10 @@ export async function validateProductionRecordsInProject({
   const freshness = summarizeProductionFreshness(records)
 
   if (!quiet) {
-    console.log(`production graph valid: ${records.length}`)
-    console.log(`input: ${inputDir}`)
-    console.log(`production freshness: ${freshness.fresh ? 'fresh' : 'stale'}`)
-    console.log(`staleDescriptors: ${freshness.staleDescriptorIds.length}`)
+    console.log(formatProductionValidationSummary({ count: records.length, freshness, inputDir }))
+    if (freshness.staleDescriptorIds.length > 0) {
+      console.log(`staleDescriptor: ${freshness.staleDescriptorIds[0]}`)
+    }
   }
 
   return {
@@ -87,6 +87,16 @@ async function listJsonFiles(root) {
   }
 
   return files.sort()
+}
+
+export function formatProductionValidationSummary({ count, freshness, inputDir }) {
+  return [
+    'production validation: valid=true',
+    `records=${count}`,
+    `freshness=${freshness.fresh ? 'fresh' : 'stale'}`,
+    `staleDescriptors=${freshness.staleDescriptorIds.length}`,
+    `input=${inputDir}`
+  ].join(' | ')
 }
 
 if (process.argv[1] === modulePath) {

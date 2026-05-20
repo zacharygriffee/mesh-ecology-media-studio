@@ -17,6 +17,8 @@ import {
   refForProductionRecord,
   validateProductionDescriptorGraph
 } from '../src/production/strategy.js'
+import { formatProductionWriteSummary } from '../src/production/create-production-records.js'
+import { formatProductionValidationSummary } from '../src/production/validate-production-records.js'
 
 test('production strategy supports classic scene shot clip as one strategy', () => {
   const character = createReferencePrimitive({
@@ -335,5 +337,36 @@ test('production descriptors reject unknown descriptor kinds and authority claim
   assert.throws(
     () => validateRequiredRecord(exportDescriptor),
     /must not claim publication authorization/
+  )
+})
+
+test('production command summaries stay compact and operator-readable', () => {
+  const unit = createProductionUnit({
+    projectId: 'project-summary',
+    unitKind: 'scene',
+    title: 'Summary unit',
+    purpose: 'Summary fixture.'
+  })
+  const descriptor = createSceneDescriptor({
+    projectId: 'project-summary',
+    productionUnitRef: refForProductionRecord(unit),
+    title: 'Summary descriptor'
+  })
+  const outputs = [
+    { name: 'sceneUnit', output: 'records/production/sceneUnit.local.json', record: unit },
+    { name: 'sceneDescriptor', output: 'records/production/sceneDescriptor.local.json', record: descriptor }
+  ]
+
+  assert.equal(
+    formatProductionWriteSummary(outputs, 'records/production'),
+    'production records: count=2 | units=1 | descriptors=1 | strategies=0 | continuityBands=0 | output=records/production'
+  )
+  assert.equal(
+    formatProductionValidationSummary({
+      count: 2,
+      freshness: { fresh: false, staleDescriptorIds: ['descriptor-1'] },
+      inputDir: 'records/production'
+    }),
+    'production validation: valid=true | records=2 | freshness=stale | staleDescriptors=1 | input=records/production'
   )
 })

@@ -26,7 +26,8 @@ function parseArgs(argv) {
   const args = {
     projectDir: defaultProjectDir,
     card: defaultCard,
-    outputDir: defaultOutputDir
+    outputDir: defaultOutputDir,
+    quiet: false
   }
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -42,6 +43,8 @@ function parseArgs(argv) {
     } else if (arg === '--output-dir') {
       args.outputDir = next
       i += 1
+    } else if (arg === '--quiet') {
+      args.quiet = true
     }
   }
 
@@ -51,7 +54,8 @@ function parseArgs(argv) {
 export async function writeProductionRecordsFromCard({
   projectDir = defaultProjectDir,
   card = defaultCard,
-  outputDir = defaultOutputDir
+  outputDir = defaultOutputDir,
+  quiet = false
 } = {}) {
   assertSafeLocalPath(card)
   assertSafeLocalPath(outputDir)
@@ -72,13 +76,31 @@ export async function writeProductionRecordsFromCard({
     outputs.push({ name, output, record })
   }
 
-  console.log(`production records: ${outputs.length}`)
-  console.log(`output: ${outputDir}`)
+  if (!quiet) {
+    console.log(formatProductionWriteSummary(outputs, outputDir))
+  }
 
   return {
     records,
     outputs
   }
+}
+
+export function formatProductionWriteSummary(outputs, outputDir) {
+  const records = outputs.map((output) => output.record)
+  const units = records.filter((record) => record.schema === artifactKinds.mediaProductionUnit).length
+  const descriptors = records.filter((record) => record.schema === artifactKinds.mediaProductionDescriptorLocal).length
+  const strategies = records.filter((record) => record.schema === artifactKinds.mediaRenderStrategy).length
+  const continuityBands = records.filter((record) => record.schema === artifactKinds.mediaContinuityBand).length
+
+  return [
+    `production records: count=${outputs.length}`,
+    `units=${units}`,
+    `descriptors=${descriptors}`,
+    `strategies=${strategies}`,
+    `continuityBands=${continuityBands}`,
+    `output=${outputDir}`
+  ].join(' | ')
 }
 
 export function createProductionRecordsFromCard({ card }) {
