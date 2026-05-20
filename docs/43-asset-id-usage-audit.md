@@ -250,34 +250,40 @@ arrays can remain until external consumers stop relying on them.
 
 ## Review And Selection Sites
 
-`src/review/candidate-review.js` still accepts:
+`src/review/candidate-review.js` accepts:
 
 ```txt
 --selected-asset-id
+--selected-asset-descriptor-ref
+--selected-situation-ref
 ```
 
-and finds the selected asset by `assetId`.
+`selectedAssetId` remains as a compatibility selector. If the same content-derived
+`assetId` appears in more than one descriptor/situation, selection by
+`selectedAssetId` is rejected as ambiguous. `assetDescriptorRef` is also rejected
+if legacy records still collapse it to the same content-derived id. Operators and
+scripts should prefer `situationRef` when descriptor identity is not unique yet.
 
 Risk:
 
 ```txt
-If two candidates share bytes and therefore share assetId, selected-asset-id can
-select the wrong descriptor or the first matching descriptor.
+If a caller continues to rely on `selectedAssetId`, same-content descriptors can
+force an ambiguity error. This is deliberate; it prevents silent first-match
+selection.
 ```
 
 Current severity:
 
 ```txt
-Medium to high once review workflows compare same-content assets in multiple
-roles. This is behaviorally dangerous before richer review workflows.
+Lower after Step 4.5 because ambiguity is blocked, but richer review workflows
+should still prefer descriptor/situation selectors.
 ```
 
 Recommended migration:
 
 ```txt
-Add selection by assetDescriptorRef or situationRef, retain selectedAssetId as a
-compatibility option, then prefer descriptor/situation selection in docs and
-commands.
+Keep `selectedAssetId` as compatibility only. Prefer `situationRef` until Step 5
+gives active descriptors non-content-derived descriptor identity.
 ```
 
 This does not need to happen before every next step, but it should happen before
@@ -317,27 +323,32 @@ transition.
 
 ## Behaviorally Dangerous Remaining Uses
 
-The remaining behaviorally dangerous uses are:
+The remaining behaviorally dangerous uses after Step 4.5 are:
 
-1. Reference ingest record paths derived from content-derived `assetId`.
-   Same bytes in two reference roles can collide on local JSON paths.
-
-2. Candidate review selection by `selectedAssetId`.
-   Same-content descriptors can be ambiguous.
-
-3. Active descriptor generation from content hash.
+1. Active descriptor generation from content hash.
    This is not immediately breaking after the byte/resource migration, but it is
    not suitable for durable descriptor identity.
 
-4. Schema/validator treatment of `assetId` as primary id.
+2. Schema/validator treatment of `assetId` as primary id.
    This is safe as compatibility, but it will block a clean descriptor-id
    migration unless handled deliberately.
 
+Step 4.5 hardened the most operationally risky compatibility paths without
+changing `assetId` generation:
+
+```txt
+reference ingest filenames no longer key only on assetId
+candidate review rejects ambiguous selectedAssetId matches
+project status reports duplicate content-derived assetIds across situations
+```
+
 ## Step 5 Recommendation
 
-Step 5 is still needed, but not now unless the next work depends on repeated
-same-content reference ingest, review selection across same-content candidates,
-or storage/backend promotion.
+Step 5 is still needed, but not now. Step 4.5 removed the immediate operational
+hazards around repeated same-content reference ingest and same-content review
+selection. The remaining reason to change active `assetId` generation is
+storage/backend promotion or a schema/version transition that needs descriptor
+identity to stop being content-derived.
 
 Recommended timing:
 
@@ -349,8 +360,8 @@ Now:
   Continue using situation/placement subject refs for resource posture.
 
 Soon, before richer review workflows:
-  Add descriptor/situation-based selection to candidate review.
   Keep selectedAssetId as compatibility.
+  Prefer descriptor/situation-based selection in commands and docs.
 
 Before storage/backend promotion:
   Migrate active descriptor identity generation away from content hash.
@@ -366,9 +377,11 @@ Before storage/backend promotion:
 
 2. Update reference ingest and promotion record filenames to use
    descriptor/situation-safe ids, not content-derived assetId.
+   Status: partially done for reference ingest in Step 4.5.
 
 3. Add review selection by `assetDescriptorRef` or `situationRef`; keep
    `selectedAssetId` as compatibility.
+   Status: done in Step 4.5.
 
 4. Update schemas to require `assetDescriptorRef` or `assetDescriptorId` while
    retaining `assetId` during transition.
@@ -391,4 +404,3 @@ causal truth
 publication authorization
 Edge approval
 ```
-

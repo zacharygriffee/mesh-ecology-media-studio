@@ -59,6 +59,9 @@ export async function writeProjectStatus({
   if (assetResourceConsistency.readyForEdgeInspection === false) {
     warnings.push('Some accepted/reference assets are missing content-keyed byte posture or situation/placement resource-ref candidate alignment.')
   }
+  for (const warning of assetResourceConsistency.duplicateAssetIdSituationWarnings) {
+    warnings.push(warning.summary)
+  }
 
   const status = {
     schema: artifactKinds.mediaProjectStatusLocal,
@@ -115,6 +118,7 @@ function formatProjectStatusSummary(status, output) {
     `project status: ${status.projectId}`,
     `assetReady=${status.assetResourceConsistency.readyForEdgeInspection}`,
     `assetWarnings=${status.assetResourceConsistency.warningCount}`,
+    `identityWarnings=${status.assetResourceConsistency.identityWarningCount}`,
     `byteContent=${bytePosture}`,
     `resourceSituations=${resourcePosture}`,
     `records=${nonZeroCounts}`,
@@ -145,6 +149,8 @@ function summarizeAssetResourceConsistency(records) {
   const alignedResourceCandidateIds = []
   const staleByteDescriptorProposalIds = []
   const staleResourceCandidateIds = []
+  const duplicateAssetIdSituationWarnings = findDuplicateAssetIdSituationWarnings(acceptedOrReferenceAssets)
+  const duplicateAssetIdSet = new Set(duplicateAssetIdSituationWarnings.map((warning) => warning.assetId))
   const assetExplanations = []
   const expectedContentIds = new Set()
   const expectedResourceSubjectRefs = new Set()
@@ -220,6 +226,9 @@ function summarizeAssetResourceConsistency(records) {
       placementClass: entry.record.localRef?.placementClass ?? 'unknown',
       bytePosture: bytePostureFor({ contentId, byteProposal, issueCodes }),
       resourcePosture: resourcePostureFor({ resourceSubjectRef, resourceCandidate, issueCodes }),
+      identityWarnings: duplicateAssetIdSet.has(assetId)
+        ? ['duplicate_asset_id_distinct_situations']
+        : [],
       state: healthState,
       healthState,
       issueCodes,
@@ -295,6 +304,9 @@ function summarizeAssetResourceConsistency(records) {
     unresolvedResourceCandidateIds,
     staleByteDescriptorProposalIds,
     staleResourceCandidateIds,
+    duplicateAssetIdSituationWarnings,
+    identityWarnings: duplicateAssetIdSituationWarnings,
+    identityWarningCount: duplicateAssetIdSituationWarnings.length,
     assetExplanations,
     readyForEdgeInspection: acceptedOrReferenceAssets.length > 0 && warningCount === 0,
     warningCount,
@@ -305,6 +317,51 @@ function summarizeAssetResourceConsistency(records) {
     byteAvailabilityProof: false,
     materializationProof: false
   }
+}
+
+function findDuplicateAssetIdSituationWarnings(assetEntries) {
+  const byAssetId = new Map()
+
+  for (const entry of assetEntries) {
+    const assetId = entry.record.assetId
+    if (!assetId) continue
+    const entries = byAssetId.get(assetId) ?? []
+    entries.push(entry)
+    byAssetId.set(assetId, entries)
+  }
+
+  const warnings = []
+
+  for (const [assetId, entries] of byAssetId.entries()) {
+    const situationRefs = uniqueSorted(entries.map((entry) => entry.record.situationRef?.id).filter(Boolean))
+    if (situationRefs.length <= 1) continue
+    const placementRefs = uniqueSorted(entries.map((entry) => entry.record.placementRef?.id).filter(Boolean))
+    const paths = uniqueSorted(entries.map((entry) => entry.record.localRef?.path ?? entry.path).filter(Boolean))
+
+    warnings.push({
+      issueCode: 'duplicate_asset_id_distinct_situations',
+      assetId,
+      contentId: contentIdForRecord(entries[0].record),
+      situationRefs,
+      placementRefs,
+      paths,
+      summary: `${assetId} appears in ${situationRefs.length} distinct situations; use contentId and situation/placement refs for local operations.`,
+      nextAction: 'Use assetDescriptorRef, situationRef, or placementRef when selecting or repairing this asset posture.',
+      localOnly: true,
+      meshTruth: false,
+      distributedProof: false,
+      ratifiedSharedState: false,
+      resourceAdmission: false,
+      byteAvailabilityProof: false,
+      materializationProof: false
+    })
+  }
+
+  return warnings.sort((left, right) => left.assetId.localeCompare(right.assetId))
+}
+
+function uniqueSorted(values) {
+  return Array.from(new Set(values)).sort()
 }
 
 function assetHealthSummary({ assetId, path, issueCodes }) {

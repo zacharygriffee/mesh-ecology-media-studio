@@ -966,7 +966,12 @@ test('reference ingest writes asset descriptor and local ingest receipt', async 
   assert.equal(result.assetDescriptor.originRef.path, 'media/generated/reference.txt')
   assert.equal(result.assetDescriptor.basisRef.refs[0].id, 'media/generated/reference.txt')
   assert.equal(result.assetDescriptor.source.apiCalled, false)
+  assert.notEqual(result.assetRecordRef, `records/assets/reference-${result.assetDescriptor.assetId}.local.json`)
+  assert.notEqual(result.ingestRecordRef, `records/assets/reference-ingest-${result.assetDescriptor.assetId}.local.json`)
+  assert.equal(result.assetRecordRef.startsWith('records/assets/reference-'), true)
+  assert.equal(result.ingestRecordRef.startsWith('records/assets/reference-ingest-reference-'), true)
   assert.equal(result.ingestRecord.schema, 'media.reference_ingest.local.v1')
+  assert.equal(result.ingestRecord.ingestId.startsWith('reference-ingest-reference-'), true)
   assert.equal(result.ingestRecord.providerTruth, false)
   assert.equal(result.ingestRecord.materializationProof, false)
   assert.equal(validateRequiredRecord(result.assetDescriptor), true)
@@ -976,6 +981,31 @@ test('reference ingest writes asset descriptor and local ingest receipt', async 
     await readFile(path.join(dir, result.ingestRecordRef), 'utf8')
   )
   assert.equal(written.assetRecordRef.path, result.assetRecordRef)
+})
+
+test('reference ingest output filenames stay distinct for same-content references', async () => {
+  const dir = await createFixtureProject()
+  await writeFile(path.join(dir, 'media', 'generated', 'reference.txt'), 'same reference bytes')
+
+  const first = await ingestReferenceAsset({
+    projectDir: dir,
+    source: 'media/generated/reference.txt',
+    filename: 'reference-a.txt',
+    operatorRef: 'operator-test'
+  })
+  const second = await ingestReferenceAsset({
+    projectDir: dir,
+    source: 'media/generated/reference.txt',
+    filename: 'reference-b.txt',
+    operatorRef: 'operator-test'
+  })
+
+  assert.equal(first.assetDescriptor.assetId, second.assetDescriptor.assetId)
+  assert.equal(first.assetDescriptor.contentId, second.assetDescriptor.contentId)
+  assert.notEqual(first.assetRecordRef, second.assetRecordRef)
+  assert.notEqual(first.ingestRecordRef, second.ingestRecordRef)
+  assert.notEqual(first.assetDescriptor.situationRef.id, second.assetDescriptor.situationRef.id)
+  assert.notEqual(first.assetDescriptor.placementRef.id, second.assetDescriptor.placementRef.id)
 })
 
 test('reference ingest blocks unsafe source refs', async () => {
@@ -1010,11 +1040,78 @@ test('candidate review records local comparison without ratifier authority', asy
   assert.equal(result.review.schema, 'media.candidate_review.local.v1')
   assert.equal(result.review.candidateAssetRefs.length, 2)
   assert.equal(result.review.selectedAssetRef.id, reference.assetDescriptor.assetId)
+  assert.equal(result.review.selectedAssetDescriptorRef.id, reference.assetDescriptor.assetDescriptorRef.id)
+  assert.equal(result.review.selectedSituationRef.id, reference.assetDescriptor.situationRef.id)
+  assert.equal(result.review.selectedPlacementRef.id, reference.assetDescriptor.placementRef.id)
   assert.equal(result.review.meshTruth, false)
   assert.equal(validateRequiredRecord(result.review), true)
 
   const written = JSON.parse(await readFile(path.join(dir, result.output), 'utf8'))
   assert.equal(written.operatorRef, 'operator-test')
+})
+
+test('candidate review rejects ambiguous selectedAssetId and accepts situation selector', async () => {
+  const dir = await createFixtureProject()
+  const result = await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await mkdir(path.join(dir, 'media', 'references'), { recursive: true })
+  await writeFile(path.join(dir, 'media', 'references', 'candidate.txt'), 'candidate bytes')
+  const referenceAsset = structuredClone(result.outputs.assetDescriptor)
+  referenceAsset.localRef = {
+    ...referenceAsset.localRef,
+    placementClass: 'media-reference',
+    path: 'media/references/candidate.txt'
+  }
+  referenceAsset.placementRef = {
+    ...referenceAsset.placementRef,
+    id: `placement:${referenceAsset.projectId}:media/references/candidate.txt`,
+    path: 'media/references/candidate.txt',
+    placementClass: 'media-reference',
+    lifecycleState: 'source'
+  }
+  referenceAsset.situationRef = {
+    ...referenceAsset.situationRef,
+    id: `situation:${referenceAsset.projectId}:reference-asset:${referenceAsset.placementRef.id}`,
+    role: 'reference-asset',
+    placementRef: {
+      kind: referenceAsset.placementRef.kind,
+      id: referenceAsset.placementRef.id
+    }
+  }
+  await writeFile(
+    path.join(dir, 'records', 'assets', 'reference-same-content.local.json'),
+    `${JSON.stringify(referenceAsset, null, 2)}\n`
+  )
+
+  await assert.rejects(
+    () => writeCandidateReview({
+      projectDir: dir,
+      selectedAssetId: result.outputs.assetDescriptor.assetId,
+      operatorRef: 'operator-test'
+    }),
+    /Selected asset id is ambiguous/
+  )
+  await assert.rejects(
+    () => writeCandidateReview({
+      projectDir: dir,
+      selectedAssetDescriptorRef: result.outputs.assetDescriptor.assetDescriptorRef.id,
+      operatorRef: 'operator-test'
+    }),
+    /Selected asset descriptor ref is ambiguous/
+  )
+
+  const review = await writeCandidateReview({
+    projectDir: dir,
+    selectedSituationRef: referenceAsset.situationRef.id,
+    operatorRef: 'operator-test'
+  })
+
+  assert.equal(review.review.selectedAssetRef.id, referenceAsset.assetId)
+  assert.equal(review.review.selectedSituationRef.id, referenceAsset.situationRef.id)
+  assert.equal(review.review.selectedPlacementRef.id, referenceAsset.placementRef.id)
 })
 
 test('approval proposal records local request without granting authority', async () => {
@@ -1353,6 +1450,13 @@ test('resource candidates stay situation specific for same-content accepted and 
   assert.equal(status.status.assetResourceConsistency.bytePosture.expectedContentIds, 1)
   assert.equal(status.status.assetResourceConsistency.resourcePosture.coveredSituationPlacements, 2)
   assert.equal(status.status.assetResourceConsistency.resourcePosture.expectedSituationPlacements, 2)
+  assert.equal(status.status.assetResourceConsistency.identityWarningCount, 1)
+  assert.equal(status.status.assetResourceConsistency.duplicateAssetIdSituationWarnings[0].issueCode, 'duplicate_asset_id_distinct_situations')
+  assert.equal(status.status.assetResourceConsistency.duplicateAssetIdSituationWarnings[0].assetId, result.outputs.assetDescriptor.assetId)
+  assert.ok(status.status.warnings.some((warning) => warning.includes('appears in 2 distinct situations')))
+  assert.equal(status.status.assetResourceConsistency.assetExplanations.every((entry) =>
+    entry.identityWarnings.includes('duplicate_asset_id_distinct_situations')
+  ), true)
   assert.equal(readiness.readiness.state, 'ready')
   assert.equal(readiness.readiness.resolvabilitySummary.bytePosture.coveredContentIds, 1)
   assert.equal(readiness.readiness.resolvabilitySummary.resourcePosture.coveredSituationPlacements, 2)

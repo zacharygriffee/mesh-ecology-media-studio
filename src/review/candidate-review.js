@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -14,6 +15,8 @@ function parseArgs(argv) {
   const args = {
     projectDir: 'examples/card-to-candidate',
     selectedAssetId: undefined,
+    selectedAssetDescriptorRef: undefined,
+    selectedSituationRef: undefined,
     operatorRef: 'local-operator',
     output: undefined
   }
@@ -27,6 +30,12 @@ function parseArgs(argv) {
       i += 1
     } else if (arg === '--selected-asset-id') {
       args.selectedAssetId = next
+      i += 1
+    } else if (arg === '--selected-asset-descriptor-ref') {
+      args.selectedAssetDescriptorRef = next
+      i += 1
+    } else if (arg === '--selected-situation-ref') {
+      args.selectedSituationRef = next
       i += 1
     } else if (arg === '--operator-ref') {
       args.operatorRef = next
@@ -43,6 +52,8 @@ function parseArgs(argv) {
 export async function writeCandidateReview({
   projectDir = 'examples/card-to-candidate',
   selectedAssetId,
+  selectedAssetDescriptorRef,
+  selectedSituationRef,
   operatorRef = 'local-operator',
   output
 } = {}) {
@@ -55,13 +66,12 @@ export async function writeCandidateReview({
     throw new Error('Candidate review requires at least one local asset descriptor')
   }
 
-  const selected = selectedAssetId
-    ? assetEntries.find((entry) => entry.record.assetId === selectedAssetId)
-    : assetEntries[0]
-
-  if (!selected) {
-    throw new Error(`Selected asset was not found: ${selectedAssetId}`)
-  }
+  const selected = selectAssetEntry({
+    assetEntries,
+    selectedAssetId,
+    selectedAssetDescriptorRef,
+    selectedSituationRef
+  })
 
   const review = createCandidateReview({
     card,
@@ -93,18 +103,28 @@ export function createCandidateReview({
   const candidateAssetRefs = assetEntries.map(({ record, path: recordPath }) => ({
     ...makeRef('media-asset', record.assetId, record.schema),
     path: recordPath,
+    contentId: record.contentId,
+    assetDescriptorRef: record.assetDescriptorRef ?? null,
+    situationRef: record.situationRef ?? null,
+    placementRef: record.placementRef ?? null,
     localRef: record.localRef,
     contentType: record.contentType,
     lifecycleState: record.provenance?.lifecycle?.state,
     localOnly: true
   }))
+  const selectedSituationToken = selectedAsset.situationRef?.id
+    ? `-${compactRefToken(selectedAsset.situationRef.id)}`
+    : ''
   const review = {
     schema: artifactKinds.mediaCandidateReviewLocal,
-    candidateReviewId: `candidate-review-${card.cardId}-${selectedAsset.assetId}`,
+    candidateReviewId: `candidate-review-${card.cardId}-${selectedAsset.assetId}${selectedSituationToken}`,
     projectId: card.projectId,
     cardRef: makeRef('media-card', card.cardId, card.schema),
     candidateAssetRefs,
     selectedAssetRef: makeRef('media-asset', selectedAsset.assetId, selectedAsset.schema),
+    selectedAssetDescriptorRef: selectedAsset.assetDescriptorRef ?? null,
+    selectedSituationRef: selectedAsset.situationRef ?? null,
+    selectedPlacementRef: selectedAsset.placementRef ?? null,
     operatorRef,
     criteria: card.acceptanceCriteria ?? [],
     summary: `Local comparison selected ${selectedAsset.assetId} from ${candidateAssetRefs.length} candidate asset(s).`,
@@ -120,6 +140,52 @@ export function createCandidateReview({
   validateRequiredRecord(review)
 
   return review
+}
+
+function selectAssetEntry({
+  assetEntries,
+  selectedAssetId,
+  selectedAssetDescriptorRef,
+  selectedSituationRef
+}) {
+  if (selectedAssetDescriptorRef) {
+    const matches = assetEntries.filter((entry) => entry.record.assetDescriptorRef?.id === selectedAssetDescriptorRef)
+    if (matches.length === 0) {
+      throw new Error(`Selected asset descriptor ref was not found: ${selectedAssetDescriptorRef}`)
+    }
+    if (matches.length > 1) {
+      throw new Error(`Selected asset descriptor ref is ambiguous: ${selectedAssetDescriptorRef}. Use --selected-situation-ref.`)
+    }
+    return matches[0]
+  }
+
+  if (selectedSituationRef) {
+    const matches = assetEntries.filter((entry) => entry.record.situationRef?.id === selectedSituationRef)
+    if (matches.length === 0) {
+      throw new Error(`Selected situation ref was not found: ${selectedSituationRef}`)
+    }
+    if (matches.length > 1) {
+      throw new Error(`Selected situation ref is ambiguous: ${selectedSituationRef}`)
+    }
+    return matches[0]
+  }
+
+  if (selectedAssetId) {
+    const matches = assetEntries.filter((entry) => entry.record.assetId === selectedAssetId)
+    if (matches.length === 0) {
+      throw new Error(`Selected asset was not found: ${selectedAssetId}`)
+    }
+    if (matches.length > 1) {
+      throw new Error(`Selected asset id is ambiguous: ${selectedAssetId}. Use --selected-asset-descriptor-ref or --selected-situation-ref.`)
+    }
+    return matches[0]
+  }
+
+  return assetEntries[0]
+}
+
+function compactRefToken(ref) {
+  return createHash('sha256').update(ref).digest('hex').slice(0, 12)
 }
 
 async function readAssetDescriptors(root) {

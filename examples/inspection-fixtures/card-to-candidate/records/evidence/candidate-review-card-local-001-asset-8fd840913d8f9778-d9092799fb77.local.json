@@ -1,0 +1,123 @@
+{
+  "schema": "media.candidate_review.local.v1",
+  "candidateReviewId": "candidate-review-card-local-001-asset-8fd840913d8f9778-d9092799fb77",
+  "projectId": "studio-example-project",
+  "cardRef": {
+    "kind": "media-card",
+    "id": "card-local-001",
+    "schema": "media.card.v1"
+  },
+  "candidateAssetRefs": [
+    {
+      "kind": "media-asset",
+      "id": "asset-8fd840913d8f9778",
+      "schema": "media.asset.descriptor.v1",
+      "path": "records/assets/media-asset-descriptor.local.json",
+      "contentId": "sha256:8fd840913d8f977859aaaf33a2eec00e6818b484b5ff3ccaa7544a470cc188e9",
+      "assetDescriptorRef": {
+        "kind": "media-asset-descriptor",
+        "id": "asset-8fd840913d8f9778",
+        "schema": "media.asset.descriptor.v1"
+      },
+      "situationRef": {
+        "kind": "studio-media-situation",
+        "id": "situation:studio-example-project:accepted:placement:studio-example-project:media/accepted/candidate.txt",
+        "role": "accepted",
+        "contextRef": {
+          "kind": "studio-project",
+          "id": "project:studio-example-project"
+        },
+        "surfaceRef": {
+          "kind": "media-project-local-layer",
+          "id": "surface:studio-example-project"
+        },
+        "placementRef": {
+          "kind": "path-placement",
+          "id": "placement:studio-example-project:media/accepted/candidate.txt"
+        },
+        "ruleBookRef": {
+          "id": "rule-book:studio-local-media"
+        }
+      },
+      "placementRef": {
+        "kind": "path-placement",
+        "id": "placement:studio-example-project:media/accepted/candidate.txt",
+        "projectId": "studio-example-project",
+        "path": "media/accepted/candidate.txt",
+        "placementClass": "media-accepted",
+        "lifecycleState": "accepted"
+      },
+      "localRef": {
+        "schema": "media.local_ref.v1",
+        "refKind": "local-file",
+        "placementClass": "media-accepted",
+        "path": "media/accepted/candidate.txt",
+        "contentType": "text/plain",
+        "hash": {
+          "algorithm": "sha256",
+          "value": "8fd840913d8f977859aaaf33a2eec00e6818b484b5ff3ccaa7544a470cc188e9"
+        },
+        "size": 144,
+        "localOnly": true,
+        "meshTruth": false,
+        "distributedProof": false,
+        "ratifiedSharedState": false
+      },
+      "contentType": "text/plain",
+      "lifecycleState": "accepted",
+      "localOnly": true
+    }
+  ],
+  "selectedAssetRef": {
+    "kind": "media-asset",
+    "id": "asset-8fd840913d8f9778",
+    "schema": "media.asset.descriptor.v1"
+  },
+  "selectedAssetDescriptorRef": {
+    "kind": "media-asset-descriptor",
+    "id": "asset-8fd840913d8f9778",
+    "schema": "media.asset.descriptor.v1"
+  },
+  "selectedSituationRef": {
+    "kind": "studio-media-situation",
+    "id": "situation:studio-example-project:accepted:placement:studio-example-project:media/accepted/candidate.txt",
+    "role": "accepted",
+    "contextRef": {
+      "kind": "studio-project",
+      "id": "project:studio-example-project"
+    },
+    "surfaceRef": {
+      "kind": "media-project-local-layer",
+      "id": "surface:studio-example-project"
+    },
+    "placementRef": {
+      "kind": "path-placement",
+      "id": "placement:studio-example-project:media/accepted/candidate.txt"
+    },
+    "ruleBookRef": {
+      "id": "rule-book:studio-local-media"
+    }
+  },
+  "selectedPlacementRef": {
+    "kind": "path-placement",
+    "id": "placement:studio-example-project:media/accepted/candidate.txt",
+    "projectId": "studio-example-project",
+    "path": "media/accepted/candidate.txt",
+    "placementClass": "media-accepted",
+    "lifecycleState": "accepted"
+  },
+  "operatorRef": "fixture-operator",
+  "criteria": [
+    "candidate has a stable local descriptor",
+    "candidate hash is recorded",
+    "review decision is local-only and explicit"
+  ],
+  "summary": "Local comparison selected asset-8fd840913d8f9778 from 1 candidate asset(s).",
+  "createdAt": "2026-05-19T00:00:00.000Z",
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "localTruthLabel": "local evidence",
+  "truthStatus": "not mesh truth; not distributed proof; not ratified shared state"
+}

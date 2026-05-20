@@ -2,6 +2,7 @@
   "schema": "media.asset.descriptor.v1",
   "assetId": "asset-8fd840913d8f9778",
   "projectId": "studio-example-project",
+  "contentId": "sha256:8fd840913d8f977859aaaf33a2eec00e6818b484b5ff3ccaa7544a470cc188e9",
   "contentType": "text/plain",
   "hash": {
     "algorithm": "sha256",
@@ -23,6 +24,70 @@
     "meshTruth": false,
     "distributedProof": false,
     "ratifiedSharedState": false
+  },
+  "assetDescriptorRef": {
+    "kind": "media-asset-descriptor",
+    "id": "asset-8fd840913d8f9778",
+    "schema": "media.asset.descriptor.v1"
+  },
+  "artifactDescriptorRef": {
+    "kind": "media-asset-descriptor",
+    "id": "asset-8fd840913d8f9778",
+    "schema": "media.asset.descriptor.v1"
+  },
+  "originRef": {
+    "kind": "media-provider-result",
+    "id": "local-placeholder-provider",
+    "localOnly": true
+  },
+  "basisRef": {
+    "kind": "media-basis",
+    "id": "basis:studio-example-project:card-local-001",
+    "refs": [
+      {
+        "kind": "media-card",
+        "id": "card-local-001",
+        "schema": "media.card.v1"
+      },
+      {
+        "kind": "media-work-packet",
+        "id": "packet-00000000-0000-4000-8000-000000000002",
+        "schema": "media.work_packet.v1"
+      }
+    ]
+  },
+  "situationRef": {
+    "kind": "studio-media-situation",
+    "id": "situation:studio-example-project:accepted:placement:studio-example-project:media/accepted/candidate.txt",
+    "role": "accepted",
+    "contextRef": {
+      "kind": "studio-project",
+      "id": "project:studio-example-project"
+    },
+    "surfaceRef": {
+      "kind": "media-project-local-layer",
+      "id": "surface:studio-example-project"
+    },
+    "placementRef": {
+      "kind": "path-placement",
+      "id": "placement:studio-example-project:media/accepted/candidate.txt"
+    },
+    "ruleBookRef": {
+      "id": "rule-book:studio-local-media"
+    }
+  },
+  "placementRef": {
+    "kind": "path-placement",
+    "id": "placement:studio-example-project:media/accepted/candidate.txt",
+    "projectId": "studio-example-project",
+    "path": "media/accepted/candidate.txt",
+    "placementClass": "media-accepted",
+    "lifecycleState": "accepted"
+  },
+  "causalRefs": {
+    "deferred": true,
+    "deferredReason": "causal-substrate adapter not implemented",
+    "causalTruth": false
   },
   "source": {
     "sourceType": "provider-result",

@@ -100,10 +100,10 @@
     },
     {
       "kind": "media-candidate-review",
-      "id": "inspection-bundle/local-run/records/evidence/candidate-review-card-local-001-asset-8fd840913d8f9778.local.json",
+      "id": "inspection-bundle/local-run/records/evidence/candidate-review-card-local-001-asset-8fd840913d8f9778-d9092799fb77.local.json",
       "schema": "media.candidate_review.local.v1",
-      "path": "inspection-bundle/local-run/records/evidence/candidate-review-card-local-001-asset-8fd840913d8f9778.local.json",
-      "sourcePath": "records/evidence/candidate-review-card-local-001-asset-8fd840913d8f9778.local.json",
+      "path": "inspection-bundle/local-run/records/evidence/candidate-review-card-local-001-asset-8fd840913d8f9778-d9092799fb77.local.json",
+      "sourcePath": "records/evidence/candidate-review-card-local-001-asset-8fd840913d8f9778-d9092799fb77.local.json",
       "localOnly": true
     },
     {

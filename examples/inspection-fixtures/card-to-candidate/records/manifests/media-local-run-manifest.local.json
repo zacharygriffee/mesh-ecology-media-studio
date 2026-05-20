@@ -15,6 +15,7 @@
       "algorithm": "sha256",
       "value": "8fd840913d8f977859aaaf33a2eec00e6818b484b5ff3ccaa7544a470cc188e9"
     },
+    "resolvabilityCategory": "device_dependent_scaffold",
     "localOnly": true
   },
   "generatedRecordRefs": [
@@ -22,48 +23,56 @@
       "kind": "media.work_packet.v1",
       "id": "packet-00000000-0000-4000-8000-000000000002",
       "path": "records/work-packets/media-work-packet.local.json",
+      "resolvabilityCategory": "device_dependent_scaffold",
       "localOnly": true
     },
     {
       "kind": "media.provider_profile.v1",
       "id": "local-placeholder-provider",
       "path": "records/provider-results/media-provider-profile.local.json",
+      "resolvabilityCategory": "device_dependent_scaffold",
       "localOnly": true
     },
     {
       "kind": "media.generation_request.v1",
       "id": "request-00000000-0000-4000-8000-000000000006",
       "path": "records/work-packets/media-generation-request.local.json",
+      "resolvabilityCategory": "device_dependent_scaffold",
       "localOnly": true
     },
     {
       "kind": "media.provider_result.v1",
       "id": "local-placeholder-provider",
       "path": "records/provider-results/media-provider-result.local.json",
+      "resolvabilityCategory": "device_dependent_scaffold",
       "localOnly": true
     },
     {
       "kind": "media.asset.descriptor.v1",
       "id": "asset-8fd840913d8f9778",
       "path": "records/assets/media-asset-descriptor.local.json",
+      "resolvabilityCategory": "device_dependent_scaffold",
       "localOnly": true
     },
     {
       "kind": "media.evidence.v1",
       "id": "evidence-00000000-0000-4000-8000-000000000004",
       "path": "records/evidence/media-evidence.local.json",
+      "resolvabilityCategory": "device_dependent_scaffold",
       "localOnly": true
     },
     {
       "kind": "media.readiness.v1",
       "id": "readiness-00000000-0000-4000-8000-000000000007",
       "path": "records/readiness/media-readiness.local.json",
+      "resolvabilityCategory": "device_dependent_scaffold",
       "localOnly": true
     },
     {
       "kind": "media.operator_decision.v1",
       "id": "decision-00000000-0000-4000-8000-000000000003",
       "path": "records/decisions/media-operator-decision.local.json",
+      "resolvabilityCategory": "device_dependent_scaffold",
       "localOnly": true
     }
   ],
@@ -109,6 +118,15 @@
     "Local file existence and local hashes are not byte availability or materialization proof.",
     "Operator decision is local-only and is not mesh authorization."
   ],
+  "resolvabilityPosture": {
+    "currentCategory": "device_dependent_scaffold",
+    "targetCategory": "local_layer_resource_ref",
+    "reason": "Local run manifest paths and generated record refs are Mode 0 scaffold refs until resource-ref candidates or replicated pointer refs exist.",
+    "localJsonIsScaffold": true,
+    "localPathIsScaffold": true,
+    "operatorFacingIdentityBoundary": false,
+    "spineDoctrineRef": "../mesh-ecology-spine/docs/heavy-json-exit-and-local-layer-resolvability.md"
+  },
   "operatorGuidanceOnly": true,
   "localOnly": true,
   "meshTruth": false,

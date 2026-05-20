@@ -121,14 +121,20 @@ export async function ingestReferenceAsset({
     operatorRef,
     createdAt
   })
-  const assetRecordRef = `records/assets/reference-${assetId}.local.json`
+  const recordToken = referenceRecordToken({
+    projectId: resolvedProjectId,
+    source,
+    targetRef
+  })
+  const assetRecordRef = `records/assets/${recordToken}.local.json`
   assertSafeLocalPath(assetRecordRef)
   await writeJson(path.join(root, assetRecordRef), assetDescriptor)
 
   const imageMetadata = contentType.startsWith('image/')
-    ? await maybeWriteImageMetadata({ root, assetDescriptor, assetId })
+    ? await maybeWriteImageMetadata({ root, assetDescriptor, recordToken })
     : undefined
   const ingestRecord = createReferenceIngestRecord({
+    ingestId: `reference-ingest-${recordToken}`,
     projectId: resolvedProjectId,
     source,
     assetDescriptor,
@@ -136,7 +142,7 @@ export async function ingestReferenceAsset({
     imageMetadata,
     createdAt
   })
-  const ingestRecordRef = `records/assets/reference-ingest-${assetId}.local.json`
+  const ingestRecordRef = `records/assets/reference-ingest-${recordToken}.local.json`
   assertSafeLocalPath(ingestRecordRef)
   await writeJson(path.join(root, ingestRecordRef), ingestRecord)
 
@@ -243,6 +249,7 @@ export function createReferenceAssetDescriptor({
 }
 
 export function createReferenceIngestRecord({
+  ingestId,
   projectId,
   source,
   assetDescriptor,
@@ -252,7 +259,7 @@ export function createReferenceIngestRecord({
 }) {
   const ingest = {
     schema: artifactKinds.mediaReferenceIngestLocal,
-    ingestId: `reference-ingest-${assetDescriptor.assetId}`,
+    ingestId: ingestId ?? `reference-ingest-${assetDescriptor.assetId}`,
     projectId,
     sourceRef: {
       kind: 'local-file',
@@ -290,17 +297,30 @@ export function createReferenceIngestRecord({
   return ingest
 }
 
+function referenceRecordToken({ projectId, source, targetRef }) {
+  const digest = createHash('sha256')
+    .update([
+      projectId,
+      source,
+      targetRef
+    ].join('|'))
+    .digest('hex')
+    .slice(0, 16)
+
+  return `reference-${digest}`
+}
+
 async function readProjectId(root) {
   const card = JSON.parse(await readFile(path.join(root, 'cards', 'card.json'), 'utf8'))
   return card.projectId
 }
 
-async function maybeWriteImageMetadata({ root, assetDescriptor, assetId }) {
+async function maybeWriteImageMetadata({ root, assetDescriptor, recordToken }) {
   try {
     return await writeLocalImageMetadataRecord({
       projectDir: root,
       assetDescriptor,
-      recordRef: `records/assets/reference-${assetId}-image-metadata.local.json`
+      recordRef: `records/assets/${recordToken}-image-metadata.local.json`
     })
   } catch {
     return undefined
