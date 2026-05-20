@@ -1084,7 +1084,15 @@ test('byte descriptor proposal previews bytes without materialization proof', as
   assert.equal(proposals.length, 1)
   const proposal = proposals[0].proposal
   assert.equal(proposal.schema, 'media.byte_descriptor_proposal.local.v1')
+  assert.equal(proposal.contentId, result.outputs.assetDescriptor.contentId)
+  assert.equal(proposal.byteDescriptorProposalId, `byte-descriptor-proposal-sha256-${result.outputs.assetDescriptor.hash.value}`)
+  assert.equal(proposal.sourceContentRef.id, result.outputs.assetDescriptor.contentId)
   assert.equal(proposal.sourceAssetRef.id, result.outputs.assetDescriptor.assetId)
+  assert.equal(proposal.sourceAssetRefs.length, 1)
+  assert.equal(proposal.sourceAssetRefs[0].id, result.outputs.assetDescriptor.assetId)
+  assert.equal(proposal.sharedBySituationRefs[0].id, result.outputs.assetDescriptor.situationRef.id)
+  assert.equal(proposal.proposedByteDescriptor.contentId, result.outputs.assetDescriptor.contentId)
+  assert.equal(proposal.proposedByteDescriptor.sourceContentRef.id, result.outputs.assetDescriptor.contentId)
   assert.equal(proposal.proposedByteDescriptor.intendedSchema, 'media.byte_descriptor.v1')
   assert.equal(proposal.byteAvailabilityProof, false)
   assert.equal(proposal.materializationProof, false)
@@ -1110,6 +1118,67 @@ test('byte descriptor proposals dedupe duplicate asset descriptor records', asyn
 
   assert.equal(proposals.length, 1)
   assert.equal(proposals[0].proposal.sourceAssetRef.id, result.outputs.assetDescriptor.assetId)
+})
+
+test('byte descriptor proposals dedupe same content across divergent asset descriptors', async () => {
+  const dir = await createFixtureProject()
+  const result = await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await mkdir(path.join(dir, 'media', 'references'), { recursive: true })
+  await writeFile(path.join(dir, 'media', 'references', 'candidate.txt'), 'candidate bytes')
+  const referenceAsset = structuredClone(result.outputs.assetDescriptor)
+  referenceAsset.assetId = 'asset-reference-same-content'
+  referenceAsset.assetDescriptorRef = {
+    ...referenceAsset.assetDescriptorRef,
+    id: referenceAsset.assetId
+  }
+  referenceAsset.artifactDescriptorRef = referenceAsset.assetDescriptorRef
+  referenceAsset.localRef = {
+    ...referenceAsset.localRef,
+    placementClass: 'media-reference',
+    path: 'media/references/candidate.txt'
+  }
+  referenceAsset.placementRef = {
+    ...referenceAsset.placementRef,
+    id: `placement:${referenceAsset.projectId}:media/references/candidate.txt`,
+    path: 'media/references/candidate.txt',
+    placementClass: 'media-reference',
+    lifecycleState: 'source'
+  }
+  referenceAsset.situationRef = {
+    ...referenceAsset.situationRef,
+    id: `situation:${referenceAsset.projectId}:reference-asset:${referenceAsset.placementRef.id}`,
+    role: 'reference-asset',
+    placementRef: {
+      kind: referenceAsset.placementRef.kind,
+      id: referenceAsset.placementRef.id
+    }
+  }
+  await writeFile(
+    path.join(dir, 'records', 'assets', 'reference-same-content.local.json'),
+    `${JSON.stringify(referenceAsset, null, 2)}\n`
+  )
+
+  const { proposals } = await writeByteDescriptorProposals({ projectDir: dir })
+
+  assert.equal(proposals.length, 1)
+  const proposal = proposals[0].proposal
+  assert.equal(proposal.contentId, result.outputs.assetDescriptor.contentId)
+  assert.equal(proposal.sourceContentRef.id, result.outputs.assetDescriptor.contentId)
+  assert.deepEqual(
+    proposal.sourceAssetRefs.map((ref) => ref.id).sort(),
+    [result.outputs.assetDescriptor.assetId, referenceAsset.assetId].sort()
+  )
+  assert.deepEqual(
+    proposal.sharedBySituationRefs.map((ref) => ref.id).sort(),
+    [result.outputs.assetDescriptor.situationRef.id, referenceAsset.situationRef.id].sort()
+  )
+  assert.equal(proposal.sourceAssetRef.id, result.outputs.assetDescriptor.assetId)
+  assert.equal(proposal.byteAvailabilityProof, false)
+  assert.equal(proposal.materializationProof, false)
 })
 
 test('byte descriptor proposal rejects byte proof claims', async () => {
@@ -1177,7 +1246,7 @@ test('resource ref candidate aligns with byte descriptor proposal when present',
   assert.equal(candidate.sourceRef.id, result.outputs.assetDescriptor.assetId)
   assert.equal(candidate.byteDescriptorAlignment.status, 'aligned')
   assert.equal(candidate.byteDescriptorAlignment.byteDescriptorProposalRef.schema, 'media.byte_descriptor_proposal.local.v1')
-  assert.equal(candidate.proposedResourceRef.byteDescriptorProposalRef.id, `byte-descriptor-proposal-${result.outputs.assetDescriptor.assetId}`)
+  assert.equal(candidate.proposedResourceRef.byteDescriptorProposalRef.id, `byte-descriptor-proposal-sha256-${result.outputs.assetDescriptor.hash.value}`)
   assert.equal(validateRequiredRecord(candidate), true)
 })
 
@@ -1395,7 +1464,7 @@ test('project health and inspection summaries include per-asset attention rows',
   ))
 })
 
-test('project status and readiness flag stale byte proposals and resource candidates', async () => {
+test('project status and readiness keep content byte proposals while flagging stale resource candidates', async () => {
   const dir = await createFixtureProject()
   await runFirstWedge({
     projectDir: dir,
@@ -1416,13 +1485,12 @@ test('project status and readiness flag stale byte proposals and resource candid
   const readiness = await writeEdgeReadinessGuidance({ projectDir: dir })
 
   assert.equal(status.status.assetResourceConsistency.readyForEdgeInspection, false)
-  assert.equal(status.status.assetResourceConsistency.staleByteDescriptorProposalIds.length, 1)
+  assert.equal(status.status.assetResourceConsistency.staleByteDescriptorProposalIds.length, 0)
   assert.equal(status.status.assetResourceConsistency.staleResourceCandidateIds.length, 1)
-  assert.ok(status.status.assetResourceConsistency.assetExplanations[0].issueCodes.includes('stale_byte_descriptor_proposal'))
   assert.ok(status.status.assetResourceConsistency.assetExplanations[0].issueCodes.includes('stale_resource_ref_candidate'))
-  assert.equal(status.status.assetResourceConsistency.assetExplanations[0].nextAction, 'Run npm run bytes:proposal.')
+  assert.equal(status.status.assetResourceConsistency.assetExplanations[0].nextAction, 'Run npm run resource:refs after byte proposals are current.')
   assert.equal(readiness.readiness.state, 'caution')
-  assert.equal(readiness.readiness.resolvabilitySummary.staleByteDescriptorProposalIds.length, 1)
+  assert.equal(readiness.readiness.resolvabilitySummary.staleByteDescriptorProposalIds.length, 0)
   assert.equal(readiness.readiness.resolvabilitySummary.staleResourceCandidateIds.length, 1)
 })
 

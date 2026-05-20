@@ -3,7 +3,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { artifactKinds } from '../contracts/artifact-kinds.js'
-import { makeRef, nowIso } from '../contracts/constructors.js'
+import { createContentId, makeRef, nowIso } from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
 
@@ -46,14 +46,20 @@ export async function writeByteDescriptorProposals({
   }
 
   const proposals = []
-  const seenProposalIds = new Set()
+  const assetGroups = new Map()
   for (const entry of eligibleAssets) {
+    const contentId = contentIdForAsset(entry.record)
+    const group = assetGroups.get(contentId) ?? []
+    group.push(entry)
+    assetGroups.set(contentId, group)
+  }
+
+  for (const entries of assetGroups.values()) {
     const proposal = createByteDescriptorProposal({
-      assetDescriptor: entry.record,
-      assetRecordPath: entry.path
+      assetDescriptor: entries[0].record,
+      assetRecordPath: entries[0].path,
+      assetEntries: entries
     })
-    if (seenProposalIds.has(proposal.byteDescriptorProposalId)) continue
-    seenProposalIds.add(proposal.byteDescriptorProposalId)
     const output = `records/bytes/${proposal.byteDescriptorProposalId}.local.json`
     assertSafeLocalPath(output)
     await mkdir(path.dirname(path.join(root, output)), { recursive: true })
@@ -72,19 +78,51 @@ export async function writeByteDescriptorProposals({
 export function createByteDescriptorProposal({
   assetDescriptor,
   assetRecordPath,
+  assetEntries,
   createdAt = nowIso()
 }) {
+  const entries = assetEntries ?? [{
+    path: assetRecordPath,
+    record: assetDescriptor
+  }]
+  const contentId = contentIdForAsset(assetDescriptor)
+  const sourceContentRef = makeRef('media-content', contentId, 'media.content_ref.local.v1')
   const sourceAssetRef = makeRef('media-asset', assetDescriptor.assetId, assetDescriptor.schema)
+  const sourceAssetRefs = entries.map(({ path: recordPath, record }) => ({
+    ...makeRef('media-asset', record.assetId, record.schema),
+    path: recordPath,
+    localRef: record.localRef,
+    localOnly: true
+  }))
+  const assetRecordRefs = entries.map(({ path: recordPath, record }) => ({
+    ...makeRef('media-asset-record', recordPath, record.schema),
+    path: recordPath,
+    localOnly: true
+  }))
+  const sharedBySituationRefs = entries
+    .map(({ record }) => record.situationRef)
+    .filter(Boolean)
+    .map((situationRef) => ({
+      kind: situationRef.kind,
+      id: situationRef.id,
+      role: situationRef.role,
+      localOnly: true
+    }))
   const proposal = {
     schema: artifactKinds.mediaByteDescriptorProposalLocal,
-    byteDescriptorProposalId: `byte-descriptor-proposal-${assetDescriptor.assetId}`,
+    byteDescriptorProposalId: `byte-descriptor-proposal-${contentIdToId(contentId)}`,
     projectId: assetDescriptor.projectId,
+    contentId,
+    sourceContentRef,
     sourceAssetRef,
+    sourceAssetRefs,
     assetRecordRef: {
       ...makeRef('media-asset-record', assetRecordPath, assetDescriptor.schema),
       path: assetRecordPath,
       localOnly: true
     },
+    assetRecordRefs,
+    sharedBySituationRefs,
     localRef: assetDescriptor.localRef,
     hash: assetDescriptor.hash,
     size: assetDescriptor.size,
@@ -92,7 +130,10 @@ export function createByteDescriptorProposal({
     proposedByteDescriptor: {
       intendedSchema: 'media.byte_descriptor.v1',
       descriptorKind: 'sha256-local-file-proposal',
+      contentId,
+      sourceContentRef,
       sourceAssetRef,
+      sourceAssetRefs,
       digest: assetDescriptor.hash,
       size: assetDescriptor.size,
       contentType: assetDescriptor.contentType,
@@ -116,6 +157,14 @@ export function createByteDescriptorProposal({
 
   validateRequiredRecord(proposal)
   return proposal
+}
+
+function contentIdForAsset(assetDescriptor) {
+  return assetDescriptor.contentId ?? createContentId(assetDescriptor.hash)
+}
+
+function contentIdToId(contentId) {
+  return contentId.replace(/[^a-zA-Z0-9.-]/g, '-')
 }
 
 async function readAssetDescriptors(root) {

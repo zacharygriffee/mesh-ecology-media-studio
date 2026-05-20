@@ -54,7 +54,7 @@ export async function writeEdgeReadinessGuidance({
     .filter((entry) => entry.record.schema === artifactKinds.mediaByteDescriptorProposalLocal)
   const resourceRefCandidates = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaLocalLayerResourceRefCandidateLocal)
-  const byteProposalByAssetId = new Map(byteDescriptorProposals.map((entry) => [entry.record.sourceAssetRef.id, entry]))
+  const byteProposalByAssetId = indexByteDescriptorProposalsByAssetId(byteDescriptorProposals)
   const resourceCandidateByAssetId = new Map(resourceRefCandidates.map((entry) => [entry.record.sourceRef.id, entry]))
   const missingByteDescriptorProposalAssetIds = []
   const missingResourceRefCandidateAssetIds = []
@@ -245,7 +245,7 @@ function readinessReasons({
   }
 
   if (staleByteDescriptorProposalIds.length > 0) {
-    reasons.push(`${staleByteDescriptorProposalIds.length} byte descriptor proposals do not match current asset hash/localRef.`)
+    reasons.push(`${staleByteDescriptorProposalIds.length} byte descriptor proposals do not match current asset content/hash refs.`)
   }
 
   if (staleResourceCandidateIds.length > 0) {
@@ -285,15 +285,43 @@ function readinessNextActions({
 }
 
 function byteProposalMatchesAsset(byteProposal, assetDescriptor) {
-  return JSON.stringify(byteProposal.hash ?? null) === JSON.stringify(assetDescriptor.hash ?? null) &&
-    JSON.stringify(byteProposal.localRef ?? null) === JSON.stringify(assetDescriptor.localRef ?? null) &&
+  return contentIdForRecord(byteProposal) === contentIdForRecord(assetDescriptor) &&
+    JSON.stringify(byteProposal.hash ?? null) === JSON.stringify(assetDescriptor.hash ?? null) &&
     JSON.stringify(byteProposal.proposedByteDescriptor?.digest ?? null) === JSON.stringify(assetDescriptor.hash ?? null) &&
-    JSON.stringify(byteProposal.proposedByteDescriptor?.localRef ?? null) === JSON.stringify(assetDescriptor.localRef ?? null)
+    byteProposalIncludesAsset(byteProposal, assetDescriptor.assetId)
 }
 
 function resourceCandidateMatchesAsset(resourceCandidate, assetDescriptor) {
   return JSON.stringify(resourceCandidate.proposedResourceRef?.hash ?? null) === JSON.stringify(assetDescriptor.hash ?? null) &&
     JSON.stringify(resourceCandidate.proposedResourceRef?.localRef ?? null) === JSON.stringify(assetDescriptor.localRef ?? null)
+}
+
+function indexByteDescriptorProposalsByAssetId(entries) {
+  const index = new Map()
+
+  for (const entry of entries) {
+    for (const ref of assetRefsForByteProposal(entry.record)) {
+      if (!index.has(ref.id)) index.set(ref.id, entry)
+    }
+  }
+
+  return index
+}
+
+function assetRefsForByteProposal(record) {
+  if (Array.isArray(record.sourceAssetRefs) && record.sourceAssetRefs.length > 0) {
+    return record.sourceAssetRefs
+  }
+
+  return record.sourceAssetRef ? [record.sourceAssetRef] : []
+}
+
+function byteProposalIncludesAsset(byteProposal, assetId) {
+  return assetRefsForByteProposal(byteProposal).some((ref) => ref.id === assetId)
+}
+
+function contentIdForRecord(record) {
+  return record.contentId ?? (record.hash?.algorithm === 'sha256' ? `sha256:${record.hash.value}` : undefined)
 }
 
 async function listJsonFiles(root) {

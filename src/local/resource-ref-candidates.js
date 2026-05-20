@@ -41,9 +41,7 @@ export async function writeLocalLayerResourceRefCandidates({
   const root = path.resolve(projectDir)
   const assetEntries = await readAssetDescriptors(root)
   const byteDescriptorProposalEntries = await readByteDescriptorProposals(root)
-  const byteDescriptorProposalByAssetId = new Map(
-    byteDescriptorProposalEntries.map((entry) => [entry.record.sourceAssetRef.id, entry])
-  )
+  const byteDescriptorProposalByAssetId = indexByteDescriptorProposalsByAssetId(byteDescriptorProposalEntries)
   const eligibleAssets = assetEntries.filter(({ record }) => isEligibleAsset(record))
 
   if (eligibleAssets.length === 0) {
@@ -188,6 +186,26 @@ async function readByteDescriptorProposals(root) {
   }
 
   return entries.sort((left, right) => left.path.localeCompare(right.path))
+}
+
+function indexByteDescriptorProposalsByAssetId(entries) {
+  const index = new Map()
+
+  for (const entry of entries) {
+    for (const ref of assetRefsForByteProposal(entry.record)) {
+      if (!index.has(ref.id)) index.set(ref.id, entry)
+    }
+  }
+
+  return index
+}
+
+function assetRefsForByteProposal(record) {
+  if (Array.isArray(record.sourceAssetRefs) && record.sourceAssetRefs.length > 0) {
+    return record.sourceAssetRefs
+  }
+
+  return record.sourceAssetRef ? [record.sourceAssetRef] : []
 }
 
 function isEligibleAsset(record) {

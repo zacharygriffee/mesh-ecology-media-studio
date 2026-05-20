@@ -121,9 +121,9 @@ function summarizeAssetResourceConsistency(records) {
   const acceptedOrReferenceAssets = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaAssetDescriptor)
     .filter((entry) => isAcceptedOrReferenceAsset(entry.record))
-  const byteProposalByAssetId = new Map(records
+  const byteProposalByAssetId = indexByteDescriptorProposalsByAssetId(records
     .filter((entry) => entry.record.schema === artifactKinds.mediaByteDescriptorProposalLocal)
-    .map((entry) => [entry.record.sourceAssetRef.id, entry.record]))
+    .map((entry) => entry.record))
   const resourceCandidateByAssetId = new Map(records
     .filter((entry) => entry.record.schema === artifactKinds.mediaLocalLayerResourceRefCandidateLocal)
     .map((entry) => [entry.record.sourceRef.id, entry.record]))
@@ -310,10 +310,10 @@ function healthNonClaims(extra = {}) {
 }
 
 function byteProposalMatchesAsset(byteProposal, assetDescriptor) {
-  return JSON.stringify(byteProposal.hash ?? null) === JSON.stringify(assetDescriptor.hash ?? null) &&
-    JSON.stringify(byteProposal.localRef ?? null) === JSON.stringify(assetDescriptor.localRef ?? null) &&
+  return contentIdForRecord(byteProposal) === contentIdForRecord(assetDescriptor) &&
+    JSON.stringify(byteProposal.hash ?? null) === JSON.stringify(assetDescriptor.hash ?? null) &&
     JSON.stringify(byteProposal.proposedByteDescriptor?.digest ?? null) === JSON.stringify(assetDescriptor.hash ?? null) &&
-    JSON.stringify(byteProposal.proposedByteDescriptor?.localRef ?? null) === JSON.stringify(assetDescriptor.localRef ?? null)
+    byteProposalIncludesAsset(byteProposal, assetDescriptor.assetId)
 }
 
 function resourceCandidateMatchesAsset(resourceCandidate, assetDescriptor) {
@@ -334,6 +334,34 @@ function isAcceptedAsset(record) {
   const placementClass = record.localRef?.placementClass
   const localPath = record.localRef?.path
   return placementClass === 'media-accepted' || localPath?.startsWith('media/accepted/')
+}
+
+function indexByteDescriptorProposalsByAssetId(records) {
+  const index = new Map()
+
+  for (const record of records) {
+    for (const ref of assetRefsForByteProposal(record)) {
+      if (!index.has(ref.id)) index.set(ref.id, record)
+    }
+  }
+
+  return index
+}
+
+function assetRefsForByteProposal(record) {
+  if (Array.isArray(record.sourceAssetRefs) && record.sourceAssetRefs.length > 0) {
+    return record.sourceAssetRefs
+  }
+
+  return record.sourceAssetRef ? [record.sourceAssetRef] : []
+}
+
+function byteProposalIncludesAsset(byteProposal, assetId) {
+  return assetRefsForByteProposal(byteProposal).some((ref) => ref.id === assetId)
+}
+
+function contentIdForRecord(record) {
+  return record.contentId ?? (record.hash?.algorithm === 'sha256' ? `sha256:${record.hash.value}` : undefined)
 }
 
 async function readProjectRecords(root) {
