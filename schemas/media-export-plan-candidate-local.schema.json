@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "media.export_plan_candidate.local.v1",
+  "title": "Media Export Plan Candidate Local",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "planId",
+    "projectId",
+    "mode",
+    "planKind",
+    "sourceExportCandidateRef",
+    "orderedItems",
+    "targetOutputRef",
+    "planPosture",
+    "sourceRefs",
+    "createdAt",
+    "localOnly",
+    "meshTruth",
+    "productionReady"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.export_plan_candidate.local.v1"
+    },
+    "planId": {
+      "type": "string"
+    },
+    "projectId": {
+      "type": "string"
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "planKind": {
+      "const": "dry-run-export-plan-candidate"
+    },
+    "orderedItems": {
+      "type": "array"
+    },
+    "sourceRefs": {
+      "type": "array"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "productionReady": {
+      "const": false
+    }
+  }
+}

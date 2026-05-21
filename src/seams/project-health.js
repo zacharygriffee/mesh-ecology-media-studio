@@ -10,6 +10,7 @@ import { writeEdgeReadinessGuidance } from './edge-readiness-guidance.js'
 import { readProjectRecords, writeProjectStatus } from './project-status.js'
 import { validateProductionRecordsInProject } from '../production/validate-production-records.js'
 import { evaluateRenderExportCandidateFreshness } from '../production/render-export-candidate.js'
+import { summarizeRenderReceipts } from '../production/render-receipts.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
@@ -66,6 +67,7 @@ export async function writeProjectHealth({
   const productionCapsuleHealthExplanations = buildProductionCapsuleHealthExplanations(records)
   const productionRoughCutHealthExplanations = buildProductionRoughCutHealthExplanations(records)
   const renderExportCandidateSummary = summarizeRenderExportCandidates(records)
+  const renderReceiptSummary = summarizeRenderReceipts(records)
   const renderExportCandidateHealthExplanations = renderExportCandidateSummary.attentionRows.map((row) => ({
     subjectRef: {
       kind: 'media-render-export-candidate',
@@ -114,6 +116,10 @@ export async function writeProjectHealth({
     blockingIssues.push('render-export-candidate-attention')
   }
 
+  if (renderReceiptSummary.attentionRows.length > 0) {
+    blockingIssues.push('render-receipt-attention')
+  }
+
   const health = {
     schema: artifactKinds.mediaProjectHealthLocal,
     healthId: `project-health-${projectId}`,
@@ -152,13 +158,40 @@ export async function writeProjectHealth({
     productionRoughCutHealthExplanations,
     renderExportCandidateSummary,
     renderExportCandidateHealthExplanations,
+    renderReceiptSummary,
+    renderReceiptHealthExplanations: renderReceiptSummary.attentionRows.map((row) => ({
+      subjectRef: row.receiptRef,
+      subjectKind: 'media-render-receipt',
+      healthState: 'needs-local-attention',
+      issueCodes: row.issueCodes,
+      summary: 'Render receipt is stale against the current render plan, candidate, or rough-cut review posture.',
+      nextAction: row.nextAction,
+      sourceRefs: row.sourceRefs ?? [],
+      localOnly: true,
+      operatorGuidanceOnly: true,
+      meshTruth: false,
+      publicationAuthorization: false
+    })),
     operatorHealthExplanations: [
       ...assetHealthExplanations,
       ...derivativeHealthExplanations,
       ...productionHealthExplanations,
       ...productionCapsuleHealthExplanations,
       ...productionRoughCutHealthExplanations,
-      ...renderExportCandidateHealthExplanations
+      ...renderExportCandidateHealthExplanations,
+      ...renderReceiptSummary.attentionRows.map((row) => ({
+        subjectRef: row.receiptRef,
+        subjectKind: 'media-render-receipt',
+        healthState: 'needs-local-attention',
+        issueCodes: row.issueCodes,
+        summary: 'Render receipt is stale against the current render plan, candidate, or rough-cut review posture.',
+        nextAction: row.nextAction,
+        sourceRefs: row.sourceRefs ?? [],
+        localOnly: true,
+        operatorGuidanceOnly: true,
+        meshTruth: false,
+        publicationAuthorization: false
+      }))
     ],
     operatorGuidanceOnly: true,
     localOnly: true,
@@ -216,6 +249,15 @@ function printHealthSummary(health, output) {
     `exportPerformed=${health.renderExportCandidateSummary?.exportPerformed ?? 0}`,
     `productionReady=${health.renderExportCandidateSummary?.productionReady ?? 0}`,
     `stale=${health.renderExportCandidateSummary?.stale ?? 0}`
+  ].join(' | '))
+  console.log([
+    `renderReceipts: total=${health.renderReceiptSummary?.total ?? 0}`,
+    `contactSheet=${health.renderReceiptSummary?.contactSheet ?? 0}`,
+    `ffmpegPreview=${health.renderReceiptSummary?.ffmpegPreview ?? 0}`,
+    `renderPerformed=${health.renderReceiptSummary?.renderPerformed ?? 0}`,
+    `exportPerformed=${health.renderReceiptSummary?.exportPerformed ?? 0}`,
+    `productionReady=${health.renderReceiptSummary?.productionReady ?? 0}`,
+    `stale=${health.renderReceiptSummary?.stale ?? 0}`
   ].join(' | '))
   for (const explanation of health.operatorHealthExplanations ?? []) {
     console.log(formatHealthExplanation(explanation))

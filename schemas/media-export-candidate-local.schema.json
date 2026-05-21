@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "media.export_candidate.local.v1",
+  "title": "Media Export Candidate Local",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "exportCandidateId",
+    "projectId",
+    "mode",
+    "candidateKind",
+    "sourceRoughCutRef",
+    "reviewDecisionRef",
+    "orderedItemRefs",
+    "targetExport",
+    "exportPosture",
+    "sourceRefs",
+    "createdAt",
+    "localOnly",
+    "meshTruth",
+    "productionReady"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.export_candidate.local.v1"
+    },
+    "exportCandidateId": {
+      "type": "string"
+    },
+    "projectId": {
+      "type": "string"
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "candidateKind": {
+      "const": "reviewed-rough-cut-export-candidate"
+    },
+    "orderedItemRefs": {
+      "type": "array"
+    },
+    "sourceRefs": {
+      "type": "array"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "productionReady": {
+      "const": false
+    }
+  }
+}

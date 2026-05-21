@@ -118,6 +118,9 @@ import { writeRenderExportMediation } from '../src/production/render-export-medi
 import { writeRenderPlanCandidate } from '../src/production/render-plan-candidate.js'
 import { writeContactSheetRender } from '../src/production/render-contact-sheet.js'
 import { writeFfmpegRender } from '../src/production/render-ffmpeg.js'
+import { writeExportCandidate } from '../src/production/export-candidate.js'
+import { writeExportPlanCandidate } from '../src/production/export-plan-candidate.js'
+import { evaluateRenderReceiptFreshness, summarizeRenderReceipts } from '../src/production/render-receipts.js'
 
 const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 
@@ -2599,6 +2602,7 @@ test('production authority prerequisite report separates local package from auth
   assert.equal(report.roughCutChangesRequested, 0)
   assert.equal(report.roughCutDeferred, 0)
   assert.equal(report.renderExportCandidates, 0)
+  assert.equal(report.renderReceipts, 0)
   assert.equal(report.renderAuthorizationMissing, 1)
   assert.equal(report.exportAuthorizationMissing, 1)
   assert.equal(report.pendingAuthority, 1)
@@ -2619,13 +2623,14 @@ test('production authority prerequisite report separates local package from auth
   assert.equal(row.roughCutReviewPosture.state, 'rough-cut-missing')
   assert.equal(row.roughCutReviewPosture.reviewed, false)
   assert.equal(row.renderExportCandidatePosture.state, 'render-export-candidate-missing')
+  assert.equal(row.renderReceiptPosture.state, 'render-receipt-missing')
   assert.equal(row.renderExportCandidatePosture.renderAuthorization, false)
   assert.equal(row.renderExportCandidatePosture.exportAuthorization, false)
   assert.deepEqual(row.derivativeKinds, ['thumbnail'])
   assert.equal(row.productionReady, false)
   assert.equal(row.approvalAuthority, false)
   assert.equal(row.publicationAuthorization, false)
-  assert.ok(output.lines.some((line) => line === 'production authority prerequisites: project=venice-smoke-project | candidates=1 | localPackageComplete=1 | missingLocalPrerequisites=0 | roughCutReviewed=0 | roughCutChangesRequested=0 | roughCutDeferred=0 | renderExportCandidates=0 | renderAuthorizationMissing=1 | exportAuthorizationMissing=1 | pendingAuthority=1 | productionReady=0 | output=records/production/media-production-authority-prerequisites.local.json'))
+  assert.ok(output.lines.some((line) => line === 'production authority prerequisites: project=venice-smoke-project | candidates=1 | localPackageComplete=1 | missingLocalPrerequisites=0 | roughCutReviewed=0 | roughCutChangesRequested=0 | roughCutDeferred=0 | renderExportCandidates=0 | renderReceipts=0 | renderAuthorizationMissing=1 | exportAuthorizationMissing=1 | pendingAuthority=1 | productionReady=0 | output=records/production/media-production-authority-prerequisites.local.json'))
   assert.ok(output.lines.some((line) => line.includes('authority-prereq: media/accepted/venice-live-smoke-0.png | localPackage=local-package-complete-authority-missing | authority=authority-missing')))
   const written = JSON.parse(
     await readFile(path.join(dir, 'records', 'production', 'media-production-authority-prerequisites.local.json'), 'utf8')
@@ -2969,6 +2974,7 @@ test('render export candidate requires reviewed rough cut without rendering or a
   const gatedPrereqs = gatedPrereqOutput.result
   assert.equal(gatedPrereqs.renderExportCandidates, 1)
   assert.equal(gatedPrereqs.renderExportCandidatesFresh, 1)
+  assert.equal(gatedPrereqs.renderReceipts, 0)
   assert.equal(gatedPrereqs.renderAuthorizationMissing, 1)
   assert.equal(gatedPrereqs.exportAuthorizationMissing, 1)
   assert.equal(gatedPrereqs.productionReady, 0)
@@ -2980,6 +2986,7 @@ test('render export candidate requires reviewed rough cut without rendering or a
 
   const gatedHandoff = await writeAuthorityHandoffCandidate({ projectDir: dir, quiet: true })
   assert.equal(gatedHandoff.candidate.prerequisiteSummary.renderExportCandidates, 1)
+  assert.equal(gatedHandoff.candidate.prerequisiteSummary.renderReceipts, 0)
   assert.equal(gatedHandoff.candidate.prerequisiteSummary.renderAuthorizationMissing, 1)
   assert.equal(gatedHandoff.candidate.prerequisiteSummary.exportAuthorizationMissing, 1)
   const renderExportInput = gatedHandoff.candidate.authorityReviewInputs.find((input) => input.inputKind === 'render-export-candidate')
@@ -3113,6 +3120,111 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.ok(ffmpegOutput.lines.some((line) => line.includes('renderPerformed=true')))
   assert.ok(ffmpegOutput.lines.some((line) => line.includes('exportPerformed=false')))
 
+  const renderedRecords = await readProjectRecords(dir)
+  const renderReceiptSummary = summarizeRenderReceipts(renderedRecords)
+  assert.equal(renderReceiptSummary.total, 2)
+  assert.equal(renderReceiptSummary.contactSheet, 1)
+  assert.equal(renderReceiptSummary.ffmpegPreview, 1)
+  assert.equal(renderReceiptSummary.renderPerformed, 2)
+  assert.equal(renderReceiptSummary.exportPerformed, 0)
+  assert.equal(renderReceiptSummary.productionReady, 0)
+  assert.equal(renderReceiptSummary.fresh, 2)
+  assert.equal(renderReceiptSummary.stale, 0)
+  assert.equal(evaluateRenderReceiptFreshness({ receipt: ffmpegReceipt, records: renderedRecords }).state, 'fresh')
+
+  const renderedMediaSummaryOutput = await captureConsole(() => writeMediaSummary({ projectDir: dir }))
+  const renderedMediaSummary = renderedMediaSummaryOutput.result
+  assert.equal(renderedMediaSummary.renderReceipts.total, 2)
+  assert.equal(renderedMediaSummary.renderReceipts.renderPerformed, 2)
+  assert.equal(renderedMediaSummary.renderReceipts.exportPerformed, 0)
+  assert.equal(renderedMediaSummary.renderReceipts.productionReady, 0)
+  assert.ok(renderedMediaSummaryOutput.lines.some((line) => line === 'render receipts: total=2 | contactSheet=1 | ffmpegPreview=1 | renderPerformed=2 | exportPerformed=0 | productionReady=0 | stale=0 | attention=0'))
+
+  const renderedHealthOutput = await captureConsole(() => writeProjectHealth({ projectDir: dir, summary: true }))
+  assert.equal(renderedHealthOutput.result.health.renderReceiptSummary.total, 2)
+  assert.equal(renderedHealthOutput.result.health.renderReceiptSummary.stale, 0)
+  assert.ok(renderedHealthOutput.lines.some((line) => line === 'renderReceipts: total=2 | contactSheet=1 | ffmpegPreview=1 | renderPerformed=2 | exportPerformed=0 | productionReady=0 | stale=0'))
+
+  const renderedIndexOutput = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
+  assert.equal(renderedIndexOutput.result.index.summary.renderReceipts, 2)
+  assert.equal(renderedIndexOutput.result.index.summary.renderReceiptsNeedingAttention, 0)
+  assert.ok(renderedIndexOutput.lines.some((line) => line.includes('renderReceipts=2')))
+  assert.ok(renderedIndexOutput.lines.some((line) => line.includes(`render receipt: ${ffmpegReceipt.renderReceiptId}`)))
+
+  const renderedInspection = await inspectVeniceSmoke({ projectDir: dir })
+  assert.equal(renderedInspection.packet.operationalSummary.recordCounts.renderReceipts, 2)
+  assert.equal(renderedInspection.packet.operationalSummary.renderReceipts.total, 2)
+  assert.equal(renderedInspection.packet.operationalSummary.renderReceipts.renderPerformed, 2)
+  assert.equal(renderedInspection.packet.operationalSummary.renderReceipts.exportPerformed, 0)
+
+  const renderedPrereqs = await writeProductionAuthorityPrerequisiteReport({ projectDir: dir, print: false })
+  assert.equal(renderedPrereqs.renderReceipts, 1)
+  assert.equal(renderedPrereqs.renderReceiptsFresh, 1)
+  assert.equal(renderedPrereqs.rows[0].renderReceiptPosture.state, 'render-receipt-present-preview-only')
+  assert.equal(renderedPrereqs.rows[0].renderReceiptPosture.renderPerformed, true)
+  assert.equal(renderedPrereqs.rows[0].renderReceiptPosture.exportAuthorization, false)
+  assert.equal(renderedPrereqs.rows[0].renderReceiptPosture.productionReady, false)
+
+  const renderedHandoff = await writeAuthorityHandoffCandidate({ projectDir: dir, quiet: true })
+  assert.equal(renderedHandoff.candidate.prerequisiteSummary.renderReceipts, 1)
+  const renderReceiptInput = renderedHandoff.candidate.authorityReviewInputs.find((input) => input.inputKind === 'render-receipt')
+  assert.equal(renderReceiptInput.present, true)
+  assert.equal(renderReceiptInput.renderPerformed, true)
+  assert.equal(renderReceiptInput.exportPerformed, false)
+  assert.equal(renderReceiptInput.publicationAuthorization, false)
+  assert.equal(renderReceiptInput.productionReady, false)
+
+  const exportCandidateOutput = await captureConsole(() => writeExportCandidate({ projectDir: dir }))
+  const exportCandidate = exportCandidateOutput.result.candidate
+  assert.equal(exportCandidate.schema, 'media.export_candidate.local.v1')
+  assert.equal(exportCandidate.candidateKind, 'reviewed-rough-cut-export-candidate')
+  assert.equal(exportCandidate.sourceRoughCutRef.id, renderPlan.sourceRoughCutRef.id)
+  assert.equal(exportCandidate.reviewDecisionRef.id, review.decision.decisionId)
+  assert.equal(exportCandidate.sourceRenderReceiptRef.id, ffmpegReceipt.renderReceiptId)
+  assert.equal(exportCandidate.renderReceiptPosture.present, true)
+  assert.equal(exportCandidate.renderReceiptPosture.renderPerformed, true)
+  assert.equal(exportCandidate.exportPosture.exportPerformed, false)
+  assert.equal(exportCandidate.exportPosture.deliveryCreated, false)
+  assert.equal(exportCandidate.exportPosture.publicationAuthorization, false)
+  assert.equal(exportCandidate.targetExport.formatSelected, false)
+  assert.equal(exportCandidate.targetExport.packageCreated, false)
+  assert.equal(exportCandidate.exportPerformed, false)
+  assert.equal(exportCandidate.productionReady, false)
+  assert.equal(exportCandidate.approvalAuthority, false)
+  assert.equal(exportCandidate.publicationAuthorization, false)
+  assert.equal(exportCandidate.materializationProof, false)
+  assert.equal(validateRequiredRecord(exportCandidate), true)
+  assert.ok(exportCandidate.sourceRefs.some((ref) => ref.schema === 'media.render_receipt.local.v1'))
+  assert.ok(exportCandidateOutput.lines.some((line) => line.includes('export candidate:')))
+  assert.ok(exportCandidateOutput.lines.some((line) => line.includes('exportPerformed=false')))
+
+  const exportPlanOutput = await captureConsole(() => writeExportPlanCandidate({ projectDir: dir }))
+  const exportPlan = exportPlanOutput.result.plan
+  assert.equal(exportPlan.schema, 'media.export_plan_candidate.local.v1')
+  assert.equal(exportPlan.planKind, 'dry-run-export-plan-candidate')
+  assert.equal(exportPlan.sourceExportCandidateRef.id, exportCandidate.exportCandidateId)
+  assert.equal(exportPlan.sourceRenderReceiptRef.id, ffmpegReceipt.renderReceiptId)
+  assert.equal(exportPlan.orderedItems.length, 1)
+  assert.equal(exportPlan.planPosture.refsResolved, true)
+  assert.equal(exportPlan.planPosture.targetOutputPathResolved, true)
+  assert.equal(exportPlan.planPosture.mediaBytesRead, false)
+  assert.equal(exportPlan.planPosture.outputBytesCreated, false)
+  assert.equal(exportPlan.planPosture.exportPerformed, false)
+  assert.equal(exportPlan.planPosture.deliveryCreated, false)
+  assert.equal(exportPlan.targetOutputRef.materialized, false)
+  assert.equal(exportPlan.exportPerformed, false)
+  assert.equal(exportPlan.productionReady, false)
+  assert.equal(exportPlan.publicationAuthorization, false)
+  assert.equal(exportPlan.materializationProof, false)
+  assert.equal(validateRequiredRecord(exportPlan), true)
+  assert.ok(exportPlan.sourceRefs.some((ref) => ref.schema === 'media.export_candidate.local.v1'))
+  assert.ok(exportPlanOutput.lines.some((line) => line.includes('export plan candidate:')))
+  assert.ok(exportPlanOutput.lines.some((line) => line.includes('bytesRead=false')))
+  await assert.rejects(
+    () => readFile(path.join(dir, exportPlan.targetOutputRef.path)),
+    /ENOENT/
+  )
+
   await writeRoughCutReviewDecision({
     projectDir: dir,
     decision: 'request_changes',
@@ -3125,18 +3237,29 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.equal(freshness.state, 'stale')
   assert.ok(freshness.issueCodes.includes('latest_rough_cut_review_changed'))
   assert.ok(freshness.issueCodes.includes('latest_rough_cut_review_not_approved_for_render_export'))
+  const staleReceiptFreshness = evaluateRenderReceiptFreshness({ receipt: ffmpegReceipt, records: projectRecords })
+  assert.equal(staleReceiptFreshness.state, 'stale')
+  assert.ok(staleReceiptFreshness.issueCodes.includes('latest_rough_cut_review_changed'))
 
   const staleSummary = await createMediaSummary({ projectDir: dir })
   assert.equal(staleSummary.renderExportCandidates.stale, 1)
   assert.ok(staleSummary.renderExportCandidates.attentionRows[0].issueCodes.includes('latest_rough_cut_review_changed'))
+  assert.equal(staleSummary.renderReceipts.stale, 2)
+  assert.ok(staleSummary.renderReceipts.attentionRows[0].issueCodes.includes('latest_rough_cut_review_changed'))
   const staleHealthOutput = await captureConsole(() => writeProjectHealth({ projectDir: dir, summary: true }))
   assert.ok(staleHealthOutput.result.health.blockingIssues.includes('render-export-candidate-attention'))
+  assert.ok(staleHealthOutput.result.health.blockingIssues.includes('render-receipt-attention'))
   assert.equal(staleHealthOutput.result.health.renderExportCandidateHealthExplanations.length, 1)
+  assert.equal(staleHealthOutput.result.health.renderReceiptHealthExplanations.length, 2)
   const staleIndexOutput = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
   assert.equal(staleIndexOutput.result.index.summary.renderExportCandidatesNeedingAttention, 1)
+  assert.equal(staleIndexOutput.result.index.summary.renderReceiptsNeedingAttention, 2)
 
   const compatibility = await writeEdgeCompatibilityBundle({ projectDir: dir })
   assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.render_export_candidate.local.v1'))
+  assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.render_receipt.local.v1'))
+  assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.export_candidate.local.v1'))
+  assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.export_plan_candidate.local.v1'))
 })
 
 test('rough cut revision regenerates local capsule from request changes', async () => {

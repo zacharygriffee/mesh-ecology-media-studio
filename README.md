@@ -28,6 +28,7 @@ provider result
 -> render adapter contract
 -> dry-run render plan
 -> local render receipt
+-> dry-run export candidate/plan
 ```
 
 The vector is useful for local review and operator inspection. It does not grant
@@ -298,6 +299,8 @@ npm run production:render-export-candidate -- --project-dir examples/venice-smok
 npm run production:render-export-mediate -- --project-dir examples/venice-smoke
 npm run production:render-adapter-contract -- --project-dir examples/venice-smoke
 npm run production:render-plan -- --project-dir examples/venice-smoke
+npm run production:export-candidate -- --project-dir examples/venice-smoke
+npm run production:export-plan -- --project-dir examples/venice-smoke
 ```
 
 The first real local render commands consume the dry-run render plan:
@@ -318,6 +321,10 @@ MEDIA_STUDIO_FFMPEG=disabled npm run production:render-ffmpeg -- --project-dir e
 
 Render receipts are local evidence only. They are not export deliveries,
 publication authorization, production readiness, or authority.
+`production:export-candidate` and `production:export-plan` create a dry-run
+delivery candidate over the reviewed rough cut and existing preview receipts.
+They resolve refs and target output placement only; they do not read media bytes,
+create delivery files, authorize publication, or make the package production-ready.
 
 ## Inspection And Edge-Compatible Artifacts
 

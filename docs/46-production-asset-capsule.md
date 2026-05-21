@@ -231,6 +231,12 @@ disabled with `--disable-ffmpeg` or `MEDIA_STUDIO_FFMPEG=disabled`. These
 receipts are local render evidence only; they are not export delivery,
 publication authorization, approval authority, or production readiness.
 
+`npm run production:export-candidate` and `npm run production:export-plan`
+create the first dry-run export posture over a reviewed rough cut and optional
+render receipt. They resolve refs and planned delivery placement only. They do
+not read media bytes, create delivery files, authorize publication, or make the
+package production-ready.
+
 ## Non-Claims
 
 The capsule is local operator guidance only:

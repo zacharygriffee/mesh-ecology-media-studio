@@ -91,6 +91,7 @@ export function createAuthorityHandoffCandidateFromRecords({
   const productionCapsuleRefs = refsForSchema(records, artifactKinds.mediaProductionAssetCapsuleLocal, 'media-production-asset-capsule')
   const roughCutCapsuleRefs = refsForSchema(records, artifactKinds.mediaRoughCutCapsuleLocal, 'media-rough-cut-capsule')
   const renderExportCandidateRefs = refsForSchema(records, artifactKinds.mediaRenderExportCandidateLocal, 'media-render-export-candidate')
+  const renderReceiptRefs = refsForSchema(records, artifactKinds.mediaRenderReceiptLocal, 'media-render-receipt')
   const approvalProposalRefs = refsForSchema(records, artifactKinds.mediaApprovalProposalLocal, 'media-approval-proposal')
   const localDecisionRefs = refsForSchema(records, artifactKinds.mediaOperatorDecision, 'media-operator-decision')
   const roughCutReviewDecisionRefs = refsForRecordPredicate(
@@ -118,6 +119,7 @@ export function createAuthorityHandoffCandidateFromRecords({
     derivativeKinds: row.derivativeKinds,
     roughCutReviewPosture: row.roughCutReviewPosture,
     renderExportCandidatePosture: row.renderExportCandidatePosture,
+    renderReceiptPosture: row.renderReceiptPosture,
     authorityGaps: row.authorityGaps,
     productionReady: false,
     approvalAuthority: false,
@@ -129,6 +131,7 @@ export function createAuthorityHandoffCandidateFromRecords({
     ...productionCapsuleRefs,
     ...roughCutCapsuleRefs,
     ...renderExportCandidateRefs,
+    ...renderReceiptRefs,
     ...approvalProposalRefs,
     ...roughCutReviewDecisionRefs,
     ...localDecisionRefs,
@@ -151,6 +154,9 @@ export function createAuthorityHandoffCandidateFromRecords({
     renderExportCandidates: prerequisiteReport.renderExportCandidates ?? 0,
     renderExportCandidatesFresh: prerequisiteReport.renderExportCandidatesFresh ?? 0,
     renderExportCandidatesStale: prerequisiteReport.renderExportCandidatesStale ?? 0,
+    renderReceipts: prerequisiteReport.renderReceipts ?? 0,
+    renderReceiptsFresh: prerequisiteReport.renderReceiptsFresh ?? 0,
+    renderReceiptsStale: prerequisiteReport.renderReceiptsStale ?? 0,
     renderAuthorizationMissing: prerequisiteReport.renderAuthorizationMissing ?? 0,
     exportAuthorizationMissing: prerequisiteReport.exportAuthorizationMissing ?? 0,
     productionReady: prerequisiteReport.productionReady,
@@ -167,6 +173,7 @@ export function createAuthorityHandoffCandidateFromRecords({
       ...productionCapsuleRefs.map((ref) => ref.id),
       ...roughCutCapsuleRefs.map((ref) => ref.id),
       ...renderExportCandidateRefs.map((ref) => ref.id),
+      ...renderReceiptRefs.map((ref) => ref.id),
       ...roughCutReviewDecisionRefs.map((ref) => ref.id)
     ].join('|'))}`,
     projectId,
@@ -228,6 +235,22 @@ export function createAuthorityHandoffCandidateFromRecords({
         exportAuthorization: false,
         publicationAuthorization: false,
         productionReady: false,
+        localOnly: true
+      },
+      {
+        inputKind: 'render-receipt',
+        refs: renderReceiptRefs,
+        required: false,
+        present: renderReceiptRefs.length > 0,
+        fresh: prerequisiteReport.renderReceiptsFresh ?? 0,
+        stale: prerequisiteReport.renderReceiptsStale ?? 0,
+        renderPerformed: renderReceiptRefs.length > 0,
+        exportPerformed: false,
+        renderAuthorization: false,
+        exportAuthorization: false,
+        publicationAuthorization: false,
+        productionReady: false,
+        localPreviewEvidenceOnly: true,
         localOnly: true
       },
       {
@@ -311,6 +334,7 @@ export function formatAuthorityHandoffCandidateSummary(candidate, output = defau
     `roughCuts=${candidate.authorityReviewInputs.find((input) => input.inputKind === 'rough-cut-capsule')?.refs.length ?? 0}`,
     `roughCutReviewed=${candidate.prerequisiteSummary.roughCutReviewed ?? 0}`,
     `renderExportCandidates=${candidate.prerequisiteSummary.renderExportCandidates ?? 0}`,
+    `renderReceipts=${candidate.prerequisiteSummary.renderReceipts ?? 0}`,
     `renderAuthorizationMissing=${candidate.prerequisiteSummary.renderAuthorizationMissing ?? 0}`,
     `exportAuthorizationMissing=${candidate.prerequisiteSummary.exportAuthorizationMissing ?? 0}`,
     `authorityGaps=${candidate.authorityGaps.length}`,

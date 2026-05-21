@@ -57,6 +57,8 @@ Known Studio artifact kinds:
 - `media.render_adapter_contract.local.v1`
 - `media.render_plan_candidate.local.v1`
 - `media.render_receipt.local.v1`
+- `media.export_candidate.local.v1`
+- `media.export_plan_candidate.local.v1`
 - `media.approval_proposal.local.v1`
 - `media.byte_descriptor_proposal.local.v1`
 - `media.local_layer_resource_ref_candidate.local.v1`
@@ -83,6 +85,12 @@ or mark production readiness.
 `media.render_receipt.local.v1` describe local render preparation and preview
 evidence. They do not create export delivery, authorize publication, grant
 production authority, or make a cut production-ready.
+
+`media.export_candidate.local.v1` and
+`media.export_plan_candidate.local.v1` describe dry-run local delivery posture
+over a reviewed rough cut. They resolve refs and target output placement only;
+they do not read media bytes, create delivery files, authorize publication, or
+make a package production-ready.
 
 Future candidate artifact kinds, not implemented and not active schema
 contracts:

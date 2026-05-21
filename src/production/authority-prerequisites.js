@@ -7,6 +7,7 @@ import { nowIso } from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { readProjectRecords } from '../seams/project-status.js'
 import { evaluateRenderExportCandidateFreshness } from './render-export-candidate.js'
+import { summarizeRenderReceipts } from './render-receipts.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/venice-smoke'
@@ -71,6 +72,9 @@ export async function createProductionAuthorityPrerequisiteReport({
     renderExportCandidates: rows.filter((row) => row.renderExportCandidatePosture?.present).length,
     renderExportCandidatesFresh: rows.filter((row) => row.renderExportCandidatePosture?.freshnessState === 'fresh').length,
     renderExportCandidatesStale: rows.filter((row) => row.renderExportCandidatePosture?.freshnessState === 'stale').length,
+    renderReceipts: rows.filter((row) => row.renderReceiptPosture?.present).length,
+    renderReceiptsFresh: rows.filter((row) => row.renderReceiptPosture?.freshnessState === 'fresh').length,
+    renderReceiptsStale: rows.filter((row) => row.renderReceiptPosture?.freshnessState === 'stale').length,
     renderAuthorizationMissing: rows.length,
     exportAuthorizationMissing: rows.length,
     pendingAuthority: rows.filter((row) => row.authorityState === 'authority-missing').length,
@@ -166,6 +170,7 @@ function summarizeCandidateAuthorityPrerequisites(asset, records) {
     .map((entry) => entry.record)
   const roughCutReviewPosture = summarizeRoughCutReviewPosture(asset, records)
   const renderExportCandidatePosture = summarizeRenderExportCandidatePosture(roughCutReviewPosture, records)
+  const renderReceiptPosture = summarizeRenderReceiptPosture(roughCutReviewPosture, records)
   const missingLocalPrerequisites = [
     localDecision ? null : 'local_decision_missing',
     approvalProposal ? null : 'approval_proposal_missing',
@@ -202,6 +207,7 @@ function summarizeCandidateAuthorityPrerequisites(asset, records) {
     derivativeKinds: Array.from(new Set(derivativeRecords.map((record) => record.derivativeKind).filter(Boolean))).sort(),
     roughCutReviewPosture,
     renderExportCandidatePosture,
+    renderReceiptPosture,
     missingLocalPrerequisites,
     localPackageState: missingLocalPrerequisites.length === 0
       ? 'local-package-complete-authority-missing'
@@ -240,6 +246,7 @@ function printProductionAuthorityPrerequisiteReport(report, output = defaultOutp
     `roughCutChangesRequested=${report.roughCutChangesRequested}`,
     `roughCutDeferred=${report.roughCutDeferred}`,
     `renderExportCandidates=${report.renderExportCandidates ?? 0}`,
+    `renderReceipts=${report.renderReceipts ?? 0}`,
     `renderAuthorizationMissing=${report.renderAuthorizationMissing ?? 0}`,
     `exportAuthorizationMissing=${report.exportAuthorizationMissing ?? 0}`,
     `pendingAuthority=${report.pendingAuthority}`,
@@ -255,6 +262,7 @@ function printProductionAuthorityPrerequisiteReport(report, output = defaultOutp
       `missing=${row.missingLocalPrerequisites.join(',') || 'none'}`,
       `roughCut=${row.roughCutReviewPosture?.state ?? 'unknown'}`,
       `renderExport=${row.renderExportCandidatePosture?.state ?? 'unknown'}`,
+      `renderReceipt=${row.renderReceiptPosture?.state ?? 'unknown'}`,
       `proposalSituatedRefs=${row.approvalProposalIdentity?.situatedRefsPresent === true}`,
       `derivatives=${row.derivativeKinds.join(',') || 'none'}`,
       `nextAction=${row.safeNextAction}`
@@ -262,6 +270,59 @@ function printProductionAuthorityPrerequisiteReport(report, output = defaultOutp
   }
 
   console.log('nonClaims: local-only; no mesh truth; no approval authority; no publication authorization; no byte/materialization proof; no resource admission')
+}
+
+function summarizeRenderReceiptPosture(roughCutReviewPosture, records) {
+  const roughCutId = roughCutReviewPosture?.roughCutRef?.id
+  if (!roughCutId) {
+    return missingRenderReceiptPosture()
+  }
+
+  const receiptRows = summarizeRenderReceipts(records).rows
+    .filter((row) => row.sourceRoughCutRef?.id === roughCutId)
+
+  if (receiptRows.length === 0) {
+    return missingRenderReceiptPosture()
+  }
+
+  const latest = receiptRows[0]
+  return {
+    state: latest.freshnessState === 'fresh'
+      ? 'render-receipt-present-preview-only'
+      : 'render-receipt-stale',
+    present: true,
+    receiptRef: latest.receiptRef,
+    renderKind: latest.renderKind,
+    outputLocalRef: latest.outputLocalRef,
+    freshnessState: latest.freshnessState,
+    issueCodes: latest.issueCodes,
+    renderPerformed: latest.renderPerformed,
+    exportPerformed: false,
+    productionReady: false,
+    renderAuthorization: false,
+    exportAuthorization: false,
+    publicationAuthorization: false,
+    nextAction: latest.nextAction,
+    localOnly: true,
+    operatorGuidanceOnly: true
+  }
+}
+
+function missingRenderReceiptPosture() {
+  return {
+    state: 'render-receipt-missing',
+    present: false,
+    receiptRef: null,
+    freshnessState: 'missing',
+    renderPerformed: false,
+    exportPerformed: false,
+    productionReady: false,
+    renderAuthorization: false,
+    exportAuthorization: false,
+    publicationAuthorization: false,
+    localOnly: true,
+    operatorGuidanceOnly: true
+  }
 }
 
 function summarizeRenderExportCandidatePosture(roughCutReviewPosture, records) {

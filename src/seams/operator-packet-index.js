@@ -8,6 +8,7 @@ import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
 import { summarizeProductionApprovalLane } from '../production/approval-lane.js'
 import { evaluateRenderExportCandidateFreshness } from '../production/render-export-candidate.js'
+import { summarizeRenderReceipt } from '../production/render-receipts.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
@@ -88,6 +89,9 @@ export async function writeOperatorPacketIndex({
   const renderExportCandidateRefs = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaRenderExportCandidateLocal)
     .map(toInspectionRef)
+  const renderReceiptRefs = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaRenderReceiptLocal)
+    .map(toInspectionRef)
   const mediationRefs = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaRuleResolutionTraceLocal)
     .map(toInspectionRef)
@@ -120,6 +124,9 @@ export async function writeOperatorPacketIndex({
   const renderExportCandidates = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaRenderExportCandidateLocal)
     .map((entry) => summarizeRenderExportCandidate(entry.record, entry.relativePath, records))
+  const renderReceipts = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaRenderReceiptLocal)
+    .map((entry) => summarizeRenderReceipt(entry.record, entry.relativePath, normalizeRecordPaths(records)))
   const productionApprovalLane = summarizeProductionApprovalLane({
     assetRecords: records
       .filter((entry) => entry.record.schema === artifactKinds.mediaAssetDescriptor)
@@ -157,6 +164,7 @@ export async function writeOperatorPacketIndex({
     productionBundleRefs,
     roughCutCapsuleRefs,
     renderExportCandidateRefs,
+    renderReceiptRefs,
     mediationRefs,
     providerLoopStatuses,
     providerLoopDecisions,
@@ -165,6 +173,7 @@ export async function writeOperatorPacketIndex({
     productionBundles,
     roughCutCapsules,
     renderExportCandidates,
+    renderReceipts,
     productionApprovalLane,
     operatorHealthExplanations,
     summary: {
@@ -189,6 +198,8 @@ export async function writeOperatorPacketIndex({
       roughCutCapsulesNeedingAttention: roughCutCapsules.filter((roughCut) => roughCut.needsOperatorAttention).length,
       renderExportCandidates: renderExportCandidateRefs.length,
       renderExportCandidatesNeedingAttention: renderExportCandidates.filter((candidate) => candidate.needsOperatorAttention).length,
+      renderReceipts: renderReceiptRefs.length,
+      renderReceiptsNeedingAttention: renderReceipts.filter((receipt) => receipt.issueCodes.length > 0).length,
       productionApprovalCandidates: productionApprovalLane.candidates,
       productionApprovalPendingAuthority: productionApprovalLane.pendingAuthority,
       ruleResolutionTraces: mediationRefs.length,
@@ -201,6 +212,7 @@ export async function writeOperatorPacketIndex({
         productionBundles.filter((bundle) => bundle.needsOperatorAttention).length +
         roughCutCapsules.filter((roughCut) => roughCut.needsOperatorAttention).length +
         renderExportCandidates.filter((candidate) => candidate.needsOperatorAttention).length +
+        renderReceipts.filter((receipt) => receipt.issueCodes.length > 0).length +
         productionApprovalLane.attentionRows.length,
       newestRecordPath: newestPath(records),
       operatorGuidanceOnly: true
@@ -209,6 +221,7 @@ export async function writeOperatorPacketIndex({
       'Operator packet index is a local scanning aid, not a UI contract.',
       'Indexed records are local-only artifacts and not mesh truth.',
       'Provider-loop decisions are local operator guidance and do not execute retries or grant authority.',
+      'Render receipts are local preview evidence only and do not authorize export or publication.',
       'Edge may inspect these refs later, but this index does not call or verify Edge.'
     ],
     operatorGuidanceOnly: true,
@@ -257,6 +270,9 @@ export async function writeOperatorPacketIndex({
     for (const candidate of index.renderExportCandidates) {
       console.log(formatRenderExportCandidate(candidate))
     }
+    for (const receipt of index.renderReceipts) {
+      console.log(formatRenderReceipt(receipt))
+    }
     if (index.productionApprovalLane.candidates > 0) {
       console.log(formatProductionApprovalLaneSummary(index.productionApprovalLane))
     }
@@ -287,6 +303,7 @@ function formatOperatorPacketIndexSummary(index, output) {
     `productionBundles=${summary.productionBundles ?? 0}`,
     `roughCuts=${summary.roughCutCapsules ?? 0}`,
     `renderExportCandidates=${summary.renderExportCandidates ?? 0}`,
+    `renderReceipts=${summary.renderReceipts ?? 0}`,
     `productionApprovalPending=${summary.productionApprovalPendingAuthority ?? 0}`,
     `ruleTraces=${summary.ruleResolutionTraces}`,
     `attention=${summary.attentionRows ?? summary.operatorHealthExplanations}`,
@@ -387,6 +404,19 @@ function formatRenderExportCandidate(candidate) {
   ].join(' | ')
 }
 
+function formatRenderReceipt(receipt) {
+  return [
+    `render receipt: ${receipt.receiptRef.id}`,
+    `kind=${receipt.renderKind}`,
+    `renderPerformed=${receipt.renderPerformed}`,
+    `exportPerformed=${receipt.exportPerformed}`,
+    `productionReady=${receipt.productionReady}`,
+    `freshness=${receipt.freshnessState}`,
+    `issues=${receipt.issueCodes.join(',') || 'none'}`,
+    `path=${receipt.receiptRef.path}`
+  ].join(' | ')
+}
+
 function formatProductionApprovalLaneSummary(lane) {
   return [
     `production approval: candidates=${lane.candidates}`,
@@ -467,8 +497,20 @@ const indexableSchemas = new Set([
   artifactKinds.mediaProductionBundleLocal,
   artifactKinds.mediaRoughCutCapsuleLocal,
   artifactKinds.mediaRenderExportCandidateLocal,
+  artifactKinds.mediaRenderAdapterContractLocal,
+  artifactKinds.mediaRenderPlanCandidateLocal,
+  artifactKinds.mediaRenderReceiptLocal,
+  artifactKinds.mediaExportCandidateLocal,
+  artifactKinds.mediaExportPlanCandidateLocal,
   artifactKinds.mediaRuleResolutionTraceLocal
 ])
+
+function normalizeRecordPaths(records) {
+  return records.map((entry) => ({
+    record: entry.record,
+    path: entry.relativePath ?? entry.path
+  }))
+}
 
 function summarizeProviderLoopStatus(record, relativePath) {
   return {
@@ -791,6 +833,11 @@ function kindForSchema(schema) {
     [artifactKinds.mediaProductionBundleLocal]: 'media-production-bundle',
     [artifactKinds.mediaRoughCutCapsuleLocal]: 'media-rough-cut-capsule',
     [artifactKinds.mediaRenderExportCandidateLocal]: 'media-render-export-candidate',
+    [artifactKinds.mediaRenderAdapterContractLocal]: 'media-render-adapter-contract',
+    [artifactKinds.mediaRenderPlanCandidateLocal]: 'media-render-plan-candidate',
+    [artifactKinds.mediaRenderReceiptLocal]: 'media-render-receipt',
+    [artifactKinds.mediaExportCandidateLocal]: 'media-export-candidate',
+    [artifactKinds.mediaExportPlanCandidateLocal]: 'media-export-plan-candidate',
     [artifactKinds.mediaRuleResolutionTraceLocal]: 'media-rule-resolution-trace'
   }[schema] ?? schema
 }
@@ -807,6 +854,10 @@ function idForRecord(record) {
     record.capsuleId ??
     record.roughCutId ??
     record.candidateId ??
+    record.exportCandidateId ??
+    record.contractId ??
+    record.planId ??
+    record.renderReceiptId ??
     record.bundleId ??
     record.traceId
 }

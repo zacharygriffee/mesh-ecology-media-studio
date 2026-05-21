@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { artifactKinds } from '../contracts/artifact-kinds.js'
 import { summarizeProductionApprovalLane } from '../production/approval-lane.js'
 import { evaluateRenderExportCandidateFreshness } from '../production/render-export-candidate.js'
+import { summarizeRenderReceipts } from '../production/render-receipts.js'
 import { writeProjectStatus, readProjectRecords } from '../seams/project-status.js'
 
 const modulePath = fileURLToPath(import.meta.url)
@@ -52,6 +53,7 @@ export async function createMediaSummary({
   const productionBundles = summarizeProductionBundles(records)
   const productionRoughCuts = summarizeProductionRoughCuts(records)
   const renderExportCandidates = summarizeRenderExportCandidates(records)
+  const renderReceipts = summarizeRenderReceipts(records)
   const productionApprovalLane = summarizeProductionApprovalLane({
     assetRecords,
     records,
@@ -80,6 +82,7 @@ export async function createMediaSummary({
     productionBundles,
     productionRoughCuts,
     renderExportCandidates,
+    renderReceipts,
     productionApprovalLane,
     bytePosture: status.assetResourceConsistency.bytePosture,
     resourcePosture: status.assetResourceConsistency.resourcePosture
@@ -129,6 +132,7 @@ export async function createMediaSummary({
     productionBundles,
     productionRoughCuts,
     renderExportCandidates,
+    renderReceipts,
     productionApprovalLane,
     safeNextAction,
     identity: {
@@ -244,6 +248,16 @@ function printMediaSummary(summary) {
     `attention=${summary.renderExportCandidates.attentionRows.length}`
   ].join(' | '))
   console.log([
+    `render receipts: total=${summary.renderReceipts.total}`,
+    `contactSheet=${summary.renderReceipts.contactSheet}`,
+    `ffmpegPreview=${summary.renderReceipts.ffmpegPreview}`,
+    `renderPerformed=${summary.renderReceipts.renderPerformed}`,
+    `exportPerformed=${summary.renderReceipts.exportPerformed}`,
+    `productionReady=${summary.renderReceipts.productionReady}`,
+    `stale=${summary.renderReceipts.stale}`,
+    `attention=${summary.renderReceipts.attentionRows.length}`
+  ].join(' | '))
+  console.log([
     `production approval: candidates=${summary.productionApprovalLane.candidates}`,
     `decisions=${summary.productionApprovalLane.localDecisions}`,
     `proposals=${summary.productionApprovalLane.approvalProposals}`,
@@ -299,6 +313,19 @@ function printMediaSummary(summary) {
       `path=${row.candidatePath}`
     ].join(' | '))
   }
+  for (const row of summary.renderReceipts.rows) {
+    console.log([
+      `render receipt: ${row.renderReceiptId}`,
+      `kind=${row.renderKind}`,
+      `renderPerformed=${row.renderPerformed}`,
+      `exportPerformed=${row.exportPerformed}`,
+      `productionReady=${row.productionReady}`,
+      `freshness=${row.freshnessState}`,
+      `issues=${row.issueCodes.join(',') || 'none'}`,
+      `output=${row.outputLocalRef?.path ?? 'none'}`,
+      `path=${row.receiptRef.path}`
+    ].join(' | '))
+  }
   for (const row of summary.productionApprovalLane.attentionRows) {
     console.log([
       `production-approval: ${row.path}`,
@@ -325,6 +352,7 @@ function summarizeSafeNextAction({
   productionBundles,
   productionRoughCuts,
   renderExportCandidates,
+  renderReceipts,
   productionApprovalLane,
   bytePosture,
   resourcePosture
@@ -370,6 +398,10 @@ function summarizeSafeNextAction({
 
   if (productionRoughCuts.reviewed > 0 && renderExportCandidates.total === 0) {
     return 'Run npm run production:render-export-candidate to prepare a reviewed rough cut for a future render/export lane.'
+  }
+
+  if (renderReceipts.attentionRows.length > 0) {
+    return renderReceipts.attentionRows[0].nextAction
   }
 
   if (productionApprovalLane.pendingAuthority > 0 || approvalLane.pendingAuthority > 0) {

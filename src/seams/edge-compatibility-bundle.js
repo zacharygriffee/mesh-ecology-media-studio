@@ -63,7 +63,12 @@ const productionSourceSchemas = new Set([
   artifactKinds.mediaProductionBundleLocal,
   artifactKinds.mediaProductionAuthorityPrerequisitesLocal,
   artifactKinds.mediaRoughCutCapsuleLocal,
-  artifactKinds.mediaRenderExportCandidateLocal
+  artifactKinds.mediaRenderExportCandidateLocal,
+  artifactKinds.mediaRenderAdapterContractLocal,
+  artifactKinds.mediaRenderPlanCandidateLocal,
+  artifactKinds.mediaRenderReceiptLocal,
+  artifactKinds.mediaExportCandidateLocal,
+  artifactKinds.mediaExportPlanCandidateLocal
 ])
 
 function parseArgs(argv) {
@@ -606,6 +611,11 @@ function kindForSchema(schema) {
     [artifactKinds.mediaProductionAuthorityPrerequisitesLocal]: 'media-production-authority-prerequisites',
     [artifactKinds.mediaRoughCutCapsuleLocal]: 'media-rough-cut-capsule',
     [artifactKinds.mediaRenderExportCandidateLocal]: 'media-render-export-candidate',
+    [artifactKinds.mediaRenderAdapterContractLocal]: 'media-render-adapter-contract',
+    [artifactKinds.mediaRenderPlanCandidateLocal]: 'media-render-plan-candidate',
+    [artifactKinds.mediaRenderReceiptLocal]: 'media-render-receipt',
+    [artifactKinds.mediaExportCandidateLocal]: 'media-export-candidate',
+    [artifactKinds.mediaExportPlanCandidateLocal]: 'media-export-plan-candidate',
     [artifactKinds.mediaApprovalProposalLocal]: 'media-approval-proposal',
     [artifactKinds.mediaByteDescriptorProposalLocal]: 'media-byte-descriptor-proposal',
     [artifactKinds.mediaLocalLayerResourceRefCandidateLocal]: 'media-local-layer-resource-ref-candidate',
@@ -638,6 +648,10 @@ function idForRecord(record) {
     record.reportId ??
     record.roughCutId ??
     record.candidateId ??
+    record.exportCandidateId ??
+    record.contractId ??
+    record.planId ??
+    record.renderReceiptId ??
     record.proposalId ??
     record.byteDescriptorProposalId ??
     record.resourceRefCandidateId ??

@@ -39,6 +39,8 @@ text is not the durable contract.
 | `npm run production:render-plan` | yes | yes | `--print` | yes | resolves render/export refs and planned output path only; no media bytes read, render, export, or authority |
 | `npm run production:render-contact-sheet` | yes | yes | `--print` | yes | renders a local PNG contact sheet for review; no export delivery, publication, production readiness, or authority |
 | `npm run production:render-ffmpeg` | yes | yes | `--print` | yes | renders a local ffmpeg MP4 preview by default; `--disable-ffmpeg` skips execution; no export delivery, publication, production readiness, or authority |
+| `npm run production:export-candidate` | yes | yes | `--print` | yes | creates a reviewed rough-cut delivery candidate; no delivery bytes, publication, production readiness, or authority |
+| `npm run production:export-plan` | yes | yes | `--print` | yes | resolves export candidate refs and target output path only; no media bytes read, delivery output, publication, or authority |
 | `npm run provider:venice:rehearse-production` | yes | yes | `--print` | yes | composes the local Venice loop, approval proposal, capsule, bundle, inspection, operator index, and Edge-compatible bundle; no live provider unless explicitly requested |
 
 ## Byte And Resource Posture

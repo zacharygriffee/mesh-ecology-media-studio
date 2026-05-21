@@ -53,6 +53,8 @@
     "production:render-plan": "node src/production/render-plan-candidate.js",
     "production:render-contact-sheet": "node src/production/render-contact-sheet.js",
     "production:render-ffmpeg": "node src/production/render-ffmpeg.js",
+    "production:export-candidate": "node src/production/export-candidate.js",
+    "production:export-plan": "node src/production/export-plan-candidate.js",
     "resource:refs": "node src/local/resource-ref-candidates.js",
     "repair:local-posture": "node src/local/repair-local-posture.js",
     "media:import": "node src/assets/import-media.js",

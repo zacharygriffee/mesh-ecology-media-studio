@@ -514,6 +514,14 @@ provided through npm-managed `ffmpeg-static`, while `--disable-ffmpeg` or
 `MEDIA_STUDIO_FFMPEG=disabled` can skip execution. The receipt remains local
 render evidence only, not export delivery, publication, or authority.
 
+`npm run production:export-candidate` writes
+`media.export_candidate.local.v1` over a reviewed rough cut and optional local
+render receipt. `npm run production:export-plan` writes
+`media.export_plan_candidate.local.v1` to resolve the candidate and intended
+delivery placement without reading media bytes or creating delivery output.
+Both remain dry-run/local-only and keep publication authorization and
+production readiness false.
+
 The first production assembly boundary is now explicit: capsules package one
 accepted production asset, bundles group capsules, rough cuts order accepted
 items for local review, rough-cut decisions record local review posture,

@@ -12,6 +12,7 @@ import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
 import { createMediaSummary } from '../assets/media-summary.js'
 import { evaluateRenderExportCandidateFreshness } from '../production/render-export-candidate.js'
+import { summarizeRenderReceipts } from '../production/render-receipts.js'
 import { readProjectRecords } from './project-status.js'
 
 const modulePath = fileURLToPath(import.meta.url)
@@ -104,6 +105,8 @@ export async function inspectVeniceSmoke({
     .filter((entry) => entry.record.schema === artifactKinds.mediaRoughCutCapsuleLocal)
   const renderExportCandidates = projectRecords
     .filter((entry) => entry.record.schema === artifactKinds.mediaRenderExportCandidateLocal)
+  const renderReceipts = projectRecords
+    .filter((entry) => entry.record.schema === artifactKinds.mediaRenderReceiptLocal)
   const roughCutReviewDecisions = projectRecords
     .filter((entry) => entry.record.schema === artifactKinds.mediaOperatorDecision)
     .filter((entry) => entry.record.roughCutReview)
@@ -142,6 +145,10 @@ export async function inspectVeniceSmoke({
         `renderExportCandidate:${path.basename(entry.path, '.json')}`,
         localRecordRef('media-render-export-candidate', entry.path, entry.record.schema)
       ])),
+      ...Object.fromEntries(renderReceipts.map((entry) => [
+        `renderReceipt:${path.basename(entry.path, '.json')}`,
+        localRecordRef('media-render-receipt', entry.path, entry.record.schema)
+      ])),
       ...Object.fromEntries(roughCutReviewDecisions.map((entry) => [
         `roughCutDecision:${path.basename(entry.path, '.json')}`,
         localRecordRef('media-operator-decision', entry.path, entry.record.schema)
@@ -166,6 +173,7 @@ export async function inspectVeniceSmoke({
       ...productionBundles.map((entry) => entry.record.schema),
       ...roughCutCapsules.map((entry) => entry.record.schema),
       ...renderExportCandidates.map((entry) => entry.record.schema),
+      ...renderReceipts.map((entry) => entry.record.schema),
       ...roughCutReviewDecisions.map((entry) => entry.record.schema),
       'media.byte_reference.preview.local.v1',
       'media.edge_inspection_packet.local.v1'
@@ -212,6 +220,7 @@ export async function inspectVeniceSmoke({
     productionBundles,
     roughCutCapsules,
     renderExportCandidates,
+    renderReceipts,
     roughCutReviewDecisions,
     projectRecords
   })
@@ -333,6 +342,7 @@ function createVeniceOperationalSummary(mediaSummary, {
   productionBundles,
   roughCutCapsules,
   renderExportCandidates,
+  renderReceipts,
   roughCutReviewDecisions,
   projectRecords
 }) {
@@ -353,6 +363,7 @@ function createVeniceOperationalSummary(mediaSummary, {
       operatorGuidanceOnly: true
     }
   })
+  const renderReceiptSummary = summarizeRenderReceipts(projectRecords)
 
   return {
     summaryKind: 'venice-smoke-operational-summary',
@@ -390,6 +401,7 @@ function createVeniceOperationalSummary(mediaSummary, {
       productionBundles: productionBundles.length,
       roughCutCapsules: roughCutCapsules.length,
       renderExportCandidates: renderExportCandidates.length,
+      renderReceipts: renderReceipts.length,
       roughCutReviewDecisions: roughCutReviewDecisions.length
     },
     recordRefs: {
@@ -401,6 +413,7 @@ function createVeniceOperationalSummary(mediaSummary, {
       productionBundles: productionBundles.map((entry) => localRecordRef('media-production-bundle', entry.path, entry.record.schema)),
       roughCutCapsules: roughCutCapsules.map((entry) => localRecordRef('media-rough-cut-capsule', entry.path, entry.record.schema)),
       renderExportCandidates: renderExportCandidates.map((entry) => localRecordRef('media-render-export-candidate', entry.path, entry.record.schema)),
+      renderReceipts: renderReceipts.map((entry) => localRecordRef('media-render-receipt', entry.path, entry.record.schema)),
       roughCutReviewDecisions: roughCutReviewDecisions.map((entry) => localRecordRef('media-operator-decision', entry.path, entry.record.schema))
     },
     renderExportCandidates: {
@@ -416,6 +429,7 @@ function createVeniceOperationalSummary(mediaSummary, {
       localOnly: true,
       operatorGuidanceOnly: true
     },
+    renderReceipts: renderReceiptSummary,
     localOnly: true,
     operatorGuidanceOnly: true,
     meshTruth: false,
@@ -439,8 +453,10 @@ function printVeniceInspectionSummary(summary) {
     `derivatives=${summary.derivativeReadiness.readyAssets}/${summary.derivativeReadiness.evaluatedAssets}`,
     `renderExportCandidates=${summary.renderExportCandidates?.total ?? 0}`,
     `renderExportStale=${summary.renderExportCandidates?.stale ?? 0}`,
-    `renderPerformed=${summary.renderExportCandidates?.renderPerformed ?? 0}`,
-    `exportPerformed=${summary.renderExportCandidates?.exportPerformed ?? 0}`,
+    `renderReceipts=${summary.renderReceipts?.total ?? 0}`,
+    `renderReceiptsStale=${summary.renderReceipts?.stale ?? 0}`,
+    `renderPerformed=${summary.renderReceipts?.renderPerformed ?? 0}`,
+    `exportPerformed=${summary.renderReceipts?.exportPerformed ?? 0}`,
     `byteContent=${summary.identity.byteContent.coveredContentIds}/${summary.identity.byteContent.expectedContentIds}`,
     `resourceSituations=${summary.identity.resourceSituations.coveredSituationPlacements}/${summary.identity.resourceSituations.expectedSituationPlacements}`
   ].join(' | '))
