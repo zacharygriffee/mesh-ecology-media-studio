@@ -124,17 +124,18 @@ authority is still absent.
 
 ## Authority Prerequisites
 
-`npm run production:authority-prereqs` reads existing local records and reports
-whether an accepted production candidate has the local package expected before a
-future authority review:
+`npm run production:authority-prereqs` reads existing local records and writes a
+local prerequisite posture record showing whether an accepted production
+candidate has the local package expected before a future authority review:
 
 ```txt
-production authority prerequisites: project=venice-smoke-project | candidates=1 | localPackageComplete=1 | missingLocalPrerequisites=0 | pendingAuthority=1 | productionReady=0
+production authority prerequisites: project=venice-smoke-project | candidates=1 | localPackageComplete=1 | missingLocalPrerequisites=0 | roughCutReviewed=1 | roughCutChangesRequested=0 | roughCutDeferred=0 | pendingAuthority=1 | productionReady=0
 ```
 
 The report checks local decision, approval proposal, situated approval refs,
 production capsule, production bundle, byte descriptor proposal, resource-ref
-candidate, and derivative refs. It does not create an authority artifact and it
+candidate, rough-cut review posture, and derivative refs. It does not create an
+authority artifact and it
 does not make the bundle production-ready.
 
 ## Authority Handoff Candidate

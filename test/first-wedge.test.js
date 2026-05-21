@@ -2596,6 +2596,7 @@ test('production authority prerequisite report separates local package from auth
   assert.equal(report.productionReady, 0)
   assert.equal(report.approvalAuthority, false)
   assert.equal(report.publicationAuthorization, false)
+  assert.equal(report.reportId, 'production-authority-prerequisites-venice-smoke-project')
   assert.equal(row.localPackageState, 'local-package-complete-authority-missing')
   assert.equal(row.authorityState, 'authority-missing')
   assert.deepEqual(row.missingLocalPrerequisites, [])
@@ -2612,8 +2613,13 @@ test('production authority prerequisite report separates local package from auth
   assert.equal(row.productionReady, false)
   assert.equal(row.approvalAuthority, false)
   assert.equal(row.publicationAuthorization, false)
-  assert.ok(output.lines.some((line) => line === 'production authority prerequisites: project=venice-smoke-project | candidates=1 | localPackageComplete=1 | missingLocalPrerequisites=0 | roughCutReviewed=0 | roughCutChangesRequested=0 | roughCutDeferred=0 | pendingAuthority=1 | productionReady=0'))
+  assert.ok(output.lines.some((line) => line === 'production authority prerequisites: project=venice-smoke-project | candidates=1 | localPackageComplete=1 | missingLocalPrerequisites=0 | roughCutReviewed=0 | roughCutChangesRequested=0 | roughCutDeferred=0 | pendingAuthority=1 | productionReady=0 | output=records/production/media-production-authority-prerequisites.local.json'))
   assert.ok(output.lines.some((line) => line.includes('authority-prereq: media/accepted/venice-live-smoke-0.png | localPackage=local-package-complete-authority-missing | authority=authority-missing')))
+  const written = JSON.parse(
+    await readFile(path.join(dir, 'records', 'production', 'media-production-authority-prerequisites.local.json'), 'utf8')
+  )
+  assert.equal(written.reportId, report.reportId)
+  assert.equal(validateRequiredRecord(written), true)
 })
 
 test('authority handoff candidate packages local refs without authority', async () => {
@@ -2806,6 +2812,7 @@ test('rough cut capsule orders production items without rendering or authority',
   const compatibility = await writeEdgeCompatibilityBundle({ projectDir: dir })
   assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.rough_cut_capsule.local.v1'))
   assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.id === decision.decisionId))
+  assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.production_authority_prerequisites.summary.local.v1'))
 })
 
 test('rough cut request changes surfaces local revision posture', async () => {

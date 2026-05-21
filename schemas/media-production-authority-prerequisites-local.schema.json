@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "media.production_authority_prerequisites.summary.local.v1",
+  "title": "Media Production Authority Prerequisites Summary Local",
+  "type": "object",
+  "required": [
+    "schema",
+    "reportId",
+    "projectId",
+    "mode",
+    "candidates",
+    "rows",
+    "createdAt",
+    "localOnly",
+    "operatorGuidanceOnly"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.production_authority_prerequisites.summary.local.v1"
+    },
+    "reportId": {
+      "type": "string"
+    },
+    "projectId": {
+      "type": "string"
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "candidates": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "rows": {
+      "type": "array"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "operatorGuidanceOnly": {
+      "const": true
+    },
+    "productionReady": {
+      "const": 0
+    },
+    "approvalAuthority": {
+      "const": false
+    },
+    "publicationAuthorization": {
+      "const": false
+    }
+  },
+  "additionalProperties": true
+}

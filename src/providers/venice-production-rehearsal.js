@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url'
 
 import { createMediaSummary } from '../assets/media-summary.js'
 import { writeProductionAssetCapsule } from '../production/asset-capsule.js'
+import { writeProductionAuthorityPrerequisiteReport } from '../production/authority-prerequisites.js'
 import { writeProductionBundle } from '../production/bundle.js'
 import { writeApprovalProposal } from '../review/approval-proposal.js'
 import { writeControlSurfaceProjection } from '../seams/control-surface-projection.js'
@@ -75,6 +76,7 @@ export async function runVeniceProductionRehearsal({
   }))
   const capsule = await runStep(() => writeProductionAssetCapsule({ projectDir, quiet: true }))
   const bundle = await runStep(() => writeProductionBundle({ projectDir, quiet: true }))
+  const authorityPrerequisites = await runStep(() => writeProductionAuthorityPrerequisiteReport({ projectDir, quiet: true }))
   const health = await runStep(() => writeProjectHealth({ projectDir }))
   const inspection = await runStep(() => inspectVeniceSmoke({ projectDir }))
   const controlSurface = await runStep(() => writeControlSurfaceProjection({ projectDir }))
@@ -119,6 +121,13 @@ export async function runVeniceProductionRehearsal({
       id: bundle.bundle.bundleId,
       schema: bundle.bundle.schema,
       path: bundle.output,
+      localOnly: true
+    },
+    authorityPrerequisiteReportRef: {
+      kind: 'media-production-authority-prerequisites',
+      id: authorityPrerequisites.reportId,
+      schema: authorityPrerequisites.schema,
+      path: 'records/production/media-production-authority-prerequisites.local.json',
       localOnly: true
     },
     inspectionPacketRef: {

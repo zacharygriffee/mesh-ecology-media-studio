@@ -1,15 +1,20 @@
 import path from 'node:path'
+import { mkdir, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
 import { artifactKinds } from '../contracts/artifact-kinds.js'
+import { nowIso } from '../contracts/constructors.js'
+import { validateRequiredRecord } from '../contracts/schemas.js'
 import { readProjectRecords } from '../seams/project-status.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/venice-smoke'
+const defaultOutput = 'records/production/media-production-authority-prerequisites.local.json'
 
 function parseArgs(argv) {
   const args = {
     projectDir: defaultProjectDir,
+    output: defaultOutput,
     print: false
   }
 
@@ -20,6 +25,9 @@ function parseArgs(argv) {
     if (arg === '--project-dir') {
       args.projectDir = next
       i += 1
+    } else if (arg === '--output') {
+      args.output = next
+      i += 1
     } else if (arg === '--print') {
       args.print = true
     }
@@ -29,7 +37,8 @@ function parseArgs(argv) {
 }
 
 export async function createProductionAuthorityPrerequisiteReport({
-  projectDir = defaultProjectDir
+  projectDir = defaultProjectDir,
+  createdAt = nowIso()
 } = {}) {
   const root = path.resolve(projectDir)
   const records = await readProjectRecords(root)
@@ -48,7 +57,8 @@ export async function createProductionAuthorityPrerequisiteReport({
     path.basename(root)
 
   return {
-    schema: 'media.production_authority_prerequisites.summary.local.v1',
+    schema: artifactKinds.mediaProductionAuthorityPrerequisitesLocal,
+    reportId: `production-authority-prerequisites-${projectId}`,
     projectId,
     mode: 'standalone-local',
     candidates: rows.length,
@@ -68,6 +78,8 @@ export async function createProductionAuthorityPrerequisiteReport({
     ],
     localOnly: true,
     operatorGuidanceOnly: true,
+    localTruthLabel: 'local guidance',
+    truthStatus: 'local authority prerequisite guidance; not mesh truth; not authority',
     meshTruth: false,
     distributedProof: false,
     ratifiedSharedState: false,
@@ -79,17 +91,37 @@ export async function createProductionAuthorityPrerequisiteReport({
     materializationProof: false,
     resourceAdmission: false,
     causalTruth: false,
-    edgeApproval: false
+    edgeApproval: false,
+    nonClaims: {
+      meshTruth: false,
+      distributedProof: false,
+      ratifiedSharedState: false,
+      approvalAuthority: false,
+      ratifierAuthority: false,
+      publicationAuthorization: false,
+      providerTruth: false,
+      byteAvailabilityProof: false,
+      materializationProof: false,
+      resourceAdmission: false,
+      causalTruth: false,
+      edgeApproval: false
+    },
+    createdAt
   }
 }
 
 export async function writeProductionAuthorityPrerequisiteReport(options = {}) {
   const report = await createProductionAuthorityPrerequisiteReport(options)
+  const output = options.output ?? defaultOutput
+  const root = path.resolve(options.projectDir ?? defaultProjectDir)
+  await mkdir(path.dirname(path.join(root, output)), { recursive: true })
+  validateRequiredRecord(report)
+  await writeFile(path.join(root, output), `${JSON.stringify(report, null, 2)}\n`)
 
   if (options.print) {
     console.log(JSON.stringify(report, null, 2))
   } else {
-    printProductionAuthorityPrerequisiteReport(report)
+    printProductionAuthorityPrerequisiteReport(report, output)
   }
 
   return report
@@ -182,7 +214,7 @@ function summarizeCandidateAuthorityPrerequisites(asset, records) {
   }
 }
 
-function printProductionAuthorityPrerequisiteReport(report) {
+function printProductionAuthorityPrerequisiteReport(report, output = defaultOutput) {
   console.log([
     `production authority prerequisites: project=${report.projectId}`,
     `candidates=${report.candidates}`,
@@ -192,7 +224,8 @@ function printProductionAuthorityPrerequisiteReport(report) {
     `roughCutChangesRequested=${report.roughCutChangesRequested}`,
     `roughCutDeferred=${report.roughCutDeferred}`,
     `pendingAuthority=${report.pendingAuthority}`,
-    `productionReady=${report.productionReady}`
+    `productionReady=${report.productionReady}`,
+    `output=${output}`
   ].join(' | '))
 
   for (const row of report.rows) {

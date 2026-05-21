@@ -221,7 +221,10 @@ local-only, no live provider unless explicitly requested, and still no approval
 or production authority.
 `npm run production:authority-prereqs` reads those local refs and reports which
 local package prerequisites are present, what is missing, and why a future
-authority lane is still required.
+authority lane is still required. It now writes the local prerequisite posture
+as `media.production_authority_prerequisites.summary.local.v1` so later
+inspection and Edge-compatible bundles can reference it without granting
+authority.
 `npm run production:authority-handoff` writes a local
 `media.authority_handoff_candidate.local.v1` record that packages the bundle,
 approval proposal, capsule, situated identity refs, and authority gaps for a
