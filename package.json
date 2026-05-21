@@ -45,6 +45,7 @@
     "production:authority-prereqs": "node src/production/authority-prerequisites.js",
     "production:authority-handoff": "node src/production/authority-handoff-candidate.js",
     "production:rough-cut": "node src/production/rough-cut-capsule.js",
+    "production:rough-cut-review": "node src/production/rough-cut-review-decision.js",
     "resource:refs": "node src/local/resource-ref-candidates.js",
     "repair:local-posture": "node src/local/repair-local-posture.js",
     "media:import": "node src/assets/import-media.js",

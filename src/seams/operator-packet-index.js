@@ -94,6 +94,10 @@ export async function writeOperatorPacketIndex({
     .filter((entry) => entry.record.schema === artifactKinds.mediaOperatorDecision)
     .filter((entry) => entry.record.providerLoopDecision)
     .map((entry) => summarizeProviderLoopDecision(entry.record, entry.relativePath))
+  const roughCutReviewDecisions = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaOperatorDecision)
+    .filter((entry) => entry.record.roughCutReview)
+    .map((entry) => summarizeRoughCutReviewDecision(entry.record, entry.relativePath))
   const productionCapsules = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProductionAssetCapsuleLocal)
     .map((entry) => summarizeProductionCapsule(entry.record, entry.relativePath))
@@ -142,6 +146,7 @@ export async function writeOperatorPacketIndex({
     mediationRefs,
     providerLoopStatuses,
     providerLoopDecisions,
+    roughCutReviewDecisions,
     productionCapsules,
     productionBundles,
     roughCutCapsules,
@@ -158,6 +163,7 @@ export async function writeOperatorPacketIndex({
       approvalProposalsPendingAuthority,
       providerLoopDecisions: providerLoopDecisions.length,
       providerLoopRetryDecisions: providerLoopDecisions.filter((decision) => decision.allowsExplicitRetryAttempt).length,
+      roughCutReviewDecisions: roughCutReviewDecisions.length,
       providerLoopStatuses: providerLoopStatusRefs.length,
       providerLoopsWithAttention: providerLoopStatuses.filter((status) => status.needsOperatorAttention).length,
       productionCapsules: productionCapsuleRefs.length,
@@ -218,6 +224,9 @@ export async function writeOperatorPacketIndex({
     for (const decision of index.providerLoopDecisions) {
       console.log(formatProviderLoopDecision(decision))
     }
+    for (const decision of index.roughCutReviewDecisions) {
+      console.log(formatRoughCutReviewDecision(decision))
+    }
     for (const capsule of index.productionCapsules) {
       console.log(formatProductionCapsule(capsule))
     }
@@ -252,6 +261,7 @@ function formatOperatorPacketIndexSummary(index, output) {
     `approvalProposals=${summary.approvalProposals ?? 0}`,
     `providerLoops=${summary.providerLoopStatuses ?? 0}`,
     `providerLoopDecisions=${summary.providerLoopDecisions ?? 0}`,
+    `roughCutDecisions=${summary.roughCutReviewDecisions ?? 0}`,
     `productionCapsules=${summary.productionCapsules ?? 0}`,
     `productionBundles=${summary.productionBundles ?? 0}`,
     `roughCuts=${summary.roughCutCapsules ?? 0}`,
@@ -286,6 +296,17 @@ function formatProviderLoopDecision(decision) {
     `provider-loop decision: ${decision.decisionType}`,
     `retry=${decision.allowsExplicitRetryAttempt}`,
     `executionPerformed=${decision.executionPerformed}`,
+    `authorityGranted=${decision.authorityGranted}`,
+    `path=${decision.decisionRef.path}`
+  ].join(' | ')
+}
+
+function formatRoughCutReviewDecision(decision) {
+  return [
+    `rough-cut decision: ${decision.decisionType}`,
+    `items=${decision.itemCount}`,
+    `rendered=${decision.rendered}`,
+    `productionReady=${decision.productionReady}`,
     `authorityGranted=${decision.authorityGranted}`,
     `path=${decision.decisionRef.path}`
   ].join(' | ')
@@ -446,6 +467,32 @@ function summarizeProviderLoopDecision(record, relativePath) {
     deferred: record.deferred === true,
     reviewAcknowledged: record.reviewAcknowledged === true,
     executionPerformed: record.executionPerformed === true,
+    authorityGranted: record.authorityGranted === true,
+    nextAction: record.nextAction,
+    operatorGuidanceOnly: true,
+    localOnly: true,
+    meshTruth: false,
+    providerTruth: false,
+    edgeCalled: false,
+    meshPublished: false
+  }
+}
+
+function summarizeRoughCutReviewDecision(record, relativePath) {
+  return {
+    decisionRef: {
+      ...makeRef('media-operator-decision', record.decisionId, record.schema),
+      path: relativePath,
+      localOnly: true
+    },
+    subjectRef: record.subjectRef,
+    decisionType: record.decisionType,
+    itemCount: record.roughCutReview?.itemCount ?? 0,
+    rendered: record.roughCutReview?.rendered === true,
+    productionReady: record.roughCutReview?.productionReady === true,
+    reviewAcknowledged: record.reviewAcknowledged === true,
+    requestChanges: record.requestChanges === true,
+    deferred: record.deferred === true,
     authorityGranted: record.authorityGranted === true,
     nextAction: record.nextAction,
     operatorGuidanceOnly: true,

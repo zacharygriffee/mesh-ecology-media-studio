@@ -101,6 +101,9 @@ export async function inspectVeniceSmoke({
     .filter((entry) => entry.record.schema === artifactKinds.mediaProductionBundleLocal)
   const roughCutCapsules = projectRecords
     .filter((entry) => entry.record.schema === artifactKinds.mediaRoughCutCapsuleLocal)
+  const roughCutReviewDecisions = projectRecords
+    .filter((entry) => entry.record.schema === artifactKinds.mediaOperatorDecision)
+    .filter((entry) => entry.record.roughCutReview)
   const optionalWarnings = []
   const promotedArtifactRefs = await optionalPromotedArtifactRefs({ root, promotedAssets, warnings: optionalWarnings })
   const derivativeArtifactRefs = await optionalDerivativeArtifactRefs({ root, derivatives, warnings: optionalWarnings })
@@ -131,6 +134,10 @@ export async function inspectVeniceSmoke({
       ...Object.fromEntries(roughCutCapsules.map((entry) => [
         `roughCutCapsule:${path.basename(entry.path, '.json')}`,
         localRecordRef('media-rough-cut-capsule', entry.path, entry.record.schema)
+      ])),
+      ...Object.fromEntries(roughCutReviewDecisions.map((entry) => [
+        `roughCutDecision:${path.basename(entry.path, '.json')}`,
+        localRecordRef('media-operator-decision', entry.path, entry.record.schema)
       ]))
     },
     artifactKinds: [
@@ -151,6 +158,7 @@ export async function inspectVeniceSmoke({
       ...productionCapsules.map((entry) => entry.record.schema),
       ...productionBundles.map((entry) => entry.record.schema),
       ...roughCutCapsules.map((entry) => entry.record.schema),
+      ...roughCutReviewDecisions.map((entry) => entry.record.schema),
       'media.byte_reference.preview.local.v1',
       'media.edge_inspection_packet.local.v1'
     ].filter(Boolean),
@@ -194,7 +202,8 @@ export async function inspectVeniceSmoke({
     resourceCandidates,
     productionCapsules,
     productionBundles,
-    roughCutCapsules
+    roughCutCapsules,
+    roughCutReviewDecisions
   })
 
   validateRequiredRecord(packet)
@@ -312,7 +321,8 @@ function createVeniceOperationalSummary(mediaSummary, {
   resourceCandidates,
   productionCapsules,
   productionBundles,
-  roughCutCapsules
+  roughCutCapsules,
+  roughCutReviewDecisions
 }) {
   return {
     summaryKind: 'venice-smoke-operational-summary',
@@ -348,7 +358,8 @@ function createVeniceOperationalSummary(mediaSummary, {
       resourceRefCandidates: resourceCandidates.length,
       productionAssetCapsules: productionCapsules.length,
       productionBundles: productionBundles.length,
-      roughCutCapsules: roughCutCapsules.length
+      roughCutCapsules: roughCutCapsules.length,
+      roughCutReviewDecisions: roughCutReviewDecisions.length
     },
     recordRefs: {
       promotedAssets: promotedAssets.map((entry) => localRecordRef('media-asset', entry.path, entry.record.schema)),
@@ -357,7 +368,8 @@ function createVeniceOperationalSummary(mediaSummary, {
       resourceRefCandidates: resourceCandidates.map((entry) => localRecordRef('media-resource-ref-candidate', entry.path, entry.record.schema)),
       productionAssetCapsules: productionCapsules.map((entry) => localRecordRef('media-production-asset-capsule', entry.path, entry.record.schema)),
       productionBundles: productionBundles.map((entry) => localRecordRef('media-production-bundle', entry.path, entry.record.schema)),
-      roughCutCapsules: roughCutCapsules.map((entry) => localRecordRef('media-rough-cut-capsule', entry.path, entry.record.schema))
+      roughCutCapsules: roughCutCapsules.map((entry) => localRecordRef('media-rough-cut-capsule', entry.path, entry.record.schema)),
+      roughCutReviewDecisions: roughCutReviewDecisions.map((entry) => localRecordRef('media-operator-decision', entry.path, entry.record.schema))
     },
     localOnly: true,
     operatorGuidanceOnly: true,

@@ -40,11 +40,13 @@ const optionalSourceRecordPaths = Object.freeze({
 })
 const optionalSourceRoots = Object.freeze([
   'records/approvals',
+  'records/decisions',
   'records/bytes',
   'records/resources',
   'records/rule-traces'
 ])
 const optionalSourceSchemas = new Set([
+  artifactKinds.mediaOperatorDecision,
   artifactKinds.mediaApprovalProposalLocal,
   artifactKinds.mediaByteDescriptorProposalLocal,
   artifactKinds.mediaLocalLayerResourceRefCandidateLocal,
@@ -588,6 +590,7 @@ function kindForSchema(schema) {
     [artifactKinds.mediaProjectHealthLocal]: 'media-project-health',
     [artifactKinds.mediaOperatorPacketIndexLocal]: 'media-operator-packet-index',
     [artifactKinds.mediaEdgeHandoffCandidateLocal]: 'media-edge-handoff-candidate',
+    [artifactKinds.mediaOperatorDecision]: 'media-operator-decision',
     [artifactKinds.mediaOperatorDecisionRequestLocal]: 'media-operator-decision-request',
     [artifactKinds.mediaReadiness]: 'media-readiness',
     [artifactKinds.mediaProviderRunLedgerLocal]: 'media-provider-run-ledger',
@@ -617,6 +620,7 @@ function idForRecord(record) {
     record.healthId ??
     record.indexId ??
     record.handoffCandidateId ??
+    record.decisionId ??
     record.requestId ??
     record.readinessId ??
     record.ledgerId ??

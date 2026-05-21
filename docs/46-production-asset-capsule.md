@@ -175,6 +175,12 @@ and Edge-compatible source refs. These surfaces expose the rough-cut package for
 operator inspection; they do not change its non-rendered or non-authoritative
 posture.
 
+`npm run production:rough-cut-review` records a local
+`review_rough_cut` operator decision over the rough-cut capsule. The decision
+acknowledges local review of the ordered items only. It sets execution,
+approval authority, ratifier authority, publication authorization, rendering,
+Edge calls, and mesh publication claims to false.
+
 ## Non-Claims
 
 The capsule is local operator guidance only:

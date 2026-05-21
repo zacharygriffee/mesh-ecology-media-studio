@@ -485,6 +485,9 @@ render, export, publish, or grant production authority.
 Existing operator surfaces now expose rough-cut capsule refs: media summary,
 project health, Venice inspection packets, operator packet indexes, and
 Edge-compatible bundles.
+`npm run production:rough-cut-review` records a local `review_rough_cut`
+operator decision over the rough-cut capsule. It is local review only and does
+not render, export, authorize publication, or make the cut production-ready.
 
 ## Current Verification Baseline
 

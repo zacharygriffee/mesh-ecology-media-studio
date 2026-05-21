@@ -231,6 +231,10 @@ authorization, or production readiness.
 `media.rough_cut_capsule.local.v1` record that orders accepted production item
 refs into a review-only rough cut. It does not build an editor, render a
 timeline, create an export, or grant authority.
+`npm run production:rough-cut-review` records a local
+`review_rough_cut` operator decision for that rough-cut capsule. It acknowledges
+local review only; it does not render, export, approve, publish, or grant
+authority.
 Media summary, project health, Venice inspection, operator index, and
 Edge-compatible bundles surface rough-cut capsule refs when present.
 

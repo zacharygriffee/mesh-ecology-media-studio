@@ -222,6 +222,7 @@ function printMediaSummary(summary) {
   console.log([
     `rough cuts: total=${summary.productionRoughCuts.total}`,
     `items=${summary.productionRoughCuts.itemRefs}`,
+    `reviewed=${summary.productionRoughCuts.reviewed}`,
     `pendingAuthority=${summary.productionRoughCuts.pendingAuthorityItems}`,
     `rendered=${summary.productionRoughCuts.rendered}`,
     `attention=${summary.productionRoughCuts.attentionRows.length}`
@@ -330,6 +331,10 @@ function summarizeSafeNextAction({
 
   if (productionBundles.total > 0 && productionRoughCuts.total === 0) {
     return 'Run npm run production:rough-cut to assemble accepted production item refs into a local review cut.'
+  }
+
+  if (productionRoughCuts.total > 0 && productionRoughCuts.reviewed === 0) {
+    return 'Run npm run production:rough-cut-review to record a local rough-cut review decision.'
   }
 
   if (productionApprovalLane.pendingAuthority > 0 || approvalLane.pendingAuthority > 0) {
@@ -483,11 +488,26 @@ function summarizeProductionRoughCuts(records) {
     .filter((entry) => entry.record.schema === artifactKinds.mediaRoughCutCapsuleLocal)
     .map((entry) => ({ ...entry.record, path: entry.path }))
     .sort((left, right) => (right.createdAt ?? '').localeCompare(left.createdAt ?? ''))
+  const reviewDecisionsBySubject = new Map()
+  for (const entry of records) {
+    if (entry.record.schema !== artifactKinds.mediaOperatorDecision) continue
+    if (!entry.record.roughCutReview || !entry.record.subjectRef?.id) continue
+    const decisions = reviewDecisionsBySubject.get(entry.record.subjectRef.id) ?? []
+    decisions.push({ ...entry.record, path: entry.path })
+    reviewDecisionsBySubject.set(entry.record.subjectRef.id, decisions)
+  }
   const rows = roughCuts.map((roughCut) => {
     const state = roughCut.assemblyPosture?.state ?? 'unknown'
+    const reviewDecisions = reviewDecisionsBySubject.get(roughCut.roughCutId) ?? []
+    const reviewed = reviewDecisions.some((decision) => decision.decisionType === 'review_rough_cut')
     const issueCodes = state === 'needs-production-items'
       ? ['rough_cut_items_missing']
-      : []
+      : reviewed ? [] : ['rough_cut_review_missing']
+    const nextAction = issueCodes.includes('rough_cut_items_missing')
+      ? 'Create production capsules and a production bundle before regenerating the rough-cut capsule.'
+      : issueCodes.includes('rough_cut_review_missing')
+        ? 'Run npm run production:rough-cut-review to record a local rough-cut review decision.'
+        : 'Review decision is recorded locally; render/export/publication remain separate future work.'
 
     return {
       roughCutId: roughCut.roughCutId,
@@ -497,10 +517,17 @@ function summarizeProductionRoughCuts(records) {
       sourceRefs: roughCut.sourceRefs?.length ?? 0,
       pendingAuthorityItems: roughCut.assemblyPosture?.pendingAuthorityItems ?? 0,
       rendered: roughCut.renderPosture?.rendered === true,
+      reviewed,
+      reviewDecisionRefs: reviewDecisions.map((decision) => ({
+        kind: 'media-operator-decision',
+        id: decision.decisionId,
+        schema: decision.schema,
+        path: decision.path,
+        decisionType: decision.decisionType,
+        localOnly: true
+      })),
       issueCodes,
-      nextAction: issueCodes.length > 0
-        ? 'Create production capsules and a production bundle before regenerating the rough-cut capsule.'
-        : 'Review ordered rough-cut items locally; render/export/publication remain separate future work.',
+      nextAction,
       productionReady: false,
       approvalAuthority: false,
       publicationAuthorization: false,
@@ -515,6 +542,7 @@ function summarizeProductionRoughCuts(records) {
     sourceRefs: rows.reduce((sum, row) => sum + row.sourceRefs, 0),
     pendingAuthorityItems: rows.reduce((sum, row) => sum + row.pendingAuthorityItems, 0),
     rendered: rows.filter((row) => row.rendered).length,
+    reviewed: rows.filter((row) => row.reviewed).length,
     rows,
     attentionRows: rows.filter((row) => row.issueCodes.length > 0),
     productionReady: 0,

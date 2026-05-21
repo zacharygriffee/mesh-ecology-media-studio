@@ -110,6 +110,7 @@ import { writeProductionBundle } from '../src/production/bundle.js'
 import { createProductionAuthorityPrerequisiteReport, writeProductionAuthorityPrerequisiteReport } from '../src/production/authority-prerequisites.js'
 import { writeAuthorityHandoffCandidate } from '../src/production/authority-handoff-candidate.js'
 import { writeRoughCutCapsule } from '../src/production/rough-cut-capsule.js'
+import { writeRoughCutReviewDecision } from '../src/production/rough-cut-review-decision.js'
 
 const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 
@@ -2652,8 +2653,38 @@ test('rough cut capsule orders production items without rendering or authority',
   assert.equal(summary.productionRoughCuts.itemRefs, 1)
   assert.equal(summary.productionRoughCuts.pendingAuthorityItems, 1)
   assert.equal(summary.productionRoughCuts.rendered, 0)
-  assert.equal(summary.productionRoughCuts.attentionRows.length, 0)
-  assert.ok(summaryOutput.lines.some((line) => line === 'rough cuts: total=1 | items=1 | pendingAuthority=1 | rendered=0 | attention=0'))
+  assert.equal(summary.productionRoughCuts.reviewed, 0)
+  assert.equal(summary.productionRoughCuts.attentionRows.length, 1)
+  assert.deepEqual(summary.productionRoughCuts.attentionRows[0].issueCodes, ['rough_cut_review_missing'])
+  assert.ok(summaryOutput.lines.some((line) => line === 'rough cuts: total=1 | items=1 | reviewed=0 | pendingAuthority=1 | rendered=0 | attention=1'))
+
+  const decisionOutput = await captureConsole(() => writeRoughCutReviewDecision({ projectDir: dir }))
+  const decision = decisionOutput.result.decision
+  assert.equal(decision.schema, 'media.operator_decision.v1')
+  assert.equal(decision.decisionType, 'review_rough_cut')
+  assert.equal(decision.subjectRef.id, roughCut.roughCutId)
+  assert.equal(decision.subjectRef.schema, 'media.rough_cut_capsule.local.v1')
+  assert.equal(decision.roughCutReview.itemCount, 1)
+  assert.equal(decision.roughCutReview.rendered, false)
+  assert.equal(decision.roughCutReview.productionReady, false)
+  assert.equal(decision.reviewAcknowledged, true)
+  assert.equal(decision.localDecisionOnly, true)
+  assert.equal(decision.executionPerformed, false)
+  assert.equal(decision.authorityGranted, false)
+  assert.equal(decision.approvalAuthority, false)
+  assert.equal(decision.publicationAuthorization, false)
+  assert.equal(decision.edgeCalled, false)
+  assert.equal(decision.meshPublished, false)
+  assert.ok(decision.evidenceRefs.some((ref) => ref.schema === 'media.rough_cut_capsule.local.v1'))
+  assert.equal(validateRequiredRecord(decision), true)
+  assert.ok(decisionOutput.lines.some((line) => line.startsWith('rough cut review decision: review_rough_cut')))
+  assert.ok(decisionOutput.lines.some((line) => line.includes('productionReady=false')))
+
+  const reviewedSummaryOutput = await captureConsole(() => writeMediaSummary({ projectDir: dir }))
+  const reviewedSummary = await createMediaSummary({ projectDir: dir })
+  assert.equal(reviewedSummary.productionRoughCuts.reviewed, 1)
+  assert.equal(reviewedSummary.productionRoughCuts.attentionRows.length, 0)
+  assert.ok(reviewedSummaryOutput.lines.some((line) => line === 'rough cuts: total=1 | items=1 | reviewed=1 | pendingAuthority=1 | rendered=0 | attention=0'))
 
   const healthOutput = await captureConsole(() => writeProjectHealth({ projectDir: dir, summary: true }))
   assert.equal(healthOutput.result.health.productionRoughCutHealthExplanations.length, 0)
@@ -2665,17 +2696,23 @@ test('rough cut capsule orders production items without rendering or authority',
   assert.equal(index.roughCutCapsules.length, 1)
   assert.equal(index.summary.roughCutCapsules, 1)
   assert.equal(index.summary.roughCutCapsulesNeedingAttention, 0)
+  assert.equal(index.summary.roughCutReviewDecisions, 1)
   assert.ok(indexOutput.lines.some((line) => line.includes('roughCuts=1')))
+  assert.ok(indexOutput.lines.some((line) => line.includes('roughCutDecisions=1')))
   assert.ok(indexOutput.lines.some((line) => line.includes('rough cut: rough-cut-capsule-')))
+  assert.ok(indexOutput.lines.some((line) => line.includes('rough-cut decision: review_rough_cut')))
 
   const inspection = await inspectVeniceSmoke({ projectDir: dir })
   assert.ok(Object.values(inspection.packet.recordRefs).some((ref) => ref.schema === 'media.rough_cut_capsule.local.v1'))
   assert.ok(inspection.packet.artifactKinds.includes('media.rough_cut_capsule.local.v1'))
   assert.equal(inspection.packet.operationalSummary.recordCounts.roughCutCapsules, 1)
+  assert.equal(inspection.packet.operationalSummary.recordCounts.roughCutReviewDecisions, 1)
   assert.equal(inspection.packet.operationalSummary.recordRefs.roughCutCapsules.length, 1)
+  assert.equal(inspection.packet.operationalSummary.recordRefs.roughCutReviewDecisions.length, 1)
 
   const compatibility = await writeEdgeCompatibilityBundle({ projectDir: dir })
   assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.rough_cut_capsule.local.v1'))
+  assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.id === decision.decisionId))
 })
 
 test('project health reports missing production asset capsules for accepted provider assets', async () => {
