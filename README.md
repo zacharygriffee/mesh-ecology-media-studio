@@ -254,6 +254,10 @@ ratification, or production authorization.
 `npm run production:render-export-candidate` can create a local candidate over a
 reviewed rough cut for a future render/export lane. It does not select a
 renderer, render bytes, create an export file, publish, or grant authority.
+`npm run production:render-adapter-contract` describes the future renderer
+inputs and target output placement without selecting or invoking a renderer.
+`npm run production:render-plan` resolves those refs and the planned output path
+only. It does not read media bytes, render, export, publish, or grant authority.
 
 Create a local provider-loop operator decision request:
 

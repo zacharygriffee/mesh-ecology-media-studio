@@ -496,6 +496,13 @@ without editing bytes, rendering, exporting, or granting authority.
 `media.render_export_candidate.local.v1` over a reviewed rough cut only. It is a
 candidate for future render/export preparation and does not select a renderer,
 render bytes, create export output, publish, or grant authority.
+`npm run production:render-adapter-contract` writes
+`media.render_adapter_contract.local.v1` to describe the future renderer input
+contract and target placement without selecting or invoking an adapter.
+`npm run production:render-plan` writes
+`media.render_plan_candidate.local.v1` to resolve the render/export candidate,
+adapter contract, ordered items, and planned output path. It does not read media
+bytes, render, export, publish, or grant authority.
 
 The first production assembly boundary is now explicit: capsules package one
 accepted production asset, bundles group capsules, rough cuts order accepted

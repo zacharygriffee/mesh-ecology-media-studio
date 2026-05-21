@@ -50,6 +50,7 @@
     "production:render-export-candidate": "node src/production/render-export-candidate.js",
     "production:render-export-mediate": "node src/production/render-export-mediation.js",
     "production:render-adapter-contract": "node src/production/render-adapter-contract.js",
+    "production:render-plan": "node src/production/render-plan-candidate.js",
     "resource:refs": "node src/local/resource-ref-candidates.js",
     "repair:local-posture": "node src/local/repair-local-posture.js",
     "media:import": "node src/assets/import-media.js",

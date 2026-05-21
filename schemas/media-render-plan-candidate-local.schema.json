@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "media.render_plan_candidate.local.v1",
+  "title": "Media Render Plan Candidate Local",
+  "type": "object",
+  "required": [
+    "schema",
+    "planId",
+    "projectId",
+    "mode",
+    "planKind",
+    "sourceRenderExportCandidateRef",
+    "renderAdapterContractRef",
+    "orderedItems",
+    "targetOutputRef",
+    "planPosture",
+    "sourceRefs",
+    "createdAt",
+    "localOnly",
+    "operatorGuidanceOnly",
+    "candidateOnly",
+    "productionReady",
+    "renderPerformed",
+    "exportPerformed"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.render_plan_candidate.local.v1"
+    },
+    "planId": {
+      "type": "string"
+    },
+    "projectId": {
+      "type": "string"
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "planKind": {
+      "const": "dry-run-render-plan-candidate"
+    },
+    "sourceRenderExportCandidateRef": {
+      "type": "object"
+    },
+    "renderAdapterContractRef": {
+      "type": "object"
+    },
+    "orderedItems": {
+      "type": "array"
+    },
+    "targetOutputRef": {
+      "type": "object"
+    },
+    "planPosture": {
+      "type": "object"
+    },
+    "sourceRefs": {
+      "type": "array"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "operatorGuidanceOnly": {
+      "const": true
+    },
+    "candidateOnly": {
+      "const": true
+    },
+    "productionReady": {
+      "const": false
+    },
+    "renderPerformed": {
+      "const": false
+    },
+    "exportPerformed": {
+      "const": false
+    }
+  },
+  "additionalProperties": true
+}

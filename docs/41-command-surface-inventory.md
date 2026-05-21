@@ -35,6 +35,8 @@ text is not the durable contract.
 | `npm run production:rough-cut-review` | yes | yes | `--print` | yes | records a local rough-cut review decision; no render, export, approval, or authority |
 | `npm run production:rough-cut-revise` | yes | yes | `--print` | yes | regenerates rough-cut refs from a local request-changes decision; no editor, render, export, or authority |
 | `npm run production:render-export-candidate` | yes | yes | `--print` | yes | creates a candidate over a reviewed rough cut; no renderer selected, no render/export bytes, no authority |
+| `npm run production:render-adapter-contract` | yes | yes | `--print` | yes | describes future renderer inputs and output placement; no adapter selected, render, export, or authority |
+| `npm run production:render-plan` | yes | yes | `--print` | yes | resolves render/export refs and planned output path only; no media bytes read, render, export, or authority |
 | `npm run provider:venice:rehearse-production` | yes | yes | `--print` | yes | composes the local Venice loop, approval proposal, capsule, bundle, inspection, operator index, and Edge-compatible bundle; no live provider unless explicitly requested |
 
 ## Byte And Resource Posture

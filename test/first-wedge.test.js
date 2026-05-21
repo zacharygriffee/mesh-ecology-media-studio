@@ -115,6 +115,7 @@ import { writeRoughCutRevision } from '../src/production/rough-cut-revision.js'
 import { evaluateRenderExportCandidateFreshness, writeRenderExportCandidate } from '../src/production/render-export-candidate.js'
 import { writeRenderAdapterContract } from '../src/production/render-adapter-contract.js'
 import { writeRenderExportMediation } from '../src/production/render-export-mediation.js'
+import { writeRenderPlanCandidate } from '../src/production/render-plan-candidate.js'
 
 const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 
@@ -3026,6 +3027,25 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.ok(adapterContract.capabilityRequirements.some((entry) => entry.includes('ordered rough-cut item refs')))
   assert.ok(adapterContractOutput.lines.some((line) => line.includes('render adapter contract:')))
   assert.ok(adapterContractOutput.lines.some((line) => line.includes('adapterSelected=false')))
+
+  const renderPlanOutput = await captureConsole(() => writeRenderPlanCandidate({ projectDir: dir }))
+  const renderPlan = renderPlanOutput.result.plan
+  assert.equal(renderPlan.schema, 'media.render_plan_candidate.local.v1')
+  assert.equal(renderPlan.planKind, 'dry-run-render-plan-candidate')
+  assert.equal(renderPlan.sourceRenderExportCandidateRef.id, candidate.candidateId)
+  assert.equal(renderPlan.renderAdapterContractRef.id, adapterContract.contractId)
+  assert.equal(renderPlan.orderedItems.length, 1)
+  assert.equal(renderPlan.planPosture.refsResolved, true)
+  assert.equal(renderPlan.planPosture.targetOutputPathResolved, true)
+  assert.equal(renderPlan.planPosture.mediaBytesRead, false)
+  assert.equal(renderPlan.targetOutputRef.path, 'media/exports/render-preview')
+  assert.equal(renderPlan.targetOutputRef.materialized, false)
+  assert.equal(renderPlan.renderPerformed, false)
+  assert.equal(renderPlan.exportPerformed, false)
+  assert.equal(renderPlan.productionReady, false)
+  assert.ok(renderPlan.sourceRefs.some((ref) => ref.schema === 'media.render_adapter_contract.local.v1'))
+  assert.ok(renderPlanOutput.lines.some((line) => line.includes('render plan candidate:')))
+  assert.ok(renderPlanOutput.lines.some((line) => line.includes('bytesRead=false')))
 
   await writeRoughCutReviewDecision({
     projectDir: dir,
