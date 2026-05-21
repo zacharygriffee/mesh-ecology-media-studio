@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "media.render_receipt.local.v1",
+  "title": "Media Render Receipt Local",
+  "type": "object",
+  "required": [
+    "schema",
+    "renderReceiptId",
+    "projectId",
+    "mode",
+    "renderKind",
+    "sourceRenderPlanRef",
+    "sourceRenderExportCandidateRef",
+    "renderAdapterContractRef",
+    "orderedItems",
+    "outputLocalRef",
+    "executionPosture",
+    "sourceRefs",
+    "createdAt",
+    "localOnly",
+    "renderPerformed",
+    "exportPerformed",
+    "productionReady"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.render_receipt.local.v1"
+    },
+    "renderReceiptId": {
+      "type": "string"
+    },
+    "projectId": {
+      "type": "string"
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "renderKind": {
+      "type": "string"
+    },
+    "sourceRenderPlanRef": {
+      "type": "object"
+    },
+    "sourceRenderExportCandidateRef": {
+      "type": "object"
+    },
+    "renderAdapterContractRef": {
+      "type": "object"
+    },
+    "orderedItems": {
+      "type": "array"
+    },
+    "outputLocalRef": {
+      "type": "object"
+    },
+    "executionPosture": {
+      "type": "object"
+    },
+    "sourceRefs": {
+      "type": "array"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "renderPerformed": {
+      "const": true
+    },
+    "exportPerformed": {
+      "const": false
+    },
+    "productionReady": {
+      "const": false
+    }
+  },
+  "additionalProperties": true
+}

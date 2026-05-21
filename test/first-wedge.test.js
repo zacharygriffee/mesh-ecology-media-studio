@@ -116,6 +116,7 @@ import { evaluateRenderExportCandidateFreshness, writeRenderExportCandidate } fr
 import { writeRenderAdapterContract } from '../src/production/render-adapter-contract.js'
 import { writeRenderExportMediation } from '../src/production/render-export-mediation.js'
 import { writeRenderPlanCandidate } from '../src/production/render-plan-candidate.js'
+import { writeContactSheetRender } from '../src/production/render-contact-sheet.js'
 
 const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 
@@ -3046,6 +3047,35 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.ok(renderPlan.sourceRefs.some((ref) => ref.schema === 'media.render_adapter_contract.local.v1'))
   assert.ok(renderPlanOutput.lines.some((line) => line.includes('render plan candidate:')))
   assert.ok(renderPlanOutput.lines.some((line) => line.includes('bytesRead=false')))
+
+  const contactSheetOutput = await captureConsole(() => writeContactSheetRender({ projectDir: dir, tileSize: 64 }))
+  const contactSheet = contactSheetOutput.result.receipt
+  assert.equal(contactSheet.schema, 'media.render_receipt.local.v1')
+  assert.equal(contactSheet.renderKind, 'local-contact-sheet')
+  assert.equal(contactSheet.sourceRenderPlanRef.id, renderPlan.planId)
+  assert.equal(contactSheet.sourceRenderExportCandidateRef.id, candidate.candidateId)
+  assert.equal(contactSheet.renderAdapterContractRef.id, adapterContract.contractId)
+  assert.equal(contactSheet.orderedItems.length, 1)
+  assert.equal(contactSheet.orderedItems[0].bytesRead, true)
+  assert.equal(contactSheet.orderedItems[0].rendered, true)
+  assert.equal(contactSheet.outputLocalRef.path.startsWith('media/exports/render-preview/contact-sheet-'), true)
+  assert.equal(contactSheet.outputLocalRef.contentType, 'image/png')
+  assert.equal(contactSheet.executionPosture.rendererSelected, true)
+  assert.equal(contactSheet.executionPosture.rendererEngine, 'sharp')
+  assert.equal(contactSheet.executionPosture.mediaBytesRead, true)
+  assert.equal(contactSheet.executionPosture.outputBytesCreated, true)
+  assert.equal(contactSheet.renderPerformed, true)
+  assert.equal(contactSheet.exportPerformed, false)
+  assert.equal(contactSheet.productionReady, false)
+  assert.equal(contactSheet.approvalAuthority, false)
+  assert.equal(contactSheet.publicationAuthorization, false)
+  assert.equal(contactSheet.materializationProof, false)
+  assert.equal(validateRequiredRecord(contactSheet), true)
+  const contactSheetBytes = await readFile(path.join(dir, contactSheet.outputLocalRef.path))
+  assert.equal(contactSheetBytes.length, contactSheet.output.bytes)
+  assert.ok(contactSheetOutput.lines.some((line) => line.includes('contact sheet render:')))
+  assert.ok(contactSheetOutput.lines.some((line) => line.includes('renderPerformed=true')))
+  assert.ok(contactSheetOutput.lines.some((line) => line.includes('exportPerformed=false')))
 
   await writeRoughCutReviewDecision({
     projectDir: dir,

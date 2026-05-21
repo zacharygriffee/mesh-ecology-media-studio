@@ -258,6 +258,10 @@ renderer, render bytes, create an export file, publish, or grant authority.
 inputs and target output placement without selecting or invoking a renderer.
 `npm run production:render-plan` resolves those refs and the planned output path
 only. It does not read media bytes, render, export, publish, or grant authority.
+`npm run production:render-contact-sheet` is the first bounded local render
+execution path. It reads the planned image refs and writes a PNG contact sheet
+for local review, but it still does not create an export delivery, publish,
+make the project production-ready, or grant authority.
 
 Create a local provider-loop operator decision request:
 

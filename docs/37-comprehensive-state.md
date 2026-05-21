@@ -503,6 +503,11 @@ contract and target placement without selecting or invoking an adapter.
 `media.render_plan_candidate.local.v1` to resolve the render/export candidate,
 adapter contract, ordered items, and planned output path. It does not read media
 bytes, render, export, publish, or grant authority.
+`npm run production:render-contact-sheet` writes
+`media.render_receipt.local.v1` after creating a local PNG contact sheet for
+review. This is a bounded render receipt only: it does not create an export
+delivery, authorize publication, make the package production-ready, or grant
+approval/ratifier authority.
 
 The first production assembly boundary is now explicit: capsules package one
 accepted production asset, bundles group capsules, rough cuts order accepted
