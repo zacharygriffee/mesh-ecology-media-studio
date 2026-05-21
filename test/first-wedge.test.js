@@ -173,8 +173,8 @@ function createTestOperationCandidate(overrides = {}) {
   })
 }
 
-async function createFixtureProject() {
-  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-wedge-'))
+async function createFixtureProject(projectDir) {
+  const dir = projectDir ?? await mkdtemp(path.join(os.tmpdir(), 'media-studio-wedge-'))
   await mkdir(path.join(dir, 'cards'), { recursive: true })
   await mkdir(path.join(dir, 'media', 'generated'), { recursive: true })
 
@@ -1367,6 +1367,11 @@ test('committed Venice provider-loop failure fixture is inspectable without trut
   assert.equal(inspection.summary.state, 'failed_review_only')
   assert.equal(inspection.summary.failedStep, 'provider_smoke')
   assert.equal(inspection.summary.retryPath.state, 'needs-request')
+  assert.deepEqual(inspection.summary.productionBlockers, [
+    'provider_loop_failed_review_only',
+    'retry_or_defer_decision_required'
+  ])
+  assert.equal(inspection.summary.productionReady, false)
   assert.equal(inspection.summary.providerTruth, false)
   assert.equal(inspection.summary.meshTruth, false)
 })
@@ -1374,8 +1379,16 @@ test('committed Venice provider-loop failure fixture is inspectable without trut
 test('cross-project operator index surfaces provider loop attention by ref', async () => {
   const baseDir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-cross-project-provider-loop-'))
   const projectDir = path.join(baseDir, 'failed-provider-loop')
+  const approvalProjectDir = path.join(baseDir, 'approval-project')
   await mkdir(path.join(projectDir, 'records', 'provider-results'), { recursive: true })
   await mkdir(path.join(projectDir, 'records', 'decisions'), { recursive: true })
+  await createFixtureProject(approvalProjectDir)
+  await runFirstWedge({
+    projectDir: approvalProjectDir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await writeApprovalProposal({ projectDir: approvalProjectDir })
 
   const fixture = JSON.parse(
     await readFile('examples/provider-loop-fixtures/venice-provider-failed/records/provider-results/media-provider-loop-status.local.json', 'utf8')
@@ -1446,6 +1459,26 @@ test('cross-project operator index surfaces provider loop attention by ref', asy
             localOnly: true
           }
         }
+      },
+      {
+        projectId: 'approval-project',
+        label: 'Approval proposal fixture',
+        rootRef: {
+          kind: 'local-directory',
+          id: 'approval-project',
+          schema: 'media.local_ref.v1',
+          path: 'approval-project',
+          localOnly: true
+        },
+        artifactRefs: {
+          approvalProposal: {
+            kind: 'media-approval-proposal',
+            id: 'approval-proposal-project-test-asset-732d058fadd90c70',
+            schema: 'media.approval_proposal.local.v1',
+            path: 'records/approvals/media-approval-proposal.local.json',
+            localOnly: true
+          }
+        }
       }
     ],
     warnings: [
@@ -1473,13 +1506,22 @@ test('cross-project operator index surfaces provider loop attention by ref', asy
 
   assert.equal(result.index.summary.providerLoopStatuses, 1)
   assert.equal(result.index.summary.providerLoopsWithAttention, 1)
+  assert.equal(result.index.summary.providerLoopsWithProductionAttention, 1)
   assert.equal(result.index.summary.providerLoopDecisions, 1)
   assert.equal(result.index.summary.providerLoopRetryDecisions, 1)
-  assert.equal(result.index.summary.attentionRows, 1)
+  assert.equal(result.index.summary.approvalProposals, 1)
+  assert.equal(result.index.summary.approvalProposalsWithAttention, 1)
+  assert.equal(result.index.summary.attentionRows, 2)
   assert.equal(result.index.projectSummaries[0].providerLoopStatus.state, 'failed_review_only')
+  assert.deepEqual(result.index.projectSummaries[0].providerLoopStatus.productionBlockers, [
+    'provider_loop_failed_review_only',
+    'retry_or_defer_decision_required'
+  ])
   assert.equal(result.index.projectSummaries[0].providerLoopDecision.decisionType, 'retry_provider_loop')
   assert.equal(result.index.projectSummaries[0].providerLoopDecision.executionPerformed, false)
   assert.equal(result.index.projectSummaries[0].providerLoopStatus.providerTruth, false)
+  assert.equal(result.index.projectSummaries[1].approvalProposal.laneState, 'pending-authority-review')
+  assert.equal(result.index.projectSummaries[1].approvalProposal.approvalAuthority, false)
   assert.equal(validateRequiredRecord(result.index), true)
 })
 

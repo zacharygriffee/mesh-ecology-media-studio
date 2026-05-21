@@ -109,6 +109,8 @@ export function createVeniceLoopInspectionSummary(record, statusRef = defaultSta
     completionScope: record.completionScope ?? 'generated-candidate-local-loop',
     productionReady: record.productionReady === true,
     productionReadiness: record.productionReadiness ?? 'not assessed; provider-loop status only',
+    productionBlockers: record.productionBlockers ?? productionBlockersForProviderLoop(record),
+    productionNextAction: record.productionNextAction ?? productionNextActionForProviderLoop(record),
     state: record.state,
     failedStep: record.failedStep,
     completedSteps: record.completedSteps,
@@ -254,8 +256,47 @@ function printVeniceLoopInspectionSummary(summary) {
   ].join(' | '))
   console.log(`retryNextAction: ${summary.retryPath.nextAction}`)
   console.log(`productionReady: ${summary.productionReady}`)
+  console.log(`productionBlockers: ${summary.productionBlockers.length > 0 ? summary.productionBlockers.join(',') : 'none'}`)
+  console.log(`productionNextAction: ${summary.productionNextAction}`)
   console.log(`nextAction: ${summary.nextAction}`)
   console.log('nonClaims: local-only; no Edge call; no mesh truth; no provider truth; no byte/materialization proof; no resource admission')
+}
+
+function productionBlockersForProviderLoop(record) {
+  if (record.productionReady === true) return []
+  if (record.state === 'complete_review_only') {
+    return [
+      'provider_loop_complete_review_only',
+      'production_review_or_authority_not_granted'
+    ]
+  }
+  if (record.state === 'complete_with_attention') {
+    return [
+      'local_attention_required_before_production_review',
+      'production_review_or_authority_not_granted'
+    ]
+  }
+  if (record.state === 'failed_review_only') {
+    return [
+      'provider_loop_failed_review_only',
+      'retry_or_defer_decision_required'
+    ]
+  }
+  return ['provider_loop_not_complete']
+}
+
+function productionNextActionForProviderLoop(record) {
+  if (record.productionReady === true) return 'No local provider-loop production blocker is reported.'
+  if (record.state === 'complete_review_only') {
+    return 'Inspect accepted assets in media:summary and route any approval proposals before production use.'
+  }
+  if (record.state === 'complete_with_attention') {
+    return record.nextAction ?? 'Clear local attention rows before production review.'
+  }
+  if (record.state === 'failed_review_only') {
+    return 'Request retry or defer decision; do not treat the failed loop as production-ready.'
+  }
+  return record.nextAction ?? 'Complete the provider loop before production review.'
 }
 
 if (process.argv[1] === modulePath) {

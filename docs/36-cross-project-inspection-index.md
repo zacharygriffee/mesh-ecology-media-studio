@@ -52,6 +52,14 @@ also surfaces failed or incomplete provider loops as attention rows. These rows
 are local review guidance only: provider IDs and provider job posture remain
 provenance, not authority or truth.
 
+Provider-loop rows also expose production blockers. A `complete_review_only`
+loop can therefore be complete as a local provider loop while still blocked
+from production use until the proper review or authority lane exists.
+
+If an input project includes an `approvalProposal` artifact ref, the index
+summarizes it as pending authority work. The row does not grant approval,
+ratifier authority, or publication authorization.
+
 ## Boundary
 
 This is a local scanning aid only:
