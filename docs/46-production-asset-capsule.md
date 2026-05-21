@@ -105,6 +105,25 @@ The bundle is also local operator guidance only. It does not copy bytes, grant
 approval, prove availability, publish to mesh, call Edge, or authorize
 production use.
 
+## Production Assembly Boundary
+
+The current assembly lane is intentionally narrow:
+
+- `media.production_asset_capsule.local.v1` is the per-asset production package.
+- `media.production_bundle.local.v1` groups production asset capsules.
+- `media.rough_cut_capsule.local.v1` orders accepted production items for local
+  review.
+- `media.operator_decision.v1` may record local rough-cut review, defer, or
+  request-changes posture.
+- `media.production_authority_prerequisites.summary.local.v1` and
+  `media.authority_handoff_candidate.local.v1` show what a future authority
+  lane would need to inspect.
+
+This is not an editor, renderer, export engine, publication lane, or authority
+lane. Rough cuts are local review assemblies over refs. A reviewed rough cut can
+improve operator confidence that the ordered package was inspected, but it does
+not make production use authorized.
+
 ## Venice Production Rehearsal
 
 `npm run provider:venice:rehearse-production` runs the current local Venice

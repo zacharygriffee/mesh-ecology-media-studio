@@ -475,10 +475,11 @@ refs when the asset descriptor is available.
 loop through that lane and writes the local inspection, operator index, and
 Edge-compatible bundle surfaces. It is a rehearsal path, not an authority or
 publication path.
-`npm run production:authority-prereqs` reports the local prerequisite state for
+`npm run production:authority-prereqs` writes the local prerequisite state for
 accepted production candidates: local decision, approval proposal, situated
-approval refs, capsule, bundle, byte/resource posture, derivative refs, and the
-remaining authority gap. It does not write a new authority artifact.
+approval refs, capsule, bundle, byte/resource posture, derivative refs,
+rough-cut review posture, and the remaining authority gap. It writes local
+guidance only, not an authority artifact.
 `npm run production:rough-cut` writes `media.rough_cut_capsule.local.v1`, an
 order-only local review package over accepted production item refs. It does not
 render, export, publish, or grant production authority.
@@ -491,6 +492,13 @@ not render, export, authorize publication, or make the cut production-ready.
 `npm run production:rough-cut-revise` consumes a local `request_changes`
 decision and regenerates the rough-cut capsule for another local review pass
 without editing bytes, rendering, exporting, or granting authority.
+
+The first production assembly boundary is now explicit: capsules package one
+accepted production asset, bundles group capsules, rough cuts order accepted
+items for local review, rough-cut decisions record local review posture, and
+authority-prerequisite or handoff records only describe future authority review
+inputs. None of these records render media, export deliverables, publish to
+mesh, or grant approval/ratifier/publication authority.
 
 ## Current Verification Baseline
 

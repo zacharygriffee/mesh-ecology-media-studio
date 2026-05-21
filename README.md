@@ -245,6 +245,13 @@ authority.
 Media summary, project health, Venice inspection, operator index, and
 Edge-compatible bundles surface rough-cut capsule refs when present.
 
+The first production assembly boundary is: capsule for one accepted production
+asset, bundle for grouped capsules, rough cut for ordered local review, local
+rough-cut decision for review/defer/request-changes posture, and authority
+prerequisite/handoff records for future authority-lane inputs. This boundary
+does not include editor UI, timeline rendering, export rendering, publication,
+ratification, or production authorization.
+
 Create a local provider-loop operator decision request:
 
 ```bash
@@ -392,6 +399,10 @@ production items; it remains order-only and non-rendered.
 `npm run media:summary` and `npm run operator:index` also show a production
 approval lane: local decisions and approval proposals can be present, capsules
 and bundles can be present, and authority can still be missing.
+The production assembly lane stops at local review packaging: capsules,
+bundles, rough cuts, review decisions, authority prerequisites, and handoff
+candidates are refs and guidance only. Rendering/export/publication and
+authority-bearing decisions remain separate future lanes.
 
 Byte posture is reported by `contentId`; resource posture is reported by
 descriptor/situation/placement subject. `assetId` remains a compatibility

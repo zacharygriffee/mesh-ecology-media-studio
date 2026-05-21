@@ -185,6 +185,11 @@ approval proposals are visible without treating them as approval authority.
 Its production approval lane separates local decision, proposal, capsule,
 bundle, and authority-missing posture without adding a UI or granting
 authorization.
+The production assembly lane currently stops at local review packaging:
+production capsules, production bundles, rough-cut capsules, rough-cut review
+decisions, authority prerequisite summaries, and authority handoff candidates.
+It does not render, export, publish, approve, ratify, or grant production
+authority.
 
 Write a local Packs-aligned control-surface projection without adding UI:
 
