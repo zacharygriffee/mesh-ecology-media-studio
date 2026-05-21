@@ -482,6 +482,10 @@ scaffolds rather than layer authority.
 `media:summary`, `operator:index`, Venice inspection, and Edge-compatible
 bundles now surface that Layer interop state compactly for operator inspection
 without making Studio a Layer runtime.
+Those surfaces also flag mismatched Layer refs across local authority
+prerequisite and handoff records as local attention. The check only detects
+inconsistent local posture records; it does not validate Layer, approve durable
+append, claim continuity, or grant authority.
 Approval proposal records keep the compatibility `subjectRef` from the local
 decision and now include situated asset descriptor/content/situation/placement
 refs when the asset descriptor is available.

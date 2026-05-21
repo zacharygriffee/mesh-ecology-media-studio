@@ -287,6 +287,7 @@ function printMediaSummary(summary) {
     `handoffs=${summary.layerInterop.authorityHandoffRecords}`,
     `layerRefs=${summary.layerInterop.layerRefs.length}`,
     `profileRefs=${summary.layerInterop.layerProfileRefs.length}`,
+    `attention=${summary.layerInterop.attentionRows.length}`,
     `durableAppendApproved=${summary.layerInterop.durableAppendApproved}`,
     `continuityClaimed=${summary.layerInterop.continuityClaimed}`,
     `layerAuthority=${summary.layerInterop.layerAuthority}`
@@ -377,6 +378,9 @@ function printMediaSummary(summary) {
       `nextAction=${row.nextAction}`
     ].join(' | '))
   }
+  for (const row of summary.layerInterop.attentionRows) {
+    console.log(`layer-interop: state=${row.healthState} | issues=${row.issueCodes.join(',')} | nextAction=${row.nextAction}`)
+  }
 
   console.log('nonClaims: local-only; no mesh truth; no approval authority; no publication authorization; no byte/materialization proof; no resource admission')
 }
@@ -392,6 +396,7 @@ function summarizeSafeNextAction({
   renderExportCandidates,
   renderReceipts,
   exportReceipts,
+  layerInterop,
   productionApprovalLane,
   bytePosture,
   resourcePosture
@@ -445,6 +450,10 @@ function summarizeSafeNextAction({
 
   if (exportReceipts.attentionRows.length > 0) {
     return exportReceipts.attentionRows[0].nextAction
+  }
+
+  if (layerInterop.attentionRows.length > 0) {
+    return layerInterop.attentionRows[0].nextAction
   }
 
   if (productionApprovalLane.pendingAuthority > 0 || approvalLane.pendingAuthority > 0) {

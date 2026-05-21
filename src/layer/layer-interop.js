@@ -111,6 +111,46 @@ export function summarizeLayerInteropFromRecords(records = []) {
   const attached = postureEntries.some((entry) =>
     entry.record.layerInteropPosture.interopState === 'layer-refs-attached-review-only'
   )
+  const issueCodes = layerInteropIssueCodes({
+    layerRefs,
+    layerProfileRefs,
+    continuityRefs,
+    desyncPostureRefs,
+    rbcProfileRefs
+  })
+  const attentionRows = issueCodes.length > 0
+    ? [{
+        subjectRef: {
+          kind: 'mesh-ecology-layer-interoperability',
+          id: 'layer-interop-posture',
+          repoRef: 'mesh-ecology-layer',
+          localOnly: true,
+          authorityGranted: false
+        },
+        subjectKind: 'layer-interop-posture',
+        healthState: 'needs-local-attention',
+        issueCodes,
+        summary: `Layer interop refs disagree across local authority posture records: ${issueCodes.join(', ')}.`,
+        nextAction: 'Regenerate authority prerequisite and handoff records with the same intended Layer refs, or remove stale authority posture records.',
+        sourceRefs: postureEntries.map((entry) => ({
+          kind: entry.record.schema === artifactKinds.mediaAuthorityHandoffCandidateLocal
+            ? 'media-authority-handoff-candidate'
+            : 'media-production-authority-prerequisites',
+          id: entry.record.handoffCandidateId ?? entry.record.reportId,
+          path: entry.relativePath ?? entry.path,
+          schema: entry.record.schema,
+          localOnly: true
+        })),
+        nonClaims: {
+          layerAuthority: false,
+          continuityClaimed: false,
+          durableAppendApproved: false,
+          productionReady: false
+        },
+        localOnly: true,
+        operatorGuidanceOnly: true
+      }]
+    : []
 
   return {
     state: attached ? 'layer-refs-attached-review-only' : 'layer-refs-not-attached',
@@ -122,6 +162,9 @@ export function summarizeLayerInteropFromRecords(records = []) {
     continuityRefs,
     desyncPostureRefs,
     rbcProfileRefs,
+    issueCodes,
+    attentionRows,
+    needsOperatorAttention: attentionRows.length > 0,
     durableAppendApproved: false,
     substrateSelected: false,
     continuityClaimed: false,
@@ -163,4 +206,20 @@ function compactLayerRefs(refs) {
     output.push(ref)
   }
   return output
+}
+
+function layerInteropIssueCodes({
+  layerRefs,
+  layerProfileRefs,
+  continuityRefs,
+  desyncPostureRefs,
+  rbcProfileRefs
+}) {
+  return [
+    layerRefs.length > 1 ? 'layer_ref_mismatch' : null,
+    layerProfileRefs.length > 1 ? 'layer_profile_ref_mismatch' : null,
+    continuityRefs.length > 1 ? 'layer_continuity_ref_mismatch' : null,
+    desyncPostureRefs.length > 1 ? 'layer_desync_posture_ref_mismatch' : null,
+    rbcProfileRefs.length > 1 ? 'layer_rbc_profile_ref_mismatch' : null
+  ].filter(Boolean)
 }

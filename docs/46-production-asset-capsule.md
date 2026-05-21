@@ -198,6 +198,10 @@ without making Studio a Layer runtime. The handoff still records
 `npm run edge:compat` surface the same Layer interop state and non-claims so
 the refs are visible without making them authority, continuity, or a runtime
 dependency.
+If local authority prerequisite and handoff records carry different Layer refs,
+the operator surfaces mark Layer interop attention. The next local action is to
+regenerate the stale authority posture records with the intended refs, not to
+treat the mismatch as a Layer runtime verdict.
 
 ## Rough-Cut Capsule Seed
 

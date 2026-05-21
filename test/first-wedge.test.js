@@ -2769,11 +2769,13 @@ test('authority handoff candidate can carry Layer refs without selecting substra
   assert.equal(mediaSummaryOutput.result.layerInterop.durableAppendApproved, false)
   assert.equal(mediaSummaryOutput.result.layerInterop.continuityClaimed, false)
   assert.equal(mediaSummaryOutput.result.layerInterop.layerAuthority, false)
-  assert.ok(mediaSummaryOutput.lines.some((line) => line === 'layer interop: state=layer-refs-attached-review-only | handoffs=1 | layerRefs=1 | profileRefs=1 | durableAppendApproved=false | continuityClaimed=false | layerAuthority=false'))
+  assert.equal(mediaSummaryOutput.result.layerInterop.attentionRows.length, 0)
+  assert.ok(mediaSummaryOutput.lines.some((line) => line === 'layer interop: state=layer-refs-attached-review-only | handoffs=1 | layerRefs=1 | profileRefs=1 | attention=0 | durableAppendApproved=false | continuityClaimed=false | layerAuthority=false'))
 
   const operatorIndexOutput = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
   assert.equal(operatorIndexOutput.result.index.layerInterop.state, 'layer-refs-attached-review-only')
   assert.equal(operatorIndexOutput.result.index.summary.layerInteropState, 'layer-refs-attached-review-only')
+  assert.equal(operatorIndexOutput.result.index.summary.layerInteropAttention, 0)
   assert.equal(operatorIndexOutput.result.index.summary.layerDurableAppendApproved, false)
   assert.equal(operatorIndexOutput.result.index.summary.layerContinuityClaimed, false)
   assert.equal(operatorIndexOutput.result.index.summary.layerAuthority, false)
@@ -2789,6 +2791,60 @@ test('authority handoff candidate can carry Layer refs without selecting substra
   assert.equal(compatibility.bundle.layerInteropSummary.layerAuthority, false)
   assert.equal(compatibility.bundle.studioReviewEvidence.layerInteropSummary.continuityClaimed, false)
   assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.authority_handoff_candidate.local.v1'))
+})
+
+test('Layer interop summaries flag mismatched authority posture refs without authority', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-authority-layer-mismatch-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+  await writeProductionAuthorityPrerequisiteReport({
+    projectDir: dir,
+    layerRef: 'layer:operator-local:operator-alpha',
+    layerProfileRef: 'layer-profile:operator-local:v0:alpha',
+    continuityRef: 'layer-continuity-ref:operator-local:alpha',
+    desyncPostureRef: 'layer-desync-posture:operator-local:alpha',
+    rbcProfileRefs: ['rbc-profile:operator-local-alpha']
+  })
+  await writeAuthorityHandoffCandidate({
+    projectDir: dir,
+    quiet: true,
+    layerRef: 'layer:operator-local:operator-beta',
+    layerProfileRef: 'layer-profile:operator-local:v0:beta',
+    continuityRef: 'layer-continuity-ref:operator-local:beta',
+    desyncPostureRef: 'layer-desync-posture:operator-local:beta',
+    rbcProfileRefs: ['rbc-profile:operator-local-beta']
+  })
+
+  const mediaSummaryOutput = await captureConsole(() => writeMediaSummary({ projectDir: dir }))
+  assert.equal(mediaSummaryOutput.result.layerInterop.state, 'layer-refs-attached-review-only')
+  assert.deepEqual(mediaSummaryOutput.result.layerInterop.issueCodes, [
+    'layer_ref_mismatch',
+    'layer_profile_ref_mismatch',
+    'layer_continuity_ref_mismatch',
+    'layer_desync_posture_ref_mismatch',
+    'layer_rbc_profile_ref_mismatch'
+  ])
+  assert.equal(mediaSummaryOutput.result.layerInterop.attentionRows.length, 1)
+  assert.equal(mediaSummaryOutput.result.layerInterop.layerAuthority, false)
+  assert.equal(mediaSummaryOutput.result.layerInterop.continuityClaimed, false)
+  assert.equal(mediaSummaryOutput.result.layerInterop.durableAppendApproved, false)
+  assert.ok(mediaSummaryOutput.lines.some((line) => line.includes('layer interop: state=layer-refs-attached-review-only')))
+  assert.ok(mediaSummaryOutput.lines.some((line) => line.includes('attention=1')))
+  assert.ok(mediaSummaryOutput.lines.some((line) => line.includes('layer-interop: state=needs-local-attention')))
+
+  const operatorIndexOutput = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
+  assert.equal(operatorIndexOutput.result.index.summary.layerInteropAttention, 1)
+  assert.equal(operatorIndexOutput.result.index.layerInterop.attentionRows[0].nonClaims.layerAuthority, false)
+  assert.equal(operatorIndexOutput.result.index.layerInterop.attentionRows[0].nonClaims.continuityClaimed, false)
+  assert.ok(operatorIndexOutput.lines.some((line) => line.includes('layerAttention=1')))
+  assert.ok(operatorIndexOutput.lines.some((line) => line.includes('layer interop attention')))
+
+  const inspection = await inspectVeniceSmoke({ projectDir: dir })
+  assert.equal(inspection.packet.operationalSummary.layerInterop.attentionRows.length, 1)
+  assert.equal(inspection.packet.operationalSummary.layerInterop.layerAuthority, false)
+
+  const compatibility = await writeEdgeCompatibilityBundle({ projectDir: dir })
+  assert.equal(compatibility.bundle.layerInteropSummary.attentionRows.length, 1)
+  assert.equal(compatibility.bundle.studioReviewEvidence.layerInteropSummary.continuityClaimed, false)
 })
 
 test('rough cut capsule orders production items without rendering or authority', async () => {

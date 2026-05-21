@@ -218,6 +218,7 @@ export async function writeOperatorPacketIndex({
       layerInteropHandoffs: layerInterop.authorityHandoffRecords,
       layerInteropLayerRefs: layerInterop.layerRefs.length,
       layerInteropProfileRefs: layerInterop.layerProfileRefs.length,
+      layerInteropAttention: layerInterop.attentionRows.length,
       layerDurableAppendApproved: layerInterop.durableAppendApproved,
       layerContinuityClaimed: layerInterop.continuityClaimed,
       layerAuthority: layerInterop.layerAuthority,
@@ -235,6 +236,7 @@ export async function writeOperatorPacketIndex({
         renderExportCandidates.filter((candidate) => candidate.needsOperatorAttention).length +
         renderReceipts.filter((receipt) => receipt.issueCodes.length > 0).length +
         exportReceipts.filter((receipt) => receipt.issueCodes.length > 0).length +
+        layerInterop.attentionRows.length +
         productionApprovalLane.attentionRows.length,
       newestRecordPath: newestPath(records),
       operatorGuidanceOnly: true
@@ -299,6 +301,9 @@ export async function writeOperatorPacketIndex({
     for (const receipt of index.exportReceipts) {
       console.log(formatExportReceipt(receipt))
     }
+    for (const row of index.layerInterop.attentionRows) {
+      console.log(formatLayerInteropAttention(row))
+    }
     if (index.productionApprovalLane.candidates > 0) {
       console.log(formatProductionApprovalLaneSummary(index.productionApprovalLane))
     }
@@ -332,6 +337,7 @@ function formatOperatorPacketIndexSummary(index, output) {
     `renderReceipts=${summary.renderReceipts ?? 0}`,
     `exportReceipts=${summary.exportReceipts ?? 0}`,
     `layerInterop=${summary.layerInteropState ?? 'layer-refs-not-attached'}`,
+    `layerAttention=${summary.layerInteropAttention ?? 0}`,
     `productionApprovalPending=${summary.productionApprovalPendingAuthority ?? 0}`,
     `ruleTraces=${summary.ruleResolutionTraces}`,
     `attention=${summary.attentionRows ?? summary.operatorHealthExplanations}`,
@@ -455,6 +461,15 @@ function formatExportReceipt(receipt) {
     `productionReady=${receipt.productionReady}`,
     `issues=${receipt.issueCodes.join(',') || 'none'}`,
     `path=${receipt.receiptRef.path}`
+  ].join(' | ')
+}
+
+function formatLayerInteropAttention(row) {
+  return [
+    'layer interop attention',
+    `state=${row.healthState}`,
+    `issues=${row.issueCodes.join(',') || 'none'}`,
+    `nextAction=${row.nextAction}`
   ].join(' | ')
 }
 
