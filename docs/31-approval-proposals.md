@@ -20,8 +20,25 @@ It is distinct from:
 An approval proposal points to:
 
 - the subject being proposed for approval
+- the subject asset descriptor, content, situation, placement, and local path
+  when the asset descriptor is available
 - the local operator decision that motivated the proposal
 - evidence refs used by that local decision
+
+`subjectRef` remains the compatibility subject from the local decision. New
+behavior should prefer the situated fields when it needs to know what concrete
+asset placement the proposal is about:
+
+```text
+subjectAssetDescriptorRef
+subjectContentRef
+subjectSituationRef
+subjectPlacementRef
+subjectLocalRef
+```
+
+These refs clarify identity only. They do not grant approval or resource
+admission.
 
 It must preserve these flags:
 

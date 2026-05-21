@@ -63,6 +63,8 @@ export async function writeApprovalProposal({
   const proposal = createApprovalProposal({
     projectId: assetDescriptor.projectId,
     subjectRef: localDecision.subjectRef,
+    assetDescriptor,
+    assetDescriptorPath: asset,
     localDecision,
     localDecisionPath: decision,
     evidenceRefs: localDecision.evidenceRefs,
@@ -85,6 +87,8 @@ export async function writeApprovalProposal({
 export function createApprovalProposal({
   projectId,
   subjectRef,
+  assetDescriptor,
+  assetDescriptorPath,
   localDecision,
   localDecisionPath,
   evidenceRefs = [],
@@ -93,11 +97,17 @@ export function createApprovalProposal({
 }) {
   const decisionType = proposedDecision ?? localDecision?.decisionType
   const proposalType = proposalTypeForDecision(decisionType)
+  const situatedSubject = createSituatedSubjectRefs({
+    assetDescriptor,
+    assetDescriptorPath,
+    subjectRef
+  })
   const proposal = {
     schema: artifactKinds.mediaApprovalProposalLocal,
     proposalId: `approval-proposal-${projectId}-${subjectRef.id}`,
     projectId,
     subjectRef,
+    ...situatedSubject,
     proposalType,
     proposedDecision: decisionType,
     status: 'proposed',
@@ -124,6 +134,51 @@ export function createApprovalProposal({
 
   validateRequiredRecord(proposal)
   return proposal
+}
+
+function createSituatedSubjectRefs({
+  assetDescriptor,
+  assetDescriptorPath,
+  subjectRef
+}) {
+  if (!assetDescriptor) return {}
+
+  return {
+    subjectAssetDescriptorRef: {
+      ...(assetDescriptor.assetDescriptorRef ?? makeRef('media-asset-descriptor', assetDescriptor.assetId ?? subjectRef.id, assetDescriptor.schema)),
+      path: assetDescriptorPath,
+      localOnly: true
+    },
+    subjectContentRef: assetDescriptor.contentId
+      ? makeRef('media-content', assetDescriptor.contentId, 'media.content_ref.local.v1')
+      : undefined,
+    subjectSituationRef: assetDescriptor.situationRef
+      ? {
+          ...assetDescriptor.situationRef,
+          localOnly: true
+        }
+      : undefined,
+    subjectPlacementRef: assetDescriptor.placementRef
+      ? {
+          ...assetDescriptor.placementRef,
+          localOnly: true
+        }
+      : undefined,
+    subjectLocalRef: assetDescriptor.localRef
+      ? {
+          ...assetDescriptor.localRef,
+          localOnly: true
+        }
+      : undefined,
+    identityPosture: {
+      assetId: 'compatibility descriptor id',
+      contentId: 'byte sameness',
+      situationRef: 'situated media role',
+      placementRef: 'local placement subtype',
+      localOnly: true,
+      operatorGuidanceOnly: true
+    }
+  }
 }
 
 function proposalTypeForDecision(decisionType) {

@@ -2204,6 +2204,13 @@ test('approval proposal records local request without granting authority', async
   assert.equal(proposal.schema, 'media.approval_proposal.local.v1')
   assert.equal(proposal.proposalType, 'acceptance-approval')
   assert.equal(proposal.proposedDecision, 'accept')
+  assert.equal(proposal.subjectRef.id, proposal.subjectAssetDescriptorRef.id)
+  assert.ok(proposal.subjectAssetDescriptorRef.path)
+  assert.ok(proposal.subjectContentRef.id.startsWith('sha256:'))
+  assert.equal(proposal.subjectSituationRef.placementRef.id, proposal.subjectPlacementRef.id)
+  assert.equal(proposal.subjectLocalRef.path, 'media/accepted/candidate.txt')
+  assert.equal(proposal.identityPosture.assetId, 'compatibility descriptor id')
+  assert.equal(proposal.identityPosture.situationRef, 'situated media role')
   assert.equal(proposal.authorityRequired, true)
   assert.equal(proposal.proposalOnly, true)
   assert.equal(proposal.approvalAuthority, false)
@@ -2213,6 +2220,8 @@ test('approval proposal records local request without granting authority', async
 
   const written = JSON.parse(await readFile(path.join(dir, output), 'utf8'))
   assert.equal(written.proposalId, proposal.proposalId)
+  assert.equal(written.subjectSituationRef.id, proposal.subjectSituationRef.id)
+  assert.equal(written.subjectPlacementRef.id, proposal.subjectPlacementRef.id)
 })
 
 test('approval proposal rejects authority claims', () => {

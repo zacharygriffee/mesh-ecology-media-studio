@@ -396,6 +396,10 @@ Write a local approval proposal without granting approval authority:
 npm run approval:proposal -- --project-dir examples/card-to-candidate
 ```
 
+Approval proposals preserve the local decision subject for compatibility and
+also include situated asset refs when available: descriptor, content,
+situation, placement, and local path.
+
 Write local byte descriptor proposals without claiming byte materialization:
 
 ```bash

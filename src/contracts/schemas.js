@@ -2239,6 +2239,18 @@ export function validateRecordShape(record, schemaId = record.schema) {
     }
 
     validateRef(record.subjectRef, `${schemaId}.subjectRef`)
+    if (record.subjectAssetDescriptorRef !== undefined) {
+      validateInspectionRef(record.subjectAssetDescriptorRef, `${schemaId}.subjectAssetDescriptorRef`)
+    }
+    if (record.subjectContentRef !== undefined) {
+      validateRef(record.subjectContentRef, `${schemaId}.subjectContentRef`)
+    }
+    if (record.subjectSituationRef !== undefined) {
+      validateRef(record.subjectSituationRef, `${schemaId}.subjectSituationRef`)
+    }
+    if (record.subjectPlacementRef !== undefined) {
+      validateRef(record.subjectPlacementRef, `${schemaId}.subjectPlacementRef`)
+    }
     validateRef(record.localDecisionRef, `${schemaId}.localDecisionRef`)
     validateRefArray(record.evidenceRefs, `${schemaId}.evidenceRefs`)
 

@@ -43,6 +43,24 @@
     "subjectRef": {
       "type": "object"
     },
+    "subjectAssetDescriptorRef": {
+      "type": "object"
+    },
+    "subjectContentRef": {
+      "type": "object"
+    },
+    "subjectSituationRef": {
+      "type": "object"
+    },
+    "subjectPlacementRef": {
+      "type": "object"
+    },
+    "subjectLocalRef": {
+      "type": "object"
+    },
+    "identityPosture": {
+      "type": "object"
+    },
     "proposalType": {
       "enum": [
         "acceptance-approval",
