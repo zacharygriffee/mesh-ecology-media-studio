@@ -118,11 +118,13 @@ export async function writeEdgeCompatibilityBundle({
     relativePath
   }))
   const readinessResourceSummary = createReadinessResourceSummary({ sources })
+  const exportDeliverySummary = createExportDeliverySummary({ sources })
   const createdAt = nowIso()
   const reviewEvidence = createStudioEdgeReviewEvidence({
     projectId,
     sourceRefs: studioSourceRefs,
     readinessResourceSummary,
+    exportDeliverySummary,
     createdAt
   })
   const sourceRefStrings = studioSourceRefs.map((ref) => `${ref.kind}:${ref.id}`)
@@ -177,6 +179,7 @@ export async function writeEdgeCompatibilityBundle({
       edgeShapeTarget('edge_operator_decision', 'edge_operator_decision.v1')
     ],
     readinessResourceSummary,
+    exportDeliverySummary,
     studioReviewEvidence: reviewEvidence,
     edgeWorkPacketCandidate: workPacketCandidate,
     edgeEvidenceImportCandidate: evidenceImportCandidate,
@@ -277,7 +280,7 @@ async function readSourceRecords(root) {
   return sources
 }
 
-function createStudioEdgeReviewEvidence({ projectId, sourceRefs, readinessResourceSummary, createdAt }) {
+function createStudioEdgeReviewEvidence({ projectId, sourceRefs, readinessResourceSummary, exportDeliverySummary, createdAt }) {
   const reviewEvidence = {
     schema: artifactKinds.mediaEdgeReviewEvidenceLocal,
     edgeReviewEvidenceId: `media-studio-edge-review-${projectId}`,
@@ -299,6 +302,7 @@ function createStudioEdgeReviewEvidence({ projectId, sourceRefs, readinessResour
     sourceRefs,
     sourceArtifactRefs: sourceRefs.map((ref) => `${ref.kind}:${ref.id}`),
     readinessResourceSummary,
+    exportDeliverySummary,
     summary: 'Studio local inspection artifacts are ready for Edge-style operator review as local evidence only.',
     reasonCodes: [
       'studio_local_wedge_complete',
@@ -462,6 +466,54 @@ function createReadinessResourceSummary({ sources }) {
   }
 }
 
+function createExportDeliverySummary({ sources }) {
+  const exportEntries = Object.values(sources)
+    .filter((source) => source.record.schema === artifactKinds.mediaExportReceiptLocal)
+    .sort((left, right) => {
+      const rightTime = Date.parse(right.record.createdAt ?? '') || 0
+      const leftTime = Date.parse(left.record.createdAt ?? '') || 0
+      if (rightTime !== leftTime) return rightTime - leftTime
+      return right.relativePath.localeCompare(left.relativePath)
+    })
+  const refs = exportEntries.map(({ record, relativePath }) => localRecordRef({
+    kind: 'media-export-receipt',
+    id: record.exportReceiptId,
+    schema: record.schema,
+    relativePath
+  }))
+
+  return {
+    summaryKind: 'studio-export-delivery-summary',
+    exportReceipts: refs.length,
+    deliveryCreated: exportEntries.filter((entry) => entry.record.deliveryCreated === true).length,
+    exportPerformed: exportEntries.filter((entry) => entry.record.exportPerformed === true).length,
+    publicationAuthorization: false,
+    productionReady: false,
+    refs,
+    deliveryLocalRefs: exportEntries
+      .map((entry) => entry.record.deliveryLocalRef)
+      .filter((ref) => ref?.path)
+      .map((ref) => ({ ...ref, localOnly: true })),
+    sourceRenderReceiptRefs: compactRefs(exportEntries.map((entry) => entry.record.sourceRenderReceiptRef)),
+    sourceRoughCutRefs: compactRefs(exportEntries.map((entry) => entry.record.sourceRoughCutRef)),
+    sourceExportPlanRefs: compactRefs(exportEntries.map((entry) => entry.record.sourceExportPlanRef)),
+    sourceExportCandidateRefs: compactRefs(exportEntries.map((entry) => entry.record.sourceExportCandidateRef)),
+    localDeliveryEvidenceOnly: true,
+    operatorGuidanceOnly: true,
+    localOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    byteAvailabilityProof: false,
+    materializationProof: false,
+    resourceAdmission: false,
+    approvalAuthority: false,
+    publicationAuthorizationClaimed: false,
+    productionReadyClaimed: false,
+    edgeRuntimeVerified: false
+  }
+}
+
 function createEdgeReturnSurfaceCandidate({ projectId, readinessViewCandidate, workPacketCandidate, evidenceImportCandidate, sourceRefStrings, createdAt }) {
   return edgeCandidate({
     edgeArtifactKind: 'edge_operator_return_surface',
@@ -587,6 +639,18 @@ function localRecordRef({ kind, id, schema, relativePath }) {
     path: relativePath,
     localOnly: true
   }
+}
+
+function compactRefs(refs) {
+  const output = []
+  const seen = new Set()
+  for (const ref of refs.filter((candidate) => candidate?.id)) {
+    const key = `${ref.schema}:${ref.id}:${ref.path ?? ''}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    output.push({ ...ref, localOnly: true })
+  }
+  return output
 }
 
 function kindForSchema(schema) {

@@ -536,6 +536,9 @@ using ffmpeg to render a local MP4 delivery candidate from the export plan. It
 uses npm-managed `ffmpeg-static` by default and supports `--disable-ffmpeg`.
 The receipt remains local delivery evidence only, not publication
 authorization, approval authority, or production readiness.
+Authority handoff candidates and Edge-compatible bundles now expose export
+receipt refs, delivery local refs, source render refs, and source rough-cut refs
+as review-only inputs.
 
 The first production assembly boundary is now explicit: capsules package one
 accepted production asset, bundles group capsules, rough cuts order accepted

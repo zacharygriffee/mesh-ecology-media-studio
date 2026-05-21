@@ -360,6 +360,9 @@ npm run handoff:edge -- --project-dir examples/card-to-candidate
 npm run operator:decision-request -- --project-dir examples/card-to-candidate
 ```
 
+Edge-compatible bundles include export receipt refs plus delivery/source refs
+for operator inspection. They do not make local delivery evidence authoritative.
+
 Create a Packs-aligned control-surface projection without adding UI:
 
 ```bash

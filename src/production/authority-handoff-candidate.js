@@ -92,6 +92,8 @@ export function createAuthorityHandoffCandidateFromRecords({
   const roughCutCapsuleRefs = refsForSchema(records, artifactKinds.mediaRoughCutCapsuleLocal, 'media-rough-cut-capsule')
   const renderExportCandidateRefs = refsForSchema(records, artifactKinds.mediaRenderExportCandidateLocal, 'media-render-export-candidate')
   const renderReceiptRefs = refsForSchema(records, artifactKinds.mediaRenderReceiptLocal, 'media-render-receipt')
+  const exportReceiptRefs = refsForSchema(records, artifactKinds.mediaExportReceiptLocal, 'media-export-receipt')
+  const exportReceiptInput = createExportReceiptInput(records, prerequisiteReport)
   const approvalProposalRefs = refsForSchema(records, artifactKinds.mediaApprovalProposalLocal, 'media-approval-proposal')
   const localDecisionRefs = refsForSchema(records, artifactKinds.mediaOperatorDecision, 'media-operator-decision')
   const roughCutReviewDecisionRefs = refsForRecordPredicate(
@@ -120,6 +122,7 @@ export function createAuthorityHandoffCandidateFromRecords({
     roughCutReviewPosture: row.roughCutReviewPosture,
     renderExportCandidatePosture: row.renderExportCandidatePosture,
     renderReceiptPosture: row.renderReceiptPosture,
+    exportReceiptPosture: row.exportReceiptPosture,
     authorityGaps: row.authorityGaps,
     productionReady: false,
     approvalAuthority: false,
@@ -132,6 +135,7 @@ export function createAuthorityHandoffCandidateFromRecords({
     ...roughCutCapsuleRefs,
     ...renderExportCandidateRefs,
     ...renderReceiptRefs,
+    ...exportReceiptRefs,
     ...approvalProposalRefs,
     ...roughCutReviewDecisionRefs,
     ...localDecisionRefs,
@@ -157,6 +161,11 @@ export function createAuthorityHandoffCandidateFromRecords({
     renderReceipts: prerequisiteReport.renderReceipts ?? 0,
     renderReceiptsFresh: prerequisiteReport.renderReceiptsFresh ?? 0,
     renderReceiptsStale: prerequisiteReport.renderReceiptsStale ?? 0,
+    exportReceipts: prerequisiteReport.exportReceipts ?? 0,
+    exportReceiptsFresh: prerequisiteReport.exportReceiptsFresh ?? 0,
+    exportReceiptsStale: prerequisiteReport.exportReceiptsStale ?? 0,
+    deliveryCreated: prerequisiteReport.deliveryCreated ?? 0,
+    exportPerformed: prerequisiteReport.exportPerformed ?? 0,
     renderAuthorizationMissing: prerequisiteReport.renderAuthorizationMissing ?? 0,
     exportAuthorizationMissing: prerequisiteReport.exportAuthorizationMissing ?? 0,
     productionReady: prerequisiteReport.productionReady,
@@ -174,6 +183,7 @@ export function createAuthorityHandoffCandidateFromRecords({
       ...roughCutCapsuleRefs.map((ref) => ref.id),
       ...renderExportCandidateRefs.map((ref) => ref.id),
       ...renderReceiptRefs.map((ref) => ref.id),
+      ...exportReceiptRefs.map((ref) => ref.id),
       ...roughCutReviewDecisionRefs.map((ref) => ref.id)
     ].join('|'))}`,
     projectId,
@@ -253,6 +263,7 @@ export function createAuthorityHandoffCandidateFromRecords({
         localPreviewEvidenceOnly: true,
         localOnly: true
       },
+      exportReceiptInput,
       {
         inputKind: 'situated-identity',
         refs: acceptedCandidateRows.map((row) => ({
@@ -335,12 +346,50 @@ export function formatAuthorityHandoffCandidateSummary(candidate, output = defau
     `roughCutReviewed=${candidate.prerequisiteSummary.roughCutReviewed ?? 0}`,
     `renderExportCandidates=${candidate.prerequisiteSummary.renderExportCandidates ?? 0}`,
     `renderReceipts=${candidate.prerequisiteSummary.renderReceipts ?? 0}`,
+    `exportReceipts=${candidate.prerequisiteSummary.exportReceipts ?? 0}`,
+    `deliveryCreated=${candidate.prerequisiteSummary.deliveryCreated ?? 0}`,
+    `exportPerformed=${candidate.prerequisiteSummary.exportPerformed ?? 0}`,
     `renderAuthorizationMissing=${candidate.prerequisiteSummary.renderAuthorizationMissing ?? 0}`,
     `exportAuthorizationMissing=${candidate.prerequisiteSummary.exportAuthorizationMissing ?? 0}`,
     `authorityGaps=${candidate.authorityGaps.length}`,
     `productionReady=${candidate.productionReady}`,
     `output=${output}`
   ].join(' | ')
+}
+
+function createExportReceiptInput(records, prerequisiteReport) {
+  const exportEntries = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaExportReceiptLocal)
+    .sort(compareRecordCreatedAt)
+  const refs = exportEntries.map((entry) =>
+    localRecordRef('media-export-receipt', entry.record.exportReceiptId, entry.record.schema, entry.path)
+  )
+
+  return {
+    inputKind: 'export-receipt',
+    refs,
+    required: false,
+    present: refs.length > 0,
+    fresh: prerequisiteReport.exportReceiptsFresh ?? 0,
+    stale: prerequisiteReport.exportReceiptsStale ?? 0,
+    deliveryCreated: prerequisiteReport.deliveryCreated ?? 0,
+    exportPerformed: prerequisiteReport.exportPerformed ?? 0,
+    deliveryLocalRefs: exportEntries
+      .map((entry) => entry.record.deliveryLocalRef)
+      .filter((ref) => ref?.path)
+      .map((ref) => ({ ...ref, localOnly: true })),
+    sourceRenderReceiptRefs: compactRefs(exportEntries.map((entry) => entry.record.sourceRenderReceiptRef)),
+    sourceRoughCutRefs: compactRefs(exportEntries.map((entry) => entry.record.sourceRoughCutRef)),
+    sourceExportPlanRefs: compactRefs(exportEntries.map((entry) => entry.record.sourceExportPlanRef)),
+    sourceExportCandidateRefs: compactRefs(exportEntries.map((entry) => entry.record.sourceExportCandidateRef)),
+    renderAuthorization: false,
+    exportAuthorization: false,
+    publicationAuthorization: false,
+    productionReady: false,
+    localDeliveryEvidenceOnly: true,
+    localOnly: true,
+    operatorGuidanceOnly: true
+  }
 }
 
 function refsForSchema(records, schema, kind) {

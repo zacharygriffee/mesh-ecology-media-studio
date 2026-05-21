@@ -3335,6 +3335,21 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.ok(exportedPrereqOutput.lines.some((line) => line.includes('exportReceipts=1')))
   assert.ok(exportedPrereqOutput.lines.some((line) => line.includes('deliveryCreated=1')))
   assert.ok(exportedPrereqOutput.lines.some((line) => line.includes('exportReceipt=export-receipt-present-delivery-only')))
+  const exportedHandoff = await writeAuthorityHandoffCandidate({ projectDir: dir, quiet: true })
+  assert.equal(exportedHandoff.candidate.prerequisiteSummary.exportReceipts, 1)
+  assert.equal(exportedHandoff.candidate.prerequisiteSummary.deliveryCreated, 1)
+  assert.equal(exportedHandoff.candidate.prerequisiteSummary.exportPerformed, 1)
+  const exportReceiptInput = exportedHandoff.candidate.authorityReviewInputs.find((input) => input.inputKind === 'export-receipt')
+  assert.equal(exportReceiptInput.present, true)
+  assert.equal(exportReceiptInput.fresh, 1)
+  assert.equal(exportReceiptInput.deliveryCreated, 1)
+  assert.equal(exportReceiptInput.exportPerformed, 1)
+  assert.equal(exportReceiptInput.publicationAuthorization, false)
+  assert.equal(exportReceiptInput.productionReady, false)
+  assert.equal(exportReceiptInput.deliveryLocalRefs.length, 2)
+  assert.ok(exportReceiptInput.deliveryLocalRefs.some((ref) => ref.path === ffmpegExport.deliveryLocalRef.path))
+  assert.ok(exportReceiptInput.sourceRenderReceiptRefs.some((ref) => ref.id === ffmpegReceipt.renderReceiptId))
+  assert.ok(exportReceiptInput.sourceRoughCutRefs.some((ref) => ref.id === candidate.sourceRoughCutRef.id))
 
   await writeRoughCutReviewDecision({
     projectDir: dir,
@@ -3383,6 +3398,15 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.export_candidate.local.v1'))
   assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.export_plan_candidate.local.v1'))
   assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.export_receipt.local.v1'))
+  assert.equal(compatibility.bundle.exportDeliverySummary.exportReceipts, 2)
+  assert.equal(compatibility.bundle.exportDeliverySummary.deliveryCreated, 2)
+  assert.equal(compatibility.bundle.exportDeliverySummary.exportPerformed, 2)
+  assert.equal(compatibility.bundle.exportDeliverySummary.publicationAuthorization, false)
+  assert.equal(compatibility.bundle.exportDeliverySummary.productionReady, false)
+  assert.ok(compatibility.bundle.exportDeliverySummary.deliveryLocalRefs.some((ref) => ref.path === ffmpegExport.deliveryLocalRef.path))
+  assert.ok(compatibility.bundle.exportDeliverySummary.sourceRenderReceiptRefs.some((ref) => ref.id === ffmpegReceipt.renderReceiptId))
+  assert.ok(compatibility.bundle.exportDeliverySummary.sourceRoughCutRefs.some((ref) => ref.id === candidate.sourceRoughCutRef.id))
+  assert.equal(compatibility.bundle.studioReviewEvidence.exportDeliverySummary.exportReceipts, 2)
 })
 
 test('rough cut revision regenerates local capsule from request changes', async () => {

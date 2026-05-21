@@ -110,6 +110,7 @@ export async function writeEdgeHandoffCandidate({
     handoffState,
     readinessDiagnosis: diagnosis,
     edgeShapeTargets: bundle.edgeShapeTargets,
+    exportDeliverySummary: bundle.exportDeliverySummary ?? null,
     warnings: [
       'Handoff candidate is Studio-built local guidance only.',
       'This record does not call Edge, verify Edge runtime behavior, or authorize publication.',
