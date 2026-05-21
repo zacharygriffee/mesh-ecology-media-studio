@@ -55,3 +55,12 @@ records/approvals/media-approval-proposal.local.json
 Local inspection packets and Edge compatibility bundles include this record
 when present. Edge can inspect it later, but Studio does not claim that Edge,
 a ratifier, or a mesh-facing approval lane accepted it.
+
+`npm run media:summary` also shows a compact approval lane:
+
+```text
+approval lane: proposals=1 | pendingAuthority=1 | approved=0 | blocked=1
+```
+
+This is operator guidance only. `pendingAuthority` means a local proposal exists
+and must still be routed through the proper authority lane.

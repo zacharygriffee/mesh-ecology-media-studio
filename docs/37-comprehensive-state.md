@@ -207,6 +207,10 @@ not overread as production-ready media.
 Accepted generated assets now surface `needs-production-review` or
 `production-review-proposed` posture, but neither state grants production
 readiness or publication authority.
+`media:summary` now includes a compact approval lane over local approval
+proposals. The lane shows pending authority work and safe next actions, but
+keeps `approvalAuthority`, `ratifierAuthority`, and `publicationAuthorization`
+false.
 
 Provider IDs and job IDs remain provenance only.
 

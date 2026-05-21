@@ -637,6 +637,8 @@ test('provider generated image can be explicitly promoted with fresh derivative 
   assert.equal(summary.generatedCandidates.productionReview.proposed, 0)
   assert.equal(summary.generatedCandidates.productionReview.attentionRows[0].productionReady, false)
   assert.equal(summary.generatedCandidates.productionReview.attentionRows[0].issueCodes[0], 'missing_production_review_proposal')
+  assert.equal(summary.approvalLane.proposals, 0)
+  assert.equal(summary.approvalLane.pendingAuthority, 0)
   assert.equal(summary.derivativeReadiness.evaluatedAssets, 2)
   assert.equal(summary.derivativeReadiness.attentionAssets, 2)
   await writeApprovalProposal({
@@ -650,6 +652,12 @@ test('provider generated image can be explicitly promoted with fresh derivative 
   assert.equal(proposedSummary.generatedCandidates.productionReview.needsReview, 0)
   assert.equal(proposedSummary.generatedCandidates.productionReview.proposed, 1)
   assert.equal(proposedSummary.generatedCandidates.productionReview.attentionRows[0].issueCodes[0], 'production_review_proposal_pending')
+  assert.equal(proposedSummary.approvalLane.proposals, 1)
+  assert.equal(proposedSummary.approvalLane.pendingAuthority, 1)
+  assert.equal(proposedSummary.approvalLane.approved, 0)
+  assert.equal(proposedSummary.approvalLane.blocked, 1)
+  assert.equal(proposedSummary.approvalLane.attentionRows[0].issueCodes[0], 'authority_required')
+  assert.equal(proposedSummary.approvalLane.attentionRows[0].approvalAuthority, false)
   assert.equal(validateRequiredRecord(promotion.assetDescriptor), true)
 })
 
@@ -1101,6 +1109,8 @@ test('Venice operational loop completes locally without live provider by default
   assert.equal(status.mediaSummary.generatedCandidates.promotedAccepted, 1)
   assert.equal(status.mediaSummary.generatedCandidates.productionReview.needsReview, 1)
   assert.equal(status.mediaSummary.generatedCandidates.productionReview.ready, 0)
+  assert.equal(status.mediaSummary.approvalLane.proposals, 0)
+  assert.equal(status.productionBlockers[0], 'provider_loop_complete_review_only')
   assert.equal(status.mediaSummary.derivatives.readyAssets, 2)
   assert.equal(status.mediaSummary.derivatives.evaluatedAssets, 2)
   assert.equal(status.mediaSummary.identity.byteContent.coveredContentIds, 1)
@@ -1148,6 +1158,10 @@ test('Venice operational loop completes locally without live provider by default
   assert.equal(mediaSummary.providerLoops.completeReviewOnly, 1)
   assert.equal(mediaSummary.providerLoops.readyForProductionReview, 0)
   assert.equal(mediaSummary.providerLoops.latest.readinessState, 'loop-complete-local-review-only')
+  assert.deepEqual(mediaSummary.providerLoops.latest.productionBlockers, [
+    'provider_loop_complete_review_only',
+    'production_review_or_authority_not_granted'
+  ])
   assert.equal(mediaSummary.providerLoops.providerTruth, false)
 })
 
@@ -1879,12 +1893,14 @@ test('media summary reports intake derivative and identity posture compactly', a
   assert.equal(before.derivativeReadiness.attentionRows.some((row) => row.issueCodes.includes('unsupported_media_type')), true)
   assert.equal(before.identity.byteContent.keyKind, 'contentId')
   assert.equal(before.identity.resourceSituations.keyKind, 'assetDescriptorRef+situationRef+placementRef')
+  assert.equal(before.approvalLane.proposals, 0)
   assert.equal(before.localOnly, true)
   assert.equal(before.meshTruth, false)
   assert.equal(before.byteAvailabilityProof, false)
   assert.equal(before.materializationProof, false)
   assert.equal(before.resourceAdmission, false)
   assert.ok(output.lines.some((line) => line.startsWith('media summary: project=project-test')))
+  assert.ok(output.lines.some((line) => line === 'approval lane: proposals=0 | pendingAuthority=0 | approved=0 | blocked=0'))
   assert.ok(output.lines.some((line) => line.includes('attention: media/source/source-pixel.png')))
   assert.ok(output.lines.some((line) => line.includes('unsupported_media_type')))
 
@@ -1920,6 +1936,8 @@ test('media summary print mode emits parseable local-only JSON', async () => {
   assert.equal(summary.assets.byMediaKind.image, 1)
   assert.equal(summary.derivatives.byKind.thumbnail, 1)
   assert.equal(summary.derivativeReadiness.readyAssets, 1)
+  assert.equal(summary.approvalLane.localOnly, true)
+  assert.equal(summary.approvalLane.approvalAuthority, false)
   assert.equal(summary.localOnly, true)
   assert.equal(summary.providerTruth, false)
   assert.equal(summary.edgeApproval, false)

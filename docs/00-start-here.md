@@ -171,6 +171,8 @@ missing byte proposals, missing or stale resource-ref candidates, accepted
 assets without byte/resource posture, and stale production descriptors. These
 rows are operator guidance only and do not prove byte availability,
 materialization, resource admission, or authority.
+`npm run media:summary` also includes a compact approval lane so pending local
+approval proposals are visible without treating them as approval authority.
 
 Write a local Packs-aligned control-surface projection without adding UI:
 

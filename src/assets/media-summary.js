@@ -44,6 +44,7 @@ export async function createMediaSummary({
   const lifecycleStates = countBy(assetRecords, (record) => record.provenance?.lifecycle?.state ?? 'unknown')
   const derivativeKinds = countBy(derivativeRecords, (record) => record.derivativeKind ?? 'unknown')
   const generatedCandidates = summarizeGeneratedCandidates(assetRecords, records)
+  const approvalLane = summarizeApprovalLane(records)
   const providerLoops = summarizeProviderLoops(records)
   const derivativeReadiness = status.mediaDerivativeReadiness
   const attentionRows = derivativeReadiness.assetExplanations
@@ -97,6 +98,7 @@ export async function createMediaSummary({
       }
     },
     generatedCandidates,
+    approvalLane,
     providerLoops,
     identity: {
       assetIdPosture: 'compatibility descriptor id',
@@ -168,6 +170,12 @@ function printMediaSummary(summary) {
     `notCandidates=${summary.generatedCandidates.productionReview.notCandidates}`
   ].join(' | '))
   console.log([
+    `approval lane: proposals=${summary.approvalLane.proposals}`,
+    `pendingAuthority=${summary.approvalLane.pendingAuthority}`,
+    `approved=${summary.approvalLane.approved}`,
+    `blocked=${summary.approvalLane.blocked}`
+  ].join(' | '))
+  console.log([
     `provider loops: total=${summary.providerLoops.total}`,
     `complete=${summary.providerLoops.completeReviewOnly}`,
     `needsDecision=${summary.providerLoops.needsRetryDecision}`,
@@ -186,6 +194,12 @@ function printMediaSummary(summary) {
   }
   for (const row of summary.generatedCandidates.productionReview.attentionRows) {
     console.log(`production-review: ${row.path} | state=${row.productionReviewState} | issues=${row.issueCodes.join(',')} | nextAction=${row.nextAction}`)
+  }
+  for (const row of summary.approvalLane.attentionRows) {
+    console.log(`approval-lane: ${row.proposalId} | state=${row.laneState} | issues=${row.issueCodes.join(',')} | nextAction=${row.nextAction}`)
+  }
+  for (const row of summary.providerLoops.blockedProductionRows) {
+    console.log(`provider-loop-production: ${row.providerId}:${row.loopKind} | blockers=${row.productionBlockers.join(',')} | nextAction=${row.productionNextAction}`)
   }
   for (const row of summary.providerLoops.attentionRows) {
     console.log(`provider-loop: ${row.providerId}:${row.loopKind} | state=${row.state} | readiness=${row.readinessState} | nextAction=${row.nextAction}`)
@@ -213,6 +227,8 @@ function summarizeProviderLoops(records) {
       productionReadiness: status.productionReadiness ?? 'not assessed; provider-loop status only',
       readinessState,
       nextAction: nextActionForProviderLoop(status, readinessState),
+      productionBlockers: productionBlockersForProviderLoop(status),
+      productionNextAction: productionNextActionForProviderLoop(status),
       completedSteps: status.completedSteps?.length ?? 0,
       localOnly: true,
       operatorGuidanceOnly: true,
@@ -230,6 +246,7 @@ function summarizeProviderLoops(records) {
     completeReviewOnly: rows.filter((row) => row.state === 'complete_review_only').length,
     needsRetryDecision: rows.filter((row) => row.readinessState === 'needs-retry-decision').length,
     readyForProductionReview: rows.filter((row) => row.productionReady === true).length,
+    blockedProductionRows: rows.filter((row) => row.productionBlockers.length > 0),
     rows,
     attentionRows,
     latest: rows[0],
@@ -248,6 +265,43 @@ function readinessStateForProviderLoop(status) {
   return 'loop-incomplete-local-review-only'
 }
 
+function productionBlockersForProviderLoop(status) {
+  if (status.productionReady === true) return []
+  if (status.state === 'complete_review_only') {
+    return [
+      'provider_loop_complete_review_only',
+      'production_review_or_authority_not_granted'
+    ]
+  }
+  if (status.state === 'complete_with_attention') {
+    return [
+      'local_attention_required_before_production_review',
+      'production_review_or_authority_not_granted'
+    ]
+  }
+  if (status.state === 'failed_review_only') {
+    return [
+      'provider_loop_failed_review_only',
+      'retry_or_defer_decision_required'
+    ]
+  }
+  return ['provider_loop_not_complete']
+}
+
+function productionNextActionForProviderLoop(status) {
+  if (status.productionReady === true) return 'No local provider-loop production blocker is reported.'
+  if (status.state === 'complete_review_only') {
+    return 'Inspect accepted assets in media:summary and route any approval proposals before production use.'
+  }
+  if (status.state === 'complete_with_attention') {
+    return status.nextAction ?? 'Clear local attention rows before production review.'
+  }
+  if (status.state === 'failed_review_only') {
+    return 'Request retry or defer decision; do not treat the failed loop as production-ready.'
+  }
+  return status.nextAction ?? 'Complete the provider loop before production review.'
+}
+
 function nextActionForProviderLoop(status, readinessState) {
   if (readinessState === 'needs-retry-decision') {
     return 'Run npm run operator:provider-loop-request to request retry/defer; retry is not automatic.'
@@ -262,6 +316,60 @@ function nextActionForProviderLoop(status, readinessState) {
   }
 
   return status.nextAction ?? 'Inspect provider-loop status before continuing.'
+}
+
+function summarizeApprovalLane(records) {
+  const proposals = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaApprovalProposalLocal)
+    .map((entry) => ({ ...entry.record, path: entry.path }))
+    .sort((left, right) => (right.createdAt ?? '').localeCompare(left.createdAt ?? ''))
+  const rows = proposals.map((proposal) => {
+    const proposed = proposal.status === 'proposed'
+    const laneState = proposed ? 'pending-authority-review' : `proposal-${proposal.status}`
+    const issueCodes = proposed ? ['authority_required'] : [`proposal_${proposal.status}`]
+    return {
+      proposalId: proposal.proposalId,
+      path: proposal.path,
+      subjectRef: proposal.subjectRef,
+      proposalType: proposal.proposalType,
+      proposedDecision: proposal.proposedDecision,
+      status: proposal.status,
+      laneState,
+      issueCodes,
+      nextAction: proposed
+        ? 'Route this proposal through the proper authority lane; do not treat the local proposal as approval.'
+        : 'Inspect proposal status before further action.',
+      localOnly: true,
+      operatorGuidanceOnly: true,
+      proposalOnly: true,
+      meshTruth: false,
+      distributedProof: false,
+      ratifiedSharedState: false,
+      approvalAuthority: false,
+      ratifierAuthority: false,
+      publicationAuthorization: false,
+      edgeApproval: false
+    }
+  })
+
+  return {
+    proposals: rows.length,
+    pendingAuthority: rows.filter((row) => row.laneState === 'pending-authority-review').length,
+    approved: 0,
+    blocked: rows.filter((row) => row.issueCodes.length > 0).length,
+    byProposalType: countBy(rows, (row) => row.proposalType ?? 'unknown'),
+    rows,
+    attentionRows: rows.filter((row) => row.issueCodes.length > 0),
+    localOnly: true,
+    operatorGuidanceOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    approvalAuthority: false,
+    ratifierAuthority: false,
+    publicationAuthorization: false,
+    edgeApproval: false
+  }
 }
 
 function summarizeGeneratedCandidates(assetRecords, records) {

@@ -200,6 +200,9 @@ candidate and production readiness.
 Accepted generated assets show production-review posture separately from local
 candidate review; production readiness stays false until a future authority lane
 exists.
+`media:summary` also prints a compact approval lane over local approval
+proposals so an operator can see pending authority work without treating a
+proposal as approval.
 `inspect:venice-loop` shows the retry path: whether a retry/defer request
 exists, whether a retry/defer decision exists, and whether a live retry is
 still gated.

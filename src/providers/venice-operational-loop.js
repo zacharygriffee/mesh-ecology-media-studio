@@ -329,6 +329,8 @@ export async function runVeniceOperationalLoop({
   status.state = status.mediaSummary.remainingAttention === 0
     ? 'complete_review_only'
     : 'complete_with_attention'
+  status.productionBlockers = productionBlockersForLoopStatus(status)
+  status.productionNextAction = productionNextActionForLoopStatus(status)
   status.nextAction = status.state === 'complete_review_only'
     ? 'Review the local-only generated image loop outputs; no truth, authority, or resource admission was granted.'
     : 'Review attention rows in npm run media:summary before considering the loop complete.'
@@ -353,6 +355,43 @@ function failStatus(status, { failedStep, error, nextAction }) {
     edgeCalled: false,
     meshPublished: false
   }
+}
+
+function productionBlockersForLoopStatus(status) {
+  if (status.productionReady === true) return []
+  if (status.state === 'complete_review_only') {
+    return [
+      'provider_loop_complete_review_only',
+      'production_review_or_authority_not_granted'
+    ]
+  }
+  if (status.state === 'complete_with_attention') {
+    return [
+      'local_attention_required_before_production_review',
+      'production_review_or_authority_not_granted'
+    ]
+  }
+  if (status.state === 'failed_review_only') {
+    return [
+      'provider_loop_failed_review_only',
+      'retry_or_defer_decision_required'
+    ]
+  }
+  return ['provider_loop_not_complete']
+}
+
+function productionNextActionForLoopStatus(status) {
+  if (status.productionReady === true) return 'No local provider-loop production blocker is reported.'
+  if (status.state === 'complete_review_only') {
+    return 'Inspect accepted assets in media:summary and route any approval proposals before production use.'
+  }
+  if (status.state === 'complete_with_attention') {
+    return 'Review attention rows in npm run media:summary before production review.'
+  }
+  if (status.state === 'failed_review_only') {
+    return 'Request retry or defer decision; do not treat the failed loop as production-ready.'
+  }
+  return 'Complete the provider loop before production review.'
 }
 
 async function evaluateRetryGate({
@@ -460,6 +499,14 @@ function compactMediaSummary(summary) {
       promotedAccepted: summary.generatedCandidates.promotedAccepted,
       promotedRejected: summary.generatedCandidates.promotedRejected,
       productionReview: summary.generatedCandidates.productionReview
+    },
+    approvalLane: summary.approvalLane,
+    providerLoops: {
+      total: summary.providerLoops.total,
+      completeReviewOnly: summary.providerLoops.completeReviewOnly,
+      readyForProductionReview: summary.providerLoops.readyForProductionReview,
+      blockedProductionRows: summary.providerLoops.blockedProductionRows,
+      latest: summary.providerLoops.latest
     },
     derivatives: {
       readyAssets: summary.derivativeReadiness.readyAssets,
