@@ -193,10 +193,12 @@ authorization.
 The production assembly lane currently stops at local review packaging:
 production capsules, production bundles, rough-cut capsules, rough-cut review
 decisions, authority prerequisite summaries, and authority handoff candidates.
-It does not render, export, publish, approve, ratify, or grant production
-authority.
+It does not publish, approve, ratify, or grant production authority.
 Render/export candidates can be created only over reviewed rough cuts. They are
-local preparation candidates, not rendered media or export artifacts.
+local preparation candidates, not rendered media or export artifacts by
+themselves. Render plans and render receipts can produce local preview evidence,
+but those receipts are still not export delivery, publication authorization, or
+production readiness.
 
 Write a local Packs-aligned control-surface projection without adding UI:
 

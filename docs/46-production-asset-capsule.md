@@ -211,9 +211,25 @@ render a timeline, export, publish, approve, or grant production authority.
 `npm run production:render-export-candidate` writes
 `media.render_export_candidate.local.v1` only after the latest rough-cut
 decision is `review_rough_cut`. It records the reviewed rough cut as a candidate
-for a future render/export lane, but it does not select a renderer, create
-rendered bytes, create an export file, authorize publication, call Edge, or
-make the cut production-ready.
+for render/export preparation, but it does not select a renderer, create
+rendered bytes by itself, create an export file, authorize publication, call
+Edge, or make the cut production-ready.
+
+`npm run production:render-adapter-contract` and
+`npm run production:render-plan` make the renderer-neutral input contract and
+dry-run plan explicit before execution. The first local render execution
+commands are:
+
+```bash
+npm run production:render-contact-sheet -- --project-dir examples/venice-smoke
+npm run production:render-ffmpeg -- --project-dir examples/venice-smoke
+```
+
+Both write `media.render_receipt.local.v1`. The contact-sheet command writes a
+PNG preview. The ffmpeg command writes a local MP4 preview by default and can be
+disabled with `--disable-ffmpeg` or `MEDIA_STUDIO_FFMPEG=disabled`. These
+receipts are local render evidence only; they are not export delivery,
+publication authorization, approval authority, or production readiness.
 
 ## Non-Claims
 

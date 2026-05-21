@@ -69,6 +69,6 @@ Future provider adapters should declare which provider shapes they implement.
 They should translate provider payloads into Studio records instead of
 promoting provider payloads into Studio canon.
 
-The OpenAI example fixture intentionally covers image generation only. Sora or
-other video-specific shapes should be added only when they are an active target
-for this repo again.
+The OpenAI example fixture intentionally covers image generation only. Additional
+provider-specific shapes should be added only when they are active targets for
+this repo, and must remain below Studio's provider-neutral contract.

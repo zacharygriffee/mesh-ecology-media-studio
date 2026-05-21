@@ -516,11 +516,10 @@ render evidence only, not export delivery, publication, or authority.
 
 The first production assembly boundary is now explicit: capsules package one
 accepted production asset, bundles group capsules, rough cuts order accepted
-items for local review, rough-cut decisions record local review posture, and
-render/export candidates, authority-prerequisite records, or handoff records
-only describe future operation inputs. None of these records render media,
-export deliverables, publish to mesh, or grant approval/ratifier/publication
-authority.
+items for local review, rough-cut decisions record local review posture,
+render/export candidates and plans describe preparation inputs, and render
+receipts can record local preview evidence. None of these records create export
+deliverables, publish to mesh, or grant approval/ratifier/publication authority.
 
 ## Current Verification Baseline
 

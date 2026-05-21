@@ -77,6 +77,13 @@ ratification, publication authorization, or production readiness.
 local review cut. It does not render a timeline, export media, grant authority,
 or mark production readiness.
 
+`media.render_export_candidate.local.v1`,
+`media.render_adapter_contract.local.v1`,
+`media.render_plan_candidate.local.v1`, and
+`media.render_receipt.local.v1` describe local render preparation and preview
+evidence. They do not create export delivery, authorize publication, grant
+production authority, or make a cut production-ready.
+
 Future candidate artifact kinds, not implemented and not active schema
 contracts:
 

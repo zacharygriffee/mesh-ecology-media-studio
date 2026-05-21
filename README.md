@@ -3,54 +3,79 @@
 `mesh-ecology-media-studio` is the media-domain frontier for mesh ecology.
 The product/app label is **Studio** and the domain identity is `media-studio`.
 
-Studio owns media-specific semantics for cards, shots, scenes, references,
-provider jobs, generated candidates, media assets, reviews, approvals,
-continuity evidence, byte references, rough cuts, and exports.
+Studio owns media-specific semantics for cards, provider jobs, generated
+candidates, media assets, reviews, approval proposals, continuity evidence,
+byte/resource posture, rough cuts, render plans, local render receipts, and
+future export/package flows.
 
-## Purpose
+## Current Posture
 
-Studio starts as a local-first media production repo with explicit descriptors
-and evidence. Its first operational wedge is:
+Studio is local-first and operational in Mode 0. It can run without Edge, mesh
+publication, distributed byte materialization, active ratifiers, or a UI.
+
+The current production vector is:
 
 ```text
-card -> provider job -> media candidate -> ingest -> review -> accept/reject
+provider result
+-> accepted media asset
+-> local decision
+-> situated approval proposal
+-> production asset capsule
+-> production bundle
+-> rough-cut capsule
+-> rough-cut review decision
+-> render/export candidate
+-> render adapter contract
+-> dry-run render plan
+-> local render receipt
 ```
 
-Mode 0 must work without Edge, mesh publication, provider API integration, or
-distributed byte materialization.
+The vector is useful for local review and operator inspection. It does not grant
+production authority.
 
-## Non-Goals
+## Non-Claims
 
-Studio does not:
+Studio records may be useful evidence, but they are not truth by themselves.
 
-- implement a full video studio UI in this first pass
-- call provider APIs yet
-- require Edge
-- act as a mesh runtime, ratification engine, byte store, or truth engine
-- make local JSON, local files, UI selection, publication, receipts, or review
-  into mesh truth
-- make causal-substrate, Autobase, Hypercore, Hyperdrive, or Hyperblob mandatory
+Studio does not claim:
+
+- mesh truth
+- distributed proof
+- ratified shared state
+- provider truth
+- byte availability proof
+- materialization proof
+- resource admission
+- causal truth
+- Edge approval
+- publication authorization
+- production authority
+
+Local files, local JSON, provider responses, review decisions, approval
+proposals, inspection packets, render plans, render receipts, and bundles remain
+local/operator guidance until a future authority or mesh-facing lane explicitly
+promotes them.
 
 ## Operating Modes
 
-- **Mode 0: standalone-local**. Local project folder, local descriptors, local
-  receipts, local decisions, and local media files. Useful by itself.
+- **Mode 0: standalone-local**. Local project folder, local media files, local
+  descriptors, local receipts, local decisions, and local operator summaries.
 - **Mode 1: edge-mediated**. Edge may inspect exported work packets, evidence,
-  readiness guidance, and operator decision requests.
+  readiness guidance, decision requests, handoff candidates, and compatibility
+  bundles.
 - **Mode 2: mesh-mediated**. Media descriptors, byte references, proposals,
   PUBs/RATs, and ratification flows become mesh-facing.
 - **Mode 3: distributed production**. Multiple devices, actors, providers,
-  ratifiers, and operator surfaces cooperate.
+  ratifiers, and operator/control surfaces cooperate.
+
+Mode 0 is the working baseline today.
 
 ## Repo Relationships
 
 ### Edge
 
-Studio is Edge-compatible, not Edge-dependent.
-
-Edge owns the operator-facing boundary/control plane, evidence inboxes,
-readiness guidance, workbench composition, and operator-mediated handoff
-posture. Studio owns media-specific work and records.
+Studio is Edge-compatible, not Edge-dependent. Edge owns the operator-facing
+boundary/control plane. Studio owns media work and media-domain records.
 
 Primary seam:
 
@@ -71,34 +96,31 @@ media-causal-evidence-seam
 
 ### Spine
 
-Spine is the system-composition reference for how mesh ecology repos fit
-together. Studio follows that posture by treating HTTP, local paths, JSON
-files, provider results, receipts, and local operator actions as bootstrap or
-evidence surfaces unless a later mesh-facing lane explicitly promotes them.
-Studio also follows Spine's family-wide identity layering posture: content
-identity, byte publication identity, descriptor identity, situation/placement
-identity, resource identity, causal referent identity, materialization identity,
-and authority state must remain distinct.
+Studio follows Spine's repo-family posture around rule books, Rulebook Cascade
+(RBC), projection events, proof standards, and identity/storage layering.
+Content identity, byte publication identity, descriptor identity,
+situation/placement identity, resource identity, causal referent identity,
+materialization identity, and authority state stay separate.
 
-Spine's Virtualia placement posture adds directional family vocabulary for
-`sourceId`, `originLocusId`, `dreamRefId`, `emergenceLocusId`,
-`emergencePathId`, `placementId`, and `projectionId`. Studio treats these as
-alignment terms, not active schemas. Studio may surface Virtualia-compatible
-media/projection pressure later, but Studio media assets and projections are
-not Virtualia reality by themselves.
+Studio is intentionally in a hybrid identity compatibility state:
 
-Studio is currently in a deliberate hybrid identity compatibility state. The
-active `assetId` field remains content-derived for compatibility, while
-`contentId` keys byte sameness and descriptor/situation/placement refs key
-resource posture. Step 5, changing active `assetId` generation, is deferred
-until storage/backend promotion, virtual-drive/materialization work, or a
-deliberate descriptor-id schema transition. See
-[Identity Migration Boundary](docs/44-identity-migration-boundary.md).
+- `assetId` remains the descriptor id field for compatibility and is still
+  content-derived in active generation paths.
+- `contentId` is the explicit byte/content sameness field.
+- Byte descriptor proposals are keyed by `contentId`.
+- Resource-ref candidates are keyed by descriptor/situation/placement resource
+  subjects.
+- Changing `assetId` generation is deferred until storage/backend promotion,
+  virtual-drive/materialization work, or a deliberate descriptor-id schema
+  transition.
+
+See [Identity Migration Boundary](docs/44-identity-migration-boundary.md).
 
 ### Packs
 
-Packs provides shared actor/control-plane vocabulary. Studio preserves these
-media intent families without letting Packs own media product semantics:
+Packs provides shared actor/control-plane vocabulary and control-surface
+posture. Studio preserves these media intent families without letting Packs own
+Studio product semantics:
 
 ```text
 image-generation
@@ -108,528 +130,267 @@ media-transformation
 media-evidence
 ```
 
+Future UI/DX should project over stable Studio/Edge/Packs artifacts, refs,
+status views, decision requests, and inspection packets. Studio should not build
+UI contracts from REPL output.
+
 ### Bytes
 
 Large media bytes belong in local files, Hyperdrive, Hyperblob, or later byte
 materialization stores. `mesh-ecology-bytes` defines portable byte descriptors,
-references, and materialization requests. Studio defines what a media asset
-means, how it was produced, how it was reviewed, and how it relates to cards.
+references, and materialization requests. Studio defines media meaning,
+provider lineage, review posture, production packaging, and render/export
+posture.
 
 ### Causal Substrate
 
 `causal-substrate` remains optional. Studio records causal-shaped fields early
-enough to map later through `media-causal-adapter`, including parent refs,
-referents, branch ids, context ids, observer/operator ids, continuity claims,
-and transition summaries.
+enough to map later through a future `media-causal-adapter`, but causal
+substrate is not Studio's workflow engine, storage engine, policy engine, or
+authority lane.
 
-## First Executable Wedge
+## Quick Start
 
-Run the local-only example:
+Install dependencies:
+
+```bash
+npm install
+```
+
+Run the local-only first wedge:
 
 ```bash
 npm run wedge:example
 ```
 
-This reads `examples/card-to-candidate/cards/card.json`, treats
-`examples/card-to-candidate/media/generated/candidate.txt` as the local
-generated candidate, hashes it, copies it into `media/accepted/` or
-`media/rejected/`, and writes local records under `records/`. The run also
-writes a local manifest under `records/manifests/`.
-
-All generated records are local drafts, local receipts, local caches, or local
-decisions. They are not mesh truth, distributed proof, or ratified shared state.
-
-Run local tests:
+Run tests:
 
 ```bash
 npm test
 ```
 
-Optional Venice live smoke testing is gated and off by default:
+Summarize a project:
 
 ```bash
-VENICE_LIVE=1 npm run provider:venice:smoke
+npm run media:summary -- --project-dir examples/card-to-candidate
+npm run health:summary -- --project-dir examples/card-to-candidate
+```
+
+The first wedge reads `examples/card-to-candidate/cards/card.json`, treats
+`examples/card-to-candidate/media/generated/candidate.txt` as the local
+generated candidate, hashes it, copies it into `media/accepted/` or
+`media/rejected/`, and writes local records under `records/`.
+
+## Provider Work
+
+Studio's provider contract remains provider-neutral:
+
+```text
+media.generation_request.v1
+media.provider_profile.v1
+media.provider_capability.v1
+media.provider_result.v1
 ```
 
 Venice is the first operational provider fixture, not Studio provider canon.
-The canonical Studio contract remains provider-neutral: generation request,
-normalized provider result, local asset ingest, review, posture, and operator
-status records.
 
-The command reads `VENICE_INFERENCE_KEY` from the environment or ignored `.env`,
-uses a constrained image request, writes decoded bytes under
-`media/generated/provider-smoke/`, and records only local non-truth-bearing
-card, provider result, asset descriptor, review evidence, readiness, and
-operator decision records. Generated image descriptors also carry local
-metadata probe and derivative readiness posture so `media:summary` and
-`derivatives:thumbnail` can inspect them like other imported image assets.
-
-Export an existing Venice smoke run for local Edge-readable inspection without
-calling Venice:
-
-```bash
-npm run inspect:venice-smoke
-```
-
-The Venice smoke inspector now summarizes generated candidates, promoted
-accepted/rejected assets, derivative readiness, and byte/resource posture when
-those local records exist.
-
-Run the full local Venice image loop without a live provider call:
+Run the local Venice-shaped loop without a live provider call:
 
 ```bash
 npm run provider:venice:loop
 ```
 
-The loop selects the latest generated provider candidate by default. Pass
-`--asset-record records/assets/...local.json` to promote a specific generated
-asset record.
-
-Inspect the last loop status without rerunning work:
-
-```bash
-npm run inspect:venice-loop
-```
-
-Provider-loop statuses are local operator guidance. `operator:index` and
-`operator:cross-project-index` can surface failed or incomplete loop status refs
-as attention rows, and can surface provider-loop decision refs, without treating
-Venice, provider jobs, provider responses, or local decisions as Studio truth.
-`media:summary` also reports provider-loop posture separately from generated
-candidate and production readiness.
-Accepted generated assets show production-review posture separately from local
-candidate review; production readiness stays false until a future authority lane
-exists.
-`media:summary` also prints a compact approval lane over local approval
-proposals so an operator can see pending authority work without treating a
-proposal as approval.
-The production approval lane separates local decision, approval proposal,
-production capsule, production bundle, and missing authority posture so an
-operator can see what exists and what still cannot be treated as production
-authorization.
-It includes a `safeNextAction` line that chooses the next local action from the
-same inspection data without granting authority.
-`inspect:venice-loop` shows the retry path: whether a retry/defer request
-exists, whether a retry/defer decision exists, and whether a live retry is
-still gated. It also prints production blockers so a completed local review
-loop is not mistaken for production-ready media.
-
-`npm run provider:venice:rehearse-production` composes the local Venice loop,
-approval proposal, production capsule, production bundle, Venice inspection,
-operator index, and Edge-compatible bundle. It is a rehearsal path: compact,
-local-only, no live provider unless explicitly requested, and still no approval
-or production authority.
-`npm run production:authority-prereqs` reads those local refs and reports which
-local package prerequisites are present, what is missing, and why a future
-authority lane is still required. It now writes the local prerequisite posture
-as `media.production_authority_prerequisites.summary.local.v1` so later
-inspection and Edge-compatible bundles can reference it without granting
-authority.
-`npm run production:authority-handoff` writes a local
-`media.authority_handoff_candidate.local.v1` record that packages the bundle,
-approval proposal, capsule, situated identity refs, and authority gaps for a
-future authority lane. It is not approval, ratification, publication
-authorization, or production readiness.
-`npm run production:rough-cut` writes a local
-`media.rough_cut_capsule.local.v1` record that orders accepted production item
-refs into a review-only rough cut. It does not build an editor, render a
-timeline, create an export, or grant authority.
-`npm run production:rough-cut-review` records a local
-`review_rough_cut` operator decision for that rough-cut capsule. It acknowledges
-local review only; it does not render, export, approve, publish, or grant
-authority.
-`npm run production:rough-cut-revise` consumes a local `request_changes`
-decision and regenerates rough-cut refs for another local review pass. It does
-not edit media bytes, render a timeline, export, publish, approve, or grant
-authority.
-Media summary, project health, Venice inspection, operator index, and
-Edge-compatible bundles surface rough-cut capsule refs when present.
-
-The first production assembly boundary is: capsule for one accepted production
-asset, bundle for grouped capsules, rough cut for ordered local review, local
-rough-cut decision for review/defer/request-changes posture, and authority
-prerequisite/handoff records for future authority-lane inputs. This boundary
-does not include editor UI, timeline rendering, export rendering, publication,
-ratification, or production authorization.
-`npm run production:render-export-candidate` can create a local candidate over a
-reviewed rough cut for a future render/export lane. It does not select a
-renderer, render bytes, create an export file, publish, or grant authority.
-`npm run production:render-adapter-contract` describes the future renderer
-inputs and target output placement without selecting or invoking a renderer.
-`npm run production:render-plan` resolves those refs and the planned output path
-only. It does not read media bytes, render, export, publish, or grant authority.
-`npm run production:render-contact-sheet` is the first bounded local render
-execution path. It reads the planned image refs and writes a PNG contact sheet
-for local review, but it still does not create an export delivery, publish,
-make the project production-ready, or grant authority.
-`npm run production:render-ffmpeg` is the default local MP4 preview renderer.
-It uses an npm-managed ffmpeg binary by default and can be skipped with
-`--disable-ffmpeg` or `MEDIA_STUDIO_FFMPEG=disabled`. It still produces only a
-local render receipt, not an export delivery, publication, or authority.
-
-Create a local provider-loop operator decision request:
-
-```bash
-npm run operator:provider-loop-request -- --project-dir examples/venice-smoke
-```
-
-For complete loops this requests review/defer. For failed loops this requests
-retry/defer, but it does not execute the retry.
-
-Record a local retry/defer decision from that request:
-
-```bash
-npm run operator:provider-loop-decision -- --project-dir examples/venice-smoke --decision retry_provider_loop
-```
-
-If a live Venice loop is retried after a failed status, pass the local decision
-record explicitly:
-
-```bash
-VENICE_LIVE=1 npm run provider:venice:loop -- --live-provider --retry-decision records/decisions/media-provider-loop-operator-decision.local.json
-```
-
-Use the real Venice API only with the explicit live switch:
-
-```bash
-VENICE_LIVE=1 npm run provider:venice:loop -- --live-provider
-```
-
-Current full local generated-image loop:
+Run the gated live Venice smoke path only when spending provider credits is
+intentional:
 
 ```bash
 VENICE_LIVE=1 npm run provider:venice:smoke
-npm run derivatives:thumbnail -- --project-dir examples/venice-smoke
-npm run promote:candidate -- --project-dir examples/venice-smoke --asset-record records/assets/venice-live-smoke-asset-0.local.json --provider-result-record records/provider-results/venice-live-smoke-provider-result.local.json --decision accepted
-npm run derivatives:thumbnail -- --project-dir examples/venice-smoke
-npm run bytes:proposal -- --project-dir examples/venice-smoke
-npm run resource:refs -- --project-dir examples/venice-smoke
-npm run repair:local-posture -- --project-dir examples/venice-smoke
+```
+
+The live path reads `VENICE_INFERENCE_KEY` from the environment or ignored
+`.env`, uses a constrained image request, writes decoded bytes under
+`media/generated/provider-smoke/`, and records local non-truth-bearing provider,
+asset, review, readiness, and operator decision records.
+
+Inspect existing Venice records without calling Venice:
+
+```bash
 npm run inspect:venice-smoke
-npm run media:summary -- --project-dir examples/venice-smoke
+npm run inspect:venice-loop
 ```
 
-Export any manifest-backed local run:
+## Media Intake And Derivatives
 
-```bash
-npm run inspect:local-run -- --project-dir examples/card-to-candidate
-```
-
-Export failed provider posture from local failure records:
-
-```bash
-npm run inspect:provider-failure
-```
-
-Summarize or index inspection records:
-
-```bash
-npm run inspect:summary -- --project-dir examples/card-to-candidate --packet records/exports/local-run-edge-inspection-packet.local.json
-npm run inspect:index -- --project-dir examples/card-to-candidate
-npm run operator:cross-project-index
-```
-
-Index provider attempts across a local project:
-
-```bash
-npm run inspect:provider-runs -- --project-dir examples/card-to-candidate
-```
-
-Create a local Edge-handoff preview bundle from an inspection packet:
-
-```bash
-npm run export:inspection-bundle -- --project-dir examples/card-to-candidate
-```
-
-Promote an existing local candidate without rerunning provider work:
-
-```bash
-npm run promote:candidate -- --project-dir examples/card-to-candidate --decision accepted
-```
-
-Ingest a local reference asset into `media/references/`:
-
-```bash
-npm run reference:ingest -- --project-dir examples/card-to-candidate --source media/generated/candidate.txt --filename candidate-reference.txt
-```
-
-Import source, generated, or reference media into the local project layout:
+Import media into the local project layout:
 
 ```bash
 npm run media:import -- --project-dir examples/card-to-candidate --source media/generated/candidate.txt --placement source
+npm run reference:ingest -- --project-dir examples/card-to-candidate --source media/generated/candidate.txt --filename candidate-reference.txt
 ```
 
-The import and provider-output ingest paths write local asset descriptors with
-metadata probe posture and derivative readiness guidance. Generate image
-thumbnails explicitly with:
+Generate image thumbnails explicitly:
 
 ```bash
 npm run derivatives:thumbnail -- --project-dir examples/card-to-candidate
 ```
 
-Thumbnail receipts remain local-only derivative records; they do not prove byte
+Thumbnail receipts are local-only derivative records. They do not prove byte
 availability, materialization, resource admission, or mesh truth. Proxy and
-waveform generation remain deferred. See
-[Local Media Intake And Derivative Readiness](docs/45-local-media-intake-and-derivative-readiness.md).
+waveform generation remain deferred.
 
-Summarize local intake and derivative posture without opening raw JSON:
+## Review And Local Posture
 
-```bash
-npm run media:summary -- --project-dir examples/card-to-candidate
-npm run media:summary -- --project-dir examples/card-to-candidate --print
-npm run --silent media:summary -- --project-dir examples/card-to-candidate --print
-```
-
-The summary also reports provider-generated candidates, local review posture,
-accepted/rejected promoted placements, and production capsule posture when
-those records exist.
-
-Compare local candidate assets and record a local selection:
+Compare local candidates and record a local selection:
 
 ```bash
 npm run review:candidates -- --project-dir examples/card-to-candidate
 ```
 
-Write a local project status snapshot:
-
-```bash
-npm run status:project -- --project-dir examples/card-to-candidate
-npm run health:project -- --project-dir examples/card-to-candidate
-npm run health:summary -- --project-dir examples/card-to-candidate
-```
-
-Project health, inspection summaries, handoff candidates, and cross-project
-indexes include compact per-asset attention rows when an asset is missing or
-stale against byte proposal, resource-ref candidate, or production descriptor
-posture. These rows suggest safe local next actions only; they do not prove byte
-availability, materialization, resource admission, or authority.
-
-For accepted provider-generated assets, project health also reports missing
-production asset capsules. Regenerated inspection/export and Edge compatibility
-surfaces include capsule refs when the local capsule record exists.
-`npm run production:bundle` groups existing production capsule refs into a
-local-only review bundle without copying bytes or granting production authority.
-`npm run production:rough-cut` adds the first ordered review package over those
-production items; it remains order-only and non-rendered.
-`npm run media:summary` and `npm run operator:index` also show a production
-approval lane: local decisions and approval proposals can be present, capsules
-and bundles can be present, and authority can still be missing.
-The production assembly lane stops at local review packaging: capsules,
-bundles, rough cuts, review decisions, authority prerequisites, and handoff
-candidates are refs and guidance only. Rendering/export/publication and
-authority-bearing decisions remain separate future lanes.
-The first bridge toward that future lane is
-`media.render_export_candidate.local.v1`, created only from a reviewed rough
-cut and still candidate-only.
-
-Byte posture is reported by `contentId`; resource posture is reported by
-descriptor/situation/placement subject. `assetId` remains a compatibility
-descriptor id and must not be used alone for new byte or resource behavior.
-
-Write local continuity evidence:
-
-```bash
-npm run continuity:draft -- --project-dir examples/card-to-candidate
-```
-
-Write local production records from the current card without UI:
-
-```bash
-npm run production:from-card -- --project-dir examples/card-to-candidate
-npm run production:validate -- --project-dir examples/card-to-candidate
-```
-
-Package an accepted asset's local production refs without copying bytes or
-granting production authority:
-
-```bash
-npm run production:capsule -- --project-dir examples/venice-smoke
-```
-
-Write a local approval proposal without granting approval authority:
-
-```bash
-npm run approval:proposal -- --project-dir examples/card-to-candidate
-```
-
-Approval proposals preserve the local decision subject for compatibility and
-also include situated asset refs when available: descriptor, content,
-situation, placement, and local path.
-
-Write local byte descriptor proposals without claiming byte materialization:
+Create byte and resource posture:
 
 ```bash
 npm run bytes:proposal -- --project-dir examples/card-to-candidate
-```
-
-Write local-layer resource-ref candidates without claiming admitted resources:
-
-```bash
 npm run resource:refs -- --project-dir examples/card-to-candidate
-```
-
-Write local Edge-inspection readiness guidance from resolvability coverage:
-
-```bash
 npm run readiness:edge -- --project-dir examples/card-to-candidate
 ```
 
-Write a local Packs-aligned control-surface projection without adding UI:
+Repair safe local posture from health explanations:
+
+```bash
+npm run repair:local-posture -- --project-dir examples/card-to-candidate
+```
+
+Repair can regenerate local-only byte proposal, resource-ref candidate, and
+card-derived production descriptor records when health explanations show they
+are missing or stale. It does not invent review decisions, call providers, call
+Edge, publish to mesh, or prove byte availability/materialization.
+
+## Production Packaging
+
+The current local production lane is provider-neutral and authority-free:
+
+```bash
+npm run provider:venice:rehearse-production -- --project-dir examples/venice-smoke
+npm run production:capsule -- --project-dir examples/venice-smoke
+npm run production:bundle -- --project-dir examples/venice-smoke
+npm run production:rough-cut -- --project-dir examples/venice-smoke
+npm run production:rough-cut-review -- --project-dir examples/venice-smoke
+npm run production:authority-prereqs -- --project-dir examples/venice-smoke
+npm run production:authority-handoff -- --project-dir examples/venice-smoke
+```
+
+These commands package accepted assets and rough-cut refs for local review and
+future authority inspection. They do not grant approval, ratification,
+publication authorization, or production readiness.
+
+`request_changes` rough-cut decisions can regenerate the local rough-cut refs:
+
+```bash
+npm run production:rough-cut-revise -- --project-dir examples/venice-smoke
+```
+
+## Local Render Path
+
+Render/export preparation is split into explicit local records:
+
+```bash
+npm run production:render-export-candidate -- --project-dir examples/venice-smoke
+npm run production:render-export-mediate -- --project-dir examples/venice-smoke
+npm run production:render-adapter-contract -- --project-dir examples/venice-smoke
+npm run production:render-plan -- --project-dir examples/venice-smoke
+```
+
+The first real local render commands consume the dry-run render plan:
+
+```bash
+npm run production:render-contact-sheet -- --project-dir examples/venice-smoke
+npm run production:render-ffmpeg -- --project-dir examples/venice-smoke
+```
+
+`production:render-contact-sheet` writes a PNG contact sheet for local review.
+`production:render-ffmpeg` writes a local MP4 preview using npm-managed
+`ffmpeg-static` by default. To disable ffmpeg execution:
+
+```bash
+npm run production:render-ffmpeg -- --project-dir examples/venice-smoke --disable-ffmpeg
+MEDIA_STUDIO_FFMPEG=disabled npm run production:render-ffmpeg -- --project-dir examples/venice-smoke
+```
+
+Render receipts are local evidence only. They are not export deliveries,
+publication authorization, production readiness, or authority.
+
+## Inspection And Edge-Compatible Artifacts
+
+Export and inspect local records:
+
+```bash
+npm run inspect:local-run -- --project-dir examples/card-to-candidate
+npm run inspect:summary -- --project-dir examples/card-to-candidate --packet records/exports/local-run-edge-inspection-packet.local.json
+npm run inspect:index -- --project-dir examples/card-to-candidate
+npm run inspect:provider-runs -- --project-dir examples/card-to-candidate
+npm run operator:index -- --project-dir examples/card-to-candidate
+npm run operator:cross-project-index
+```
+
+Create local Edge-compatible surfaces without calling Edge:
+
+```bash
+npm run export:inspection-bundle -- --project-dir examples/card-to-candidate
+npm run edge:compat -- --project-dir examples/card-to-candidate
+npm run handoff:edge -- --project-dir examples/card-to-candidate
+npm run operator:decision-request -- --project-dir examples/card-to-candidate
+```
+
+Create a Packs-aligned control-surface projection without adding UI:
 
 ```bash
 npm run control:surface -- --project-dir examples/card-to-candidate
 ```
 
-Write a local Edge compatibility bundle without calling Edge:
+## Fixture Checks
+
+Check committed fixture freshness:
 
 ```bash
-npm run edge:compat -- --project-dir examples/card-to-candidate
-npm run operator:index -- --project-dir examples/card-to-candidate
-npm run handoff:edge -- --project-dir examples/card-to-candidate
-npm run operator:decision-request -- --project-dir examples/card-to-candidate
-```
-
-Regenerate the committed inspection fixture:
-
-```bash
-npm run fixture:inspection
 npm run fixture:inspection:check
-npm run fixture:unhealthy
 npm run fixture:unhealthy:check
 ```
 
-Phase 2 inspection hardening added the manifest, a small artifact-kind
-registry, and modest malformed-record checks. Phase 3 adds the local project
-layout, safe local refs, placement classes, and asset lifecycle states. Phase 4
-adds provider-neutral generation request, provider profile/capability, and
-normalized provider result records without calling provider APIs. Phase 5 adds
-a provider shape registry for endpoint quirks and mapping fixtures without
-making provider payloads Studio canon. Phase 6 adds a Venice dry-run adapter
-that maps fixtures only and performs no network calls. Phase 7 adds the Venice
-live smoke gate without making provider APIs part of the default wedge. Phase 8
-adds the provider adapter runner receipt, provider failure evidence, image
-metadata inspection, fixture freshness checks, and local export bundles.
-Phase 9 adds a local provider-run ledger and local reference asset ingest.
-Phase 10 adds local candidate comparison records and project status snapshots.
-Phase 11 completes the narrow Mode 0 slice with continuity drafts, byte
-descriptor preview alignment, candidate-review inspection export, card-grouped
-provider attempts, and committed Edge bundle fixtures. Phase 12 adds a
-Packs-aligned control-surface projection for future inspection without defining
-UI, Edge runtime messages, or an authority surface. Phase 13 adds Studio-built
-Edge compatibility candidates for documented Edge review shapes without
-claiming Edge runtime verification. Phase 14 adds generalized production-unit,
-reference-primitive, continuity-band, and render-strategy records so
-scene/shot/clip stays available as one strategy without becoming the root
-ontology. Phase 15 adds local production descriptors for scene, shot, clip,
-rough-cut, and export specializations without making them mesh truth or
-publication authority. Phase 16 adds approval proposal records that can be
-inspected later without claiming ratifier authority or publication
-authorization. Phase 17 adds byte descriptor proposal records for accepted and
-reference assets without claiming byte availability, materialization, or byte
-authority. Phase 18 documents local record folder conventions and extends
-local project status plus inspection summaries for production, approval, and
-byte proposal records. Phase 19 adds a local production-from-card CLI without
-adding UI, provider calls, Edge calls, or mesh publication. Phase 20 adopts
-Spine's JSON-exit posture with scaffold resolvability labels and resource-ref
-candidates, without promoting a local-layer backend. Phase 21 adds readiness
-guidance for unresolved resource refs, aligns resource candidates with byte
-descriptor proposals when present, and validates production descriptor
-parentage without adding UI, Edge calls, or mesh publication. Phase 22 carries
-readiness/resource summaries into Edge compatibility bundles, adds stale byte
-descriptor detection, and adds a local project health snapshot while still
-keeping resource promotion, Edge runtime verification, and mesh publication
-deferred. Phase 23 adds local operator packet indexes and Edge handoff
-candidates so inspection artifacts are easier to scan without adding UI,
-calling Edge, or claiming authority. Phase 24 adds production descriptor
-freshness checks and handoff readiness diagnosis so stale local production
-records explain why a handoff needs attention.
-Phase 25 adds request-only operator decision request records so Studio can ask
-for later Edge-mediated attention without granting approval, ratifier, or
-publication authority.
-Phase 26 adds compact unhealthy inspection fixtures for missing byte proposals,
-stale resource refs, and stale production descriptors.
-Phase 27 adds an explicit cross-project inspection input list and local
-operator index so several project handoff postures can be scanned without
-project discovery or Edge runtime calls.
-Phase 28 makes resource promotion posture explicit so local resource-ref
-candidates remain candidate-only and cannot be mistaken for admitted resource
-identity.
-Phase 29 aligns Studio with the repo family: Spine Rulebook Cascade (RBC),
-rule-book and projection posture, Edge operator seams, Packs control-surface
-doctrine, Bytes references, causal-substrate continuity, Platform activation
-boundaries, mesh-v0-2 actor hygiene, Identity authority, and Testbed proof
-scope.
-Studio now also points at Spine's Virtualia placement posture: Studio owns
-media-specific projection and asset workflows, while Virtualia remains an
-emergent cross-repo continuum and not a Studio runtime target.
-Phase 39 adds local media operation candidates and rule-resolution traces so
-Studio can describe `auto_prepare`, `ask_operator`, and `forbid` mediation
-pressure without executing media operations or calling Edge.
-Those traces are Studio-local mediation artifacts inside RBC, not a shared RBC
-engine, token/grant verifier, or rule-book activation lane.
-The REPL posture note clarifies that REPL is a transitional lab/debug surface;
-Studio should target CLI/status JSON, artifacts, refs, inspection packets,
-handoff candidates, decision requests, and Packs-aligned projections instead of
-wrapping Edge REPL output.
-Studio's Edge compatibility bundle now points at current Edge app-facing seam
-guidance and Spine device/surface/rule-book posture, not old Edge phase docs as
-live doctrine.
-Per-asset health explanations now make unhealthy accepted assets and stale
-production descriptors visible in existing health, inspection, handoff, and
-cross-project operator summaries without adding a new artifact family.
-Local posture repair can now regenerate safe missing/stale byte proposal,
-resource-ref candidate, and production descriptor records from existing health
-issues without inventing reviews, approvals, provider results, or authority.
-The media identity and storage posture now ties Studio's same-byte asset issue
-to Spine's family-wide identity layering doctrine so content, publication,
-descriptor, situation, placement, resource, causal, materialization, and
-authority layers do not collapse into one Studio meaning. The shared-basis
-identity fixture shows identical bytes forked into accepted and reference roles
-with shared content/origin but distinct situation, placement, and resource
-candidate identities.
-The command surface inventory maps compact command output, machine-readable
-artifact output, JSON stdout support, stable refs, and known churn posture for
-current operational commands.
+Regenerate fixtures intentionally:
 
-## Start Here
+```bash
+npm run fixture:inspection
+npm run fixture:unhealthy
+```
 
-- [docs/00-start-here.md](docs/00-start-here.md)
-- [docs/01-charter.md](docs/01-charter.md)
-- [docs/09-first-wedge.md](docs/09-first-wedge.md)
-- [docs/10-edge-inspection-preview.md](docs/10-edge-inspection-preview.md)
-- [docs/11-local-project-layout.md](docs/11-local-project-layout.md)
-- [docs/12-asset-lifecycle.md](docs/12-asset-lifecycle.md)
-- [docs/13-provider-neutral-job-contract.md](docs/13-provider-neutral-job-contract.md)
-- [docs/14-provider-adapter-boundary.md](docs/14-provider-adapter-boundary.md)
-- [docs/15-provider-shape-registry.md](docs/15-provider-shape-registry.md)
-- [docs/16-venice-dry-run-adapter.md](docs/16-venice-dry-run-adapter.md)
-- [docs/17-venice-live-smoke-gate.md](docs/17-venice-live-smoke-gate.md)
-- [docs/18-venice-smoke-edge-inspection-preview.md](docs/18-venice-smoke-edge-inspection-preview.md)
-- [docs/19-local-inspection-export.md](docs/19-local-inspection-export.md)
-- [docs/20-provider-runbook.md](docs/20-provider-runbook.md)
-- [docs/21-provider-adapter-contracts.md](docs/21-provider-adapter-contracts.md)
-- [docs/22-local-image-metadata.md](docs/22-local-image-metadata.md)
-- [docs/23-adapter-runner-and-export-bundles.md](docs/23-adapter-runner-and-export-bundles.md)
-- [docs/24-provider-run-ledger-and-references.md](docs/24-provider-run-ledger-and-references.md)
-- [docs/25-candidate-review-and-project-status.md](docs/25-candidate-review-and-project-status.md)
-- [docs/26-narrow-slice-completion.md](docs/26-narrow-slice-completion.md)
-- [docs/27-packs-control-surface-alignment.md](docs/27-packs-control-surface-alignment.md)
-- [docs/28-edge-compatibility-candidates.md](docs/28-edge-compatibility-candidates.md)
-- [docs/29-production-strategy-posture.md](docs/29-production-strategy-posture.md)
-- [docs/30-production-descriptors.md](docs/30-production-descriptors.md)
-- [docs/31-approval-proposals.md](docs/31-approval-proposals.md)
-- [docs/32-byte-descriptor-proposals.md](docs/32-byte-descriptor-proposals.md)
-- [docs/33-record-folder-conventions.md](docs/33-record-folder-conventions.md)
-- [docs/34-json-exit-and-resolvability-posture.md](docs/34-json-exit-and-resolvability-posture.md)
-- [docs/35-operator-packet-index-and-handoff.md](docs/35-operator-packet-index-and-handoff.md)
-- [docs/36-cross-project-inspection-index.md](docs/36-cross-project-inspection-index.md)
-- [docs/37-comprehensive-state.md](docs/37-comprehensive-state.md)
-- [docs/38-repo-family-alignment.md](docs/38-repo-family-alignment.md)
-- [docs/39-operation-candidate-and-rule-resolution.md](docs/39-operation-candidate-and-rule-resolution.md)
-- [docs/40-repl-posture-and-control-surface-target.md](docs/40-repl-posture-and-control-surface-target.md)
-- [docs/41-command-surface-inventory.md](docs/41-command-surface-inventory.md)
-- [docs/42-media-identity-and-storage-posture.md](docs/42-media-identity-and-storage-posture.md)
-- [docs/43-asset-id-usage-audit.md](docs/43-asset-id-usage-audit.md)
-- [docs/44-identity-migration-boundary.md](docs/44-identity-migration-boundary.md)
-- [docs/45-local-media-intake-and-derivative-readiness.md](docs/45-local-media-intake-and-derivative-readiness.md)
-- [docs/46-production-asset-capsule.md](docs/46-production-asset-capsule.md)
+## Documentation Map
+
+Start with:
+
+- [Start Here](docs/00-start-here.md)
+- [Charter](docs/01-charter.md)
+- [Boundary And Ownership](docs/02-boundary-and-ownership.md)
+- [First Wedge](docs/09-first-wedge.md)
+- [Command Surface Inventory](docs/41-command-surface-inventory.md)
+- [Comprehensive State](docs/37-comprehensive-state.md)
+
+Current posture docs:
+
+- [Repo Family Alignment](docs/38-repo-family-alignment.md)
+- [REPL Posture And Control-Surface Target](docs/40-repl-posture-and-control-surface-target.md)
+- [Media Identity And Storage Posture](docs/42-media-identity-and-storage-posture.md)
+- [Identity Migration Boundary](docs/44-identity-migration-boundary.md)
+- [Local Media Intake And Derivative Readiness](docs/45-local-media-intake-and-derivative-readiness.md)
+- [Production Asset Capsule](docs/46-production-asset-capsule.md)
+
+Provider and Edge docs:
+
+- [Provider-Neutral Job Contract](docs/13-provider-neutral-job-contract.md)
+- [Provider Adapter Boundary](docs/14-provider-adapter-boundary.md)
+- [Provider Shape Registry](docs/15-provider-shape-registry.md)
+- [Venice Live Smoke Gate](docs/17-venice-live-smoke-gate.md)
+- [Edge Inspection Preview](docs/10-edge-inspection-preview.md)
+- [Edge Compatibility Candidates](docs/28-edge-compatibility-candidates.md)
+
+The detailed phase history lives in
+[Comprehensive State](docs/37-comprehensive-state.md), not in this README.
