@@ -197,6 +197,9 @@ as attention rows, and can surface provider-loop decision refs, without treating
 Venice, provider jobs, provider responses, or local decisions as Studio truth.
 `media:summary` also reports provider-loop posture separately from generated
 candidate and production readiness.
+Accepted generated assets show production-review posture separately from local
+candidate review; production readiness stays false until a future authority lane
+exists.
 `inspect:venice-loop` shows the retry path: whether a retry/defer request
 exists, whether a retry/defer decision exists, and whether a live retry is
 still gated.

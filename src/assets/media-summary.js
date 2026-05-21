@@ -162,6 +162,12 @@ function printMediaSummary(summary) {
     `promotedRejected=${summary.generatedCandidates.promotedRejected}`
   ].join(' | '))
   console.log([
+    `production review: ready=${summary.generatedCandidates.productionReview.ready}`,
+    `needsReview=${summary.generatedCandidates.productionReview.needsReview}`,
+    `proposed=${summary.generatedCandidates.productionReview.proposed}`,
+    `notCandidates=${summary.generatedCandidates.productionReview.notCandidates}`
+  ].join(' | '))
+  console.log([
     `provider loops: total=${summary.providerLoops.total}`,
     `complete=${summary.providerLoops.completeReviewOnly}`,
     `needsDecision=${summary.providerLoops.needsRetryDecision}`,
@@ -177,6 +183,9 @@ function printMediaSummary(summary) {
   }
   for (const row of summary.generatedCandidates.attentionRows) {
     console.log(`generated candidate: ${row.path} | issues=${row.issueCodes.join(',')} | nextAction=${row.nextAction}`)
+  }
+  for (const row of summary.generatedCandidates.productionReview.attentionRows) {
+    console.log(`production-review: ${row.path} | state=${row.productionReviewState} | issues=${row.issueCodes.join(',')} | nextAction=${row.nextAction}`)
   }
   for (const row of summary.providerLoops.attentionRows) {
     console.log(`provider-loop: ${row.providerId}:${row.loopKind} | state=${row.state} | readiness=${row.readinessState} | nextAction=${row.nextAction}`)
@@ -265,15 +274,21 @@ function summarizeGeneratedCandidates(assetRecords, records) {
     record.source?.sourceType === 'provider-result'
   )
   const decisionsByAssetId = new Map()
+  const approvalProposalsBySubjectId = new Map()
 
   for (const entry of records) {
     const record = entry.record
-    if (record.schema !== artifactKinds.mediaOperatorDecision) continue
     const subjectId = record.subjectRef?.id
     if (!subjectId) continue
-    const decisions = decisionsByAssetId.get(subjectId) ?? []
-    decisions.push(record)
-    decisionsByAssetId.set(subjectId, decisions)
+    if (record.schema === artifactKinds.mediaOperatorDecision) {
+      const decisions = decisionsByAssetId.get(subjectId) ?? []
+      decisions.push(record)
+      decisionsByAssetId.set(subjectId, decisions)
+    } else if (record.schema === artifactKinds.mediaApprovalProposalLocal) {
+      const proposals = approvalProposalsBySubjectId.get(subjectId) ?? []
+      proposals.push(record)
+      approvalProposalsBySubjectId.set(subjectId, proposals)
+    }
   }
 
   const rows = generated.map((asset) => {
@@ -301,6 +316,9 @@ function summarizeGeneratedCandidates(assetRecords, records) {
     }
   })
   const attentionRows = rows.filter((row) => row.issueCodes.length > 0)
+  const productionReview = summarizeGeneratedProductionReview(providerPromotions, {
+    approvalProposalsBySubjectId
+  })
 
   return {
     total: generated.length,
@@ -310,12 +328,82 @@ function summarizeGeneratedCandidates(assetRecords, records) {
     rejectedDecisions: rows.filter((row) => row.decisionTypes.includes('reject')).length,
     promotedAccepted: providerPromotions.filter((record) => record.localRef?.placementClass === 'media-accepted').length,
     promotedRejected: providerPromotions.filter((record) => record.localRef?.placementClass === 'media-rejected').length,
+    productionReview,
     rows,
     attentionRows,
     localOnly: true,
     operatorGuidanceOnly: true,
     meshTruth: false,
     providerTruth: false,
+    publicationAuthorization: false
+  }
+}
+
+function summarizeGeneratedProductionReview(providerPromotions, {
+  approvalProposalsBySubjectId
+}) {
+  const rows = providerPromotions.map((asset) => {
+    const accepted = asset.localRef?.placementClass === 'media-accepted'
+    const rejected = asset.localRef?.placementClass === 'media-rejected'
+    const proposals = approvalProposalsBySubjectId.get(asset.assetId) ?? []
+    const proposalRefs = proposals.map((proposal) => ({
+      kind: 'media-approval-proposal',
+      id: proposal.proposalId,
+      schema: proposal.schema,
+      localOnly: true
+    }))
+    let productionReviewState = 'not-production-candidate'
+    let issueCodes = []
+    let nextAction = 'No production review action is needed for rejected provider output.'
+
+    if (accepted && proposals.length > 0) {
+      productionReviewState = 'production-review-proposed'
+      issueCodes = ['production_review_proposal_pending']
+      nextAction = 'Route the approval proposal through the proper authority lane before production use.'
+    } else if (accepted) {
+      productionReviewState = 'needs-production-review'
+      issueCodes = ['missing_production_review_proposal']
+      nextAction = 'Run npm run approval:proposal for this accepted generated asset before production use.'
+    } else if (rejected) {
+      productionReviewState = 'not-production-candidate'
+    }
+
+    return {
+      assetId: asset.assetId,
+      path: asset.localRef?.path,
+      contentId: asset.contentId,
+      situationRef: asset.situationRef,
+      placementRef: asset.placementRef,
+      placementClass: asset.localRef?.placementClass,
+      productionReviewState,
+      productionReady: false,
+      proposalRefs,
+      issueCodes,
+      nextAction,
+      localOnly: true,
+      operatorGuidanceOnly: true,
+      meshTruth: false,
+      providerTruth: false,
+      approvalAuthority: false,
+      ratifierAuthority: false,
+      publicationAuthorization: false
+    }
+  })
+  const attentionRows = rows.filter((row) => row.issueCodes.length > 0)
+
+  return {
+    ready: rows.filter((row) => row.productionReady).length,
+    needsReview: rows.filter((row) => row.productionReviewState === 'needs-production-review').length,
+    proposed: rows.filter((row) => row.productionReviewState === 'production-review-proposed').length,
+    notCandidates: rows.filter((row) => row.productionReviewState === 'not-production-candidate').length,
+    rows,
+    attentionRows,
+    localOnly: true,
+    operatorGuidanceOnly: true,
+    meshTruth: false,
+    providerTruth: false,
+    approvalAuthority: false,
+    ratifierAuthority: false,
     publicationAuthorization: false
   }
 }

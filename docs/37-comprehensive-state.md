@@ -204,6 +204,9 @@ prevents accidental repeat provider calls, but remains local-only guidance.
 `media:summary` distinguishes local provider-loop completion, retry-decision
 needs, and broader production-review readiness so a completed provider loop is
 not overread as production-ready media.
+Accepted generated assets now surface `needs-production-review` or
+`production-review-proposed` posture, but neither state grants production
+readiness or publication authority.
 
 Provider IDs and job IDs remain provenance only.
 

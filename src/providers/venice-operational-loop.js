@@ -458,7 +458,8 @@ function compactMediaSummary(summary) {
       reviewed: summary.generatedCandidates.reviewed,
       pending: summary.generatedCandidates.pendingReview,
       promotedAccepted: summary.generatedCandidates.promotedAccepted,
-      promotedRejected: summary.generatedCandidates.promotedRejected
+      promotedRejected: summary.generatedCandidates.promotedRejected,
+      productionReview: summary.generatedCandidates.productionReview
     },
     derivatives: {
       readyAssets: summary.derivativeReadiness.readyAssets,

@@ -632,8 +632,24 @@ test('provider generated image can be explicitly promoted with fresh derivative 
   assert.equal(summary.generatedCandidates.total, 1)
   assert.equal(summary.generatedCandidates.promotedAccepted, 1)
   assert.equal(summary.generatedCandidates.promotedRejected, 0)
+  assert.equal(summary.generatedCandidates.productionReview.ready, 0)
+  assert.equal(summary.generatedCandidates.productionReview.needsReview, 1)
+  assert.equal(summary.generatedCandidates.productionReview.proposed, 0)
+  assert.equal(summary.generatedCandidates.productionReview.attentionRows[0].productionReady, false)
+  assert.equal(summary.generatedCandidates.productionReview.attentionRows[0].issueCodes[0], 'missing_production_review_proposal')
   assert.equal(summary.derivativeReadiness.evaluatedAssets, 2)
   assert.equal(summary.derivativeReadiness.attentionAssets, 2)
+  await writeApprovalProposal({
+    projectDir: dir,
+    decision: promotion.review.recordRefs.operatorDecision,
+    asset: promotion.assetRecord,
+    output: 'records/approvals/promoted-candidate-approval-proposal.local.json'
+  })
+  const proposedSummary = await createMediaSummary({ projectDir: dir })
+  assert.equal(proposedSummary.generatedCandidates.productionReview.ready, 0)
+  assert.equal(proposedSummary.generatedCandidates.productionReview.needsReview, 0)
+  assert.equal(proposedSummary.generatedCandidates.productionReview.proposed, 1)
+  assert.equal(proposedSummary.generatedCandidates.productionReview.attentionRows[0].issueCodes[0], 'production_review_proposal_pending')
   assert.equal(validateRequiredRecord(promotion.assetDescriptor), true)
 })
 
@@ -1083,6 +1099,8 @@ test('Venice operational loop completes locally without live provider by default
   assert.equal(status.mediaSummary.generatedCandidates.total, 1)
   assert.equal(status.mediaSummary.generatedCandidates.reviewed, 1)
   assert.equal(status.mediaSummary.generatedCandidates.promotedAccepted, 1)
+  assert.equal(status.mediaSummary.generatedCandidates.productionReview.needsReview, 1)
+  assert.equal(status.mediaSummary.generatedCandidates.productionReview.ready, 0)
   assert.equal(status.mediaSummary.derivatives.readyAssets, 2)
   assert.equal(status.mediaSummary.derivatives.evaluatedAssets, 2)
   assert.equal(status.mediaSummary.identity.byteContent.coveredContentIds, 1)

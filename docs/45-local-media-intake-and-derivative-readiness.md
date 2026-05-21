@@ -274,8 +274,13 @@ Expected final summary shape:
 ```text
 derivatives: ready=2/2
 generated candidates: total=1 | reviewed=1 | pending=0 | promotedAccepted=1
+production review: ready=0 | needsReview=1 | proposed=0 | notCandidates=0
 identity: byteContent=1/1 | resourceSituations=1/1
 ```
+
+Production review is separate from local generated-candidate review. An
+accepted generated asset can be locally reviewed and promoted while still
+needing a production-review proposal before broader use.
 
 `repair:local-posture` may report that local-run inspection refresh was skipped
 for Venice smoke projects. That is non-blocking when `inspect:venice-smoke`
