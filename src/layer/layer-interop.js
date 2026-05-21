@@ -1,3 +1,5 @@
+import { artifactKinds } from '../contracts/artifact-kinds.js'
+
 const layerRefPattern = /^[a-zA-Z0-9][a-zA-Z0-9._:-]*$/
 
 export function collectLayerInteropOptions(argv) {
@@ -92,6 +94,48 @@ export function createLayerInteropPosture({
   }
 }
 
+export function summarizeLayerInteropFromRecords(records = []) {
+  const postureEntries = records
+    .filter((entry) =>
+      entry.record?.schema === artifactKinds.mediaAuthorityHandoffCandidateLocal ||
+      entry.record?.schema === artifactKinds.mediaProductionAuthorityPrerequisitesLocal
+    )
+    .filter((entry) => entry.record.layerInteropPosture)
+    .sort((left, right) => (Date.parse(right.record.createdAt ?? '') || 0) - (Date.parse(left.record.createdAt ?? '') || 0))
+  const latest = postureEntries[0]?.record.layerInteropPosture ?? createLayerInteropPosture()
+  const layerRefs = compactLayerRefs(postureEntries.map((entry) => entry.record.layerInteropPosture.layerRef))
+  const layerProfileRefs = compactLayerRefs(postureEntries.map((entry) => entry.record.layerInteropPosture.layerProfileRef))
+  const continuityRefs = compactLayerRefs(postureEntries.map((entry) => entry.record.layerInteropPosture.continuityRef))
+  const desyncPostureRefs = compactLayerRefs(postureEntries.map((entry) => entry.record.layerInteropPosture.desyncPostureRef))
+  const rbcProfileRefs = compactLayerRefs(postureEntries.flatMap((entry) => entry.record.layerInteropPosture.rbcProfileRefs ?? []))
+  const attached = postureEntries.some((entry) =>
+    entry.record.layerInteropPosture.interopState === 'layer-refs-attached-review-only'
+  )
+
+  return {
+    state: attached ? 'layer-refs-attached-review-only' : 'layer-refs-not-attached',
+    postureRecords: postureEntries.length,
+    authorityHandoffRecords: postureEntries.filter((entry) => entry.record.schema === artifactKinds.mediaAuthorityHandoffCandidateLocal).length,
+    authorityPrerequisiteRecords: postureEntries.filter((entry) => entry.record.schema === artifactKinds.mediaProductionAuthorityPrerequisitesLocal).length,
+    layerRefs,
+    layerProfileRefs,
+    continuityRefs,
+    desyncPostureRefs,
+    rbcProfileRefs,
+    durableAppendApproved: false,
+    substrateSelected: false,
+    continuityClaimed: false,
+    layerAuthority: false,
+    layerProfileIsRuntime: false,
+    layerProfileIsStorageBackend: false,
+    rendererOutputIsContinuity: false,
+    localJsonIsLayerAuthority: false,
+    latestPosture: latest,
+    localOnly: true,
+    operatorGuidanceOnly: true
+  }
+}
+
 function layerInteropRef(kind, id) {
   assertLayerRef(id)
   return {
@@ -107,4 +151,16 @@ function assertLayerRef(ref) {
   if (typeof ref !== 'string' || !layerRefPattern.test(ref)) {
     throw new Error(`Invalid mesh-ecology-layer ref: ${ref}`)
   }
+}
+
+function compactLayerRefs(refs) {
+  const output = []
+  const seen = new Set()
+  for (const ref of refs.filter((candidate) => candidate?.id)) {
+    const key = `${ref.kind}:${ref.id}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    output.push(ref)
+  }
+  return output
 }

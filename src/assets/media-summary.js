@@ -6,6 +6,7 @@ import { summarizeProductionApprovalLane } from '../production/approval-lane.js'
 import { evaluateRenderExportCandidateFreshness } from '../production/render-export-candidate.js'
 import { summarizeRenderReceipts } from '../production/render-receipts.js'
 import { summarizeExportReceipts } from '../production/export-receipts.js'
+import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
 import { writeProjectStatus, readProjectRecords } from '../seams/project-status.js'
 
 const modulePath = fileURLToPath(import.meta.url)
@@ -56,6 +57,7 @@ export async function createMediaSummary({
   const renderExportCandidates = summarizeRenderExportCandidates(records)
   const renderReceipts = summarizeRenderReceipts(records)
   const exportReceipts = summarizeExportReceipts(records)
+  const layerInterop = summarizeLayerInteropFromRecords(records)
   const productionApprovalLane = summarizeProductionApprovalLane({
     assetRecords,
     records,
@@ -86,6 +88,7 @@ export async function createMediaSummary({
     renderExportCandidates,
     renderReceipts,
     exportReceipts,
+    layerInterop,
     productionApprovalLane,
     bytePosture: status.assetResourceConsistency.bytePosture,
     resourcePosture: status.assetResourceConsistency.resourcePosture
@@ -137,6 +140,7 @@ export async function createMediaSummary({
     renderExportCandidates,
     renderReceipts,
     exportReceipts,
+    layerInterop,
     productionApprovalLane,
     safeNextAction,
     identity: {
@@ -277,6 +281,15 @@ function printMediaSummary(summary) {
     `bundles=${summary.productionApprovalLane.bundles}`,
     `pendingAuthority=${summary.productionApprovalLane.pendingAuthority}`,
     `productionReady=${summary.productionApprovalLane.productionReady}`
+  ].join(' | '))
+  console.log([
+    `layer interop: state=${summary.layerInterop.state}`,
+    `handoffs=${summary.layerInterop.authorityHandoffRecords}`,
+    `layerRefs=${summary.layerInterop.layerRefs.length}`,
+    `profileRefs=${summary.layerInterop.layerProfileRefs.length}`,
+    `durableAppendApproved=${summary.layerInterop.durableAppendApproved}`,
+    `continuityClaimed=${summary.layerInterop.continuityClaimed}`,
+    `layerAuthority=${summary.layerInterop.layerAuthority}`
   ].join(' | '))
   console.log([
     `identity: byteContent=${summary.identity.byteContent.coveredContentIds}/${summary.identity.byteContent.expectedContentIds}`,

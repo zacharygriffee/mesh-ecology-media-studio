@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { artifactKinds } from '../contracts/artifact-kinds.js'
 import { makeRef, nowIso } from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
+import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
 
 const modulePath = fileURLToPath(import.meta.url)
@@ -62,6 +63,7 @@ const productionSourceSchemas = new Set([
   artifactKinds.mediaProductionAssetCapsuleLocal,
   artifactKinds.mediaProductionBundleLocal,
   artifactKinds.mediaProductionAuthorityPrerequisitesLocal,
+  artifactKinds.mediaAuthorityHandoffCandidateLocal,
   artifactKinds.mediaRoughCutCapsuleLocal,
   artifactKinds.mediaRenderExportCandidateLocal,
   artifactKinds.mediaRenderAdapterContractLocal,
@@ -119,12 +121,14 @@ export async function writeEdgeCompatibilityBundle({
   }))
   const readinessResourceSummary = createReadinessResourceSummary({ sources })
   const exportDeliverySummary = createExportDeliverySummary({ sources })
+  const layerInteropSummary = createLayerInteropSummary({ sources })
   const createdAt = nowIso()
   const reviewEvidence = createStudioEdgeReviewEvidence({
     projectId,
     sourceRefs: studioSourceRefs,
     readinessResourceSummary,
     exportDeliverySummary,
+    layerInteropSummary,
     createdAt
   })
   const sourceRefStrings = studioSourceRefs.map((ref) => `${ref.kind}:${ref.id}`)
@@ -180,6 +184,7 @@ export async function writeEdgeCompatibilityBundle({
     ],
     readinessResourceSummary,
     exportDeliverySummary,
+    layerInteropSummary,
     studioReviewEvidence: reviewEvidence,
     edgeWorkPacketCandidate: workPacketCandidate,
     edgeEvidenceImportCandidate: evidenceImportCandidate,
@@ -280,7 +285,7 @@ async function readSourceRecords(root) {
   return sources
 }
 
-function createStudioEdgeReviewEvidence({ projectId, sourceRefs, readinessResourceSummary, exportDeliverySummary, createdAt }) {
+function createStudioEdgeReviewEvidence({ projectId, sourceRefs, readinessResourceSummary, exportDeliverySummary, layerInteropSummary, createdAt }) {
   const reviewEvidence = {
     schema: artifactKinds.mediaEdgeReviewEvidenceLocal,
     edgeReviewEvidenceId: `media-studio-edge-review-${projectId}`,
@@ -303,6 +308,7 @@ function createStudioEdgeReviewEvidence({ projectId, sourceRefs, readinessResour
     sourceArtifactRefs: sourceRefs.map((ref) => `${ref.kind}:${ref.id}`),
     readinessResourceSummary,
     exportDeliverySummary,
+    layerInteropSummary,
     summary: 'Studio local inspection artifacts are ready for Edge-style operator review as local evidence only.',
     reasonCodes: [
       'studio_local_wedge_complete',
@@ -327,6 +333,13 @@ function createStudioEdgeReviewEvidence({ projectId, sourceRefs, readinessResour
 
   validateRequiredRecord(reviewEvidence)
   return reviewEvidence
+}
+
+function createLayerInteropSummary({ sources }) {
+  return summarizeLayerInteropFromRecords(Object.values(sources).map(({ record, relativePath }) => ({
+    record,
+    path: relativePath
+  })))
 }
 
 function createEdgeWorkPacketCandidate({ projectId, sourceRefStrings, createdAt }) {
@@ -674,6 +687,7 @@ function kindForSchema(schema) {
     [artifactKinds.mediaProductionAssetCapsuleLocal]: 'media-production-asset-capsule',
     [artifactKinds.mediaProductionBundleLocal]: 'media-production-bundle',
     [artifactKinds.mediaProductionAuthorityPrerequisitesLocal]: 'media-production-authority-prerequisites',
+    [artifactKinds.mediaAuthorityHandoffCandidateLocal]: 'media-authority-handoff-candidate',
     [artifactKinds.mediaRoughCutCapsuleLocal]: 'media-rough-cut-capsule',
     [artifactKinds.mediaRenderExportCandidateLocal]: 'media-render-export-candidate',
     [artifactKinds.mediaRenderAdapterContractLocal]: 'media-render-adapter-contract',

@@ -194,6 +194,10 @@ These refs let an operator-local layer or future team layer inspect Studio work
 without making Studio a Layer runtime. The handoff still records
 `durableAppendApproved=false`, `continuityClaimed=false`, and
 `layerProfileIsAuthority=false`.
+`npm run media:summary`, `npm run operator:index`, Venice inspection, and
+`npm run edge:compat` surface the same Layer interop state and non-claims so
+the refs are visible without making them authority, continuity, or a runtime
+dependency.
 
 ## Rough-Cut Capsule Seed
 

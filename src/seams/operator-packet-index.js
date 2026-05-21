@@ -10,6 +10,7 @@ import { summarizeProductionApprovalLane } from '../production/approval-lane.js'
 import { evaluateRenderExportCandidateFreshness } from '../production/render-export-candidate.js'
 import { summarizeRenderReceipt } from '../production/render-receipts.js'
 import { summarizeExportReceipt } from '../production/export-receipts.js'
+import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
@@ -134,6 +135,7 @@ export async function writeOperatorPacketIndex({
   const exportReceipts = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaExportReceiptLocal)
     .map((entry) => summarizeExportReceipt(entry.record, entry.relativePath, normalizeRecordPaths(records)))
+  const layerInterop = summarizeLayerInteropFromRecords(records)
   const productionApprovalLane = summarizeProductionApprovalLane({
     assetRecords: records
       .filter((entry) => entry.record.schema === artifactKinds.mediaAssetDescriptor)
@@ -183,6 +185,7 @@ export async function writeOperatorPacketIndex({
     renderExportCandidates,
     renderReceipts,
     exportReceipts,
+    layerInterop,
     productionApprovalLane,
     operatorHealthExplanations,
     summary: {
@@ -211,6 +214,13 @@ export async function writeOperatorPacketIndex({
       renderReceiptsNeedingAttention: renderReceipts.filter((receipt) => receipt.issueCodes.length > 0).length,
       exportReceipts: exportReceiptRefs.length,
       exportReceiptsNeedingAttention: exportReceipts.filter((receipt) => receipt.issueCodes.length > 0).length,
+      layerInteropState: layerInterop.state,
+      layerInteropHandoffs: layerInterop.authorityHandoffRecords,
+      layerInteropLayerRefs: layerInterop.layerRefs.length,
+      layerInteropProfileRefs: layerInterop.layerProfileRefs.length,
+      layerDurableAppendApproved: layerInterop.durableAppendApproved,
+      layerContinuityClaimed: layerInterop.continuityClaimed,
+      layerAuthority: layerInterop.layerAuthority,
       productionApprovalCandidates: productionApprovalLane.candidates,
       productionApprovalPendingAuthority: productionApprovalLane.pendingAuthority,
       ruleResolutionTraces: mediationRefs.length,
@@ -321,6 +331,7 @@ function formatOperatorPacketIndexSummary(index, output) {
     `renderExportCandidates=${summary.renderExportCandidates ?? 0}`,
     `renderReceipts=${summary.renderReceipts ?? 0}`,
     `exportReceipts=${summary.exportReceipts ?? 0}`,
+    `layerInterop=${summary.layerInteropState ?? 'layer-refs-not-attached'}`,
     `productionApprovalPending=${summary.productionApprovalPendingAuthority ?? 0}`,
     `ruleTraces=${summary.ruleResolutionTraces}`,
     `attention=${summary.attentionRows ?? summary.operatorHealthExplanations}`,
@@ -525,6 +536,8 @@ const indexableSchemas = new Set([
   artifactKinds.mediaProviderLoopStatusLocal,
   artifactKinds.mediaProductionAssetCapsuleLocal,
   artifactKinds.mediaProductionBundleLocal,
+  artifactKinds.mediaProductionAuthorityPrerequisitesLocal,
+  artifactKinds.mediaAuthorityHandoffCandidateLocal,
   artifactKinds.mediaRoughCutCapsuleLocal,
   artifactKinds.mediaRenderExportCandidateLocal,
   artifactKinds.mediaRenderAdapterContractLocal,

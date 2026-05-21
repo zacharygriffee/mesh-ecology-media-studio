@@ -2761,6 +2761,34 @@ test('authority handoff candidate can carry Layer refs without selecting substra
   assert.equal(candidate.publicationAuthorization, false)
   assert.ok(output.lines.some((line) => line.includes('layerInterop=layer-refs-attached-review-only')))
   assert.equal(validateRequiredRecord(candidate), true)
+
+  const mediaSummaryOutput = await captureConsole(() => writeMediaSummary({ projectDir: dir }))
+  assert.equal(mediaSummaryOutput.result.layerInterop.state, 'layer-refs-attached-review-only')
+  assert.equal(mediaSummaryOutput.result.layerInterop.authorityHandoffRecords, 1)
+  assert.equal(mediaSummaryOutput.result.layerInterop.layerRefs.length, 1)
+  assert.equal(mediaSummaryOutput.result.layerInterop.durableAppendApproved, false)
+  assert.equal(mediaSummaryOutput.result.layerInterop.continuityClaimed, false)
+  assert.equal(mediaSummaryOutput.result.layerInterop.layerAuthority, false)
+  assert.ok(mediaSummaryOutput.lines.some((line) => line === 'layer interop: state=layer-refs-attached-review-only | handoffs=1 | layerRefs=1 | profileRefs=1 | durableAppendApproved=false | continuityClaimed=false | layerAuthority=false'))
+
+  const operatorIndexOutput = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
+  assert.equal(operatorIndexOutput.result.index.layerInterop.state, 'layer-refs-attached-review-only')
+  assert.equal(operatorIndexOutput.result.index.summary.layerInteropState, 'layer-refs-attached-review-only')
+  assert.equal(operatorIndexOutput.result.index.summary.layerDurableAppendApproved, false)
+  assert.equal(operatorIndexOutput.result.index.summary.layerContinuityClaimed, false)
+  assert.equal(operatorIndexOutput.result.index.summary.layerAuthority, false)
+  assert.ok(operatorIndexOutput.lines.some((line) => line.includes('layerInterop=layer-refs-attached-review-only')))
+
+  const inspection = await inspectVeniceSmoke({ projectDir: dir })
+  assert.equal(inspection.packet.operationalSummary.layerInterop.state, 'layer-refs-attached-review-only')
+  assert.equal(inspection.packet.operationalSummary.recordCounts.authorityHandoffCandidates, 1)
+  assert.equal(inspection.packet.operationalSummary.layerInterop.durableAppendApproved, false)
+
+  const compatibility = await writeEdgeCompatibilityBundle({ projectDir: dir })
+  assert.equal(compatibility.bundle.layerInteropSummary.state, 'layer-refs-attached-review-only')
+  assert.equal(compatibility.bundle.layerInteropSummary.layerAuthority, false)
+  assert.equal(compatibility.bundle.studioReviewEvidence.layerInteropSummary.continuityClaimed, false)
+  assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.authority_handoff_candidate.local.v1'))
 })
 
 test('rough cut capsule orders production items without rendering or authority', async () => {

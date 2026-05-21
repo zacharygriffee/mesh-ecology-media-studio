@@ -479,6 +479,9 @@ can be inspected from an operator local layer or future team layer. These refs
 remain review-only: no continuity substrate is selected, no durable append is
 approved, no participant is admitted, and renderer/local JSON outputs remain
 scaffolds rather than layer authority.
+`media:summary`, `operator:index`, Venice inspection, and Edge-compatible
+bundles now surface that Layer interop state compactly for operator inspection
+without making Studio a Layer runtime.
 Approval proposal records keep the compatibility `subjectRef` from the local
 decision and now include situated asset descriptor/content/situation/placement
 refs when the asset descriptor is available.

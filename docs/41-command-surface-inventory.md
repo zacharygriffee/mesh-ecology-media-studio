@@ -20,7 +20,7 @@ text is not the durable contract.
 | `npm run promote:candidate` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
 | `npm run reference:ingest` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
 | `npm run media:import` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
-| `npm run media:summary` | yes | no | `--print` | reads local refs | refreshes project status snapshot; includes provider-loop, approval-lane, production-capsule, and safe-next posture |
+| `npm run media:summary` | yes | no | `--print` | reads local refs | refreshes project status snapshot; includes provider-loop, approval-lane, production-capsule, Layer interop, and safe-next posture |
 | `npm run derivatives:thumbnail` | yes | yes | no | yes | runtime thumbnails and records use fresh timestamps |
 | `npm run review:candidates` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
 | `npm run approval:proposal` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
@@ -63,12 +63,12 @@ text is not the durable contract.
 | `npm run inspect:index` | yes | no | `--json` | reads local refs | no committed output |
 | `npm run inspect:provider-runs` | yes | yes | `--print` | yes | runtime ledger uses fresh timestamp |
 | `npm run inspect:provider-failure` | yes | yes | `--print` | yes | runtime packet uses fresh ids/timestamps |
-| `npm run inspect:venice-smoke` | yes | yes | `--print` | yes | smoke records are ignored runtime output; compact output shows live/local provider posture and raw-provider-byte storage posture |
+| `npm run inspect:venice-smoke` | yes | yes | `--print` | yes | smoke records are ignored runtime output; compact output shows live/local provider posture, raw-provider-byte storage posture, and Layer interop state |
 | `npm run inspect:venice-loop` | yes | no | `--print` | reads provider-loop status/request/decision refs | no output mutation; prints retry path, live-provider-called posture, and production blockers |
 | `npm run export:inspection-bundle` | yes | yes | `--print` | yes | bundle manifest uses fresh timestamp |
 | `npm run control:surface` | yes | yes | `--print` | yes | runtime projection uses fresh timestamp |
-| `npm run edge:compat` | yes | yes | `--print` | yes | runtime bundle uses fresh timestamp; includes production-capsule, production-bundle, rough-cut, render/export candidate, and authority-prereq source refs when present |
-| `npm run operator:index` | yes | yes | `--print` | yes | runtime index uses fresh timestamp; includes provider-loop, production-capsule, production-bundle, and rough-cut refs when present |
+| `npm run edge:compat` | yes | yes | `--print` | yes | runtime bundle uses fresh timestamp; includes production-capsule, production-bundle, rough-cut, render/export candidate, authority-prereq, and Layer interop source refs when present |
+| `npm run operator:index` | yes | yes | `--print` | yes | runtime index uses fresh timestamp; includes provider-loop, production-capsule, production-bundle, rough-cut, and Layer interop refs when present |
 | `npm run handoff:edge` | yes | yes | `--print` | yes | runtime handoff uses fresh timestamp |
 | `npm run operator:decision-request` | yes | yes | `--print` | yes | runtime request uses fresh timestamp |
 | `npm run operator:provider-loop-request` | yes | yes | `--print` | yes | runtime request uses fresh timestamp; retry is request-only |

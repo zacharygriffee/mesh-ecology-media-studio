@@ -292,6 +292,9 @@ carry optional `mesh-ecology-layer` refs with `--layer-ref`,
 and `--layer-rbc-profile-ref`. These are import refs only; they do not select a
 continuity substrate, approve durable append, admit a layer participant, or
 grant production authority.
+`media:summary`, `operator:index`, Venice inspection, and `edge:compat` surface
+that Layer interop posture compactly so an operator can see attached refs
+without treating them as authority or continuity.
 
 `request_changes` rough-cut decisions can regenerate the local rough-cut refs:
 
