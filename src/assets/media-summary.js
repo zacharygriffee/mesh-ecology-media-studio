@@ -50,6 +50,7 @@ export async function createMediaSummary({
   const productionCapsules = summarizeProductionCapsules(assetRecords, records)
   const productionBundles = summarizeProductionBundles(records)
   const productionRoughCuts = summarizeProductionRoughCuts(records)
+  const renderExportCandidates = summarizeRenderExportCandidates(records)
   const productionApprovalLane = summarizeProductionApprovalLane({
     assetRecords,
     records,
@@ -77,6 +78,7 @@ export async function createMediaSummary({
     productionCapsules,
     productionBundles,
     productionRoughCuts,
+    renderExportCandidates,
     productionApprovalLane,
     bytePosture: status.assetResourceConsistency.bytePosture,
     resourcePosture: status.assetResourceConsistency.resourcePosture
@@ -125,6 +127,7 @@ export async function createMediaSummary({
     productionCapsules,
     productionBundles,
     productionRoughCuts,
+    renderExportCandidates,
     productionApprovalLane,
     safeNextAction,
     identity: {
@@ -230,6 +233,15 @@ function printMediaSummary(summary) {
     `attention=${summary.productionRoughCuts.attentionRows.length}`
   ].join(' | '))
   console.log([
+    `render/export candidates: total=${summary.renderExportCandidates.total}`,
+    `reviewed=${summary.renderExportCandidates.reviewed}`,
+    `rendererSelected=${summary.renderExportCandidates.rendererSelected}`,
+    `renderPerformed=${summary.renderExportCandidates.renderPerformed}`,
+    `exportPerformed=${summary.renderExportCandidates.exportPerformed}`,
+    `productionReady=${summary.renderExportCandidates.productionReady}`,
+    `attention=${summary.renderExportCandidates.attentionRows.length}`
+  ].join(' | '))
+  console.log([
     `production approval: candidates=${summary.productionApprovalLane.candidates}`,
     `decisions=${summary.productionApprovalLane.localDecisions}`,
     `proposals=${summary.productionApprovalLane.approvalProposals}`,
@@ -271,6 +283,18 @@ function printMediaSummary(summary) {
   for (const row of summary.productionRoughCuts.attentionRows) {
     console.log(`rough-cut: ${row.roughCutId} | state=${row.roughCutState} | issues=${row.issueCodes.join(',')} | nextAction=${row.nextAction}`)
   }
+  for (const row of summary.renderExportCandidates.rows) {
+    console.log([
+      `render/export candidate: ${row.candidateId}`,
+      `roughCut=${row.roughCutId}`,
+      `reviewed=${row.reviewed}`,
+      `rendererSelected=${row.rendererSelected}`,
+      `renderPerformed=${row.renderPerformed}`,
+      `exportPerformed=${row.exportPerformed}`,
+      `productionReady=${row.productionReady}`,
+      `path=${row.candidatePath}`
+    ].join(' | '))
+  }
   for (const row of summary.productionApprovalLane.attentionRows) {
     console.log([
       `production-approval: ${row.path}`,
@@ -296,6 +320,7 @@ function summarizeSafeNextAction({
   productionCapsules,
   productionBundles,
   productionRoughCuts,
+  renderExportCandidates,
   productionApprovalLane,
   bytePosture,
   resourcePosture
@@ -337,6 +362,10 @@ function summarizeSafeNextAction({
 
   if (productionRoughCuts.total > 0 && productionRoughCuts.reviewed === 0) {
     return 'Run npm run production:rough-cut-review to record a local rough-cut review decision.'
+  }
+
+  if (productionRoughCuts.reviewed > 0 && renderExportCandidates.total === 0) {
+    return 'Run npm run production:render-export-candidate to prepare a reviewed rough cut for a future render/export lane.'
   }
 
   if (productionApprovalLane.pendingAuthority > 0 || approvalLane.pendingAuthority > 0) {
@@ -576,6 +605,47 @@ function summarizeProductionRoughCuts(records) {
     rows,
     attentionRows: rows.filter((row) => row.issueCodes.length > 0),
     productionReady: 0,
+    localOnly: true,
+    operatorGuidanceOnly: true,
+    meshTruth: false,
+    approvalAuthority: false,
+    publicationAuthorization: false
+  }
+}
+
+function summarizeRenderExportCandidates(records) {
+  const candidates = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaRenderExportCandidateLocal)
+    .map((entry) => ({ ...entry.record, path: entry.path }))
+    .sort(compareRecordCreatedAtDescending)
+  const rows = candidates.map((candidate) => ({
+    candidateId: candidate.candidateId,
+    candidatePath: candidate.path,
+    roughCutId: candidate.sourceRoughCutRef?.id ?? null,
+    reviewed: candidate.reviewPosture?.reviewed === true,
+    itemRefs: candidate.orderedItemRefs?.length ?? 0,
+    rendererSelected: candidate.renderPosture?.rendererSelected === true,
+    renderPerformed: candidate.renderPosture?.renderPerformed === true,
+    exportPerformed: candidate.exportPosture?.exportPerformed === true,
+    productionReady: candidate.productionReady === true,
+    issueCodes: [],
+    nextAction: 'Choose a renderer/export adapter in a future lane before producing bytes.',
+    localOnly: true,
+    operatorGuidanceOnly: true,
+    approvalAuthority: false,
+    publicationAuthorization: false
+  }))
+
+  return {
+    total: rows.length,
+    reviewed: rows.filter((row) => row.reviewed).length,
+    itemRefs: rows.reduce((sum, row) => sum + row.itemRefs, 0),
+    rendererSelected: rows.filter((row) => row.rendererSelected).length,
+    renderPerformed: rows.filter((row) => row.renderPerformed).length,
+    exportPerformed: rows.filter((row) => row.exportPerformed).length,
+    productionReady: rows.filter((row) => row.productionReady).length,
+    rows,
+    attentionRows: rows.filter((row) => row.issueCodes.length > 0),
     localOnly: true,
     operatorGuidanceOnly: true,
     meshTruth: false,

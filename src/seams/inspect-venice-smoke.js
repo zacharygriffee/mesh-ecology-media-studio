@@ -101,6 +101,8 @@ export async function inspectVeniceSmoke({
     .filter((entry) => entry.record.schema === artifactKinds.mediaProductionBundleLocal)
   const roughCutCapsules = projectRecords
     .filter((entry) => entry.record.schema === artifactKinds.mediaRoughCutCapsuleLocal)
+  const renderExportCandidates = projectRecords
+    .filter((entry) => entry.record.schema === artifactKinds.mediaRenderExportCandidateLocal)
   const roughCutReviewDecisions = projectRecords
     .filter((entry) => entry.record.schema === artifactKinds.mediaOperatorDecision)
     .filter((entry) => entry.record.roughCutReview)
@@ -135,6 +137,10 @@ export async function inspectVeniceSmoke({
         `roughCutCapsule:${path.basename(entry.path, '.json')}`,
         localRecordRef('media-rough-cut-capsule', entry.path, entry.record.schema)
       ])),
+      ...Object.fromEntries(renderExportCandidates.map((entry) => [
+        `renderExportCandidate:${path.basename(entry.path, '.json')}`,
+        localRecordRef('media-render-export-candidate', entry.path, entry.record.schema)
+      ])),
       ...Object.fromEntries(roughCutReviewDecisions.map((entry) => [
         `roughCutDecision:${path.basename(entry.path, '.json')}`,
         localRecordRef('media-operator-decision', entry.path, entry.record.schema)
@@ -158,6 +164,7 @@ export async function inspectVeniceSmoke({
       ...productionCapsules.map((entry) => entry.record.schema),
       ...productionBundles.map((entry) => entry.record.schema),
       ...roughCutCapsules.map((entry) => entry.record.schema),
+      ...renderExportCandidates.map((entry) => entry.record.schema),
       ...roughCutReviewDecisions.map((entry) => entry.record.schema),
       'media.byte_reference.preview.local.v1',
       'media.edge_inspection_packet.local.v1'
@@ -203,6 +210,7 @@ export async function inspectVeniceSmoke({
     productionCapsules,
     productionBundles,
     roughCutCapsules,
+    renderExportCandidates,
     roughCutReviewDecisions
   })
 
@@ -322,8 +330,22 @@ function createVeniceOperationalSummary(mediaSummary, {
   productionCapsules,
   productionBundles,
   roughCutCapsules,
+  renderExportCandidates,
   roughCutReviewDecisions
 }) {
+  const renderExportRows = renderExportCandidates.map((entry) => ({
+    candidateId: entry.record.candidateId,
+    path: entry.path,
+    roughCutId: entry.record.sourceRoughCutRef?.id ?? null,
+    reviewed: entry.record.reviewPosture?.reviewed === true,
+    rendererSelected: entry.record.renderPosture?.rendererSelected === true,
+    renderPerformed: entry.record.renderPosture?.renderPerformed === true,
+    exportPerformed: entry.record.exportPosture?.exportPerformed === true,
+    productionReady: entry.record.productionReady === true,
+    localOnly: true,
+    operatorGuidanceOnly: true
+  }))
+
   return {
     summaryKind: 'venice-smoke-operational-summary',
     projectId: mediaSummary.projectId,
@@ -359,6 +381,7 @@ function createVeniceOperationalSummary(mediaSummary, {
       productionAssetCapsules: productionCapsules.length,
       productionBundles: productionBundles.length,
       roughCutCapsules: roughCutCapsules.length,
+      renderExportCandidates: renderExportCandidates.length,
       roughCutReviewDecisions: roughCutReviewDecisions.length
     },
     recordRefs: {
@@ -369,7 +392,19 @@ function createVeniceOperationalSummary(mediaSummary, {
       productionAssetCapsules: productionCapsules.map((entry) => localRecordRef('media-production-asset-capsule', entry.path, entry.record.schema)),
       productionBundles: productionBundles.map((entry) => localRecordRef('media-production-bundle', entry.path, entry.record.schema)),
       roughCutCapsules: roughCutCapsules.map((entry) => localRecordRef('media-rough-cut-capsule', entry.path, entry.record.schema)),
+      renderExportCandidates: renderExportCandidates.map((entry) => localRecordRef('media-render-export-candidate', entry.path, entry.record.schema)),
       roughCutReviewDecisions: roughCutReviewDecisions.map((entry) => localRecordRef('media-operator-decision', entry.path, entry.record.schema))
+    },
+    renderExportCandidates: {
+      total: renderExportRows.length,
+      reviewed: renderExportRows.filter((row) => row.reviewed).length,
+      rendererSelected: renderExportRows.filter((row) => row.rendererSelected).length,
+      renderPerformed: renderExportRows.filter((row) => row.renderPerformed).length,
+      exportPerformed: renderExportRows.filter((row) => row.exportPerformed).length,
+      productionReady: renderExportRows.filter((row) => row.productionReady).length,
+      rows: renderExportRows,
+      localOnly: true,
+      operatorGuidanceOnly: true
     },
     localOnly: true,
     operatorGuidanceOnly: true,
@@ -392,6 +427,9 @@ function printVeniceInspectionSummary(summary) {
     `providerStatus=${summary.providerExecution.status}`,
     `rawProviderBytesStored=${summary.providerExecution.storedRawBytes}`,
     `derivatives=${summary.derivativeReadiness.readyAssets}/${summary.derivativeReadiness.evaluatedAssets}`,
+    `renderExportCandidates=${summary.renderExportCandidates?.total ?? 0}`,
+    `renderPerformed=${summary.renderExportCandidates?.renderPerformed ?? 0}`,
+    `exportPerformed=${summary.renderExportCandidates?.exportPerformed ?? 0}`,
     `byteContent=${summary.identity.byteContent.coveredContentIds}/${summary.identity.byteContent.expectedContentIds}`,
     `resourceSituations=${summary.identity.resourceSituations.coveredSituationPlacements}/${summary.identity.resourceSituations.expectedSituationPlacements}`
   ].join(' | '))

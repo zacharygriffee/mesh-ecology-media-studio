@@ -64,6 +64,7 @@ export async function writeProjectHealth({
   const productionHealthExplanations = buildProductionHealthExplanations(productionValidation)
   const productionCapsuleHealthExplanations = buildProductionCapsuleHealthExplanations(records)
   const productionRoughCutHealthExplanations = buildProductionRoughCutHealthExplanations(records)
+  const renderExportCandidateSummary = summarizeRenderExportCandidates(records)
 
   if (statusResult.status.assetResourceConsistency.readyForEdgeInspection !== true) {
     blockingIssues.push('asset-resource-consistency-not-ready')
@@ -125,6 +126,7 @@ export async function writeProjectHealth({
     productionHealthExplanations,
     productionCapsuleHealthExplanations,
     productionRoughCutHealthExplanations,
+    renderExportCandidateSummary,
     operatorHealthExplanations: [
       ...assetHealthExplanations,
       ...derivativeHealthExplanations,
@@ -180,6 +182,14 @@ function printHealthSummary(health, output) {
   console.log(`derivativeAttention: ${health.mediaDerivativeReadiness?.attentionAssets ?? 0}`)
   console.log(`productionCapsuleAttention: ${health.productionCapsuleHealthExplanations?.length ?? 0}`)
   console.log(`productionRoughCutAttention: ${health.productionRoughCutHealthExplanations?.length ?? 0}`)
+  console.log([
+    `renderExportCandidates: total=${health.renderExportCandidateSummary?.total ?? 0}`,
+    `reviewed=${health.renderExportCandidateSummary?.reviewed ?? 0}`,
+    `rendererSelected=${health.renderExportCandidateSummary?.rendererSelected ?? 0}`,
+    `renderPerformed=${health.renderExportCandidateSummary?.renderPerformed ?? 0}`,
+    `exportPerformed=${health.renderExportCandidateSummary?.exportPerformed ?? 0}`,
+    `productionReady=${health.renderExportCandidateSummary?.productionReady ?? 0}`
+  ].join(' | '))
   for (const explanation of health.operatorHealthExplanations ?? []) {
     console.log(formatHealthExplanation(explanation))
   }
@@ -370,6 +380,37 @@ function buildProductionRoughCutHealthExplanations(records) {
   return [
     ...roughCutAttention
   ]
+}
+
+function summarizeRenderExportCandidates(records) {
+  const rows = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaRenderExportCandidateLocal)
+    .map((entry) => ({
+      candidateId: entry.record.candidateId,
+      candidatePath: entry.path,
+      roughCutId: entry.record.sourceRoughCutRef?.id ?? null,
+      reviewed: entry.record.reviewPosture?.reviewed === true,
+      rendererSelected: entry.record.renderPosture?.rendererSelected === true,
+      renderPerformed: entry.record.renderPosture?.renderPerformed === true,
+      exportPerformed: entry.record.exportPosture?.exportPerformed === true,
+      productionReady: entry.record.productionReady === true,
+      localOnly: true,
+      operatorGuidanceOnly: true
+    }))
+
+  return {
+    total: rows.length,
+    reviewed: rows.filter((row) => row.reviewed).length,
+    rendererSelected: rows.filter((row) => row.rendererSelected).length,
+    renderPerformed: rows.filter((row) => row.renderPerformed).length,
+    exportPerformed: rows.filter((row) => row.exportPerformed).length,
+    productionReady: rows.filter((row) => row.productionReady).length,
+    rows,
+    localOnly: true,
+    operatorGuidanceOnly: true,
+    meshTruth: false,
+    publicationAuthorization: false
+  }
 }
 
 function roughCutSourceRefs({ roughCut, latestDecision, latestBundle }) {

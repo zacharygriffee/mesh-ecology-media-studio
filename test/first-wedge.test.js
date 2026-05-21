@@ -2575,7 +2575,7 @@ test('Venice production rehearsal recognizes locally reviewed rough cut posture'
   assert.equal(result.rehearsal.productionApprovalLane.productionReady, 0)
   assert.equal(result.rehearsal.approvalAuthority, false)
   assert.equal(result.rehearsal.publicationAuthorization, false)
-  assert.equal(result.rehearsal.safeNextAction, 'Route pending approval proposals through the proper authority lane; local proposals and bundles are not approval.')
+  assert.equal(result.rehearsal.safeNextAction, 'Run npm run production:render-export-candidate to prepare a reviewed rough cut for a future render/export lane.')
 })
 
 test('production authority prerequisite report separates local package from authority', async () => {
@@ -2907,6 +2907,37 @@ test('render export candidate requires reviewed rough cut without rendering or a
   )
   assert.equal(written.candidateId, candidate.candidateId)
   assert.equal(validateRequiredRecord(written), true)
+
+  const mediaSummaryOutput = await captureConsole(() => writeMediaSummary({ projectDir: dir }))
+  const mediaSummary = await createMediaSummary({ projectDir: dir })
+  assert.equal(mediaSummary.renderExportCandidates.total, 1)
+  assert.equal(mediaSummary.renderExportCandidates.reviewed, 1)
+  assert.equal(mediaSummary.renderExportCandidates.rendererSelected, 0)
+  assert.equal(mediaSummary.renderExportCandidates.renderPerformed, 0)
+  assert.equal(mediaSummary.renderExportCandidates.exportPerformed, 0)
+  assert.equal(mediaSummary.renderExportCandidates.productionReady, 0)
+  assert.ok(mediaSummaryOutput.lines.some((line) => line === 'render/export candidates: total=1 | reviewed=1 | rendererSelected=0 | renderPerformed=0 | exportPerformed=0 | productionReady=0 | attention=0'))
+  assert.ok(mediaSummaryOutput.lines.some((line) => line.includes(`render/export candidate: ${candidate.candidateId}`)))
+
+  const healthOutput = await captureConsole(() => writeProjectHealth({ projectDir: dir, summary: true }))
+  assert.equal(healthOutput.result.health.renderExportCandidateSummary.total, 1)
+  assert.equal(healthOutput.result.health.renderExportCandidateSummary.renderPerformed, 0)
+  assert.ok(healthOutput.lines.some((line) => line === 'renderExportCandidates: total=1 | reviewed=1 | rendererSelected=0 | renderPerformed=0 | exportPerformed=0 | productionReady=0'))
+
+  const indexOutput = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
+  assert.equal(indexOutput.result.index.summary.renderExportCandidates, 1)
+  assert.equal(indexOutput.result.index.renderExportCandidates[0].renderPerformed, false)
+  assert.equal(indexOutput.result.index.renderExportCandidates[0].exportPerformed, false)
+  assert.ok(indexOutput.lines.some((line) => line.includes('renderExportCandidates=1')))
+  assert.ok(indexOutput.lines.some((line) => line.includes(`render/export candidate: ${candidate.candidateId}`)))
+
+  const inspection = await inspectVeniceSmoke({ projectDir: dir })
+  assert.equal(inspection.packet.operationalSummary.recordCounts.renderExportCandidates, 1)
+  assert.equal(inspection.packet.operationalSummary.renderExportCandidates.total, 1)
+  assert.equal(inspection.packet.operationalSummary.renderExportCandidates.rendererSelected, 0)
+  assert.equal(inspection.packet.operationalSummary.renderExportCandidates.renderPerformed, 0)
+  assert.equal(inspection.packet.operationalSummary.renderExportCandidates.exportPerformed, 0)
+  assert.equal(inspection.packet.operationalSummary.renderExportCandidates.productionReady, 0)
 
   const compatibility = await writeEdgeCompatibilityBundle({ projectDir: dir })
   assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.render_export_candidate.local.v1'))

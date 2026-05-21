@@ -84,6 +84,9 @@ export async function writeOperatorPacketIndex({
   const roughCutCapsuleRefs = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaRoughCutCapsuleLocal)
     .map(toInspectionRef)
+  const renderExportCandidateRefs = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaRenderExportCandidateLocal)
+    .map(toInspectionRef)
   const mediationRefs = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaRuleResolutionTraceLocal)
     .map(toInspectionRef)
@@ -113,6 +116,9 @@ export async function writeOperatorPacketIndex({
       latestDecision: roughCutDecisionBySubject.get(entry.record.roughCutId),
       latestProductionBundle
     }))
+  const renderExportCandidates = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaRenderExportCandidateLocal)
+    .map((entry) => summarizeRenderExportCandidate(entry.record, entry.relativePath))
   const productionApprovalLane = summarizeProductionApprovalLane({
     assetRecords: records
       .filter((entry) => entry.record.schema === artifactKinds.mediaAssetDescriptor)
@@ -149,6 +155,7 @@ export async function writeOperatorPacketIndex({
     productionCapsuleRefs,
     productionBundleRefs,
     roughCutCapsuleRefs,
+    renderExportCandidateRefs,
     mediationRefs,
     providerLoopStatuses,
     providerLoopDecisions,
@@ -156,6 +163,7 @@ export async function writeOperatorPacketIndex({
     productionCapsules,
     productionBundles,
     roughCutCapsules,
+    renderExportCandidates,
     productionApprovalLane,
     operatorHealthExplanations,
     summary: {
@@ -178,6 +186,8 @@ export async function writeOperatorPacketIndex({
       productionBundlesNeedingAttention: productionBundles.filter((bundle) => bundle.needsOperatorAttention).length,
       roughCutCapsules: roughCutCapsuleRefs.length,
       roughCutCapsulesNeedingAttention: roughCutCapsules.filter((roughCut) => roughCut.needsOperatorAttention).length,
+      renderExportCandidates: renderExportCandidateRefs.length,
+      renderExportCandidatesNeedingAttention: renderExportCandidates.filter((candidate) => candidate.needsOperatorAttention).length,
       productionApprovalCandidates: productionApprovalLane.candidates,
       productionApprovalPendingAuthority: productionApprovalLane.pendingAuthority,
       ruleResolutionTraces: mediationRefs.length,
@@ -189,6 +199,7 @@ export async function writeOperatorPacketIndex({
         productionCapsules.filter((capsule) => capsule.needsOperatorAttention).length +
         productionBundles.filter((bundle) => bundle.needsOperatorAttention).length +
         roughCutCapsules.filter((roughCut) => roughCut.needsOperatorAttention).length +
+        renderExportCandidates.filter((candidate) => candidate.needsOperatorAttention).length +
         productionApprovalLane.attentionRows.length,
       newestRecordPath: newestPath(records),
       operatorGuidanceOnly: true
@@ -242,6 +253,9 @@ export async function writeOperatorPacketIndex({
     for (const roughCut of index.roughCutCapsules) {
       console.log(formatRoughCutCapsule(roughCut))
     }
+    for (const candidate of index.renderExportCandidates) {
+      console.log(formatRenderExportCandidate(candidate))
+    }
     if (index.productionApprovalLane.candidates > 0) {
       console.log(formatProductionApprovalLaneSummary(index.productionApprovalLane))
     }
@@ -271,6 +285,7 @@ function formatOperatorPacketIndexSummary(index, output) {
     `productionCapsules=${summary.productionCapsules ?? 0}`,
     `productionBundles=${summary.productionBundles ?? 0}`,
     `roughCuts=${summary.roughCutCapsules ?? 0}`,
+    `renderExportCandidates=${summary.renderExportCandidates ?? 0}`,
     `productionApprovalPending=${summary.productionApprovalPendingAuthority ?? 0}`,
     `ruleTraces=${summary.ruleResolutionTraces}`,
     `attention=${summary.attentionRows ?? summary.operatorHealthExplanations}`,
@@ -356,6 +371,20 @@ function formatRoughCutCapsule(roughCut) {
   ].join(' | ')
 }
 
+function formatRenderExportCandidate(candidate) {
+  return [
+    `render/export candidate: ${candidate.candidateRef.id}`,
+    `roughCut=${candidate.roughCutRef?.id ?? 'unknown'}`,
+    `reviewed=${candidate.reviewed}`,
+    `rendererSelected=${candidate.rendererSelected}`,
+    `renderPerformed=${candidate.renderPerformed}`,
+    `exportPerformed=${candidate.exportPerformed}`,
+    `productionReady=${candidate.productionReady}`,
+    `issues=${candidate.issueCodes.join(',') || 'none'}`,
+    `path=${candidate.candidateRef.path}`
+  ].join(' | ')
+}
+
 function formatProductionApprovalLaneSummary(lane) {
   return [
     `production approval: candidates=${lane.candidates}`,
@@ -435,6 +464,7 @@ const indexableSchemas = new Set([
   artifactKinds.mediaProductionAssetCapsuleLocal,
   artifactKinds.mediaProductionBundleLocal,
   artifactKinds.mediaRoughCutCapsuleLocal,
+  artifactKinds.mediaRenderExportCandidateLocal,
   artifactKinds.mediaRuleResolutionTraceLocal
 ])
 
@@ -604,6 +634,35 @@ function summarizeRoughCutCapsule(record, relativePath, {
   }
 }
 
+function summarizeRenderExportCandidate(record, relativePath) {
+  const issueCodes = []
+
+  return {
+    candidateRef: {
+      ...makeRef('media-render-export-candidate', record.candidateId, record.schema),
+      path: relativePath,
+      localOnly: true
+    },
+    roughCutRef: record.sourceRoughCutRef ?? null,
+    reviewDecisionRef: record.reviewDecisionRef ?? null,
+    reviewed: record.reviewPosture?.reviewed === true,
+    items: record.orderedItemRefs?.length ?? 0,
+    rendererSelected: record.renderPosture?.rendererSelected === true,
+    renderPerformed: record.renderPosture?.renderPerformed === true,
+    exportPerformed: record.exportPosture?.exportPerformed === true,
+    productionReady: record.productionReady === true,
+    issueCodes,
+    needsOperatorAttention: issueCodes.length > 0,
+    nextAction: record.nextActions?.[0] ?? 'Choose a renderer/export adapter in a future lane before producing bytes.',
+    approvalAuthority: false,
+    publicationAuthorization: false,
+    operatorGuidanceOnly: true,
+    localOnly: true,
+    meshTruth: false,
+    providerTruth: false
+  }
+}
+
 function latestRoughCutDecisionBySubject(decisions) {
   const output = new Map()
   for (const decision of decisions) {
@@ -725,6 +784,7 @@ function kindForSchema(schema) {
     [artifactKinds.mediaProductionAssetCapsuleLocal]: 'media-production-asset-capsule',
     [artifactKinds.mediaProductionBundleLocal]: 'media-production-bundle',
     [artifactKinds.mediaRoughCutCapsuleLocal]: 'media-rough-cut-capsule',
+    [artifactKinds.mediaRenderExportCandidateLocal]: 'media-render-export-candidate',
     [artifactKinds.mediaRuleResolutionTraceLocal]: 'media-rule-resolution-trace'
   }[schema] ?? schema
 }
@@ -740,6 +800,7 @@ function idForRecord(record) {
     record.statusId ??
     record.capsuleId ??
     record.roughCutId ??
+    record.candidateId ??
     record.bundleId ??
     record.traceId
 }
