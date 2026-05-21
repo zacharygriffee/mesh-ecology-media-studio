@@ -176,6 +176,9 @@ rows are operator guidance only and do not prove byte availability,
 materialization, resource admission, or authority.
 `npm run media:summary` also includes a compact approval lane so pending local
 approval proposals are visible without treating them as approval authority.
+Its production approval lane separates local decision, proposal, capsule,
+bundle, and authority-missing posture without adding a UI or granting
+authorization.
 
 Write a local Packs-aligned control-surface projection without adding UI:
 

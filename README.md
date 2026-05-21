@@ -203,6 +203,10 @@ exists.
 `media:summary` also prints a compact approval lane over local approval
 proposals so an operator can see pending authority work without treating a
 proposal as approval.
+The production approval lane separates local decision, approval proposal,
+production capsule, production bundle, and missing authority posture so an
+operator can see what exists and what still cannot be treated as production
+authorization.
 It includes a `safeNextAction` line that chooses the next local action from the
 same inspection data without granting authority.
 `inspect:venice-loop` shows the retry path: whether a retry/defer request
@@ -352,6 +356,9 @@ production asset capsules. Regenerated inspection/export and Edge compatibility
 surfaces include capsule refs when the local capsule record exists.
 `npm run production:bundle` groups existing production capsule refs into a
 local-only review bundle without copying bytes or granting production authority.
+`npm run media:summary` and `npm run operator:index` also show a production
+approval lane: local decisions and approval proposals can be present, capsules
+and bundles can be present, and authority can still be missing.
 
 Byte posture is reported by `contentId`; resource posture is reported by
 descriptor/situation/placement subject. `assetId` remains a compatibility

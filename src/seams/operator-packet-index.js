@@ -6,6 +6,7 @@ import { artifactKinds } from '../contracts/artifact-kinds.js'
 import { makeRef, nowIso } from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
+import { summarizeProductionApprovalLane } from '../production/approval-lane.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
@@ -65,6 +66,12 @@ export async function writeOperatorPacketIndex({
   const operatorDecisionRefs = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaOperatorDecision)
     .map(toInspectionRef)
+  const approvalProposalRefs = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaApprovalProposalLocal)
+    .map(toInspectionRef)
+  const approvalProposalsPendingAuthority = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaApprovalProposalLocal)
+    .filter((entry) => entry.record.status === 'proposed').length
   const providerLoopStatusRefs = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProviderLoopStatusLocal)
     .map(toInspectionRef)
@@ -90,6 +97,12 @@ export async function writeOperatorPacketIndex({
   const productionBundles = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProductionBundleLocal)
     .map((entry) => summarizeProductionBundle(entry.record, entry.relativePath))
+  const productionApprovalLane = summarizeProductionApprovalLane({
+    assetRecords: records
+      .filter((entry) => entry.record.schema === artifactKinds.mediaAssetDescriptor)
+      .map((entry) => entry.record),
+    records
+  })
   const readinessStates = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProjectHealthLocal)
     .map((entry) => entry.record.healthState)
@@ -115,6 +128,7 @@ export async function writeOperatorPacketIndex({
     handoffCandidateRefs,
     operatorDecisionRequestRefs,
     operatorDecisionRefs,
+    approvalProposalRefs,
     providerLoopStatusRefs,
     productionCapsuleRefs,
     productionBundleRefs,
@@ -123,6 +137,7 @@ export async function writeOperatorPacketIndex({
     providerLoopDecisions,
     productionCapsules,
     productionBundles,
+    productionApprovalLane,
     operatorHealthExplanations,
     summary: {
       packets: packetRefs.length,
@@ -131,6 +146,8 @@ export async function writeOperatorPacketIndex({
       handoffCandidates: handoffCandidateRefs.length,
       operatorDecisionRequests: operatorDecisionRequestRefs.length,
       operatorDecisions: operatorDecisionRefs.length,
+      approvalProposals: approvalProposalRefs.length,
+      approvalProposalsPendingAuthority,
       providerLoopDecisions: providerLoopDecisions.length,
       providerLoopRetryDecisions: providerLoopDecisions.filter((decision) => decision.allowsExplicitRetryAttempt).length,
       providerLoopStatuses: providerLoopStatusRefs.length,
@@ -139,6 +156,8 @@ export async function writeOperatorPacketIndex({
       productionCapsulesNeedingAttention: productionCapsules.filter((capsule) => capsule.needsOperatorAttention).length,
       productionBundles: productionBundleRefs.length,
       productionBundlesNeedingAttention: productionBundles.filter((bundle) => bundle.needsOperatorAttention).length,
+      productionApprovalCandidates: productionApprovalLane.candidates,
+      productionApprovalPendingAuthority: productionApprovalLane.pendingAuthority,
       ruleResolutionTraces: mediationRefs.length,
       readyHealthRecords: readinessStates.filter((state) => state === 'ready-for-local-inspection').length,
       needsAttentionHealthRecords: readinessStates.filter((state) => state === 'needs-local-attention').length,
@@ -146,7 +165,8 @@ export async function writeOperatorPacketIndex({
       attentionRows: operatorHealthExplanations.length +
         providerLoopStatuses.filter((status) => status.needsOperatorAttention).length +
         productionCapsules.filter((capsule) => capsule.needsOperatorAttention).length +
-        productionBundles.filter((bundle) => bundle.needsOperatorAttention).length,
+        productionBundles.filter((bundle) => bundle.needsOperatorAttention).length +
+        productionApprovalLane.attentionRows.length,
       newestRecordPath: newestPath(records),
       operatorGuidanceOnly: true
     },
@@ -193,6 +213,12 @@ export async function writeOperatorPacketIndex({
     for (const bundle of index.productionBundles) {
       console.log(formatProductionBundle(bundle))
     }
+    if (index.productionApprovalLane.candidates > 0) {
+      console.log(formatProductionApprovalLaneSummary(index.productionApprovalLane))
+    }
+    for (const row of index.productionApprovalLane.attentionRows) {
+      console.log(formatProductionApprovalLaneRow(row))
+    }
   }
 
   return {
@@ -209,10 +235,12 @@ function formatOperatorPacketIndexSummary(index, output) {
     `handoffs=${summary.handoffCandidates}`,
     `decisionRequests=${summary.operatorDecisionRequests}`,
     `decisions=${summary.operatorDecisions ?? 0}`,
+    `approvalProposals=${summary.approvalProposals ?? 0}`,
     `providerLoops=${summary.providerLoopStatuses ?? 0}`,
     `providerLoopDecisions=${summary.providerLoopDecisions ?? 0}`,
     `productionCapsules=${summary.productionCapsules ?? 0}`,
     `productionBundles=${summary.productionBundles ?? 0}`,
+    `productionApprovalPending=${summary.productionApprovalPendingAuthority ?? 0}`,
     `ruleTraces=${summary.ruleResolutionTraces}`,
     `attention=${summary.attentionRows ?? summary.operatorHealthExplanations}`,
     `output=${output}`
@@ -271,8 +299,36 @@ function formatProductionBundle(bundle) {
   ].join(' | ')
 }
 
+function formatProductionApprovalLaneSummary(lane) {
+  return [
+    `production approval: candidates=${lane.candidates}`,
+    `decisions=${lane.localDecisions}`,
+    `proposals=${lane.approvalProposals}`,
+    `capsules=${lane.capsules}`,
+    `bundles=${lane.bundles}`,
+    `pendingAuthority=${lane.pendingAuthority}`,
+    `productionReady=${lane.productionReady}`
+  ].join(' | ')
+}
+
+function formatProductionApprovalLaneRow(row) {
+  return [
+    `production approval: ${row.path}`,
+    `state=${row.laneState}`,
+    `decision=${row.localDecisionState}`,
+    `proposal=${row.approvalProposalState}`,
+    `capsule=${row.capsuleState}`,
+    `bundle=${row.bundleState}`,
+    `authority=missing`,
+    `issues=${row.issueCodes.join(',')}`,
+    `nextAction=${row.nextAction}`
+  ].join(' | ')
+}
+
 async function readIndexableRecords(root) {
   const candidates = [
+    ...(await findJsonFiles(root, 'records/approvals')),
+    ...(await findJsonFiles(root, 'records/assets')),
     ...(await findJsonFiles(root, 'records/exports')),
     ...(await findJsonFiles(root, 'records/manifests')),
     ...(await findJsonFiles(root, 'records/provider-results')),
@@ -301,6 +357,8 @@ const indexableSchemas = new Set([
   artifactKinds.mediaEdgeHandoffCandidateLocal,
   artifactKinds.mediaOperatorDecision,
   artifactKinds.mediaOperatorDecisionRequestLocal,
+  artifactKinds.mediaApprovalProposalLocal,
+  artifactKinds.mediaAssetDescriptor,
   artifactKinds.mediaProviderLoopStatusLocal,
   artifactKinds.mediaProductionAssetCapsuleLocal,
   artifactKinds.mediaProductionBundleLocal,

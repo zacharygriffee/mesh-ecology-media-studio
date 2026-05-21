@@ -463,6 +463,11 @@ when the records exist.
 local-only grouping over production capsule refs. Bundles are for operator
 handoff/review readability only; they do not copy bytes, grant production use,
 or replace the capsule as the per-asset package.
+`npm run media:summary` and `npm run operator:index` now include a production
+approval lane that distinguishes local decisions, approval proposals, production
+capsules, production bundles, and missing authority. The lane is operator
+readability over existing local refs only; it does not add approval authority or
+production readiness.
 
 ## Current Verification Baseline
 

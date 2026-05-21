@@ -58,6 +58,7 @@ existing proposal through the proper authority lane.
 
 ```txt
 production capsules: total=1 | expected=1 | missing=0 | attention=0
+production approval: candidates=1 | decisions=1 | proposals=1 | capsules=1 | bundles=1 | pendingAuthority=1 | productionReady=0
 ```
 
 `npm run health:summary` reports missing production capsules as project
@@ -69,6 +70,18 @@ production-ready.
 when records exist. Regenerated inspection packets, export bundles, and Edge
 compatibility bundles include production capsule record refs so Edge-compatible
 surfaces can inspect the package later without Studio calling Edge.
+
+The production approval lane is a readability summary over existing records.
+It makes these states separate:
+
+- local decision present
+- approval proposal present
+- production capsule present
+- production bundle present
+- authority still missing
+
+Even when every local package exists, `productionReady` remains `0` until a
+future authority lane acts.
 
 ## Production Bundle
 

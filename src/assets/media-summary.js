@@ -2,6 +2,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { artifactKinds } from '../contracts/artifact-kinds.js'
+import { summarizeProductionApprovalLane } from '../production/approval-lane.js'
 import { writeProjectStatus, readProjectRecords } from '../seams/project-status.js'
 
 const modulePath = fileURLToPath(import.meta.url)
@@ -48,6 +49,12 @@ export async function createMediaSummary({
   const providerLoops = summarizeProviderLoops(records)
   const productionCapsules = summarizeProductionCapsules(assetRecords, records)
   const productionBundles = summarizeProductionBundles(records)
+  const productionApprovalLane = summarizeProductionApprovalLane({
+    assetRecords,
+    records,
+    productionCapsules,
+    productionBundles
+  })
   const derivativeReadiness = status.mediaDerivativeReadiness
   const attentionRows = derivativeReadiness.assetExplanations
     .filter((entry) => entry.state !== 'ready-for-local-inspection')
@@ -68,6 +75,7 @@ export async function createMediaSummary({
     providerLoops,
     productionCapsules,
     productionBundles,
+    productionApprovalLane,
     bytePosture: status.assetResourceConsistency.bytePosture,
     resourcePosture: status.assetResourceConsistency.resourcePosture
   })
@@ -114,6 +122,7 @@ export async function createMediaSummary({
     providerLoops,
     productionCapsules,
     productionBundles,
+    productionApprovalLane,
     safeNextAction,
     identity: {
       assetIdPosture: 'compatibility descriptor id',
@@ -208,6 +217,15 @@ function printMediaSummary(summary) {
     `attention=${summary.productionBundles.attentionRows.length}`
   ].join(' | '))
   console.log([
+    `production approval: candidates=${summary.productionApprovalLane.candidates}`,
+    `decisions=${summary.productionApprovalLane.localDecisions}`,
+    `proposals=${summary.productionApprovalLane.approvalProposals}`,
+    `capsules=${summary.productionApprovalLane.capsules}`,
+    `bundles=${summary.productionApprovalLane.bundles}`,
+    `pendingAuthority=${summary.productionApprovalLane.pendingAuthority}`,
+    `productionReady=${summary.productionApprovalLane.productionReady}`
+  ].join(' | '))
+  console.log([
     `identity: byteContent=${summary.identity.byteContent.coveredContentIds}/${summary.identity.byteContent.expectedContentIds}`,
     `resourceSituations=${summary.identity.resourceSituations.coveredSituationPlacements}/${summary.identity.resourceSituations.expectedSituationPlacements}`
   ].join(' | '))
@@ -237,6 +255,19 @@ function printMediaSummary(summary) {
   for (const row of summary.productionBundles.attentionRows) {
     console.log(`production-bundle: ${row.bundleId} | state=${row.bundleState} | issues=${row.issueCodes.join(',')} | nextAction=${row.nextAction}`)
   }
+  for (const row of summary.productionApprovalLane.attentionRows) {
+    console.log([
+      `production-approval: ${row.path}`,
+      `state=${row.laneState}`,
+      `decision=${row.localDecisionState}`,
+      `proposal=${row.approvalProposalState}`,
+      `capsule=${row.capsuleState}`,
+      `bundle=${row.bundleState}`,
+      `authority=missing`,
+      `issues=${row.issueCodes.join(',')}`,
+      `nextAction=${row.nextAction}`
+    ].join(' | '))
+  }
 
   console.log('nonClaims: local-only; no mesh truth; no byte/materialization proof; no resource admission')
 }
@@ -248,6 +279,7 @@ function summarizeSafeNextAction({
   providerLoops,
   productionCapsules,
   productionBundles,
+  productionApprovalLane,
   bytePosture,
   resourcePosture
 }) {
@@ -274,16 +306,16 @@ function summarizeSafeNextAction({
     return 'Run npm run approval:proposal for accepted generated assets before production use.'
   }
 
-  if (approvalLane.pendingAuthority > 0) {
-    return 'Route pending approval proposals through the proper authority lane; local proposals are not approval.'
-  }
-
   if (productionCapsules.missing > 0) {
     return 'Run npm run production:capsule for accepted assets before broader production handoff.'
   }
 
   if (productionCapsules.total > 0 && productionBundles.total === 0) {
     return 'Run npm run production:bundle to group local production capsules for review handoff.'
+  }
+
+  if (productionApprovalLane.pendingAuthority > 0 || approvalLane.pendingAuthority > 0) {
+    return 'Route pending approval proposals through the proper authority lane; local proposals and bundles are not approval.'
   }
 
   if (providerLoops.blockedProductionRows.length > 0) {
