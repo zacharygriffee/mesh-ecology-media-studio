@@ -113,6 +113,7 @@ import { writeRoughCutCapsule } from '../src/production/rough-cut-capsule.js'
 import { writeRoughCutReviewDecision } from '../src/production/rough-cut-review-decision.js'
 import { writeRoughCutRevision } from '../src/production/rough-cut-revision.js'
 import { evaluateRenderExportCandidateFreshness, writeRenderExportCandidate } from '../src/production/render-export-candidate.js'
+import { writeRenderExportMediation } from '../src/production/render-export-mediation.js'
 
 const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 
@@ -2985,6 +2986,25 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.equal(renderExportInput.exportAuthorization, false)
   assert.ok(gatedHandoff.candidate.authorityGaps.includes('render_authorization_missing'))
   assert.ok(gatedHandoff.candidate.authorityGaps.includes('export_authorization_missing'))
+
+  const mediationOutput = await captureConsole(() => writeRenderExportMediation({ projectDir: dir }))
+  const operationCandidate = mediationOutput.result.operationCandidate
+  const trace = mediationOutput.result.trace
+  assert.equal(operationCandidate.schema, 'media.operation_candidate.local.v1')
+  assert.equal(operationCandidate.operationClass, 'prepare_render_export')
+  assert.equal(operationCandidate.artifactClass, 'media.export')
+  assert.equal(operationCandidate.subjectRef.id, candidate.candidateId)
+  assert.ok(operationCandidate.sourceRefs.some((ref) => ref.schema === 'media.render_export_candidate.local.v1'))
+  assert.equal(trace.schema, 'media.rule_resolution_trace.local.v1')
+  assert.equal(trace.resolutionMode, 'ask_operator')
+  assert.equal(trace.deliveryMode, 'inbox')
+  assert.equal(trace.executionPerformed, false)
+  assert.equal(trace.edgeCalled, false)
+  assert.equal(trace.meshPublished, false)
+  assert.ok(trace.blockedClaims.includes('render authorization'))
+  assert.ok(trace.blockedClaims.includes('export authorization'))
+  assert.ok(mediationOutput.lines.some((line) => line.includes('render/export mediation:')))
+  assert.ok(mediationOutput.lines.some((line) => line.includes('resolution=ask_operator')))
 
   await writeRoughCutReviewDecision({
     projectDir: dir,

@@ -23,6 +23,7 @@ export const operationClasses = Object.freeze([
   'propose_byte_descriptor',
   'propose_resource_ref',
   'prepare_export',
+  'prepare_render_export',
   'delete_local_media',
   'generate_proxy',
   'generate_thumbnail'

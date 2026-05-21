@@ -284,6 +284,18 @@ function outcomeForCandidate(candidate) {
         blockedClaims: ['publication authorization', 'mesh publication', 'approval authority']
       }
 
+    case 'prepare_render_export':
+      return {
+        resolutionMode: 'ask_operator',
+        deliveryMode: 'inbox',
+        reasons: [
+          'Render/export preparation is a boundary step from local review packaging toward media byte production.',
+          'Operator review is required before selecting a renderer, preparing output placement, or producing export bytes.'
+        ],
+        appliedRules: [appliedRule('render-export-preparation-operator-review-required', 'ask_operator')],
+        blockedClaims: ['execution', 'render authorization', 'export authorization', 'publication authorization', 'production readiness']
+      }
+
     case 'generate_proxy':
     case 'generate_thumbnail':
       return {
