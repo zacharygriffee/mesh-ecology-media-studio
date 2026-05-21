@@ -363,6 +363,13 @@ npm run production:from-card -- --project-dir examples/card-to-candidate
 npm run production:validate -- --project-dir examples/card-to-candidate
 ```
 
+Package an accepted asset's local production refs without copying bytes or
+granting production authority:
+
+```bash
+npm run production:capsule -- --project-dir examples/venice-smoke
+```
+
 Write a local approval proposal without granting approval authority:
 
 ```bash
@@ -542,3 +549,7 @@ current operational commands.
 - [docs/40-repl-posture-and-control-surface-target.md](docs/40-repl-posture-and-control-surface-target.md)
 - [docs/41-command-surface-inventory.md](docs/41-command-surface-inventory.md)
 - [docs/42-media-identity-and-storage-posture.md](docs/42-media-identity-and-storage-posture.md)
+- [docs/43-asset-id-usage-audit.md](docs/43-asset-id-usage-audit.md)
+- [docs/44-identity-migration-boundary.md](docs/44-identity-migration-boundary.md)
+- [docs/45-local-media-intake-and-derivative-readiness.md](docs/45-local-media-intake-and-derivative-readiness.md)
+- [docs/46-production-asset-capsule.md](docs/46-production-asset-capsule.md)

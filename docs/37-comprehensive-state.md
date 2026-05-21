@@ -448,6 +448,12 @@ The current command surface map lives at
 human output, machine-readable local artifacts, JSON stdout support, stable
 refs, and known churn posture for operational commands.
 
+`npm run production:capsule` writes
+`media.production_asset_capsule.local.v1`, a local-only package of refs around
+one accepted asset. It includes content, situation/placement, derivative,
+byte/resource, provider-loop, local decision, and approval proposal refs where
+present. It does not copy bytes or grant production authority.
+
 ## Current Verification Baseline
 
 The expected baseline is:

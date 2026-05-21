@@ -269,6 +269,7 @@ npm run resource:refs -- --project-dir examples/venice-smoke
 npm run repair:local-posture -- --project-dir examples/venice-smoke
 npm run inspect:venice-smoke
 npm run media:summary -- --project-dir examples/venice-smoke
+npm run production:capsule -- --project-dir examples/venice-smoke
 ```
 
 Expected final summary shape:

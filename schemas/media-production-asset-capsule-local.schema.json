@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-production-asset-capsule-local.schema.json",
+  "title": "media.production_asset_capsule.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "capsuleId",
+    "projectId",
+    "capsuleKind",
+    "subjectAssetRef",
+    "contentRef",
+    "assetDescriptorRef",
+    "situationRef",
+    "placementRef",
+    "localRef",
+    "productionPosture",
+    "bundleRefs",
+    "createdAt",
+    "operatorGuidanceOnly",
+    "productionReady",
+    "approvalAuthority",
+    "ratifierAuthority",
+    "publicationAuthorization",
+    "providerTruth",
+    "byteAvailabilityProof",
+    "materializationProof",
+    "resourceAdmission",
+    "causalTruth",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "localTruthLabel",
+    "truthStatus"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.production_asset_capsule.local.v1"
+    },
+    "capsuleId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "capsuleKind": {
+      "const": "production-asset-candidate"
+    },
+    "subjectAssetRef": {
+      "type": "object"
+    },
+    "contentRef": {
+      "type": "object"
+    },
+    "assetDescriptorRef": {
+      "type": "object"
+    },
+    "situationRef": {
+      "type": "object"
+    },
+    "placementRef": {
+      "type": "object"
+    },
+    "localRef": {
+      "type": "object"
+    },
+    "productionPosture": {
+      "type": "object"
+    },
+    "bundleRefs": {
+      "type": "array"
+    },
+    "operatorGuidanceOnly": {
+      "const": true
+    },
+    "productionReady": {
+      "const": false
+    },
+    "approvalAuthority": {
+      "const": false
+    },
+    "ratifierAuthority": {
+      "const": false
+    },
+    "publicationAuthorization": {
+      "const": false
+    },
+    "providerTruth": {
+      "const": false
+    },
+    "byteAvailabilityProof": {
+      "const": false
+    },
+    "materializationProof": {
+      "const": false
+    },
+    "resourceAdmission": {
+      "const": false
+    },
+    "causalTruth": {
+      "const": false
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    }
+  }
+}

@@ -80,6 +80,7 @@ export const schemaFiles = {
   'media.continuity_band.v1': 'schemas/media-continuity-band.schema.json',
   'media.render_strategy.v1': 'schemas/media-render-strategy.schema.json',
   'media.production_descriptor.local.v1': 'schemas/media-production-descriptor-local.schema.json',
+  'media.production_asset_capsule.local.v1': 'schemas/media-production-asset-capsule-local.schema.json',
   'media.approval_proposal.local.v1': 'schemas/media-approval-proposal-local.schema.json',
   'media.byte_descriptor_proposal.local.v1': 'schemas/media-byte-descriptor-proposal-local.schema.json',
   'media.local_layer_resource_ref_candidate.local.v1': 'schemas/media-local-layer-resource-ref-candidate-local.schema.json',
@@ -897,6 +898,37 @@ export const requiredFields = {
     'truthStatus',
     'createdAt'
   ],
+  'media.production_asset_capsule.local.v1': [
+    'schema',
+    'capsuleId',
+    'projectId',
+    'capsuleKind',
+    'subjectAssetRef',
+    'contentRef',
+    'assetDescriptorRef',
+    'situationRef',
+    'placementRef',
+    'localRef',
+    'productionPosture',
+    'bundleRefs',
+    'createdAt',
+    'operatorGuidanceOnly',
+    'productionReady',
+    'approvalAuthority',
+    'ratifierAuthority',
+    'publicationAuthorization',
+    'providerTruth',
+    'byteAvailabilityProof',
+    'materializationProof',
+    'resourceAdmission',
+    'causalTruth',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'localTruthLabel',
+    'truthStatus'
+  ],
   'media.approval_proposal.local.v1': [
     'schema',
     'proposalId',
@@ -1072,6 +1104,7 @@ const idFields = {
   [artifactKinds.mediaContinuityBand]: 'bandId',
   [artifactKinds.mediaRenderStrategy]: 'strategyId',
   [artifactKinds.mediaProductionDescriptorLocal]: 'descriptorId',
+  [artifactKinds.mediaProductionAssetCapsuleLocal]: 'capsuleId',
   [artifactKinds.mediaApprovalProposalLocal]: 'proposalId',
   [artifactKinds.mediaByteDescriptorProposalLocal]: 'byteDescriptorProposalId',
   [artifactKinds.mediaLocalLayerResourceRefCandidateLocal]: 'resourceRefCandidateId',
@@ -1107,6 +1140,7 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaContinuityBand,
   artifactKinds.mediaRenderStrategy,
   artifactKinds.mediaProductionDescriptorLocal,
+  artifactKinds.mediaProductionAssetCapsuleLocal,
   artifactKinds.mediaApprovalProposalLocal,
   artifactKinds.mediaByteDescriptorProposalLocal,
   artifactKinds.mediaLocalLayerResourceRefCandidateLocal,
@@ -1147,6 +1181,7 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaContinuityBand,
   artifactKinds.mediaRenderStrategy,
   artifactKinds.mediaProductionDescriptorLocal,
+  artifactKinds.mediaProductionAssetCapsuleLocal,
   artifactKinds.mediaApprovalProposalLocal,
   artifactKinds.mediaByteDescriptorProposalLocal,
   artifactKinds.mediaLocalLayerResourceRefCandidateLocal,
@@ -2092,6 +2127,36 @@ export function validateRecordShape(record, schemaId = record.schema) {
 
     if (record.descriptorKind === 'export' && record.descriptor.publicationAuthorization !== false) {
       throw new Error(`Record ${schemaId} export descriptor must not claim publication authorization`)
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaProductionAssetCapsuleLocal) {
+    if (!['production-asset-candidate'].includes(record.capsuleKind)) {
+      throw new Error(`Record ${schemaId} has invalid capsule kind: ${record.capsuleKind}`)
+    }
+
+    if (!['needs-approval-proposal', 'approval-proposed-review-only'].includes(record.productionPosture?.state)) {
+      throw new Error(`Record ${schemaId} has invalid production posture state: ${record.productionPosture?.state}`)
+    }
+
+    validateRef(record.subjectAssetRef, `${schemaId}.subjectAssetRef`)
+    validateRef(record.contentRef, `${schemaId}.contentRef`)
+    validateRef(record.assetDescriptorRef, `${schemaId}.assetDescriptorRef`)
+
+    if (!Array.isArray(record.bundleRefs)) {
+      throw new Error(`Record ${schemaId} bundleRefs must be an array`)
+    }
+
+    if (record.operatorGuidanceOnly !== true || record.productionReady !== false) {
+      throw new Error(`Record ${schemaId} must remain review-only and productionReady=false`)
+    }
+
+    for (const flag of ['approvalAuthority', 'ratifierAuthority', 'publicationAuthorization', 'providerTruth', 'byteAvailabilityProof', 'materializationProof', 'resourceAdmission', 'causalTruth']) {
+      if (record[flag] !== false) {
+        throw new Error(`Record ${schemaId} must set ${flag}=false`)
+      }
     }
 
     validateLocalFalseFlags(record, schemaId)

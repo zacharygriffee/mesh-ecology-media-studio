@@ -48,6 +48,7 @@ Read in this order:
 40. [AssetId Usage Audit](43-asset-id-usage-audit.md)
 41. [Identity Migration Boundary](44-identity-migration-boundary.md)
 42. [Local Media Intake And Derivative Readiness](45-local-media-intake-and-derivative-readiness.md)
+43. [Production Asset Capsule](46-production-asset-capsule.md)
 
 Spine now uses Rulebook Cascade (RBC) as the family-wide vocabulary for
 effective rule-book posture. Studio docs align to RBC as a policy-domain
@@ -159,6 +160,7 @@ npm run health:summary -- --project-dir examples/card-to-candidate
 npm run continuity:draft -- --project-dir examples/card-to-candidate
 npm run production:from-card -- --project-dir examples/card-to-candidate
 npm run production:validate -- --project-dir examples/card-to-candidate
+npm run production:capsule -- --project-dir examples/venice-smoke
 npm run approval:proposal -- --project-dir examples/card-to-candidate
 npm run bytes:proposal -- --project-dir examples/card-to-candidate
 npm run resource:refs -- --project-dir examples/card-to-candidate

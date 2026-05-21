@@ -27,6 +27,7 @@ text is not the durable contract.
 | `npm run continuity:draft` | yes | yes | `--print` | yes | runtime records use fresh ids/timestamps |
 | `npm run production:from-card` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
 | `npm run production:validate` | yes | no | no | reads production refs | no committed output |
+| `npm run production:capsule` | yes | yes | `--print` | yes | packages accepted asset refs only; no byte copying or authority |
 
 ## Byte And Resource Posture
 

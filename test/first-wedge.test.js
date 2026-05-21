@@ -104,6 +104,7 @@ import {
 } from '../src/production/strategy.js'
 import { writeProductionRecordsFromCard } from '../src/production/create-production-records.js'
 import { validateProductionRecordsInProject } from '../src/production/validate-production-records.js'
+import { writeProductionAssetCapsule } from '../src/production/asset-capsule.js'
 
 const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 
@@ -2236,6 +2237,49 @@ test('approval proposal rejects authority claims', () => {
     () => validateRequiredRecord(proposal),
     /ratifierAuthority=false/
   )
+})
+
+test('production asset capsule packages accepted asset refs without authority', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-capsule-'))
+  await runVeniceOperationalLoop({
+    projectDir: dir,
+    decision: 'accepted'
+  })
+  await writeApprovalProposal({
+    projectDir: dir,
+    decision: 'records/decisions/promoted-candidate-accepted-decision.local.json',
+    asset: 'records/assets/promoted-candidate-accepted.local.json',
+    output: 'records/approvals/promoted-candidate-accepted-approval-proposal.local.json'
+  })
+
+  const { capsule, output } = await writeProductionAssetCapsule({
+    projectDir: dir,
+    quiet: true
+  })
+
+  assert.equal(capsule.schema, 'media.production_asset_capsule.local.v1')
+  assert.equal(capsule.productionPosture.state, 'approval-proposed-review-only')
+  assert.equal(capsule.productionReady, false)
+  assert.equal(capsule.approvalAuthority, false)
+  assert.equal(capsule.ratifierAuthority, false)
+  assert.equal(capsule.publicationAuthorization, false)
+  assert.equal(capsule.providerTruth, false)
+  assert.equal(capsule.byteAvailabilityProof, false)
+  assert.equal(capsule.materializationProof, false)
+  assert.equal(capsule.resourceAdmission, false)
+  assert.ok(capsule.contentRef.id.startsWith('sha256:'))
+  assert.ok(capsule.situationRef.id.includes(':accepted:'))
+  assert.equal(capsule.placementRef.placementClass, 'media-accepted')
+  assert.ok(capsule.derivativePosture.derivativeRefs.some((ref) => ref.derivativeKind === 'thumbnail'))
+  assert.ok(capsule.bytePosture.byteDescriptorProposalRef)
+  assert.ok(capsule.resourcePosture.resourceRefCandidateRef)
+  assert.ok(capsule.reviewPosture.approvalProposalRef)
+  assert.ok(capsule.sourcePosture.providerLoopStatusRef)
+  assert.ok(capsule.bundleRefs.some((ref) => ref.schema === 'media.approval_proposal.local.v1'))
+  assert.equal(validateRequiredRecord(capsule), true)
+
+  const written = JSON.parse(await readFile(path.join(dir, output), 'utf8'))
+  assert.equal(written.capsuleId, capsule.capsuleId)
 })
 
 test('byte descriptor proposal previews bytes without materialization proof', async () => {
