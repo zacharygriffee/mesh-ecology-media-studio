@@ -115,6 +115,8 @@ The current assembly lane is intentionally narrow:
   review.
 - `media.operator_decision.v1` may record local rough-cut review, defer, or
   request-changes posture.
+- `media.render_export_candidate.local.v1` may identify a reviewed rough cut as
+  ready for future render/export preparation.
 - `media.production_authority_prerequisites.summary.local.v1` and
   `media.authority_handoff_candidate.local.v1` show what a future authority
   lane would need to inspect.
@@ -205,6 +207,13 @@ Edge calls, and mesh publication claims to false.
 rough-cut decision and regenerates rough-cut refs for another local review
 pass. This is a local revision posture only; it does not edit media bytes,
 render a timeline, export, publish, approve, or grant production authority.
+
+`npm run production:render-export-candidate` writes
+`media.render_export_candidate.local.v1` only after the latest rough-cut
+decision is `review_rough_cut`. It records the reviewed rough cut as a candidate
+for a future render/export lane, but it does not select a renderer, create
+rendered bytes, create an export file, authorize publication, call Edge, or
+make the cut production-ready.
 
 ## Non-Claims
 

@@ -53,6 +53,7 @@ Known Studio artifact kinds:
 - `media.production_authority_prerequisites.summary.local.v1`
 - `media.authority_handoff_candidate.local.v1`
 - `media.rough_cut_capsule.local.v1`
+- `media.render_export_candidate.local.v1`
 - `media.approval_proposal.local.v1`
 - `media.byte_descriptor_proposal.local.v1`
 - `media.local_layer_resource_ref_candidate.local.v1`

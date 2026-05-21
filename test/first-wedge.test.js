@@ -112,6 +112,7 @@ import { writeAuthorityHandoffCandidate } from '../src/production/authority-hand
 import { writeRoughCutCapsule } from '../src/production/rough-cut-capsule.js'
 import { writeRoughCutReviewDecision } from '../src/production/rough-cut-review-decision.js'
 import { writeRoughCutRevision } from '../src/production/rough-cut-revision.js'
+import { writeRenderExportCandidate } from '../src/production/render-export-candidate.js'
 
 const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 
@@ -2857,6 +2858,58 @@ test('rough cut request changes surfaces local revision posture', async () => {
   assert.equal(prereqs.roughCutDeferred, 0)
   assert.equal(prereqs.rows[0].roughCutReviewPosture.state, 'rough-cut-changes-requested')
   assert.ok(prereqs.rows[0].safeNextAction.includes('Regenerate or revise'))
+})
+
+test('render export candidate requires reviewed rough cut without rendering or authority', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-render-export-candidate-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+  await writeAuthorityHandoffCandidate({ projectDir: dir, quiet: true })
+  await writeRoughCutCapsule({ projectDir: dir, quiet: true })
+
+  await assert.rejects(
+    () => writeRenderExportCandidate({ projectDir: dir, quiet: true }),
+    /Reviewed rough-cut decision required/
+  )
+
+  const review = await writeRoughCutReviewDecision({ projectDir: dir })
+  const output = await captureConsole(() => writeRenderExportCandidate({ projectDir: dir }))
+  const candidate = output.result.candidate
+
+  assert.equal(candidate.schema, 'media.render_export_candidate.local.v1')
+  assert.equal(candidate.candidateKind, 'rough-cut-render-export-candidate')
+  assert.equal(candidate.sourceRoughCutRef.schema, 'media.rough_cut_capsule.local.v1')
+  assert.equal(candidate.reviewDecisionRef.id, review.decision.decisionId)
+  assert.equal(candidate.reviewPosture.reviewed, true)
+  assert.equal(candidate.reviewPosture.decisionType, 'review_rough_cut')
+  assert.equal(candidate.orderedItemRefs.length, 1)
+  assert.equal(candidate.renderPosture.rendererRequired, true)
+  assert.equal(candidate.renderPosture.rendererSelected, false)
+  assert.equal(candidate.renderPosture.renderPerformed, false)
+  assert.equal(candidate.renderPosture.renderedOutputRef, null)
+  assert.equal(candidate.exportPosture.exportPerformed, false)
+  assert.equal(candidate.exportPosture.exportOutputRef, null)
+  assert.equal(candidate.candidateOnly, true)
+  assert.equal(candidate.productionReady, false)
+  assert.equal(candidate.approvalAuthority, false)
+  assert.equal(candidate.ratifierAuthority, false)
+  assert.equal(candidate.publicationAuthorization, false)
+  assert.equal(candidate.edgeCalled, false)
+  assert.equal(candidate.meshPublished, false)
+  assert.ok(candidate.sourceRefs.some((ref) => ref.schema === 'media.rough_cut_capsule.local.v1'))
+  assert.ok(candidate.sourceRefs.some((ref) => ref.id === review.decision.decisionId))
+  assert.equal(validateRequiredRecord(candidate), true)
+  assert.ok(output.lines.some((line) => line.startsWith('render/export candidate: project=venice-smoke-project')))
+  assert.ok(output.lines.some((line) => line.includes('renderPerformed=false')))
+  assert.ok(output.lines.some((line) => line.includes('exportPerformed=false')))
+
+  const written = JSON.parse(
+    await readFile(path.join(dir, 'records', 'production', 'media-render-export-candidate.local.json'), 'utf8')
+  )
+  assert.equal(written.candidateId, candidate.candidateId)
+  assert.equal(validateRequiredRecord(written), true)
+
+  const compatibility = await writeEdgeCompatibilityBundle({ projectDir: dir })
+  assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.render_export_candidate.local.v1'))
 })
 
 test('rough cut revision regenerates local capsule from request changes', async () => {

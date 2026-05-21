@@ -62,7 +62,8 @@ const productionSourceSchemas = new Set([
   artifactKinds.mediaProductionAssetCapsuleLocal,
   artifactKinds.mediaProductionBundleLocal,
   artifactKinds.mediaProductionAuthorityPrerequisitesLocal,
-  artifactKinds.mediaRoughCutCapsuleLocal
+  artifactKinds.mediaRoughCutCapsuleLocal,
+  artifactKinds.mediaRenderExportCandidateLocal
 ])
 
 function parseArgs(argv) {
@@ -604,6 +605,7 @@ function kindForSchema(schema) {
     [artifactKinds.mediaProductionBundleLocal]: 'media-production-bundle',
     [artifactKinds.mediaProductionAuthorityPrerequisitesLocal]: 'media-production-authority-prerequisites',
     [artifactKinds.mediaRoughCutCapsuleLocal]: 'media-rough-cut-capsule',
+    [artifactKinds.mediaRenderExportCandidateLocal]: 'media-render-export-candidate',
     [artifactKinds.mediaApprovalProposalLocal]: 'media-approval-proposal',
     [artifactKinds.mediaByteDescriptorProposalLocal]: 'media-byte-descriptor-proposal',
     [artifactKinds.mediaLocalLayerResourceRefCandidateLocal]: 'media-local-layer-resource-ref-candidate',
@@ -635,6 +637,7 @@ function idForRecord(record) {
     record.bundleId ??
     record.reportId ??
     record.roughCutId ??
+    record.candidateId ??
     record.proposalId ??
     record.byteDescriptorProposalId ??
     record.resourceRefCandidateId ??

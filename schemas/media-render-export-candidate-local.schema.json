@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "media.render_export_candidate.local.v1",
+  "title": "Media Render Export Candidate Local",
+  "type": "object",
+  "required": [
+    "schema",
+    "candidateId",
+    "projectId",
+    "mode",
+    "candidateKind",
+    "sourceRoughCutRef",
+    "reviewDecisionRef",
+    "orderedItemRefs",
+    "renderPosture",
+    "exportPosture",
+    "sourceRefs",
+    "nextActions",
+    "createdAt",
+    "localOnly",
+    "operatorGuidanceOnly",
+    "candidateOnly",
+    "productionReady"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.render_export_candidate.local.v1"
+    },
+    "candidateId": {
+      "type": "string"
+    },
+    "projectId": {
+      "type": "string"
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "candidateKind": {
+      "const": "rough-cut-render-export-candidate"
+    },
+    "sourceRoughCutRef": {
+      "type": "object"
+    },
+    "reviewDecisionRef": {
+      "type": "object"
+    },
+    "orderedItemRefs": {
+      "type": "array"
+    },
+    "renderPosture": {
+      "type": "object"
+    },
+    "exportPosture": {
+      "type": "object"
+    },
+    "sourceRefs": {
+      "type": "array"
+    },
+    "nextActions": {
+      "type": "array"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "operatorGuidanceOnly": {
+      "const": true
+    },
+    "candidateOnly": {
+      "const": true
+    },
+    "productionReady": {
+      "const": false
+    },
+    "approvalAuthority": {
+      "const": false
+    },
+    "publicationAuthorization": {
+      "const": false
+    }
+  },
+  "additionalProperties": true
+}

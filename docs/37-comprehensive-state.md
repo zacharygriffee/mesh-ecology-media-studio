@@ -492,13 +492,18 @@ not render, export, authorize publication, or make the cut production-ready.
 `npm run production:rough-cut-revise` consumes a local `request_changes`
 decision and regenerates the rough-cut capsule for another local review pass
 without editing bytes, rendering, exporting, or granting authority.
+`npm run production:render-export-candidate` writes
+`media.render_export_candidate.local.v1` over a reviewed rough cut only. It is a
+candidate for future render/export preparation and does not select a renderer,
+render bytes, create export output, publish, or grant authority.
 
 The first production assembly boundary is now explicit: capsules package one
 accepted production asset, bundles group capsules, rough cuts order accepted
 items for local review, rough-cut decisions record local review posture, and
-authority-prerequisite or handoff records only describe future authority review
-inputs. None of these records render media, export deliverables, publish to
-mesh, or grant approval/ratifier/publication authority.
+render/export candidates, authority-prerequisite records, or handoff records
+only describe future operation inputs. None of these records render media,
+export deliverables, publish to mesh, or grant approval/ratifier/publication
+authority.
 
 ## Current Verification Baseline
 

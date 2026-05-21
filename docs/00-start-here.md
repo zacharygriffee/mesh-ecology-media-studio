@@ -167,6 +167,7 @@ npm run production:authority-handoff -- --project-dir examples/venice-smoke
 npm run production:rough-cut -- --project-dir examples/venice-smoke
 npm run production:rough-cut-review -- --project-dir examples/venice-smoke
 npm run production:rough-cut-revise -- --project-dir examples/venice-smoke
+npm run production:render-export-candidate -- --project-dir examples/venice-smoke
 npm run provider:venice:rehearse-production -- --project-dir examples/venice-smoke
 npm run approval:proposal -- --project-dir examples/card-to-candidate
 npm run bytes:proposal -- --project-dir examples/card-to-candidate
@@ -190,6 +191,8 @@ production capsules, production bundles, rough-cut capsules, rough-cut review
 decisions, authority prerequisite summaries, and authority handoff candidates.
 It does not render, export, publish, approve, ratify, or grant production
 authority.
+Render/export candidates can be created only over reviewed rough cuts. They are
+local preparation candidates, not rendered media or export artifacts.
 
 Write a local Packs-aligned control-surface projection without adding UI:
 

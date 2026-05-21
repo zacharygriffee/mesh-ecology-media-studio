@@ -251,6 +251,9 @@ rough-cut decision for review/defer/request-changes posture, and authority
 prerequisite/handoff records for future authority-lane inputs. This boundary
 does not include editor UI, timeline rendering, export rendering, publication,
 ratification, or production authorization.
+`npm run production:render-export-candidate` can create a local candidate over a
+reviewed rough cut for a future render/export lane. It does not select a
+renderer, render bytes, create an export file, publish, or grant authority.
 
 Create a local provider-loop operator decision request:
 
@@ -403,6 +406,9 @@ The production assembly lane stops at local review packaging: capsules,
 bundles, rough cuts, review decisions, authority prerequisites, and handoff
 candidates are refs and guidance only. Rendering/export/publication and
 authority-bearing decisions remain separate future lanes.
+The first bridge toward that future lane is
+`media.render_export_candidate.local.v1`, created only from a reviewed rough
+cut and still candidate-only.
 
 Byte posture is reported by `contentId`; resource posture is reported by
 descriptor/situation/placement subject. `assetId` remains a compatibility
