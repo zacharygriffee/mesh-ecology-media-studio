@@ -20,7 +20,7 @@ text is not the durable contract.
 | `npm run promote:candidate` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
 | `npm run reference:ingest` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
 | `npm run media:import` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
-| `npm run media:summary` | yes | no | `--print` | reads local refs | refreshes project status snapshot; includes provider-loop and approval-lane posture |
+| `npm run media:summary` | yes | no | `--print` | reads local refs | refreshes project status snapshot; includes provider-loop, approval-lane, and safe-next posture |
 | `npm run derivatives:thumbnail` | yes | yes | no | yes | runtime thumbnails and records use fresh timestamps |
 | `npm run review:candidates` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
 | `npm run approval:proposal` | yes | yes | no | yes | runtime records use fresh ids/timestamps |

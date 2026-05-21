@@ -211,6 +211,8 @@ readiness or publication authority.
 proposals. The lane shows pending authority work and safe next actions, but
 keeps `approvalAuthority`, `ratifierAuthority`, and `publicationAuthorization`
 false.
+The same summary includes one `safeNextAction` chosen from the current local
+attention rows so the operator does not need to inspect raw JSON to continue.
 
 Provider IDs and job IDs remain provenance only.
 

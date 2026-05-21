@@ -59,6 +59,14 @@ export async function createMediaSummary({
       operatorGuidanceOnly: true,
       nonClaims: entry.nonClaims
     }))
+  const safeNextAction = summarizeSafeNextAction({
+    derivativeAttentionRows: attentionRows,
+    generatedCandidates,
+    approvalLane,
+    providerLoops,
+    bytePosture: status.assetResourceConsistency.bytePosture,
+    resourcePosture: status.assetResourceConsistency.resourcePosture
+  })
 
   return {
     schema: 'media.summary.local.v1',
@@ -100,6 +108,7 @@ export async function createMediaSummary({
     generatedCandidates,
     approvalLane,
     providerLoops,
+    safeNextAction,
     identity: {
       assetIdPosture: 'compatibility descriptor id',
       contentId: 'byte sameness',
@@ -185,6 +194,7 @@ function printMediaSummary(summary) {
     `identity: byteContent=${summary.identity.byteContent.coveredContentIds}/${summary.identity.byteContent.expectedContentIds}`,
     `resourceSituations=${summary.identity.resourceSituations.coveredSituationPlacements}/${summary.identity.resourceSituations.expectedSituationPlacements}`
   ].join(' | '))
+  console.log(`safeNextAction: ${summary.safeNextAction}`)
 
   for (const row of summary.derivativeReadiness.attentionRows) {
     console.log(`attention: ${row.path} | issues=${row.issueCodes.join(',')} | nextAction=${row.nextAction}`)
@@ -206,6 +216,50 @@ function printMediaSummary(summary) {
   }
 
   console.log('nonClaims: local-only; no mesh truth; no byte/materialization proof; no resource admission')
+}
+
+function summarizeSafeNextAction({
+  derivativeAttentionRows,
+  generatedCandidates,
+  approvalLane,
+  providerLoops,
+  bytePosture,
+  resourcePosture
+}) {
+  if (providerLoops.needsRetryDecision > 0) {
+    return 'Create a provider-loop retry/defer request and decision before any retry; no retry is automatic.'
+  }
+
+  if ((bytePosture.missingContentIds?.length ?? 0) > 0) {
+    return 'Run npm run bytes:proposal, then npm run resource:refs to repair local byte/resource posture.'
+  }
+
+  if ((resourcePosture.missingSubjectRefs?.length ?? 0) > 0 || (resourcePosture.staleSubjectRefs?.length ?? 0) > 0) {
+    return 'Run npm run resource:refs after byte proposals are current.'
+  }
+
+  if (generatedCandidates.pendingReview > 0) {
+    return 'Review or promote generated candidates with an explicit local decision.'
+  }
+
+  const actionableDerivative = derivativeAttentionRows.find((row) => !row.issueCodes.includes('unsupported_media_type'))
+  if (actionableDerivative) return actionableDerivative.nextAction
+
+  if (generatedCandidates.productionReview.needsReview > 0) {
+    return 'Run npm run approval:proposal for accepted generated assets before production use.'
+  }
+
+  if (approvalLane.pendingAuthority > 0) {
+    return 'Route pending approval proposals through the proper authority lane; local proposals are not approval.'
+  }
+
+  if (providerLoops.blockedProductionRows.length > 0) {
+    return providerLoops.blockedProductionRows[0].productionNextAction
+  }
+
+  if (derivativeAttentionRows.length > 0) return derivativeAttentionRows[0].nextAction
+
+  return 'No local media summary attention is blocking inspection; continue with the next operator-selected work.'
 }
 
 function summarizeProviderLoops(records) {

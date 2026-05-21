@@ -1512,6 +1512,7 @@ test('cross-project operator index surfaces provider loop attention by ref', asy
   assert.equal(result.index.summary.approvalProposals, 1)
   assert.equal(result.index.summary.approvalProposalsWithAttention, 1)
   assert.equal(result.index.summary.attentionRows, 2)
+  assert.equal(result.index.safeNextAction, 'Request retry or defer decision; do not treat the failed loop as production-ready.')
   assert.equal(result.index.projectSummaries[0].providerLoopStatus.state, 'failed_review_only')
   assert.deepEqual(result.index.projectSummaries[0].providerLoopStatus.productionBlockers, [
     'provider_loop_failed_review_only',
@@ -1522,6 +1523,7 @@ test('cross-project operator index surfaces provider loop attention by ref', asy
   assert.equal(result.index.projectSummaries[0].providerLoopStatus.providerTruth, false)
   assert.equal(result.index.projectSummaries[1].approvalProposal.laneState, 'pending-authority-review')
   assert.equal(result.index.projectSummaries[1].approvalProposal.approvalAuthority, false)
+  assert.equal(result.index.projectSummaries[1].safeNextAction, 'Route this proposal through the proper authority lane; do not treat the local proposal as approval.')
   assert.equal(validateRequiredRecord(result.index), true)
 })
 
@@ -1933,6 +1935,7 @@ test('media summary reports intake derivative and identity posture compactly', a
   assert.equal(before.derivativeReadiness.attentionAssets, 2)
   assert.equal(before.derivativeReadiness.attentionRows.some((row) => row.issueCodes.includes('missing_thumbnail')), true)
   assert.equal(before.derivativeReadiness.attentionRows.some((row) => row.issueCodes.includes('unsupported_media_type')), true)
+  assert.equal(before.safeNextAction, 'Run npm run derivatives:thumbnail for image thumbnails.')
   assert.equal(before.identity.byteContent.keyKind, 'contentId')
   assert.equal(before.identity.resourceSituations.keyKind, 'assetDescriptorRef+situationRef+placementRef')
   assert.equal(before.approvalLane.proposals, 0)
@@ -1942,6 +1945,7 @@ test('media summary reports intake derivative and identity posture compactly', a
   assert.equal(before.materializationProof, false)
   assert.equal(before.resourceAdmission, false)
   assert.ok(output.lines.some((line) => line.startsWith('media summary: project=project-test')))
+  assert.ok(output.lines.some((line) => line === 'safeNextAction: Run npm run derivatives:thumbnail for image thumbnails.'))
   assert.ok(output.lines.some((line) => line === 'approval lane: proposals=0 | pendingAuthority=0 | approved=0 | blocked=0'))
   assert.ok(output.lines.some((line) => line.includes('attention: media/source/source-pixel.png')))
   assert.ok(output.lines.some((line) => line.includes('unsupported_media_type')))
@@ -1953,6 +1957,7 @@ test('media summary reports intake derivative and identity posture compactly', a
   assert.equal(after.derivativeReadiness.readyAssets, 1)
   assert.equal(after.derivativeReadiness.attentionAssets, 1)
   assert.deepEqual(after.derivativeReadiness.attentionRows.map((row) => row.issueCodes[0]), ['unsupported_media_type'])
+  assert.equal(after.safeNextAction, 'No derivative preparation is defined for this content type.')
 })
 
 test('media summary print mode emits parseable local-only JSON', async () => {
@@ -3363,6 +3368,9 @@ test('cross-project operator index summarizes explicit local project inputs', as
   assert.equal(result.index.summary.needsLocalAttention, 1)
   assert.equal(result.index.projectSummaries[1].operatorHealthExplanations.length, 1)
   assert.ok(result.index.projectSummaries[1].operatorHealthExplanations[0].issueCodes.includes('missing_byte_descriptor_proposal'))
+  assert.equal(result.index.safeNextAction, 'Run npm run bytes:proposal, then npm run resource:refs.')
+  assert.equal(result.index.projectSummaries[1].safeNextAction, 'Run npm run bytes:proposal, then npm run resource:refs.')
+  assert.ok(lines.some((line) => line === 'safeNextAction: Run npm run bytes:proposal, then npm run resource:refs.'))
   assert.ok(lines.some((line) => line.includes('subject: media/accepted/candidate.txt') && line.includes('missing_resource_ref_candidate')))
   assert.equal(result.index.meshTruth, false)
   assert.equal(result.index.edgeRuntimeVerified, false)

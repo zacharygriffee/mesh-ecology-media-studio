@@ -81,6 +81,7 @@ export async function writeCrossProjectOperatorIndex({
       'It does not discover projects, call Edge, publish mesh state, or ratify readiness.',
       'Each project summary is operator guidance only and may be stale until regenerated.'
     ],
+    safeNextAction: summarizeCrossProjectSafeNextAction(projectSummaries),
     operatorGuidanceOnly: true,
     localOnly: true,
     meshTruth: false,
@@ -103,6 +104,7 @@ export async function writeCrossProjectOperatorIndex({
     console.log(JSON.stringify(index, null, 2))
   } else {
     console.log(formatCrossProjectSummary(index, output))
+    console.log(`safeNextAction: ${index.safeNextAction}`)
     for (const project of attentionRows(index.projectSummaries)) {
       console.log(`attention: ${project.label} | handoff=${project.handoffState} | blockers=${project.blockingIssues.length} | warnings=${project.warnings.length}`)
       if (project.providerLoopStatus?.needsOperatorAttention) {
@@ -229,6 +231,14 @@ async function summarizeProject(root, projectInput) {
     nextActions,
     warnings,
     missingArtifactRefs,
+    safeNextAction: summarizeProjectSafeNextAction({
+      blockingIssues,
+      operatorHealthExplanations,
+      missingArtifactRefs,
+      providerLoopStatus: providerLoopStatus ? summarizeProviderLoopStatus(providerLoopStatus, refs.providerLoopStatus) : undefined,
+      providerLoopDecision: providerLoopDecision ? summarizeProviderLoopDecision(providerLoopDecision, refs.providerLoopDecision) : undefined,
+      approvalProposal: approvalProposal ? summarizeApprovalProposal(approvalProposal, refs.approvalProposal) : undefined
+    }),
     operatorGuidanceOnly: true,
     localOnly: true,
     meshTruth: false,
@@ -243,6 +253,31 @@ async function summarizeProject(root, projectInput) {
   }
 
   return summary
+}
+
+function summarizeProjectSafeNextAction({
+  blockingIssues,
+  operatorHealthExplanations,
+  missingArtifactRefs,
+  providerLoopStatus,
+  providerLoopDecision,
+  approvalProposal
+}) {
+  if (missingArtifactRefs.length > 0) return missingArtifactRefs[0].nextAction
+  if (providerLoopStatus?.state === 'failed_review_only' && !providerLoopDecision) {
+    return 'Create a provider-loop retry/defer request and decision before any retry; no retry is automatic.'
+  }
+  if (providerLoopStatus?.needsProductionAttention) return providerLoopStatus.productionNextAction
+  if (approvalProposal?.needsOperatorAttention) return approvalProposal.nextAction
+  if (operatorHealthExplanations.length > 0) return operatorHealthExplanations[0].nextAction
+  if (blockingIssues.length > 0) return 'Inspect project health blocking issues and regenerate the indicated local records.'
+  return 'No local cross-project attention row is blocking inspection.'
+}
+
+function summarizeCrossProjectSafeNextAction(projectSummaries) {
+  const attention = attentionRows(projectSummaries)
+  if (attention.length === 0) return 'No local cross-project attention rows are blocking inspection.'
+  return attention[0].safeNextAction ?? 'Inspect the first attention row and run its local repair command.'
 }
 
 async function readOptionalRecord(projectRoot, relativePath) {

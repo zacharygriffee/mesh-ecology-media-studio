@@ -60,6 +60,10 @@ If an input project includes an `approvalProposal` artifact ref, the index
 summarizes it as pending authority work. The row does not grant approval,
 ratifier authority, or publication authorization.
 
+The index also prints one `safeNextAction` selected from the first current
+attention row. This is operator guidance only; it does not execute repair,
+approval, retry, or publication.
+
 ## Boundary
 
 This is a local scanning aid only:
