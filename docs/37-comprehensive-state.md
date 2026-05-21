@@ -475,6 +475,10 @@ refs when the asset descriptor is available.
 loop through that lane and writes the local inspection, operator index, and
 Edge-compatible bundle surfaces. It is a rehearsal path, not an authority or
 publication path.
+`npm run production:authority-prereqs` reports the local prerequisite state for
+accepted production candidates: local decision, approval proposal, situated
+approval refs, capsule, bundle, byte/resource posture, derivative refs, and the
+remaining authority gap. It does not write a new authority artifact.
 
 ## Current Verification Baseline
 

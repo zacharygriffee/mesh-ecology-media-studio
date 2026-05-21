@@ -42,6 +42,7 @@
     "production:validate": "node src/production/validate-production-records.js",
     "production:capsule": "node src/production/asset-capsule.js",
     "production:bundle": "node src/production/bundle.js",
+    "production:authority-prereqs": "node src/production/authority-prerequisites.js",
     "resource:refs": "node src/local/resource-ref-candidates.js",
     "repair:local-posture": "node src/local/repair-local-posture.js",
     "media:import": "node src/assets/import-media.js",

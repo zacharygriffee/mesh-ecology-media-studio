@@ -219,6 +219,9 @@ approval proposal, production capsule, production bundle, Venice inspection,
 operator index, and Edge-compatible bundle. It is a rehearsal path: compact,
 local-only, no live provider unless explicitly requested, and still no approval
 or production authority.
+`npm run production:authority-prereqs` reads those local refs and reports which
+local package prerequisites are present, what is missing, and why a future
+authority lane is still required.
 
 Create a local provider-loop operator decision request:
 

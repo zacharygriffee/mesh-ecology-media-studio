@@ -107,6 +107,7 @@ import { writeProductionRecordsFromCard } from '../src/production/create-product
 import { validateProductionRecordsInProject } from '../src/production/validate-production-records.js'
 import { writeProductionAssetCapsule } from '../src/production/asset-capsule.js'
 import { writeProductionBundle } from '../src/production/bundle.js'
+import { createProductionAuthorityPrerequisiteReport, writeProductionAuthorityPrerequisiteReport } from '../src/production/authority-prerequisites.js'
 
 const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 
@@ -2489,6 +2490,40 @@ test('Venice production rehearsal completes review bundle without authority', as
   assert.ok(result.edgeCompatibility.bundle.studioSourceRefs.some((ref) =>
     ref.schema === 'media.approval_proposal.local.v1'
   ))
+})
+
+test('production authority prerequisite report separates local package from authority', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-authority-prereqs-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+
+  const report = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
+  const output = await captureConsole(() => writeProductionAuthorityPrerequisiteReport({ projectDir: dir }))
+  const row = report.rows[0]
+
+  assert.equal(report.schema, 'media.production_authority_prerequisites.summary.local.v1')
+  assert.equal(report.candidates, 1)
+  assert.equal(report.localPackageComplete, 1)
+  assert.equal(report.missingLocalPrerequisites, 0)
+  assert.equal(report.pendingAuthority, 1)
+  assert.equal(report.productionReady, 0)
+  assert.equal(report.approvalAuthority, false)
+  assert.equal(report.publicationAuthorization, false)
+  assert.equal(row.localPackageState, 'local-package-complete-authority-missing')
+  assert.equal(row.authorityState, 'authority-missing')
+  assert.deepEqual(row.missingLocalPrerequisites, [])
+  assert.equal(row.approvalProposalIdentity.situatedRefsPresent, true)
+  assert.ok(row.approvalProposalIdentity.subjectSituationRef.id)
+  assert.ok(row.approvalProposalIdentity.subjectPlacementRef.id)
+  assert.ok(row.productionCapsule.id)
+  assert.ok(row.productionBundle.id)
+  assert.ok(row.byteDescriptorProposal.id)
+  assert.ok(row.resourceRefCandidate.id)
+  assert.deepEqual(row.derivativeKinds, ['thumbnail'])
+  assert.equal(row.productionReady, false)
+  assert.equal(row.approvalAuthority, false)
+  assert.equal(row.publicationAuthorization, false)
+  assert.ok(output.lines.some((line) => line === 'production authority prerequisites: project=venice-smoke-project | candidates=1 | localPackageComplete=1 | missingLocalPrerequisites=0 | pendingAuthority=1 | productionReady=0'))
+  assert.ok(output.lines.some((line) => line.includes('authority-prereq: media/accepted/venice-live-smoke-0.png | localPackage=local-package-complete-authority-missing | authority=authority-missing')))
 })
 
 test('project health reports missing production asset capsules for accepted provider assets', async () => {
