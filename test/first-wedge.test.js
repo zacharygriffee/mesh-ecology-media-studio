@@ -61,7 +61,10 @@ import {
   resolveVeniceApiKey,
   runVeniceLiveSmoke
 } from '../src/providers/venice-live-smoke.js'
-import { runVeniceOperationalLoop } from '../src/providers/venice-operational-loop.js'
+import {
+  runVeniceOperationalLoop,
+  selectVenicePromotionCandidate
+} from '../src/providers/venice-operational-loop.js'
 import { inspectLocalRun } from '../src/seams/inspect-local-run.js'
 import { exportInspectionBundle } from '../src/seams/export-inspection-bundle.js'
 import { indexInspectionRecords } from '../src/seams/index-inspection-records.js'
@@ -1073,6 +1076,9 @@ test('Venice operational loop completes locally without live provider by default
   assert.equal(status.state, 'complete_review_only')
   assert.equal(status.liveProviderCalled, false)
   assert.equal(status.provider.generatedAssets, 1)
+  assert.equal(status.providerLedger.total, 1)
+  assert.equal(status.selectedCandidate.selectionMode, 'latest-generated')
+  assert.equal(status.selectedCandidate.assetRecord, 'records/assets/venice-live-smoke-asset-0.local.json')
   assert.equal(status.mediaSummary.generatedCandidates.total, 1)
   assert.equal(status.mediaSummary.generatedCandidates.reviewed, 1)
   assert.equal(status.mediaSummary.generatedCandidates.promotedAccepted, 1)
@@ -1089,6 +1095,48 @@ test('Venice operational loop completes locally without live provider by default
     await readFile(path.join(dir, 'records', 'provider-results', 'venice-live-smoke-provider-result.local.json'), 'utf8')
   )
   assert.equal(providerResult.providerResult.rawProviderRef.apiCalled, false)
+})
+
+test('Venice operational loop selects latest generated provider candidate', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-venice-select-'))
+
+  await runVeniceLiveSmoke({
+    env: {
+      VENICE_LIVE: '1',
+      VENICE_INFERENCE_KEY: 'test-key'
+    },
+    envPath: path.join(dir, '.env-missing'),
+    projectDir: dir,
+    fetchImpl: async () => ({
+      status: 200,
+      async json() {
+        return {
+          id: 'venice-live-test-response',
+          images: [onePixelPngBase64],
+          request: { format: 'png' }
+        }
+      }
+    }),
+    externalApiCall: false
+  })
+
+  const originalPath = path.join(dir, 'records', 'assets', 'venice-live-smoke-asset-0.local.json')
+  const original = JSON.parse(await readFile(originalPath, 'utf8'))
+  const oldCandidate = {
+    ...original,
+    createdAt: '2000-01-01T00:00:00.000Z'
+  }
+  const newCandidate = {
+    ...original,
+    createdAt: '2100-01-01T00:00:00.000Z'
+  }
+  await writeFile(path.join(dir, 'records', 'assets', 'venice-live-smoke-old.local.json'), `${JSON.stringify(oldCandidate, null, 2)}\n`)
+  await writeFile(path.join(dir, 'records', 'assets', 'venice-live-smoke-new.local.json'), `${JSON.stringify(newCandidate, null, 2)}\n`)
+
+  const selected = await selectVenicePromotionCandidate({ projectDir: dir })
+
+  assert.equal(selected.assetRecord, 'records/assets/venice-live-smoke-new.local.json')
+  assert.equal(selected.providerResultRecord, 'records/provider-results/venice-live-smoke-provider-result.local.json')
 })
 
 test('Venice operational loop reports provider-stage failure without claiming truth', async () => {

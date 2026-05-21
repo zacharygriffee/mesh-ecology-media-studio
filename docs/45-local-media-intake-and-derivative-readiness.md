@@ -196,7 +196,10 @@ npm run provider:venice:loop
 ```
 
 By default this uses an injected Venice-shaped response and does not call the
-provider. Use the real Venice API only with explicit opt-in:
+provider. It selects the latest generated provider candidate for promotion,
+or a specific candidate can be supplied with `--asset-record`.
+
+Use the real Venice API only with explicit opt-in:
 
 ```bash
 VENICE_LIVE=1 npm run provider:venice:loop -- --live-provider

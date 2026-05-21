@@ -184,7 +184,9 @@ VENICE_LIVE=1 npm run provider:venice:smoke
 
 `npm run provider:venice:loop` runs the full local generated-image loop with
 an injected Venice-shaped response by default. Add `-- --live-provider` with
-`VENICE_LIVE=1` only when intentionally spending provider credits.
+`VENICE_LIVE=1` only when intentionally spending provider credits. The loop
+selects the latest generated provider candidate unless `--asset-record` is
+supplied.
 
 Provider IDs and job IDs remain provenance only.
 

@@ -176,6 +176,10 @@ Run the full local Venice image loop without a live provider call:
 npm run provider:venice:loop
 ```
 
+The loop selects the latest generated provider candidate by default. Pass
+`--asset-record records/assets/...local.json` to promote a specific generated
+asset record.
+
 Use the real Venice API only with the explicit live switch:
 
 ```bash

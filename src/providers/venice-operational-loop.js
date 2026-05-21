@@ -1,5 +1,7 @@
 import { fileURLToPath } from 'node:url'
+import path from 'node:path'
 
+import { artifactKinds } from '../contracts/artifact-kinds.js'
 import { writeByteDescriptorProposals } from '../assets/byte-descriptor-proposal.js'
 import { generateThumbnailDerivatives } from '../assets/generate-thumbnails.js'
 import { createMediaSummary } from '../assets/media-summary.js'
@@ -7,6 +9,8 @@ import { repairLocalPosture } from '../local/repair-local-posture.js'
 import { promoteCandidate } from '../local/promote-candidate.js'
 import { writeLocalLayerResourceRefCandidates } from '../local/resource-ref-candidates.js'
 import { inspectVeniceSmoke } from '../seams/inspect-venice-smoke.js'
+import { indexProviderRuns } from '../seams/index-provider-runs.js'
+import { readProjectRecords } from '../seams/project-status.js'
 import { runVeniceLiveSmoke } from './venice-live-smoke.js'
 
 const modulePath = fileURLToPath(import.meta.url)
@@ -19,6 +23,7 @@ const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQ
 function parseArgs(argv) {
   const args = {
     projectDir: defaultProjectDir,
+    assetRecord: undefined,
     decision: 'accepted',
     operatorRef: 'local-operator',
     liveProvider: false,
@@ -32,6 +37,9 @@ function parseArgs(argv) {
 
     if (arg === '--project-dir') {
       args.projectDir = next
+      i += 1
+    } else if (arg === '--asset-record') {
+      args.assetRecord = next
       i += 1
     } else if (arg === '--decision') {
       args.decision = next
@@ -55,6 +63,7 @@ function parseArgs(argv) {
 
 export async function runVeniceOperationalLoop({
   projectDir = defaultProjectDir,
+  assetRecord,
   decision = 'accepted',
   operatorRef = 'local-operator',
   liveProvider = false,
@@ -113,6 +122,25 @@ export async function runVeniceOperationalLoop({
   }
 
   try {
+    const ledger = await runMaybeQuiet(verbose, () => indexProviderRuns({ projectDir }))
+    status.providerLedger = {
+      output: ledger.output,
+      total: ledger.ledger.summary.total,
+      succeeded: ledger.ledger.summary.byStatus.succeeded ?? 0,
+      failed: ledger.ledger.summary.byStatus.failed ?? 0,
+      localOnly: true,
+      providerTruth: false
+    }
+    status.completedSteps.push('provider_run_ledger')
+  } catch (error) {
+    return failStatus(status, {
+      failedStep: 'provider_run_ledger',
+      error,
+      nextAction: 'Run npm run inspect:provider-runs to inspect provider result and adapter run records.'
+    })
+  }
+
+  try {
     const beforePromotion = await runMaybeQuiet(verbose, () => generateThumbnailDerivatives({ projectDir }))
     status.thumbnailsBeforePromotion = thumbnailCounts(beforePromotion)
     status.completedSteps.push('thumbnail_generated_candidate')
@@ -124,12 +152,35 @@ export async function runVeniceOperationalLoop({
     })
   }
 
+  let selectedCandidate
+  try {
+    selectedCandidate = await selectVenicePromotionCandidate({
+      projectDir,
+      assetRecord
+    })
+    status.selectedCandidate = {
+      selectionMode: assetRecord ? 'explicit-asset-record' : 'latest-generated',
+      assetRecord: selectedCandidate.assetRecord,
+      providerResultRecord: selectedCandidate.providerResultRecord,
+      path: selectedCandidate.assetDescriptor.localRef?.path,
+      createdAt: selectedCandidate.assetDescriptor.createdAt,
+      localOnly: true
+    }
+    status.completedSteps.push('select_generated_candidate')
+  } catch (error) {
+    return failStatus(status, {
+      failedStep: 'select_generated_candidate',
+      error,
+      nextAction: 'Run npm run media:summary and choose a generated asset record with --asset-record, or rerun the provider smoke step.'
+    })
+  }
+
   try {
     const promotion = await runMaybeQuiet(verbose, () => promoteCandidate({
       projectDir,
-      assetRecord: smokeAssetRecord,
+      assetRecord: selectedCandidate.assetRecord,
       cardRecord: smokeCardRecord,
-      providerResultRecord: smokeProviderResultRecord,
+      providerResultRecord: selectedCandidate.providerResultRecord,
       decision,
       operatorRef
     }))
@@ -297,6 +348,69 @@ function compactMediaSummary(summary) {
   }
 }
 
+export async function selectVenicePromotionCandidate({
+  projectDir,
+  assetRecord
+}) {
+  const root = path.resolve(projectDir)
+  const records = await readProjectRecords(root)
+
+  if (assetRecord) {
+    const entry = records.find((candidate) => candidate.path === assetRecord)
+    if (!entry) throw new Error(`Selected candidate asset record was not found: ${assetRecord}`)
+    if (!isGeneratedProviderAsset(entry.record)) {
+      throw new Error(`Selected candidate is not a generated provider asset: ${assetRecord}`)
+    }
+
+    return candidateSelectionFromEntry({ records, entry })
+  }
+
+  const candidates = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaAssetDescriptor)
+    .filter((entry) => isGeneratedProviderAsset(entry.record))
+    .sort(compareGeneratedCandidateEntries)
+
+  const selected = candidates[0]
+  if (!selected) {
+    throw new Error('No generated provider asset candidate is available for promotion')
+  }
+
+  return candidateSelectionFromEntry({ records, entry: selected })
+}
+
+function candidateSelectionFromEntry({ records, entry }) {
+  return {
+    assetRecord: entry.path,
+    assetDescriptor: entry.record,
+    providerResultRecord: findProviderResultRecordPath(records, entry.record) ?? smokeProviderResultRecord
+  }
+}
+
+function isGeneratedProviderAsset(record) {
+  return record?.schema === artifactKinds.mediaAssetDescriptor &&
+    record.localRef?.placementClass === 'media-generated' &&
+    record.source?.sourceType === 'provider-result'
+}
+
+function compareGeneratedCandidateEntries(left, right) {
+  const rightTime = Date.parse(right.record.createdAt ?? '') || 0
+  const leftTime = Date.parse(left.record.createdAt ?? '') || 0
+  if (rightTime !== leftTime) return rightTime - leftTime
+  return right.path.localeCompare(left.path)
+}
+
+function findProviderResultRecordPath(records, assetDescriptor) {
+  const providerResultId = assetDescriptor.source?.providerResultRef?.id
+  if (!providerResultId) return undefined
+
+  const result = records.find((entry) =>
+    entry.record.schema === artifactKinds.mediaProviderResult &&
+    entry.record.resultId === providerResultId
+  )
+
+  return result?.path
+}
+
 function dryRunEnv(env) {
   return {
     ...env,
@@ -347,11 +461,13 @@ export function printVeniceOperationalLoopStatus(status) {
     `venice loop: state=${status.state}`,
     `project=${summary.projectId}`,
     `liveProviderCalled=${status.liveProviderCalled}`,
+    `candidate=${status.selectedCandidate?.path ?? 'none'}`,
     `generated=${summary.generatedCandidates.total}`,
     `reviewed=${summary.generatedCandidates.reviewed}`,
     `promotedAccepted=${summary.generatedCandidates.promotedAccepted}`,
     `promotedRejected=${summary.generatedCandidates.promotedRejected}`,
     `derivatives=${summary.derivatives.readyAssets}/${summary.derivatives.evaluatedAssets}`,
+    `providerRuns=${status.providerLedger?.total ?? 0}`,
     `byteContent=${summary.identity.byteContent.coveredContentIds}/${summary.identity.byteContent.expectedContentIds}`,
     `resourceSituations=${summary.identity.resourceSituations.coveredSituationPlacements}/${summary.identity.resourceSituations.expectedSituationPlacements}`,
     `remainingAttention=${summary.remainingAttention}`
