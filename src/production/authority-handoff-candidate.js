@@ -90,6 +90,7 @@ export function createAuthorityHandoffCandidateFromRecords({
   const productionBundleRefs = refsForSchema(records, artifactKinds.mediaProductionBundleLocal, 'media-production-bundle')
   const productionCapsuleRefs = refsForSchema(records, artifactKinds.mediaProductionAssetCapsuleLocal, 'media-production-asset-capsule')
   const roughCutCapsuleRefs = refsForSchema(records, artifactKinds.mediaRoughCutCapsuleLocal, 'media-rough-cut-capsule')
+  const renderExportCandidateRefs = refsForSchema(records, artifactKinds.mediaRenderExportCandidateLocal, 'media-render-export-candidate')
   const approvalProposalRefs = refsForSchema(records, artifactKinds.mediaApprovalProposalLocal, 'media-approval-proposal')
   const localDecisionRefs = refsForSchema(records, artifactKinds.mediaOperatorDecision, 'media-operator-decision')
   const roughCutReviewDecisionRefs = refsForRecordPredicate(
@@ -116,6 +117,8 @@ export function createAuthorityHandoffCandidateFromRecords({
     approvalProposalIdentity: row.approvalProposalIdentity,
     derivativeKinds: row.derivativeKinds,
     roughCutReviewPosture: row.roughCutReviewPosture,
+    renderExportCandidatePosture: row.renderExportCandidatePosture,
+    authorityGaps: row.authorityGaps,
     productionReady: false,
     approvalAuthority: false,
     publicationAuthorization: false,
@@ -125,6 +128,7 @@ export function createAuthorityHandoffCandidateFromRecords({
     ...productionBundleRefs,
     ...productionCapsuleRefs,
     ...roughCutCapsuleRefs,
+    ...renderExportCandidateRefs,
     ...approvalProposalRefs,
     ...roughCutReviewDecisionRefs,
     ...localDecisionRefs,
@@ -144,6 +148,11 @@ export function createAuthorityHandoffCandidateFromRecords({
     roughCutReviewed: prerequisiteReport.roughCutReviewed ?? 0,
     roughCutChangesRequested: prerequisiteReport.roughCutChangesRequested ?? 0,
     roughCutDeferred: prerequisiteReport.roughCutDeferred ?? 0,
+    renderExportCandidates: prerequisiteReport.renderExportCandidates ?? 0,
+    renderExportCandidatesFresh: prerequisiteReport.renderExportCandidatesFresh ?? 0,
+    renderExportCandidatesStale: prerequisiteReport.renderExportCandidatesStale ?? 0,
+    renderAuthorizationMissing: prerequisiteReport.renderAuthorizationMissing ?? 0,
+    exportAuthorizationMissing: prerequisiteReport.exportAuthorizationMissing ?? 0,
     productionReady: prerequisiteReport.productionReady,
     operatorGuidanceOnly: true,
     localOnly: true
@@ -157,6 +166,7 @@ export function createAuthorityHandoffCandidateFromRecords({
       ...approvalProposalRefs.map((ref) => ref.id),
       ...productionCapsuleRefs.map((ref) => ref.id),
       ...roughCutCapsuleRefs.map((ref) => ref.id),
+      ...renderExportCandidateRefs.map((ref) => ref.id),
       ...roughCutReviewDecisionRefs.map((ref) => ref.id)
     ].join('|'))}`,
     projectId,
@@ -205,6 +215,22 @@ export function createAuthorityHandoffCandidateFromRecords({
         localOnly: true
       },
       {
+        inputKind: 'render-export-candidate',
+        refs: renderExportCandidateRefs,
+        required: false,
+        present: renderExportCandidateRefs.length > 0,
+        fresh: prerequisiteReport.renderExportCandidatesFresh ?? 0,
+        stale: prerequisiteReport.renderExportCandidatesStale ?? 0,
+        rendererSelected: false,
+        renderPerformed: false,
+        exportPerformed: false,
+        renderAuthorization: false,
+        exportAuthorization: false,
+        publicationAuthorization: false,
+        productionReady: false,
+        localOnly: true
+      },
+      {
         inputKind: 'situated-identity',
         refs: acceptedCandidateRows.map((row) => ({
           kind: 'media-situated-accepted-candidate',
@@ -233,6 +259,8 @@ export function createAuthorityHandoffCandidateFromRecords({
     authorityGaps: [
       'approval_authority_missing',
       'ratifier_authority_missing',
+      'render_authorization_missing',
+      'export_authorization_missing',
       'publication_authorization_missing',
       'production_ready_false',
       'mesh_publication_missing'
@@ -282,6 +310,9 @@ export function formatAuthorityHandoffCandidateSummary(candidate, output = defau
     `capsules=${candidate.authorityReviewInputs.find((input) => input.inputKind === 'production-asset-capsule')?.refs.length ?? 0}`,
     `roughCuts=${candidate.authorityReviewInputs.find((input) => input.inputKind === 'rough-cut-capsule')?.refs.length ?? 0}`,
     `roughCutReviewed=${candidate.prerequisiteSummary.roughCutReviewed ?? 0}`,
+    `renderExportCandidates=${candidate.prerequisiteSummary.renderExportCandidates ?? 0}`,
+    `renderAuthorizationMissing=${candidate.prerequisiteSummary.renderAuthorizationMissing ?? 0}`,
+    `exportAuthorizationMissing=${candidate.prerequisiteSummary.exportAuthorizationMissing ?? 0}`,
     `authorityGaps=${candidate.authorityGaps.length}`,
     `productionReady=${candidate.productionReady}`,
     `output=${output}`
@@ -325,11 +356,13 @@ function localRecordRef(kind, id, schema, relativePath) {
 function idForRecord(record) {
   return record.bundleId ??
     record.capsuleId ??
+    record.roughCutId ??
     record.proposalId ??
     record.decisionId ??
     record.assetId ??
     record.byteDescriptorProposalId ??
     record.resourceRefCandidateId ??
+    record.candidateId ??
     record.derivativeId ??
     record.packetId ??
     record.schema

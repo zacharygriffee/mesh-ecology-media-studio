@@ -6,6 +6,7 @@ import { artifactKinds } from '../contracts/artifact-kinds.js'
 import { nowIso } from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { readProjectRecords } from '../seams/project-status.js'
+import { evaluateRenderExportCandidateFreshness } from './render-export-candidate.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/venice-smoke'
@@ -67,6 +68,11 @@ export async function createProductionAuthorityPrerequisiteReport({
     roughCutReviewed: rows.filter((row) => row.roughCutReviewPosture?.state === 'rough-cut-reviewed-local').length,
     roughCutChangesRequested: rows.filter((row) => row.roughCutReviewPosture?.state === 'rough-cut-changes-requested').length,
     roughCutDeferred: rows.filter((row) => row.roughCutReviewPosture?.state === 'rough-cut-review-deferred').length,
+    renderExportCandidates: rows.filter((row) => row.renderExportCandidatePosture?.present).length,
+    renderExportCandidatesFresh: rows.filter((row) => row.renderExportCandidatePosture?.freshnessState === 'fresh').length,
+    renderExportCandidatesStale: rows.filter((row) => row.renderExportCandidatePosture?.freshnessState === 'stale').length,
+    renderAuthorizationMissing: rows.length,
+    exportAuthorizationMissing: rows.length,
     pendingAuthority: rows.filter((row) => row.authorityState === 'authority-missing').length,
     productionReady: 0,
     rows,
@@ -159,6 +165,7 @@ function summarizeCandidateAuthorityPrerequisites(asset, records) {
     )
     .map((entry) => entry.record)
   const roughCutReviewPosture = summarizeRoughCutReviewPosture(asset, records)
+  const renderExportCandidatePosture = summarizeRenderExportCandidatePosture(roughCutReviewPosture, records)
   const missingLocalPrerequisites = [
     localDecision ? null : 'local_decision_missing',
     approvalProposal ? null : 'approval_proposal_missing',
@@ -194,12 +201,21 @@ function summarizeCandidateAuthorityPrerequisites(asset, records) {
     resourceRefCandidate: resourceCandidate ? refForRecord('media-local-layer-resource-ref-candidate', resourceCandidate) : null,
     derivativeKinds: Array.from(new Set(derivativeRecords.map((record) => record.derivativeKind).filter(Boolean))).sort(),
     roughCutReviewPosture,
+    renderExportCandidatePosture,
     missingLocalPrerequisites,
     localPackageState: missingLocalPrerequisites.length === 0
       ? 'local-package-complete-authority-missing'
       : 'local-package-incomplete',
     authorityState: 'authority-missing',
     safeNextAction: safeNextActionForRow(missingLocalPrerequisites, roughCutReviewPosture),
+    authorityGaps: [
+      'approval_authority_missing',
+      'ratifier_authority_missing',
+      'render_authorization_missing',
+      'export_authorization_missing',
+      'publication_authorization_missing',
+      'production_ready_false'
+    ],
     productionReady: false,
     localOnly: true,
     operatorGuidanceOnly: true,
@@ -223,6 +239,9 @@ function printProductionAuthorityPrerequisiteReport(report, output = defaultOutp
     `roughCutReviewed=${report.roughCutReviewed}`,
     `roughCutChangesRequested=${report.roughCutChangesRequested}`,
     `roughCutDeferred=${report.roughCutDeferred}`,
+    `renderExportCandidates=${report.renderExportCandidates ?? 0}`,
+    `renderAuthorizationMissing=${report.renderAuthorizationMissing ?? 0}`,
+    `exportAuthorizationMissing=${report.exportAuthorizationMissing ?? 0}`,
     `pendingAuthority=${report.pendingAuthority}`,
     `productionReady=${report.productionReady}`,
     `output=${output}`
@@ -235,6 +254,7 @@ function printProductionAuthorityPrerequisiteReport(report, output = defaultOutp
       `authority=${row.authorityState}`,
       `missing=${row.missingLocalPrerequisites.join(',') || 'none'}`,
       `roughCut=${row.roughCutReviewPosture?.state ?? 'unknown'}`,
+      `renderExport=${row.renderExportCandidatePosture?.state ?? 'unknown'}`,
       `proposalSituatedRefs=${row.approvalProposalIdentity?.situatedRefsPresent === true}`,
       `derivatives=${row.derivativeKinds.join(',') || 'none'}`,
       `nextAction=${row.safeNextAction}`
@@ -242,6 +262,72 @@ function printProductionAuthorityPrerequisiteReport(report, output = defaultOutp
   }
 
   console.log('nonClaims: local-only; no mesh truth; no approval authority; no publication authorization; no byte/materialization proof; no resource admission')
+}
+
+function summarizeRenderExportCandidatePosture(roughCutReviewPosture, records) {
+  const roughCutId = roughCutReviewPosture?.roughCutRef?.id
+  if (!roughCutId) {
+    return {
+      state: 'render-export-candidate-missing',
+      present: false,
+      candidateRef: null,
+      freshnessState: 'missing',
+      rendererSelected: false,
+      renderPerformed: false,
+      exportPerformed: false,
+      productionReady: false,
+      renderAuthorization: false,
+      exportAuthorization: false,
+      publicationAuthorization: false,
+      localOnly: true,
+      operatorGuidanceOnly: true
+    }
+  }
+
+  const candidateEntry = latestRecordEntry(records, artifactKinds.mediaRenderExportCandidateLocal, (record) =>
+    record.sourceRoughCutRef?.id === roughCutId
+  )
+
+  if (!candidateEntry) {
+    return {
+      state: 'render-export-candidate-missing',
+      present: false,
+      candidateRef: null,
+      freshnessState: 'missing',
+      rendererSelected: false,
+      renderPerformed: false,
+      exportPerformed: false,
+      productionReady: false,
+      renderAuthorization: false,
+      exportAuthorization: false,
+      publicationAuthorization: false,
+      localOnly: true,
+      operatorGuidanceOnly: true
+    }
+  }
+
+  const freshness = evaluateRenderExportCandidateFreshness({ candidate: candidateEntry.record, records })
+  return {
+    state: freshness.state === 'fresh'
+      ? 'render-export-candidate-present-review-only'
+      : 'render-export-candidate-stale',
+    present: true,
+    candidateRef: refForEntry('media-render-export-candidate', candidateEntry),
+    freshnessState: freshness.state,
+    issueCodes: freshness.issueCodes,
+    rendererSelected: candidateEntry.record.renderPosture?.rendererSelected === true,
+    renderPerformed: candidateEntry.record.renderPosture?.renderPerformed === true,
+    exportPerformed: candidateEntry.record.exportPosture?.exportPerformed === true,
+    productionReady: false,
+    renderAuthorization: false,
+    exportAuthorization: false,
+    publicationAuthorization: false,
+    nextAction: freshness.state === 'fresh'
+      ? 'Future authority review may inspect this render/export candidate, but render/export/publication remain unauthorized.'
+      : freshness.nextAction,
+    localOnly: true,
+    operatorGuidanceOnly: true
+  }
 }
 
 function latestRecord(records, schema, predicate) {
@@ -345,8 +431,10 @@ function idForRecord(record) {
     record.proposalId ??
     record.capsuleId ??
     record.bundleId ??
+    record.roughCutId ??
     record.byteDescriptorProposalId ??
     record.resourceRefCandidateId ??
+    record.candidateId ??
     record.assetId
 }
 
