@@ -54,6 +54,9 @@ export async function createProductionAuthorityPrerequisiteReport({
     candidates: rows.length,
     localPackageComplete: rows.filter((row) => row.localPackageState === 'local-package-complete-authority-missing').length,
     missingLocalPrerequisites: rows.filter((row) => row.missingLocalPrerequisites.length > 0).length,
+    roughCutReviewed: rows.filter((row) => row.roughCutReviewPosture?.state === 'rough-cut-reviewed-local').length,
+    roughCutChangesRequested: rows.filter((row) => row.roughCutReviewPosture?.state === 'rough-cut-changes-requested').length,
+    roughCutDeferred: rows.filter((row) => row.roughCutReviewPosture?.state === 'rough-cut-review-deferred').length,
     pendingAuthority: rows.filter((row) => row.authorityState === 'authority-missing').length,
     productionReady: 0,
     rows,
@@ -123,6 +126,7 @@ function summarizeCandidateAuthorityPrerequisites(asset, records) {
       sameRef(entry.record.sourcePlacementRef, asset.placementRef)
     )
     .map((entry) => entry.record)
+  const roughCutReviewPosture = summarizeRoughCutReviewPosture(asset, records)
   const missingLocalPrerequisites = [
     localDecision ? null : 'local_decision_missing',
     approvalProposal ? null : 'approval_proposal_missing',
@@ -157,14 +161,13 @@ function summarizeCandidateAuthorityPrerequisites(asset, records) {
     byteDescriptorProposal: byteProposal ? refForRecord('media-byte-descriptor-proposal', byteProposal) : null,
     resourceRefCandidate: resourceCandidate ? refForRecord('media-local-layer-resource-ref-candidate', resourceCandidate) : null,
     derivativeKinds: Array.from(new Set(derivativeRecords.map((record) => record.derivativeKind).filter(Boolean))).sort(),
+    roughCutReviewPosture,
     missingLocalPrerequisites,
     localPackageState: missingLocalPrerequisites.length === 0
       ? 'local-package-complete-authority-missing'
       : 'local-package-incomplete',
     authorityState: 'authority-missing',
-    safeNextAction: missingLocalPrerequisites.length > 0
-      ? nextActionForMissingPrerequisite(missingLocalPrerequisites[0])
-      : 'Route the local proposal and production bundle through a future authority lane; do not treat local records as authorization.',
+    safeNextAction: safeNextActionForRow(missingLocalPrerequisites, roughCutReviewPosture),
     productionReady: false,
     localOnly: true,
     operatorGuidanceOnly: true,
@@ -185,6 +188,9 @@ function printProductionAuthorityPrerequisiteReport(report) {
     `candidates=${report.candidates}`,
     `localPackageComplete=${report.localPackageComplete}`,
     `missingLocalPrerequisites=${report.missingLocalPrerequisites}`,
+    `roughCutReviewed=${report.roughCutReviewed}`,
+    `roughCutChangesRequested=${report.roughCutChangesRequested}`,
+    `roughCutDeferred=${report.roughCutDeferred}`,
     `pendingAuthority=${report.pendingAuthority}`,
     `productionReady=${report.productionReady}`
   ].join(' | '))
@@ -195,6 +201,7 @@ function printProductionAuthorityPrerequisiteReport(report) {
       `localPackage=${row.localPackageState}`,
       `authority=${row.authorityState}`,
       `missing=${row.missingLocalPrerequisites.join(',') || 'none'}`,
+      `roughCut=${row.roughCutReviewPosture?.state ?? 'unknown'}`,
       `proposalSituatedRefs=${row.approvalProposalIdentity?.situatedRefsPresent === true}`,
       `derivatives=${row.derivativeKinds.join(',') || 'none'}`,
       `nextAction=${row.safeNextAction}`
@@ -205,10 +212,90 @@ function printProductionAuthorityPrerequisiteReport(report) {
 }
 
 function latestRecord(records, schema, predicate) {
+  return latestRecordEntry(records, schema, predicate)?.record
+}
+
+function latestRecordEntry(records, schema, predicate) {
   return records
     .filter((entry) => entry.record.schema === schema)
     .filter((entry) => predicate(entry.record))
-    .sort((left, right) => (Date.parse(right.record.createdAt ?? '') || 0) - (Date.parse(left.record.createdAt ?? '') || 0))[0]?.record
+    .sort((left, right) => (Date.parse(right.record.createdAt ?? '') || 0) - (Date.parse(left.record.createdAt ?? '') || 0))[0]
+}
+
+function summarizeRoughCutReviewPosture(asset, records) {
+  const roughCutEntry = latestRecordEntry(records, artifactKinds.mediaRoughCutCapsuleLocal, (record) =>
+    (record.orderedItems ?? []).some((item) => roughCutItemMatchesAsset(item, asset))
+  )
+
+  if (!roughCutEntry) {
+    return {
+      state: 'rough-cut-missing',
+      roughCutRef: null,
+      reviewDecisionRef: null,
+      reviewed: false,
+      requestChanges: false,
+      deferred: false,
+      productionReady: false,
+      authorityGranted: false,
+      localOnly: true,
+      operatorGuidanceOnly: true
+    }
+  }
+
+  const roughCut = roughCutEntry.record
+  const reviewDecisionEntry = latestRecordEntry(records, artifactKinds.mediaOperatorDecision, (record) =>
+    record.roughCutReview &&
+    record.subjectRef?.id === roughCut.roughCutId
+  )
+  const decision = reviewDecisionEntry?.record
+  const state = roughCutReviewState(decision)
+
+  return {
+    state,
+    roughCutRef: refForEntry('media-rough-cut-capsule', roughCutEntry),
+    reviewDecisionRef: reviewDecisionEntry ? refForEntry('media-operator-decision', reviewDecisionEntry) : null,
+    decisionType: decision?.decisionType ?? null,
+    reviewed: state === 'rough-cut-reviewed-local',
+    requestChanges: state === 'rough-cut-changes-requested',
+    deferred: state === 'rough-cut-review-deferred',
+    rendered: roughCut.renderPosture?.rendered === true,
+    productionReady: false,
+    authorityGranted: false,
+    localOnly: true,
+    operatorGuidanceOnly: true
+  }
+}
+
+function roughCutItemMatchesAsset(item, asset) {
+  return [
+    item.acceptedAssetRef?.id,
+    item.acceptedAssetRef?.path,
+    item.contentRef?.id,
+    item.situationRef?.id,
+    item.placementRef?.id,
+    item.localRef?.path
+  ].filter(Boolean).some((key) => [
+    asset.assetId,
+    asset.localRef?.path,
+    asset.contentId,
+    asset.situationRef?.id,
+    asset.placementRef?.id
+  ].includes(key))
+}
+
+function roughCutReviewState(decision) {
+  if (!decision) return 'rough-cut-review-missing'
+  if (decision.decisionType === 'review_rough_cut') return 'rough-cut-reviewed-local'
+  if (decision.decisionType === 'request_changes') return 'rough-cut-changes-requested'
+  if (decision.decisionType === 'defer') return 'rough-cut-review-deferred'
+  return 'rough-cut-review-unknown'
+}
+
+function refForEntry(kind, entry) {
+  return {
+    ...refForRecord(kind, entry.record),
+    path: entry.path
+  }
 }
 
 function refForRecord(kind, record) {
@@ -248,6 +335,20 @@ function nextActionForMissingPrerequisite(issueCode) {
   if (issueCode === 'byte_descriptor_proposal_missing') return 'Run npm run bytes:proposal for content-keyed byte posture.'
   if (issueCode === 'resource_ref_candidate_missing') return 'Run npm run resource:refs for situation-specific resource posture.'
   return 'Inspect local production prerequisites before authority review.'
+}
+
+function safeNextActionForRow(missingLocalPrerequisites, roughCutReviewPosture) {
+  if (missingLocalPrerequisites.length > 0) return nextActionForMissingPrerequisite(missingLocalPrerequisites[0])
+  if (roughCutReviewPosture?.state === 'rough-cut-changes-requested') {
+    return 'Regenerate or revise the rough-cut capsule before future authority review.'
+  }
+  if (roughCutReviewPosture?.state === 'rough-cut-review-deferred') {
+    return 'Resolve the deferred rough-cut review before future authority review.'
+  }
+  if (roughCutReviewPosture?.state === 'rough-cut-review-missing') {
+    return 'Run npm run production:rough-cut-review to record local rough-cut review before future authority review.'
+  }
+  return 'Route the local proposal and production bundle through a future authority lane; do not treat local records as authorization.'
 }
 
 function sameRef(left, right) {
