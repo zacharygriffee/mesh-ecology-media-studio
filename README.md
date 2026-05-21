@@ -193,8 +193,8 @@ npm run inspect:venice-loop
 
 Provider-loop statuses are local operator guidance. `operator:index` and
 `operator:cross-project-index` can surface failed or incomplete loop status refs
-as attention rows without treating Venice, provider jobs, or provider responses
-as Studio truth.
+as attention rows, and can surface provider-loop decision refs, without treating
+Venice, provider jobs, provider responses, or local decisions as Studio truth.
 `media:summary` also reports provider-loop posture separately from generated
 candidate and production readiness.
 `inspect:venice-loop` shows the retry path: whether a retry/defer request

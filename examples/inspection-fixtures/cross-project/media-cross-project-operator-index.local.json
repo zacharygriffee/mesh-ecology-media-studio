@@ -205,6 +205,8 @@
     "unknownHandoffState": 0,
     "providerLoopStatuses": 0,
     "providerLoopsWithAttention": 0,
+    "providerLoopDecisions": 0,
+    "providerLoopRetryDecisions": 0,
     "attentionRows": 3,
     "blockingIssues": 5,
     "missingArtifacts": 0,

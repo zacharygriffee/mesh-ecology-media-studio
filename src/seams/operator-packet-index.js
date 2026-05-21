@@ -62,6 +62,9 @@ export async function writeOperatorPacketIndex({
   const operatorDecisionRequestRefs = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaOperatorDecisionRequestLocal)
     .map(toInspectionRef)
+  const operatorDecisionRefs = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaOperatorDecision)
+    .map(toInspectionRef)
   const providerLoopStatusRefs = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProviderLoopStatusLocal)
     .map(toInspectionRef)
@@ -71,6 +74,10 @@ export async function writeOperatorPacketIndex({
   const providerLoopStatuses = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProviderLoopStatusLocal)
     .map((entry) => summarizeProviderLoopStatus(entry.record, entry.relativePath))
+  const providerLoopDecisions = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaOperatorDecision)
+    .filter((entry) => entry.record.providerLoopDecision)
+    .map((entry) => summarizeProviderLoopDecision(entry.record, entry.relativePath))
   const readinessStates = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProjectHealthLocal)
     .map((entry) => entry.record.healthState)
@@ -95,9 +102,11 @@ export async function writeOperatorPacketIndex({
     healthRefs,
     handoffCandidateRefs,
     operatorDecisionRequestRefs,
+    operatorDecisionRefs,
     providerLoopStatusRefs,
     mediationRefs,
     providerLoopStatuses,
+    providerLoopDecisions,
     operatorHealthExplanations,
     summary: {
       packets: packetRefs.length,
@@ -105,6 +114,9 @@ export async function writeOperatorPacketIndex({
       healthRecords: healthRefs.length,
       handoffCandidates: handoffCandidateRefs.length,
       operatorDecisionRequests: operatorDecisionRequestRefs.length,
+      operatorDecisions: operatorDecisionRefs.length,
+      providerLoopDecisions: providerLoopDecisions.length,
+      providerLoopRetryDecisions: providerLoopDecisions.filter((decision) => decision.allowsExplicitRetryAttempt).length,
       providerLoopStatuses: providerLoopStatusRefs.length,
       providerLoopsWithAttention: providerLoopStatuses.filter((status) => status.needsOperatorAttention).length,
       ruleResolutionTraces: mediationRefs.length,
@@ -118,6 +130,7 @@ export async function writeOperatorPacketIndex({
     warnings: [
       'Operator packet index is a local scanning aid, not a UI contract.',
       'Indexed records are local-only artifacts and not mesh truth.',
+      'Provider-loop decisions are local operator guidance and do not execute retries or grant authority.',
       'Edge may inspect these refs later, but this index does not call or verify Edge.'
     ],
     operatorGuidanceOnly: true,
@@ -148,6 +161,9 @@ export async function writeOperatorPacketIndex({
     for (const providerLoop of index.providerLoopStatuses.filter((status) => status.needsOperatorAttention)) {
       console.log(formatProviderLoopAttention(providerLoop))
     }
+    for (const decision of index.providerLoopDecisions) {
+      console.log(formatProviderLoopDecision(decision))
+    }
   }
 
   return {
@@ -163,7 +179,9 @@ function formatOperatorPacketIndexSummary(index, output) {
     `bundles=${summary.bundles}`,
     `handoffs=${summary.handoffCandidates}`,
     `decisionRequests=${summary.operatorDecisionRequests}`,
+    `decisions=${summary.operatorDecisions ?? 0}`,
     `providerLoops=${summary.providerLoopStatuses ?? 0}`,
+    `providerLoopDecisions=${summary.providerLoopDecisions ?? 0}`,
     `ruleTraces=${summary.ruleResolutionTraces}`,
     `attention=${summary.attentionRows ?? summary.operatorHealthExplanations}`,
     `output=${output}`
@@ -189,12 +207,23 @@ function formatProviderLoopAttention(providerLoop) {
   ].join(' | ')
 }
 
+function formatProviderLoopDecision(decision) {
+  return [
+    `provider-loop decision: ${decision.decisionType}`,
+    `retry=${decision.allowsExplicitRetryAttempt}`,
+    `executionPerformed=${decision.executionPerformed}`,
+    `authorityGranted=${decision.authorityGranted}`,
+    `path=${decision.decisionRef.path}`
+  ].join(' | ')
+}
+
 async function readIndexableRecords(root) {
   const candidates = [
     ...(await findJsonFiles(root, 'records/exports')),
     ...(await findJsonFiles(root, 'records/manifests')),
     ...(await findJsonFiles(root, 'records/provider-results')),
     ...(await findJsonFiles(root, 'records/requests')),
+    ...(await findJsonFiles(root, 'records/decisions')),
     ...(await findJsonFiles(root, 'records/rule-traces'))
   ]
   const entries = []
@@ -215,6 +244,7 @@ const indexableSchemas = new Set([
   artifactKinds.mediaEdgeCompatibilityBundleLocal,
   artifactKinds.mediaProjectHealthLocal,
   artifactKinds.mediaEdgeHandoffCandidateLocal,
+  artifactKinds.mediaOperatorDecision,
   artifactKinds.mediaOperatorDecisionRequestLocal,
   artifactKinds.mediaProviderLoopStatusLocal,
   artifactKinds.mediaRuleResolutionTraceLocal
@@ -234,6 +264,31 @@ function summarizeProviderLoopStatus(record, relativePath) {
     completedSteps: record.completedSteps.length,
     nextAction: record.nextAction,
     needsOperatorAttention: record.state !== 'complete_review_only',
+    operatorGuidanceOnly: true,
+    localOnly: true,
+    meshTruth: false,
+    providerTruth: false,
+    edgeCalled: false,
+    meshPublished: false
+  }
+}
+
+function summarizeProviderLoopDecision(record, relativePath) {
+  return {
+    decisionRef: {
+      ...makeRef('media-operator-decision', record.decisionId, record.schema),
+      path: relativePath,
+      localOnly: true
+    },
+    subjectRef: record.subjectRef,
+    decisionType: record.decisionType,
+    providerLoopDecision: record.providerLoopDecision,
+    allowsExplicitRetryAttempt: record.allowsExplicitRetryAttempt === true,
+    deferred: record.deferred === true,
+    reviewAcknowledged: record.reviewAcknowledged === true,
+    executionPerformed: record.executionPerformed === true,
+    authorityGranted: record.authorityGranted === true,
+    nextAction: record.nextAction,
     operatorGuidanceOnly: true,
     localOnly: true,
     meshTruth: false,
@@ -303,6 +358,7 @@ function kindForSchema(schema) {
     [artifactKinds.mediaEdgeCompatibilityBundleLocal]: 'media-edge-compatibility-bundle',
     [artifactKinds.mediaProjectHealthLocal]: 'media-project-health',
     [artifactKinds.mediaEdgeHandoffCandidateLocal]: 'media-edge-handoff-candidate',
+    [artifactKinds.mediaOperatorDecision]: 'media-operator-decision',
     [artifactKinds.mediaOperatorDecisionRequestLocal]: 'media-operator-decision-request',
     [artifactKinds.mediaProviderLoopStatusLocal]: 'media-provider-loop-status',
     [artifactKinds.mediaRuleResolutionTraceLocal]: 'media-rule-resolution-trace'
@@ -315,6 +371,7 @@ function idForRecord(record) {
     record.compatibilityBundleId ??
     record.healthId ??
     record.handoffCandidateId ??
+    record.decisionId ??
     record.requestId ??
     record.statusId ??
     record.traceId

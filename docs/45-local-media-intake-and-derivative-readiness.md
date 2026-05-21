@@ -245,6 +245,8 @@ VENICE_LIVE=1 npm run provider:venice:loop -- --live-provider --retry-decision r
 
 The decision and retry gate are local-only. They do not grant provider truth,
 resource admission, mesh truth, or publication authority.
+Operator indexes can surface provider-loop decision refs for review, but those
+index rows remain guidance-only and do not execute retries.
 
 Use the real Venice API only with explicit opt-in:
 

@@ -62,6 +62,9 @@
     "operatorDecisionRequestRefs": {
       "type": "array"
     },
+    "operatorDecisionRefs": {
+      "type": "array"
+    },
     "summary": {
       "type": "object"
     },

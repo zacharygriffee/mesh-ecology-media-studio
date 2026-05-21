@@ -108,6 +108,9 @@ export async function writeCrossProjectOperatorIndex({
       if (project.providerLoopStatus?.needsOperatorAttention) {
         console.log(`  provider-loop: ${project.providerLoopStatus.providerId}:${project.providerLoopStatus.loopKind} | state=${project.providerLoopStatus.state} | failedStep=${project.providerLoopStatus.failedStep ?? 'none'} | nextAction=${project.providerLoopStatus.nextAction}`)
       }
+      if (project.providerLoopDecision) {
+        console.log(`  provider-loop decision: ${project.providerLoopDecision.decisionType} | retry=${project.providerLoopDecision.allowsExplicitRetryAttempt} | executionPerformed=${project.providerLoopDecision.executionPerformed} | authorityGranted=${project.providerLoopDecision.authorityGranted}`)
+      }
       for (const explanation of project.operatorHealthExplanations ?? []) {
         console.log(`  subject: ${explanation.path ?? `${explanation.subjectKind}:${explanation.subjectRef?.id ?? 'unknown'}`} | issues=${(explanation.issueCodes ?? []).join(',') || 'none'} | nextAction=${explanation.nextAction ?? 'none'}`)
       }
@@ -138,6 +141,7 @@ function formatCrossProjectSummary(index, output) {
     `attention=${summary.attentionRows ?? summary.needsLocalAttention}`,
     `unknown=${summary.unknownHandoffState}`,
     `providerLoops=${summary.providerLoopStatuses ?? 0}`,
+    `providerLoopDecisions=${summary.providerLoopDecisions ?? 0}`,
     `missingArtifacts=${summary.missingArtifacts}`,
     `output=${output}`
   ].join(' | ')
@@ -188,6 +192,7 @@ async function summarizeProject(root, projectInput) {
   const health = loaded.projectHealth
   const handoff = loaded.handoffCandidate
   const decisionRequest = loaded.operatorDecisionRequest
+  const providerLoopDecision = loaded.providerLoopDecision
   const providerLoopStatus = loaded.providerLoopStatus
   const blockingIssues = health?.blockingIssues ?? []
   const operatorHealthExplanations = health?.operatorHealthExplanations ??
@@ -207,6 +212,7 @@ async function summarizeProject(root, projectInput) {
     handoffState: handoff?.handoffState ?? 'unknown',
     requestKind: decisionRequest?.requestKind ?? 'none',
     providerLoopStatus: providerLoopStatus ? summarizeProviderLoopStatus(providerLoopStatus, refs.providerLoopStatus) : undefined,
+    providerLoopDecision: providerLoopDecision ? summarizeProviderLoopDecision(providerLoopDecision, refs.providerLoopDecision) : undefined,
     blockingIssues,
     nextActions,
     warnings,
@@ -259,6 +265,10 @@ function nextActionForMissingArtifact(name) {
     return 'Run npm run provider:venice:loop or inspect the provider loop output for the project.'
   }
 
+  if (name === 'providerLoopDecision') {
+    return 'Run npm run operator:provider-loop-decision for the project after creating a provider-loop request.'
+  }
+
   return 'Regenerate the missing local artifact for the project.'
 }
 
@@ -291,12 +301,35 @@ function summarizeProviderLoopStatus(record, ref) {
   }
 }
 
+function summarizeProviderLoopDecision(record, ref) {
+  return {
+    ref,
+    subjectRef: record.subjectRef,
+    decisionType: record.decisionType,
+    providerLoopDecision: record.providerLoopDecision,
+    allowsExplicitRetryAttempt: record.allowsExplicitRetryAttempt === true,
+    deferred: record.deferred === true,
+    reviewAcknowledged: record.reviewAcknowledged === true,
+    executionPerformed: record.executionPerformed === true,
+    authorityGranted: record.authorityGranted === true,
+    nextAction: record.nextAction,
+    operatorGuidanceOnly: true,
+    localOnly: true,
+    meshTruth: false,
+    providerTruth: false,
+    edgeCalled: false,
+    meshPublished: false
+  }
+}
+
 function summarizeProjects(projectSummaries) {
   const needsLocalAttention = projectSummaries.filter((project) => project.handoffState === 'needs-local-attention').length
   const readyForEdgeInspection = projectSummaries.filter((project) => project.handoffState === 'ready-for-edge-inspection').length
   const missingArtifacts = projectSummaries.reduce((sum, project) => sum + project.warnings.length, 0)
   const providerLoopStatuses = projectSummaries.filter((project) => project.providerLoopStatus).length
   const providerLoopsWithAttention = projectSummaries.filter((project) => project.providerLoopStatus?.needsOperatorAttention).length
+  const providerLoopDecisions = projectSummaries.filter((project) => project.providerLoopDecision).length
+  const providerLoopRetryDecisions = projectSummaries.filter((project) => project.providerLoopDecision?.allowsExplicitRetryAttempt).length
   const attentionRows = projectSummaries.filter((project) => (
     project.handoffState === 'needs-local-attention' ||
     project.providerLoopStatus?.needsOperatorAttention === true ||
@@ -311,6 +344,8 @@ function summarizeProjects(projectSummaries) {
     unknownHandoffState: projectSummaries.length - readyForEdgeInspection - needsLocalAttention,
     providerLoopStatuses,
     providerLoopsWithAttention,
+    providerLoopDecisions,
+    providerLoopRetryDecisions,
     attentionRows,
     blockingIssues: projectSummaries.reduce((sum, project) => sum + project.blockingIssues.length, 0),
     missingArtifacts,
@@ -332,6 +367,7 @@ function idForRecord(record) {
   return record.healthId ??
     record.handoffCandidateId ??
     record.requestId ??
+    record.decisionId ??
     record.indexId ??
     record.statusId ??
     record.packetId ??

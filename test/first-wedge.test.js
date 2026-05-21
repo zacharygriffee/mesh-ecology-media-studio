@@ -1269,6 +1269,16 @@ test('Venice operational loop reports provider-stage failure without claiming tr
   assert.equal(decisionInspection.summary.retryPath.decisionType, 'retry_provider_loop')
   assert.equal(decisionInspection.summary.retryPath.retryDecision, true)
 
+  const { result: decisionIndexResult } = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
+  assert.equal(decisionIndexResult.index.operatorDecisionRefs.length, 1)
+  assert.equal(decisionIndexResult.index.providerLoopDecisions.length, 1)
+  assert.equal(decisionIndexResult.index.providerLoopDecisions[0].decisionType, 'retry_provider_loop')
+  assert.equal(decisionIndexResult.index.providerLoopDecisions[0].allowsExplicitRetryAttempt, true)
+  assert.equal(decisionIndexResult.index.providerLoopDecisions[0].executionPerformed, false)
+  assert.equal(decisionIndexResult.index.summary.providerLoopDecisions, 1)
+  assert.equal(decisionIndexResult.index.summary.providerLoopRetryDecisions, 1)
+  assert.equal(validateRequiredRecord(decisionIndexResult.index), true)
+
   const blockedRetry = await runVeniceOperationalLoop({
     projectDir: dir,
     liveProvider: true,
@@ -1333,11 +1343,44 @@ test('cross-project operator index surfaces provider loop attention by ref', asy
   const baseDir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-cross-project-provider-loop-'))
   const projectDir = path.join(baseDir, 'failed-provider-loop')
   await mkdir(path.join(projectDir, 'records', 'provider-results'), { recursive: true })
+  await mkdir(path.join(projectDir, 'records', 'decisions'), { recursive: true })
 
   const fixture = JSON.parse(
     await readFile('examples/provider-loop-fixtures/venice-provider-failed/records/provider-results/media-provider-loop-status.local.json', 'utf8')
   )
   await writeFile(path.join(projectDir, 'records', 'provider-results', 'media-provider-loop-status.local.json'), `${JSON.stringify(fixture, null, 2)}\n`)
+  const decision = {
+    schema: 'media.operator_decision.v1',
+    decisionId: 'decision-provider-loop-fixture-retry',
+    projectId: 'venice-provider-failed-fixture',
+    subjectRef: {
+      kind: 'media-provider-loop-status',
+      id: 'provider-loop-status-venice-provider-failed-fixture',
+      schema: 'media.provider_loop_status.local.v1'
+    },
+    decisionType: 'retry_provider_loop',
+    operatorRef: 'operator-test',
+    reason: 'Fixture retry decision for cross-project index visibility.',
+    evidenceRefs: [],
+    providerLoopDecision: 'retry_provider_loop',
+    allowsExplicitRetryAttempt: true,
+    executionPerformed: false,
+    authorityGranted: false,
+    localDecisionOnly: true,
+    operatorGuidanceOnly: true,
+    localOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    providerTruth: false,
+    edgeCalled: false,
+    meshPublished: false,
+    localTruthLabel: 'local decision',
+    truthStatus: 'not mesh truth; not distributed proof; not ratified shared state',
+    createdAt: '2026-05-20T00:00:00.000Z'
+  }
+  validateRequiredRecord(decision)
+  await writeFile(path.join(projectDir, 'records', 'decisions', 'media-provider-loop-operator-decision.local.json'), `${JSON.stringify(decision, null, 2)}\n`)
 
   const inputList = {
     schema: 'media.cross_project_inspection_input_list.local.v1',
@@ -1361,6 +1404,13 @@ test('cross-project operator index surfaces provider loop attention by ref', asy
             id: 'provider-loop-status-venice-provider-failed-fixture',
             schema: 'media.provider_loop_status.local.v1',
             path: 'records/provider-results/media-provider-loop-status.local.json',
+            localOnly: true
+          },
+          providerLoopDecision: {
+            kind: 'media-operator-decision',
+            id: 'decision-provider-loop-fixture-retry',
+            schema: 'media.operator_decision.v1',
+            path: 'records/decisions/media-provider-loop-operator-decision.local.json',
             localOnly: true
           }
         }
@@ -1391,8 +1441,12 @@ test('cross-project operator index surfaces provider loop attention by ref', asy
 
   assert.equal(result.index.summary.providerLoopStatuses, 1)
   assert.equal(result.index.summary.providerLoopsWithAttention, 1)
+  assert.equal(result.index.summary.providerLoopDecisions, 1)
+  assert.equal(result.index.summary.providerLoopRetryDecisions, 1)
   assert.equal(result.index.summary.attentionRows, 1)
   assert.equal(result.index.projectSummaries[0].providerLoopStatus.state, 'failed_review_only')
+  assert.equal(result.index.projectSummaries[0].providerLoopDecision.decisionType, 'retry_provider_loop')
+  assert.equal(result.index.projectSummaries[0].providerLoopDecision.executionPerformed, false)
   assert.equal(result.index.projectSummaries[0].providerLoopStatus.providerTruth, false)
   assert.equal(validateRequiredRecord(result.index), true)
 })
