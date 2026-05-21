@@ -31,6 +31,7 @@ text is not the durable contract.
 | `npm run production:bundle` | yes | yes | `--print` | yes | groups production capsule refs only; no byte copying or authority |
 | `npm run production:authority-prereqs` | yes | no | `--print` | reads local refs | reports local package prerequisites and future authority gaps without adding authority |
 | `npm run production:authority-handoff` | yes | yes | `--print` | yes | packages bundle/proposal/capsule/situated refs as a candidate for future authority review; does not grant authority |
+| `npm run production:rough-cut` | yes | yes | `--print` | yes | orders accepted production item refs for review; no editor, render, export, or authority |
 | `npm run provider:venice:rehearse-production` | yes | yes | `--print` | yes | composes the local Venice loop, approval proposal, capsule, bundle, inspection, operator index, and Edge-compatible bundle; no live provider unless explicitly requested |
 
 ## Byte And Resource Posture

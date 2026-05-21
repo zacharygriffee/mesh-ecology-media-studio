@@ -51,6 +51,7 @@ Known Studio artifact kinds:
 - `media.production_asset_capsule.local.v1`
 - `media.production_bundle.local.v1`
 - `media.authority_handoff_candidate.local.v1`
+- `media.rough_cut_capsule.local.v1`
 - `media.approval_proposal.local.v1`
 - `media.byte_descriptor_proposal.local.v1`
 - `media.local_layer_resource_ref_candidate.local.v1`
@@ -66,6 +67,10 @@ or grant authority.
 approval proposal, capsule, situated identity, and prerequisite refs for a
 future authority lane. It is candidate-only and does not grant approval,
 ratification, publication authorization, or production readiness.
+
+`media.rough_cut_capsule.local.v1` orders accepted production item refs into a
+local review cut. It does not render a timeline, export media, grant authority,
+or mark production readiness.
 
 Future candidate artifact kinds, not implemented and not active schema
 contracts:

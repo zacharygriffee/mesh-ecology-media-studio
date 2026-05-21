@@ -153,6 +153,22 @@ summary so a future authority lane can inspect what it would need to review. It
 does not implement that lane and does not grant approval, ratification,
 publication authorization, or production readiness.
 
+## Rough-Cut Capsule Seed
+
+`npm run production:rough-cut` writes
+`media.rough_cut_capsule.local.v1`, the first local rough-cut package over
+ordered accepted production items:
+
+```txt
+rough cut capsule: project=venice-smoke-project | items=1 | bundles=1 | capsules=1 | authorityPending=1 | rendered=false | productionReady=false
+```
+
+The rough-cut capsule reads existing production asset capsules, production
+bundles, approval proposals, situated refs, derivative refs, and prerequisite
+posture. It records order-only item rows for local review. It does not build an
+editor UI, render a timeline, produce an export, publish media, or grant
+authority.
+
 ## Non-Claims
 
 The capsule is local operator guidance only:

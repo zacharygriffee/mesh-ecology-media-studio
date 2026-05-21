@@ -479,6 +479,9 @@ publication path.
 accepted production candidates: local decision, approval proposal, situated
 approval refs, capsule, bundle, byte/resource posture, derivative refs, and the
 remaining authority gap. It does not write a new authority artifact.
+`npm run production:rough-cut` writes `media.rough_cut_capsule.local.v1`, an
+order-only local review package over accepted production item refs. It does not
+render, export, publish, or grant production authority.
 
 ## Current Verification Baseline
 

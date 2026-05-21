@@ -48,6 +48,7 @@ export const artifactKinds = Object.freeze({
   mediaProductionAssetCapsuleLocal: 'media.production_asset_capsule.local.v1',
   mediaProductionBundleLocal: 'media.production_bundle.local.v1',
   mediaAuthorityHandoffCandidateLocal: 'media.authority_handoff_candidate.local.v1',
+  mediaRoughCutCapsuleLocal: 'media.rough_cut_capsule.local.v1',
   mediaApprovalProposalLocal: 'media.approval_proposal.local.v1',
   mediaByteDescriptorProposalLocal: 'media.byte_descriptor_proposal.local.v1',
   mediaLocalLayerResourceRefCandidateLocal: 'media.local_layer_resource_ref_candidate.local.v1',

@@ -109,6 +109,7 @@ import { writeProductionAssetCapsule } from '../src/production/asset-capsule.js'
 import { writeProductionBundle } from '../src/production/bundle.js'
 import { createProductionAuthorityPrerequisiteReport, writeProductionAuthorityPrerequisiteReport } from '../src/production/authority-prerequisites.js'
 import { writeAuthorityHandoffCandidate } from '../src/production/authority-handoff-candidate.js'
+import { writeRoughCutCapsule } from '../src/production/rough-cut-capsule.js'
 
 const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 
@@ -2580,6 +2581,70 @@ test('authority handoff candidate packages local refs without authority', async 
   )
   assert.equal(written.handoffCandidateId, candidate.handoffCandidateId)
   assert.equal(validateRequiredRecord(written), true)
+})
+
+test('rough cut capsule orders production items without rendering or authority', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-rough-cut-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+  await writeAuthorityHandoffCandidate({ projectDir: dir, quiet: true })
+
+  const output = await captureConsole(() => writeRoughCutCapsule({ projectDir: dir }))
+  const roughCut = output.result.roughCut
+  const item = roughCut.orderedItems[0]
+
+  assert.equal(roughCut.schema, 'media.rough_cut_capsule.local.v1')
+  assert.equal(roughCut.roughCutKind, 'ordered-production-review-cut')
+  assert.equal(roughCut.mode, 'standalone-local')
+  assert.equal(roughCut.orderedItems.length, 1)
+  assert.equal(item.order, 1)
+  assert.equal(item.trackKind, 'primary-review')
+  assert.equal(item.timingPosture, 'order-only-no-render-timing')
+  assert.equal(item.acceptedAssetRef.path, 'records/assets/promoted-candidate-accepted.local.json')
+  assert.equal(item.localRef.path, 'media/accepted/venice-live-smoke-0.png')
+  assert.equal(item.productionAssetCapsuleRef.schema, 'media.production_asset_capsule.local.v1')
+  assert.equal(item.productionBundleRef.schema, 'media.production_bundle.local.v1')
+  assert.equal(item.approvalProposalRef.schema, 'media.approval_proposal.local.v1')
+  assert.equal(item.localDecisionRef.schema, 'media.operator_decision.v1')
+  assert.equal(item.byteDescriptorProposalRef.schema, 'media.byte_descriptor_proposal.local.v1')
+  assert.equal(item.resourceRefCandidateRef.schema, 'media.local_layer_resource_ref_candidate.local.v1')
+  assert.ok(item.derivativeRefs.some((ref) => ref.derivativeKind === 'thumbnail'))
+  assert.equal(item.prerequisitePosture.localPackageState, 'local-package-complete-authority-missing')
+  assert.equal(item.prerequisitePosture.authorityState, 'authority-missing')
+  assert.deepEqual(item.prerequisitePosture.missingLocalPrerequisites, [])
+  assert.equal(item.prerequisitePosture.productionReady, false)
+  assert.equal(item.nonClaims.rendered, false)
+  assert.equal(item.nonClaims.productionReady, false)
+  assert.equal(item.nonClaims.approvalAuthority, false)
+  assert.equal(roughCut.assemblyPosture.state, 'review-only-rough-cut')
+  assert.equal(roughCut.assemblyPosture.pendingAuthorityItems, 1)
+  assert.equal(roughCut.renderPosture.rendered, false)
+  assert.equal(roughCut.renderPosture.exportRef, null)
+  assert.equal(roughCut.productionReady, false)
+  assert.equal(roughCut.approvalAuthority, false)
+  assert.equal(roughCut.ratifierAuthority, false)
+  assert.equal(roughCut.publicationAuthorization, false)
+  assert.equal(roughCut.edgeCalled, false)
+  assert.equal(roughCut.meshPublished, false)
+  assert.ok(roughCut.sourceRefs.some((ref) => ref.schema === 'media.production_bundle.local.v1'))
+  assert.ok(roughCut.sourceRefs.some((ref) => ref.schema === 'media.production_asset_capsule.local.v1'))
+  assert.ok(roughCut.sourceRefs.some((ref) => ref.schema === 'media.authority_handoff_candidate.local.v1'))
+  assert.equal(validateRequiredRecord(roughCut), true)
+  assert.ok(output.lines.some((line) => line.startsWith('rough cut capsule: project=venice-smoke-project')))
+  assert.ok(output.lines.some((line) => line.includes('rendered=false')))
+  assert.ok(output.lines.some((line) => line.includes('productionReady=false')))
+
+  const written = JSON.parse(
+    await readFile(path.join(dir, 'records', 'production', 'media-rough-cut-capsule.local.json'), 'utf8')
+  )
+  assert.equal(written.roughCutId, roughCut.roughCutId)
+  assert.equal(validateRequiredRecord(written), true)
+
+  const printed = await captureConsole(() => writeRoughCutCapsule({
+    projectDir: dir,
+    print: true
+  }))
+  const printedRoughCut = JSON.parse(printed.lines.join('\n'))
+  assert.equal(printedRoughCut.roughCutId, roughCut.roughCutId)
 })
 
 test('project health reports missing production asset capsules for accepted provider assets', async () => {

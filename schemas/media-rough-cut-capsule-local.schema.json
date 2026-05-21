@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-rough-cut-capsule-local.schema.json",
+  "title": "media.rough_cut_capsule.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "roughCutId",
+    "projectId",
+    "roughCutKind",
+    "mode",
+    "orderedItems",
+    "sourceRefs",
+    "assemblyPosture",
+    "renderPosture",
+    "nextActions",
+    "createdAt",
+    "operatorGuidanceOnly",
+    "productionReady",
+    "approvalAuthority",
+    "ratifierAuthority",
+    "publicationAuthorization",
+    "providerTruth",
+    "byteAvailabilityProof",
+    "materializationProof",
+    "resourceAdmission",
+    "causalTruth",
+    "edgeCalled",
+    "meshPublished",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "localTruthLabel",
+    "truthStatus"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.rough_cut_capsule.local.v1"
+    },
+    "roughCutId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "roughCutKind": {
+      "const": "ordered-production-review-cut"
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "orderedItems": {
+      "type": "array"
+    },
+    "sourceRefs": {
+      "type": "array"
+    },
+    "assemblyPosture": {
+      "type": "object"
+    },
+    "renderPosture": {
+      "type": "object"
+    },
+    "nextActions": {
+      "type": "array"
+    },
+    "operatorGuidanceOnly": {
+      "const": true
+    },
+    "productionReady": {
+      "const": false
+    },
+    "approvalAuthority": {
+      "const": false
+    },
+    "ratifierAuthority": {
+      "const": false
+    },
+    "publicationAuthorization": {
+      "const": false
+    },
+    "providerTruth": {
+      "const": false
+    },
+    "byteAvailabilityProof": {
+      "const": false
+    },
+    "materializationProof": {
+      "const": false
+    },
+    "resourceAdmission": {
+      "const": false
+    },
+    "causalTruth": {
+      "const": false
+    },
+    "edgeCalled": {
+      "const": false
+    },
+    "meshPublished": {
+      "const": false
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    }
+  }
+}

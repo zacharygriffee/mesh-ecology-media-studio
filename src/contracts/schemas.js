@@ -83,6 +83,7 @@ export const schemaFiles = {
   'media.production_asset_capsule.local.v1': 'schemas/media-production-asset-capsule-local.schema.json',
   'media.production_bundle.local.v1': 'schemas/media-production-bundle-local.schema.json',
   'media.authority_handoff_candidate.local.v1': 'schemas/media-authority-handoff-candidate-local.schema.json',
+  'media.rough_cut_capsule.local.v1': 'schemas/media-rough-cut-capsule-local.schema.json',
   'media.approval_proposal.local.v1': 'schemas/media-approval-proposal-local.schema.json',
   'media.byte_descriptor_proposal.local.v1': 'schemas/media-byte-descriptor-proposal-local.schema.json',
   'media.local_layer_resource_ref_candidate.local.v1': 'schemas/media-local-layer-resource-ref-candidate-local.schema.json',
@@ -183,6 +184,37 @@ export const requiredFields = {
     'acceptedCandidateRows',
     'sourceRefs',
     'authorityGaps',
+    'nextActions',
+    'createdAt',
+    'operatorGuidanceOnly',
+    'productionReady',
+    'approvalAuthority',
+    'ratifierAuthority',
+    'publicationAuthorization',
+    'providerTruth',
+    'byteAvailabilityProof',
+    'materializationProof',
+    'resourceAdmission',
+    'causalTruth',
+    'edgeCalled',
+    'meshPublished',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'localTruthLabel',
+    'truthStatus'
+  ],
+  'media.rough_cut_capsule.local.v1': [
+    'schema',
+    'roughCutId',
+    'projectId',
+    'roughCutKind',
+    'mode',
+    'orderedItems',
+    'sourceRefs',
+    'assemblyPosture',
+    'renderPosture',
     'nextActions',
     'createdAt',
     'operatorGuidanceOnly',
@@ -1169,6 +1201,7 @@ const idFields = {
   [artifactKinds.mediaProductionAssetCapsuleLocal]: 'capsuleId',
   [artifactKinds.mediaProductionBundleLocal]: 'bundleId',
   [artifactKinds.mediaAuthorityHandoffCandidateLocal]: 'handoffCandidateId',
+  [artifactKinds.mediaRoughCutCapsuleLocal]: 'roughCutId',
   [artifactKinds.mediaApprovalProposalLocal]: 'proposalId',
   [artifactKinds.mediaByteDescriptorProposalLocal]: 'byteDescriptorProposalId',
   [artifactKinds.mediaLocalLayerResourceRefCandidateLocal]: 'resourceRefCandidateId',
@@ -1207,6 +1240,7 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaProductionAssetCapsuleLocal,
   artifactKinds.mediaProductionBundleLocal,
   artifactKinds.mediaAuthorityHandoffCandidateLocal,
+  artifactKinds.mediaRoughCutCapsuleLocal,
   artifactKinds.mediaApprovalProposalLocal,
   artifactKinds.mediaByteDescriptorProposalLocal,
   artifactKinds.mediaLocalLayerResourceRefCandidateLocal,
@@ -1250,6 +1284,7 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaProductionAssetCapsuleLocal,
   artifactKinds.mediaProductionBundleLocal,
   artifactKinds.mediaAuthorityHandoffCandidateLocal,
+  artifactKinds.mediaRoughCutCapsuleLocal,
   artifactKinds.mediaApprovalProposalLocal,
   artifactKinds.mediaByteDescriptorProposalLocal,
   artifactKinds.mediaLocalLayerResourceRefCandidateLocal,
@@ -2293,6 +2328,59 @@ export function validateRecordShape(record, schemaId = record.schema) {
 
     if (record.operatorGuidanceOnly !== true || record.productionReady !== false) {
       throw new Error(`Record ${schemaId} must remain handoff-only and productionReady=false`)
+    }
+
+    for (const flag of ['approvalAuthority', 'ratifierAuthority', 'publicationAuthorization', 'providerTruth', 'byteAvailabilityProof', 'materializationProof', 'resourceAdmission', 'causalTruth', 'edgeCalled', 'meshPublished']) {
+      if (record[flag] !== false) {
+        throw new Error(`Record ${schemaId} must set ${flag}=false`)
+      }
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaRoughCutCapsuleLocal) {
+    if (!['ordered-production-review-cut'].includes(record.roughCutKind)) {
+      throw new Error(`Record ${schemaId} has invalid rough cut kind: ${record.roughCutKind}`)
+    }
+
+    if (record.mode !== 'standalone-local') {
+      throw new Error(`Record ${schemaId} has invalid mode: ${record.mode}`)
+    }
+
+    for (const collection of ['orderedItems', 'sourceRefs', 'nextActions']) {
+      if (!Array.isArray(record[collection])) {
+        throw new Error(`Record ${schemaId}.${collection} must be an array`)
+      }
+    }
+
+    record.sourceRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.sourceRefs[${index}]`))
+
+    for (const [index, item] of record.orderedItems.entries()) {
+      if (!Number.isInteger(item.order) || item.order < 1) {
+        throw new Error(`Record ${schemaId}.orderedItems[${index}] has invalid order`)
+      }
+
+      if (item.acceptedAssetRef) validateInspectionRef(item.acceptedAssetRef, `${schemaId}.orderedItems[${index}].acceptedAssetRef`)
+      if (item.productionAssetCapsuleRef) validateInspectionRef(item.productionAssetCapsuleRef, `${schemaId}.orderedItems[${index}].productionAssetCapsuleRef`)
+      if (item.productionBundleRef) validateInspectionRef(item.productionBundleRef, `${schemaId}.orderedItems[${index}].productionBundleRef`)
+      if (item.approvalProposalRef) validateInspectionRef(item.approvalProposalRef, `${schemaId}.orderedItems[${index}].approvalProposalRef`)
+
+      if (item.nonClaims?.rendered !== false || item.nonClaims?.productionReady !== false) {
+        throw new Error(`Record ${schemaId}.orderedItems[${index}] must remain non-rendered and productionReady=false`)
+      }
+    }
+
+    if (!['review-only-rough-cut', 'needs-production-items'].includes(record.assemblyPosture?.state)) {
+      throw new Error(`Record ${schemaId} has invalid assembly posture state: ${record.assemblyPosture?.state}`)
+    }
+
+    if (record.renderPosture?.rendered !== false || record.renderPosture?.exportRef !== null) {
+      throw new Error(`Record ${schemaId} must not claim rendered/exported output`)
+    }
+
+    if (record.operatorGuidanceOnly !== true || record.productionReady !== false) {
+      throw new Error(`Record ${schemaId} must remain review-only and productionReady=false`)
     }
 
     for (const flag of ['approvalAuthority', 'ratifierAuthority', 'publicationAuthorization', 'providerTruth', 'byteAvailabilityProof', 'materializationProof', 'resourceAdmission', 'causalTruth', 'edgeCalled', 'meshPublished']) {

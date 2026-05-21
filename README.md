@@ -227,6 +227,10 @@ authority lane is still required.
 approval proposal, capsule, situated identity refs, and authority gaps for a
 future authority lane. It is not approval, ratification, publication
 authorization, or production readiness.
+`npm run production:rough-cut` writes a local
+`media.rough_cut_capsule.local.v1` record that orders accepted production item
+refs into a review-only rough cut. It does not build an editor, render a
+timeline, create an export, or grant authority.
 
 Create a local provider-loop operator decision request:
 
@@ -370,6 +374,8 @@ production asset capsules. Regenerated inspection/export and Edge compatibility
 surfaces include capsule refs when the local capsule record exists.
 `npm run production:bundle` groups existing production capsule refs into a
 local-only review bundle without copying bytes or granting production authority.
+`npm run production:rough-cut` adds the first ordered review package over those
+production items; it remains order-only and non-rendered.
 `npm run media:summary` and `npm run operator:index` also show a production
 approval lane: local decisions and approval proposals can be present, capsules
 and bundles can be present, and authority can still be missing.
