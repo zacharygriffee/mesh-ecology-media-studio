@@ -226,6 +226,9 @@ provider loops: total=1 | complete=1 | needsDecision=0 | productionReady=0
 
 Failed provider loops show `needsDecision` and an attention row. That guidance
 points to the operator request command; it does not retry automatically.
+`npm run inspect:venice-loop` also prints `retryPath`, including whether the
+retry/defer request exists, whether a local decision exists, and whether the
+retry gate is satisfied.
 
 To record a local retry/defer decision, consume the request explicitly:
 

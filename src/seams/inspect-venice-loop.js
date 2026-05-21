@@ -2,17 +2,22 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { artifactKinds } from '../contracts/artifact-kinds.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/venice-smoke'
 const defaultStatusRef = 'records/provider-results/media-provider-loop-status.local.json'
+const defaultRequestRef = 'records/requests/media-provider-loop-operator-decision-request.local.json'
+const defaultDecisionRef = 'records/decisions/media-provider-loop-operator-decision.local.json'
 
 function parseArgs(argv) {
   const args = {
     projectDir: defaultProjectDir,
     status: defaultStatusRef,
+    request: defaultRequestRef,
+    decision: defaultDecisionRef,
     print: false
   }
 
@@ -26,6 +31,12 @@ function parseArgs(argv) {
     } else if (arg === '--status') {
       args.status = next
       i += 1
+    } else if (arg === '--request') {
+      args.request = next
+      i += 1
+    } else if (arg === '--decision') {
+      args.decision = next
+      i += 1
     } else if (arg === '--print') {
       args.print = true
     }
@@ -37,14 +48,25 @@ function parseArgs(argv) {
 export async function inspectVeniceLoop({
   projectDir = defaultProjectDir,
   status = defaultStatusRef,
+  request = defaultRequestRef,
+  decision = defaultDecisionRef,
   print = false
 } = {}) {
   assertSafeLocalPath(status)
+  assertSafeLocalPath(request)
+  assertSafeLocalPath(decision)
 
   const root = path.resolve(projectDir)
   const record = JSON.parse(await readFile(path.join(root, status), 'utf8'))
   validateRequiredRecord(record)
-  const summary = createVeniceLoopInspectionSummary(record, status)
+  const requestRecord = await readOptionalRecord(root, request, artifactKinds.mediaOperatorDecisionRequestLocal)
+  const decisionRecord = await readOptionalRecord(root, decision, artifactKinds.mediaOperatorDecision)
+  const summary = createVeniceLoopInspectionSummary(record, status, {
+    requestRef: request,
+    requestRecord,
+    decisionRef: decision,
+    decisionRecord
+  })
 
   if (print) {
     console.log(JSON.stringify(summary, null, 2))
@@ -55,13 +77,27 @@ export async function inspectVeniceLoop({
   return {
     summary,
     record,
-    status
+    status,
+    requestRecord,
+    decisionRecord
   }
 }
 
-export function createVeniceLoopInspectionSummary(record, statusRef = defaultStatusRef) {
+export function createVeniceLoopInspectionSummary(record, statusRef = defaultStatusRef, {
+  requestRef = defaultRequestRef,
+  requestRecord,
+  decisionRef = defaultDecisionRef,
+  decisionRecord
+} = {}) {
   const media = record.mediaSummary
   const candidate = record.selectedCandidate
+  const retryPath = summarizeRetryPath({
+    record,
+    requestRef,
+    requestRecord,
+    decisionRef,
+    decisionRecord
+  })
 
   return {
     summaryKind: 'venice-loop-inspection-summary',
@@ -97,6 +133,8 @@ export function createVeniceLoopInspectionSummary(record, statusRef = defaultSta
     derivatives: media?.derivatives,
     identity: media?.identity,
     remainingAttention: media?.remainingAttention,
+    retryGate: record.retryGate,
+    retryPath,
     nextAction: record.nextAction,
     localOnly: true,
     operatorGuidanceOnly: true,
@@ -107,6 +145,84 @@ export function createVeniceLoopInspectionSummary(record, statusRef = defaultSta
     byteAvailabilityProof: false,
     materializationProof: false,
     resourceAdmission: false,
+    edgeCalled: false,
+    meshPublished: false
+  }
+}
+
+async function readOptionalRecord(root, relativePath, schemaId) {
+  try {
+    const record = JSON.parse(await readFile(path.join(root, relativePath), 'utf8'))
+    validateRequiredRecord(record, schemaId)
+    return record
+  } catch (error) {
+    if (error?.code === 'ENOENT') return undefined
+    throw error
+  }
+}
+
+function summarizeRetryPath({
+  record,
+  requestRef,
+  requestRecord,
+  decisionRef,
+  decisionRecord
+}) {
+  const failed = record.state === 'failed_review_only'
+  const requestAllowsRetry = requestRecord?.requestedDecisionTypes?.includes('retry_provider_loop') === true
+  const retryDecision = decisionRecord?.decisionType === 'retry_provider_loop' &&
+    decisionRecord?.allowsExplicitRetryAttempt === true
+  const deferDecision = decisionRecord?.decisionType === 'defer'
+
+  let state = 'not-required'
+  let nextAction = 'No retry path is required for this provider-loop status.'
+
+  if (failed && !requestRecord) {
+    state = 'needs-request'
+    nextAction = 'Run npm run operator:provider-loop-request to create a local retry/defer request.'
+  } else if (failed && requestRecord && !decisionRecord) {
+    state = 'needs-decision'
+    nextAction = 'Run npm run operator:provider-loop-decision with --decision retry_provider_loop or --decision defer.'
+  } else if (failed && retryDecision) {
+    state = 'ready-for-explicit-live-retry'
+    nextAction = `Rerun npm run provider:venice:loop with --live-provider --retry-decision ${decisionRef}.`
+  } else if (failed && deferDecision) {
+    state = 'deferred'
+    nextAction = 'Provider-loop retry is locally deferred; do not retry until a new local decision is recorded.'
+  } else if (failed) {
+    state = 'decision-not-retry-capable'
+    nextAction = 'Review provider-loop decision; it does not currently permit retry.'
+  }
+
+  return {
+    state,
+    statusState: record.state,
+    failedStep: record.failedStep ?? null,
+    requestRef,
+    requestPresent: requestRecord !== undefined,
+    requestAllowsRetry,
+    requestedDecisionTypes: requestRecord?.requestedDecisionTypes ?? [],
+    decisionRef,
+    decisionPresent: decisionRecord !== undefined,
+    decisionType: decisionRecord?.decisionType,
+    retryDecision,
+    deferDecision,
+    retryGate: record.retryGate
+      ? {
+          required: record.retryGate.required === true,
+          satisfied: record.retryGate.satisfied === true,
+          executionPerformed: record.retryGate.executionPerformed === true,
+          authorityGranted: record.retryGate.authorityGranted === true,
+          localOnly: true
+        }
+      : undefined,
+    nextAction,
+    localOnly: true,
+    operatorGuidanceOnly: true,
+    executionPerformed: false,
+    authorityGranted: false,
+    providerTruth: false,
+    meshTruth: false,
     edgeCalled: false,
     meshPublished: false
   }
@@ -130,6 +246,13 @@ function printVeniceLoopInspectionSummary(summary) {
   if (summary.failedStep) {
     console.log(`failedStep: ${summary.failedStep}`)
   }
+  console.log([
+    `retryPath: ${summary.retryPath.state}`,
+    `request=${summary.retryPath.requestPresent}`,
+    `decision=${summary.retryPath.decisionType ?? 'none'}`,
+    `gate=${summary.retryPath.retryGate ? `${summary.retryPath.retryGate.required}/${summary.retryPath.retryGate.satisfied}` : 'none'}`
+  ].join(' | '))
+  console.log(`retryNextAction: ${summary.retryPath.nextAction}`)
   console.log(`productionReady: ${summary.productionReady}`)
   console.log(`nextAction: ${summary.nextAction}`)
   console.log('nonClaims: local-only; no Edge call; no mesh truth; no provider truth; no byte/materialization proof; no resource admission')

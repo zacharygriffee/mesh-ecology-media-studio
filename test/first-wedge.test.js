@@ -1110,6 +1110,7 @@ test('Venice operational loop completes locally without live provider by default
   assert.equal(inspection.summary.state, 'complete_review_only')
   assert.equal(inspection.summary.completionScope, 'generated-candidate-local-loop')
   assert.equal(inspection.summary.productionReady, false)
+  assert.equal(inspection.summary.retryPath.state, 'not-required')
   assert.equal(inspection.summary.selectedCandidate.path, 'media/generated/provider-smoke/venice-live-smoke-0.png')
   assert.equal(inspection.summary.providerRuns.total, 1)
   assert.equal(inspection.summary.providerTruth, false)
@@ -1216,6 +1217,9 @@ test('Venice operational loop reports provider-stage failure without claiming tr
   assert.equal(inspection.summary.state, 'failed_review_only')
   assert.equal(inspection.summary.failedStep, 'provider_smoke')
   assert.equal(inspection.summary.productionReady, false)
+  assert.equal(inspection.summary.retryPath.state, 'needs-request')
+  assert.equal(inspection.summary.retryPath.requestPresent, false)
+  assert.equal(inspection.summary.retryPath.decisionPresent, false)
   assert.equal(inspection.summary.providerTruth, false)
 
   const { result: indexResult } = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
@@ -1238,6 +1242,11 @@ test('Venice operational loop reports provider-stage failure without claiming tr
   assert.equal(requestResult.request.providerTruth, false)
   assert.equal(validateRequiredRecord(requestResult.request), true)
 
+  const { result: requestInspection } = await captureConsole(() => inspectVeniceLoop({ projectDir: dir }))
+  assert.equal(requestInspection.summary.retryPath.state, 'needs-decision')
+  assert.equal(requestInspection.summary.retryPath.requestPresent, true)
+  assert.equal(requestInspection.summary.retryPath.requestAllowsRetry, true)
+
   const failedMediaSummary = await createMediaSummary({ projectDir: dir })
   assert.equal(failedMediaSummary.providerLoops.needsRetryDecision, 1)
   assert.equal(failedMediaSummary.providerLoops.attentionRows[0].readinessState, 'needs-retry-decision')
@@ -1254,6 +1263,11 @@ test('Venice operational loop reports provider-stage failure without claiming tr
   assert.equal(decisionResult.decision.executionPerformed, false)
   assert.equal(decisionResult.decision.providerTruth, false)
   assert.equal(validateRequiredRecord(decisionResult.decision), true)
+
+  const { result: decisionInspection } = await captureConsole(() => inspectVeniceLoop({ projectDir: dir }))
+  assert.equal(decisionInspection.summary.retryPath.state, 'ready-for-explicit-live-retry')
+  assert.equal(decisionInspection.summary.retryPath.decisionType, 'retry_provider_loop')
+  assert.equal(decisionInspection.summary.retryPath.retryDecision, true)
 
   const blockedRetry = await runVeniceOperationalLoop({
     projectDir: dir,
@@ -1310,6 +1324,7 @@ test('committed Venice provider-loop failure fixture is inspectable without trut
 
   assert.equal(inspection.summary.state, 'failed_review_only')
   assert.equal(inspection.summary.failedStep, 'provider_smoke')
+  assert.equal(inspection.summary.retryPath.state, 'needs-request')
   assert.equal(inspection.summary.providerTruth, false)
   assert.equal(inspection.summary.meshTruth, false)
 })
