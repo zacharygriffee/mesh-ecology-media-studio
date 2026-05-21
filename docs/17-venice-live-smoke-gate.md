@@ -61,6 +61,11 @@ review decision.
 The smoke review is not ratifier authority, publication authorization, provider
 truth, or mesh truth.
 
+`npm run inspect:venice-smoke` and `npm run inspect:venice-loop` expose the
+observed provider posture in compact form. They can show whether the pass used
+the live provider path and whether raw provider bytes were stored, while still
+preserving `providerTruth: false` and local-only posture.
+
 ## Fixtures
 
 The smoke gate has local fixtures for:

@@ -179,6 +179,8 @@ export async function inspectVeniceSmoke({
     ]
   })
   packet.operationalSummary = createVeniceOperationalSummary(mediaSummary, {
+    providerResult: records.providerResult,
+    adapterRun: records.adapterRun,
     promotedAssets,
     derivatives,
     byteProposals,
@@ -294,6 +296,8 @@ async function optionalDerivativeArtifactRefs({ root, derivatives, warnings }) {
 }
 
 function createVeniceOperationalSummary(mediaSummary, {
+  providerResult,
+  adapterRun,
   promotedAssets,
   derivatives,
   byteProposals,
@@ -310,6 +314,18 @@ function createVeniceOperationalSummary(mediaSummary, {
       evaluatedAssets: mediaSummary.derivativeReadiness.evaluatedAssets,
       attentionAssets: mediaSummary.derivativeReadiness.attentionAssets,
       issueCodes: mediaSummary.derivativeReadiness.issueCodes
+    },
+    providerExecution: {
+      providerId: providerResult.providerId,
+      status: providerResult.status,
+      liveProviderCalled: providerResult.rawProviderRef?.apiCalled === true,
+      rawProviderRefKind: providerResult.rawProviderRef?.kind ?? null,
+      adapterRunId: adapterRun.runId,
+      adapterMode: adapterRun.mode,
+      outputRefs: providerResult.outputRefs?.length ?? 0,
+      storedRawBytes: providerResult.rawProviderRef?.storedRawBytes === true,
+      providerTruth: false,
+      localOnly: true
     },
     derivatives: mediaSummary.derivatives,
     identity: {
@@ -349,11 +365,14 @@ function printVeniceInspectionSummary(summary) {
     `reviewed=${summary.generatedCandidates.reviewed}`,
     `promotedAccepted=${summary.generatedCandidates.promotedAccepted}`,
     `promotedRejected=${summary.generatedCandidates.promotedRejected}`,
+    `provider=${summary.providerExecution.liveProviderCalled ? 'live' : 'local-simulated'}`,
+    `providerStatus=${summary.providerExecution.status}`,
+    `rawProviderBytesStored=${summary.providerExecution.storedRawBytes}`,
     `derivatives=${summary.derivativeReadiness.readyAssets}/${summary.derivativeReadiness.evaluatedAssets}`,
     `byteContent=${summary.identity.byteContent.coveredContentIds}/${summary.identity.byteContent.expectedContentIds}`,
     `resourceSituations=${summary.identity.resourceSituations.coveredSituationPlacements}/${summary.identity.resourceSituations.expectedSituationPlacements}`
   ].join(' | '))
-  console.log('nonClaims: local-only; no Edge call; no mesh truth; no byte/materialization proof; no resource admission')
+  console.log('nonClaims: local-only; no Edge call; no mesh truth; no provider truth; no byte/materialization proof; no resource admission')
 }
 
 async function assertLocalFileExists(root, relativePath) {

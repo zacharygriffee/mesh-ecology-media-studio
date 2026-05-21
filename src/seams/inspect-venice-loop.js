@@ -112,6 +112,7 @@ export function createVeniceLoopInspectionSummary(record, statusRef = defaultSta
     productionBlockers: record.productionBlockers ?? productionBlockersForProviderLoop(record),
     productionNextAction: record.productionNextAction ?? productionNextActionForProviderLoop(record),
     state: record.state,
+    liveProviderCalled: record.liveProviderCalled === true,
     failedStep: record.failedStep,
     completedSteps: record.completedSteps,
     selectedCandidate: candidate
@@ -131,6 +132,15 @@ export function createVeniceLoopInspectionSummary(record, statusRef = defaultSta
           providerTruth: false
         }
       : undefined,
+    providerExecution: {
+      liveProviderRequested: record.liveProviderRequested === true,
+      liveProviderCalled: record.liveProviderCalled === true,
+      providerStatus: record.provider?.status ?? 'unknown',
+      providerResultRef: record.provider?.providerResultRef ?? null,
+      generatedAssets: record.provider?.generatedAssets ?? 0,
+      providerTruth: false,
+      localOnly: true
+    },
     generatedCandidates: media?.generatedCandidates,
     derivatives: media?.derivatives,
     identity: media?.identity,
@@ -235,6 +245,7 @@ function printVeniceLoopInspectionSummary(summary) {
     `venice loop inspection: state=${summary.state}`,
     `project=${summary.projectId}`,
     `scope=${summary.completionScope}`,
+    `liveProviderCalled=${summary.liveProviderCalled}`,
     `candidate=${summary.selectedCandidate?.path ?? 'none'}`,
     `generated=${summary.generatedCandidates?.total ?? 0}`,
     `reviewed=${summary.generatedCandidates?.reviewed ?? 0}`,
