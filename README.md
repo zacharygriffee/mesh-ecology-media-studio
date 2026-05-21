@@ -283,6 +283,9 @@ npm run production:authority-handoff -- --project-dir examples/venice-smoke
 These commands package accepted assets and rough-cut refs for local review and
 future authority inspection. They do not grant approval, ratification,
 publication authorization, or production readiness.
+After local render/export delivery evidence exists, the authority prerequisite
+surface can show `localProductionPackageComplete=true` while still reporting
+`authorityMissing=true` and `productionReady=false`.
 
 `request_changes` rough-cut decisions can regenerate the local rough-cut refs:
 

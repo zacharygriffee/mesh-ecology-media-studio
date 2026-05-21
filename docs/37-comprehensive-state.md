@@ -468,6 +468,10 @@ approval lane that distinguishes local decisions, approval proposals, production
 capsules, production bundles, and missing authority. The lane is operator
 readability over existing local refs only; it does not add approval authority or
 production readiness.
+`npm run production:authority-prereqs` now separates the older local package
+check from `localProductionPackageComplete`, which only becomes true after the
+reviewed rough cut has fresh local render/export delivery evidence. Even then,
+`authorityMissing=true` and `productionReady=false` remain explicit.
 Approval proposal records keep the compatibility `subjectRef` from the local
 decision and now include situated asset descriptor/content/situation/placement
 refs when the asset descriptor is available.

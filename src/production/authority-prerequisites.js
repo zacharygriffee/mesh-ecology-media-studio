@@ -66,6 +66,11 @@ export async function createProductionAuthorityPrerequisiteReport({
     mode: 'standalone-local',
     candidates: rows.length,
     localPackageComplete: rows.filter((row) => row.localPackageState === 'local-package-complete-authority-missing').length,
+    localProductionPackageComplete: rows.filter((row) => row.localProductionPackageComplete).length,
+    localProductionPackageState: rows.length > 0 && rows.every((row) => row.localProductionPackageComplete)
+      ? 'local-production-package-complete-authority-missing'
+      : 'local-production-package-incomplete',
+    authorityMissing: true,
     missingLocalPrerequisites: rows.filter((row) => row.missingLocalPrerequisites.length > 0).length,
     roughCutReviewed: rows.filter((row) => row.roughCutReviewPosture?.state === 'rough-cut-reviewed-local').length,
     roughCutChangesRequested: rows.filter((row) => row.roughCutReviewPosture?.state === 'rough-cut-changes-requested').length,
@@ -187,6 +192,21 @@ function summarizeCandidateAuthorityPrerequisites(asset, records) {
     byteProposal ? null : 'byte_descriptor_proposal_missing',
     resourceCandidate ? null : 'resource_ref_candidate_missing'
   ].filter(Boolean)
+  const localPackageComplete = missingLocalPrerequisites.length === 0
+  const localProductionPackageComplete = localPackageComplete &&
+    roughCutReviewPosture?.state === 'rough-cut-reviewed-local' &&
+    renderExportCandidatePosture?.present === true &&
+    renderExportCandidatePosture?.freshnessState === 'fresh' &&
+    renderReceiptPosture?.present === true &&
+    renderReceiptPosture?.freshnessState === 'fresh' &&
+    renderReceiptPosture?.renderPerformed === true &&
+    exportReceiptPosture?.present === true &&
+    exportReceiptPosture?.freshnessState === 'fresh' &&
+    exportReceiptPosture?.deliveryCreated === true &&
+    exportReceiptPosture?.exportPerformed === true
+  const localProductionPackageState = localProductionPackageComplete
+    ? 'local-production-package-complete-authority-missing'
+    : 'local-production-package-incomplete'
 
   return {
     projectId: asset.projectId,
@@ -217,11 +237,31 @@ function summarizeCandidateAuthorityPrerequisites(asset, records) {
     renderReceiptPosture,
     exportReceiptPosture,
     missingLocalPrerequisites,
-    localPackageState: missingLocalPrerequisites.length === 0
+    localPackageState: localPackageComplete
       ? 'local-package-complete-authority-missing'
       : 'local-package-incomplete',
+    localProductionPackageComplete,
+    localProductionPackageState,
+    productionPackagePosture: {
+      state: localProductionPackageState,
+      localPackageComplete,
+      localProductionPackageComplete,
+      authorityMissing: true,
+      productionReady: false,
+      publicationAuthorization: false,
+      renderAuthorization: false,
+      exportAuthorization: false,
+      localOnly: true,
+      operatorGuidanceOnly: true
+    },
     authorityState: 'authority-missing',
-    safeNextAction: safeNextActionForRow(missingLocalPrerequisites, roughCutReviewPosture),
+    safeNextAction: safeNextActionForRow(
+      missingLocalPrerequisites,
+      roughCutReviewPosture,
+      renderExportCandidatePosture,
+      renderReceiptPosture,
+      exportReceiptPosture
+    ),
     authorityGaps: [
       'approval_authority_missing',
       'ratifier_authority_missing',
@@ -249,6 +289,7 @@ function printProductionAuthorityPrerequisiteReport(report, output = defaultOutp
     `production authority prerequisites: project=${report.projectId}`,
     `candidates=${report.candidates}`,
     `localPackageComplete=${report.localPackageComplete}`,
+    `localProductionPackageComplete=${report.localProductionPackageComplete ?? 0}`,
     `missingLocalPrerequisites=${report.missingLocalPrerequisites}`,
     `roughCutReviewed=${report.roughCutReviewed}`,
     `roughCutChangesRequested=${report.roughCutChangesRequested}`,
@@ -269,6 +310,7 @@ function printProductionAuthorityPrerequisiteReport(report, output = defaultOutp
     console.log([
       `authority-prereq: ${row.path}`,
       `localPackage=${row.localPackageState}`,
+      `productionPackage=${row.localProductionPackageState}`,
       `authority=${row.authorityState}`,
       `missing=${row.missingLocalPrerequisites.join(',') || 'none'}`,
       `roughCut=${row.roughCutReviewPosture?.state ?? 'unknown'}`,
@@ -584,7 +626,13 @@ function nextActionForMissingPrerequisite(issueCode) {
   return 'Inspect local production prerequisites before authority review.'
 }
 
-function safeNextActionForRow(missingLocalPrerequisites, roughCutReviewPosture) {
+function safeNextActionForRow(
+  missingLocalPrerequisites,
+  roughCutReviewPosture,
+  renderExportCandidatePosture,
+  renderReceiptPosture,
+  exportReceiptPosture
+) {
   if (missingLocalPrerequisites.length > 0) return nextActionForMissingPrerequisite(missingLocalPrerequisites[0])
   if (roughCutReviewPosture?.state === 'rough-cut-changes-requested') {
     return 'Regenerate or revise the rough-cut capsule before future authority review.'
@@ -594,6 +642,27 @@ function safeNextActionForRow(missingLocalPrerequisites, roughCutReviewPosture) 
   }
   if (roughCutReviewPosture?.state === 'rough-cut-review-missing') {
     return 'Run npm run production:rough-cut-review to record local rough-cut review before future authority review.'
+  }
+  if (roughCutReviewPosture?.state === 'rough-cut-missing') {
+    return 'Run npm run production:rough-cut to create a local reviewable rough cut before future authority review.'
+  }
+  if (renderExportCandidatePosture?.present !== true) {
+    return 'Run npm run production:render-export-candidate to prepare the reviewed rough cut for local render/export packaging.'
+  }
+  if (renderExportCandidatePosture?.freshnessState === 'stale') {
+    return 'Regenerate the render/export candidate from the latest reviewed rough cut before future authority review.'
+  }
+  if (renderReceiptPosture?.present !== true) {
+    return 'Run npm run production:render-plan and a local render command to create local preview evidence before future authority review.'
+  }
+  if (renderReceiptPosture?.freshnessState === 'stale') {
+    return 'Regenerate local render evidence from the latest reviewed rough cut before future authority review.'
+  }
+  if (exportReceiptPosture?.present !== true) {
+    return 'Run npm run production:export-plan and a local export command to create a local delivery candidate before future authority review.'
+  }
+  if (exportReceiptPosture?.freshnessState === 'stale') {
+    return 'Regenerate local export delivery evidence from the latest reviewed rough cut before future authority review.'
   }
   return 'Route the local proposal and production bundle through a future authority lane; do not treat local records as authorization.'
 }
