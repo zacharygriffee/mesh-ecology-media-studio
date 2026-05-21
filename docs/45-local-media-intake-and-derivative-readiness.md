@@ -279,6 +279,7 @@ derivatives: ready=2/2
 generated candidates: total=1 | reviewed=1 | pending=0 | promotedAccepted=1
 production review: ready=0 | needsReview=1 | proposed=0 | notCandidates=0
 approval lane: proposals=0 | pendingAuthority=0 | approved=0 | blocked=0
+production capsules: total=0 | expected=1 | missing=1 | attention=1
 identity: byteContent=1/1 | resourceSituations=1/1
 safeNextAction: Run npm run approval:proposal for accepted generated assets before production use.
 ```

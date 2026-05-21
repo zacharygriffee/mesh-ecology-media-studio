@@ -324,7 +324,8 @@ npm run --silent media:summary -- --project-dir examples/card-to-candidate --pri
 ```
 
 The summary also reports provider-generated candidates, local review posture,
-and accepted/rejected promoted placements when those records exist.
+accepted/rejected promoted placements, and production capsule posture when
+those records exist.
 
 Compare local candidate assets and record a local selection:
 

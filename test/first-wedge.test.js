@@ -1940,6 +1940,7 @@ test('media summary reports intake derivative and identity posture compactly', a
   assert.equal(before.identity.byteContent.keyKind, 'contentId')
   assert.equal(before.identity.resourceSituations.keyKind, 'assetDescriptorRef+situationRef+placementRef')
   assert.equal(before.approvalLane.proposals, 0)
+  assert.equal(before.productionCapsules.total, 0)
   assert.equal(before.localOnly, true)
   assert.equal(before.meshTruth, false)
   assert.equal(before.byteAvailabilityProof, false)
@@ -2280,6 +2281,29 @@ test('production asset capsule packages accepted asset refs without authority', 
 
   const written = JSON.parse(await readFile(path.join(dir, output), 'utf8'))
   assert.equal(written.capsuleId, capsule.capsuleId)
+
+  const printed = await captureConsole(() => writeProductionAssetCapsule({
+    projectDir: dir,
+    print: true
+  }))
+  const printedCapsule = JSON.parse(printed.lines.join('\n'))
+  assert.equal(printedCapsule.capsuleId, capsule.capsuleId)
+
+  const summaryOutput = await captureConsole(() => writeMediaSummary({ projectDir: dir }))
+  const summary = await createMediaSummary({ projectDir: dir })
+  assert.equal(summary.productionCapsules.total, 1)
+  assert.equal(summary.productionCapsules.expected, 1)
+  assert.equal(summary.productionCapsules.missing, 0)
+  assert.equal(summary.productionCapsules.attentionRows.length, 0)
+  assert.ok(summaryOutput.lines.some((line) => line === 'production capsules: total=1 | expected=1 | missing=0 | attention=0'))
+
+  const indexOutput = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
+  const index = indexOutput.result.index
+  assert.equal(index.productionCapsuleRefs.length, 1)
+  assert.equal(index.summary.productionCapsules, 1)
+  assert.equal(index.summary.productionCapsulesNeedingAttention, 0)
+  assert.ok(indexOutput.lines.some((line) => line.includes('productionCapsules=1')))
+  assert.ok(indexOutput.lines.some((line) => line.includes('production capsule: media/accepted/venice-live-smoke-0.png')))
 })
 
 test('byte descriptor proposal previews bytes without materialization proof', async () => {

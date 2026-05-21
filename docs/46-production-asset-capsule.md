@@ -54,6 +54,15 @@ productionReady=false
 The safe next action is either to create an approval proposal or route the
 existing proposal through the proper authority lane.
 
+`npm run media:summary` reports capsule totals:
+
+```txt
+production capsules: total=1 | expected=1 | missing=0 | attention=0
+```
+
+`npm run operator:index` includes capsule refs and prints compact capsule rows
+when records exist.
+
 ## Non-Claims
 
 The capsule is local operator guidance only:

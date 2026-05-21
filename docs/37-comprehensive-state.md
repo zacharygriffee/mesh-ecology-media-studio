@@ -453,6 +453,9 @@ refs, and known churn posture for operational commands.
 one accepted asset. It includes content, situation/placement, derivative,
 byte/resource, provider-loop, local decision, and approval proposal refs where
 present. It does not copy bytes or grant production authority.
+`npm run media:summary` and `npm run operator:index` surface capsule counts and
+capsule state so an operator can see whether accepted generated assets have a
+local production package without opening raw JSON.
 
 ## Current Verification Baseline
 

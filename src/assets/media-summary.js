@@ -46,6 +46,7 @@ export async function createMediaSummary({
   const generatedCandidates = summarizeGeneratedCandidates(assetRecords, records)
   const approvalLane = summarizeApprovalLane(records)
   const providerLoops = summarizeProviderLoops(records)
+  const productionCapsules = summarizeProductionCapsules(assetRecords, records)
   const derivativeReadiness = status.mediaDerivativeReadiness
   const attentionRows = derivativeReadiness.assetExplanations
     .filter((entry) => entry.state !== 'ready-for-local-inspection')
@@ -64,6 +65,7 @@ export async function createMediaSummary({
     generatedCandidates,
     approvalLane,
     providerLoops,
+    productionCapsules,
     bytePosture: status.assetResourceConsistency.bytePosture,
     resourcePosture: status.assetResourceConsistency.resourcePosture
   })
@@ -108,6 +110,7 @@ export async function createMediaSummary({
     generatedCandidates,
     approvalLane,
     providerLoops,
+    productionCapsules,
     safeNextAction,
     identity: {
       assetIdPosture: 'compatibility descriptor id',
@@ -191,6 +194,12 @@ function printMediaSummary(summary) {
     `productionReady=${summary.providerLoops.readyForProductionReview}`
   ].join(' | '))
   console.log([
+    `production capsules: total=${summary.productionCapsules.total}`,
+    `expected=${summary.productionCapsules.expected}`,
+    `missing=${summary.productionCapsules.missing}`,
+    `attention=${summary.productionCapsules.attentionRows.length}`
+  ].join(' | '))
+  console.log([
     `identity: byteContent=${summary.identity.byteContent.coveredContentIds}/${summary.identity.byteContent.expectedContentIds}`,
     `resourceSituations=${summary.identity.resourceSituations.coveredSituationPlacements}/${summary.identity.resourceSituations.expectedSituationPlacements}`
   ].join(' | '))
@@ -214,6 +223,9 @@ function printMediaSummary(summary) {
   for (const row of summary.providerLoops.attentionRows) {
     console.log(`provider-loop: ${row.providerId}:${row.loopKind} | state=${row.state} | readiness=${row.readinessState} | nextAction=${row.nextAction}`)
   }
+  for (const row of summary.productionCapsules.attentionRows) {
+    console.log(`production-capsule: ${row.path} | state=${row.capsuleState} | issues=${row.issueCodes.join(',')} | nextAction=${row.nextAction}`)
+  }
 
   console.log('nonClaims: local-only; no mesh truth; no byte/materialization proof; no resource admission')
 }
@@ -223,6 +235,7 @@ function summarizeSafeNextAction({
   generatedCandidates,
   approvalLane,
   providerLoops,
+  productionCapsules,
   bytePosture,
   resourcePosture
 }) {
@@ -253,6 +266,10 @@ function summarizeSafeNextAction({
     return 'Route pending approval proposals through the proper authority lane; local proposals are not approval.'
   }
 
+  if (productionCapsules.missing > 0) {
+    return 'Run npm run production:capsule for accepted assets before broader production handoff.'
+  }
+
   if (providerLoops.blockedProductionRows.length > 0) {
     return providerLoops.blockedProductionRows[0].productionNextAction
   }
@@ -260,6 +277,84 @@ function summarizeSafeNextAction({
   if (derivativeAttentionRows.length > 0) return derivativeAttentionRows[0].nextAction
 
   return 'No local media summary attention is blocking inspection; continue with the next operator-selected work.'
+}
+
+function summarizeProductionCapsules(assetRecords, records) {
+  const acceptedProviderAssets = assetRecords.filter((record) =>
+    record.localRef?.placementClass === 'media-accepted' &&
+    record.source?.sourceType === 'provider-result'
+  )
+  const capsules = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaProductionAssetCapsuleLocal)
+    .map((entry) => ({ ...entry.record, path: entry.path }))
+    .sort((left, right) => (right.createdAt ?? '').localeCompare(left.createdAt ?? ''))
+  const capsulesBySubjectPath = new Map()
+
+  for (const capsule of capsules) {
+    for (const key of [capsule.subjectAssetRef?.path, capsule.localRef?.path].filter(Boolean)) {
+      if (!capsulesBySubjectPath.has(key)) capsulesBySubjectPath.set(key, capsule)
+    }
+  }
+
+  const missingRows = acceptedProviderAssets
+    .filter((asset) => !capsulesBySubjectPath.has(asset.assetDescriptorRef?.path ?? asset.localRef?.path))
+    .map((asset) => ({
+      path: asset.localRef?.path,
+      assetId: asset.assetId,
+      contentId: asset.contentId,
+      situationRef: asset.situationRef,
+      placementRef: asset.placementRef,
+      capsuleState: 'missing',
+      issueCodes: ['missing_production_asset_capsule'],
+      nextAction: 'Run npm run production:capsule for this accepted generated asset.',
+      localOnly: true,
+      operatorGuidanceOnly: true,
+      productionReady: false,
+      approvalAuthority: false,
+      publicationAuthorization: false
+    }))
+  const capsuleRows = capsules.map((capsule) => {
+    const state = capsule.productionPosture?.state ?? 'unknown'
+    const missingApproval = state === 'needs-approval-proposal'
+    const issueCodes = missingApproval
+      ? ['approval_proposal_missing']
+      : (capsule.productionPosture?.blockers ?? []).filter((issue) => issue !== 'authority_not_granted')
+
+    return {
+      capsuleId: capsule.capsuleId,
+      path: capsule.localRef?.path ?? capsule.subjectAssetRef?.path,
+      capsulePath: capsule.path,
+      capsuleState: state,
+      issueCodes,
+      nextAction: missingApproval
+        ? 'Run npm run approval:proposal, then regenerate the production capsule.'
+        : capsule.productionPosture?.nextAction ?? 'Route through the proper authority lane before production use.',
+      productionReady: false,
+      approvalAuthority: false,
+      publicationAuthorization: false,
+      localOnly: true,
+      operatorGuidanceOnly: true
+    }
+  })
+  const attentionRows = [
+    ...missingRows,
+    ...capsuleRows.filter((row) => row.issueCodes.length > 0)
+  ]
+
+  return {
+    total: capsules.length,
+    expected: acceptedProviderAssets.length,
+    missing: missingRows.length,
+    presentForAcceptedAssets: acceptedProviderAssets.length - missingRows.length,
+    rows: capsuleRows,
+    attentionRows,
+    productionReady: 0,
+    localOnly: true,
+    operatorGuidanceOnly: true,
+    meshTruth: false,
+    approvalAuthority: false,
+    publicationAuthorization: false
+  }
 }
 
 function summarizeProviderLoops(records) {
