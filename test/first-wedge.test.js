@@ -2645,6 +2645,37 @@ test('rough cut capsule orders production items without rendering or authority',
   }))
   const printedRoughCut = JSON.parse(printed.lines.join('\n'))
   assert.equal(printedRoughCut.roughCutId, roughCut.roughCutId)
+
+  const summaryOutput = await captureConsole(() => writeMediaSummary({ projectDir: dir }))
+  const summary = await createMediaSummary({ projectDir: dir })
+  assert.equal(summary.productionRoughCuts.total, 1)
+  assert.equal(summary.productionRoughCuts.itemRefs, 1)
+  assert.equal(summary.productionRoughCuts.pendingAuthorityItems, 1)
+  assert.equal(summary.productionRoughCuts.rendered, 0)
+  assert.equal(summary.productionRoughCuts.attentionRows.length, 0)
+  assert.ok(summaryOutput.lines.some((line) => line === 'rough cuts: total=1 | items=1 | pendingAuthority=1 | rendered=0 | attention=0'))
+
+  const healthOutput = await captureConsole(() => writeProjectHealth({ projectDir: dir, summary: true }))
+  assert.equal(healthOutput.result.health.productionRoughCutHealthExplanations.length, 0)
+  assert.ok(healthOutput.lines.some((line) => line === 'productionRoughCutAttention: 0'))
+
+  const indexOutput = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
+  const index = indexOutput.result.index
+  assert.equal(index.roughCutCapsuleRefs.length, 1)
+  assert.equal(index.roughCutCapsules.length, 1)
+  assert.equal(index.summary.roughCutCapsules, 1)
+  assert.equal(index.summary.roughCutCapsulesNeedingAttention, 0)
+  assert.ok(indexOutput.lines.some((line) => line.includes('roughCuts=1')))
+  assert.ok(indexOutput.lines.some((line) => line.includes('rough cut: rough-cut-capsule-')))
+
+  const inspection = await inspectVeniceSmoke({ projectDir: dir })
+  assert.ok(Object.values(inspection.packet.recordRefs).some((ref) => ref.schema === 'media.rough_cut_capsule.local.v1'))
+  assert.ok(inspection.packet.artifactKinds.includes('media.rough_cut_capsule.local.v1'))
+  assert.equal(inspection.packet.operationalSummary.recordCounts.roughCutCapsules, 1)
+  assert.equal(inspection.packet.operationalSummary.recordRefs.roughCutCapsules.length, 1)
+
+  const compatibility = await writeEdgeCompatibilityBundle({ projectDir: dir })
+  assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.rough_cut_capsule.local.v1'))
 })
 
 test('project health reports missing production asset capsules for accepted provider assets', async () => {

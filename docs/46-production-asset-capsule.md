@@ -169,6 +169,12 @@ posture. It records order-only item rows for local review. It does not build an
 editor UI, render a timeline, produce an export, publish media, or grant
 authority.
 
+When present, rough-cut capsules are surfaced by `npm run media:summary`,
+`npm run health:summary`, Venice inspection packets, `npm run operator:index`,
+and Edge-compatible source refs. These surfaces expose the rough-cut package for
+operator inspection; they do not change its non-rendered or non-authoritative
+posture.
+
 ## Non-Claims
 
 The capsule is local operator guidance only:

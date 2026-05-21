@@ -830,6 +830,7 @@ function countRecords(records) {
     productionDescriptors: bySchema(artifactKinds.mediaProductionDescriptorLocal),
     productionCapsules: bySchema(artifactKinds.mediaProductionAssetCapsuleLocal),
     productionBundles: bySchema(artifactKinds.mediaProductionBundleLocal),
+    roughCutCapsules: bySchema(artifactKinds.mediaRoughCutCapsuleLocal),
     approvalProposals: bySchema(artifactKinds.mediaApprovalProposalLocal),
     byteDescriptorProposals: bySchema(artifactKinds.mediaByteDescriptorProposalLocal),
     resourceRefCandidates: bySchema(artifactKinds.mediaLocalLayerResourceRefCandidateLocal),

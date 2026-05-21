@@ -49,6 +49,7 @@ export async function createMediaSummary({
   const providerLoops = summarizeProviderLoops(records)
   const productionCapsules = summarizeProductionCapsules(assetRecords, records)
   const productionBundles = summarizeProductionBundles(records)
+  const productionRoughCuts = summarizeProductionRoughCuts(records)
   const productionApprovalLane = summarizeProductionApprovalLane({
     assetRecords,
     records,
@@ -75,6 +76,7 @@ export async function createMediaSummary({
     providerLoops,
     productionCapsules,
     productionBundles,
+    productionRoughCuts,
     productionApprovalLane,
     bytePosture: status.assetResourceConsistency.bytePosture,
     resourcePosture: status.assetResourceConsistency.resourcePosture
@@ -122,6 +124,7 @@ export async function createMediaSummary({
     providerLoops,
     productionCapsules,
     productionBundles,
+    productionRoughCuts,
     productionApprovalLane,
     safeNextAction,
     identity: {
@@ -217,6 +220,13 @@ function printMediaSummary(summary) {
     `attention=${summary.productionBundles.attentionRows.length}`
   ].join(' | '))
   console.log([
+    `rough cuts: total=${summary.productionRoughCuts.total}`,
+    `items=${summary.productionRoughCuts.itemRefs}`,
+    `pendingAuthority=${summary.productionRoughCuts.pendingAuthorityItems}`,
+    `rendered=${summary.productionRoughCuts.rendered}`,
+    `attention=${summary.productionRoughCuts.attentionRows.length}`
+  ].join(' | '))
+  console.log([
     `production approval: candidates=${summary.productionApprovalLane.candidates}`,
     `decisions=${summary.productionApprovalLane.localDecisions}`,
     `proposals=${summary.productionApprovalLane.approvalProposals}`,
@@ -255,6 +265,9 @@ function printMediaSummary(summary) {
   for (const row of summary.productionBundles.attentionRows) {
     console.log(`production-bundle: ${row.bundleId} | state=${row.bundleState} | issues=${row.issueCodes.join(',')} | nextAction=${row.nextAction}`)
   }
+  for (const row of summary.productionRoughCuts.attentionRows) {
+    console.log(`rough-cut: ${row.roughCutId} | state=${row.roughCutState} | issues=${row.issueCodes.join(',')} | nextAction=${row.nextAction}`)
+  }
   for (const row of summary.productionApprovalLane.attentionRows) {
     console.log([
       `production-approval: ${row.path}`,
@@ -279,6 +292,7 @@ function summarizeSafeNextAction({
   providerLoops,
   productionCapsules,
   productionBundles,
+  productionRoughCuts,
   productionApprovalLane,
   bytePosture,
   resourcePosture
@@ -312,6 +326,10 @@ function summarizeSafeNextAction({
 
   if (productionCapsules.total > 0 && productionBundles.total === 0) {
     return 'Run npm run production:bundle to group local production capsules for review handoff.'
+  }
+
+  if (productionBundles.total > 0 && productionRoughCuts.total === 0) {
+    return 'Run npm run production:rough-cut to assemble accepted production item refs into a local review cut.'
   }
 
   if (productionApprovalLane.pendingAuthority > 0 || approvalLane.pendingAuthority > 0) {
@@ -449,6 +467,54 @@ function summarizeProductionBundles(records) {
     capsuleRefs: rows.reduce((sum, row) => sum + row.capsuleRefs, 0),
     assetRefs: rows.reduce((sum, row) => sum + row.assetRefs, 0),
     contentRefs: rows.reduce((sum, row) => sum + row.contentRefs, 0),
+    rows,
+    attentionRows: rows.filter((row) => row.issueCodes.length > 0),
+    productionReady: 0,
+    localOnly: true,
+    operatorGuidanceOnly: true,
+    meshTruth: false,
+    approvalAuthority: false,
+    publicationAuthorization: false
+  }
+}
+
+function summarizeProductionRoughCuts(records) {
+  const roughCuts = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaRoughCutCapsuleLocal)
+    .map((entry) => ({ ...entry.record, path: entry.path }))
+    .sort((left, right) => (right.createdAt ?? '').localeCompare(left.createdAt ?? ''))
+  const rows = roughCuts.map((roughCut) => {
+    const state = roughCut.assemblyPosture?.state ?? 'unknown'
+    const issueCodes = state === 'needs-production-items'
+      ? ['rough_cut_items_missing']
+      : []
+
+    return {
+      roughCutId: roughCut.roughCutId,
+      roughCutPath: roughCut.path,
+      roughCutState: state,
+      itemRefs: roughCut.orderedItems?.length ?? 0,
+      sourceRefs: roughCut.sourceRefs?.length ?? 0,
+      pendingAuthorityItems: roughCut.assemblyPosture?.pendingAuthorityItems ?? 0,
+      rendered: roughCut.renderPosture?.rendered === true,
+      issueCodes,
+      nextAction: issueCodes.length > 0
+        ? 'Create production capsules and a production bundle before regenerating the rough-cut capsule.'
+        : 'Review ordered rough-cut items locally; render/export/publication remain separate future work.',
+      productionReady: false,
+      approvalAuthority: false,
+      publicationAuthorization: false,
+      localOnly: true,
+      operatorGuidanceOnly: true
+    }
+  })
+
+  return {
+    total: roughCuts.length,
+    itemRefs: rows.reduce((sum, row) => sum + row.itemRefs, 0),
+    sourceRefs: rows.reduce((sum, row) => sum + row.sourceRefs, 0),
+    pendingAuthorityItems: rows.reduce((sum, row) => sum + row.pendingAuthorityItems, 0),
+    rendered: rows.filter((row) => row.rendered).length,
     rows,
     attentionRows: rows.filter((row) => row.issueCodes.length > 0),
     productionReady: 0,

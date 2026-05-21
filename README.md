@@ -231,6 +231,8 @@ authorization, or production readiness.
 `media.rough_cut_capsule.local.v1` record that orders accepted production item
 refs into a review-only rough cut. It does not build an editor, render a
 timeline, create an export, or grant authority.
+Media summary, project health, Venice inspection, operator index, and
+Edge-compatible bundles surface rough-cut capsule refs when present.
 
 Create a local provider-loop operator decision request:
 

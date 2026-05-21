@@ -482,6 +482,9 @@ remaining authority gap. It does not write a new authority artifact.
 `npm run production:rough-cut` writes `media.rough_cut_capsule.local.v1`, an
 order-only local review package over accepted production item refs. It does not
 render, export, publish, or grant production authority.
+Existing operator surfaces now expose rough-cut capsule refs: media summary,
+project health, Venice inspection packets, operator packet indexes, and
+Edge-compatible bundles.
 
 ## Current Verification Baseline
 

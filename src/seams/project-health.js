@@ -63,6 +63,7 @@ export async function writeProjectHealth({
     .filter((entry) => entry.state !== 'ready-for-local-inspection')
   const productionHealthExplanations = buildProductionHealthExplanations(productionValidation)
   const productionCapsuleHealthExplanations = buildProductionCapsuleHealthExplanations(records)
+  const productionRoughCutHealthExplanations = buildProductionRoughCutHealthExplanations(records)
 
   if (statusResult.status.assetResourceConsistency.readyForEdgeInspection !== true) {
     blockingIssues.push('asset-resource-consistency-not-ready')
@@ -82,6 +83,10 @@ export async function writeProjectHealth({
 
   if (productionCapsuleHealthExplanations.length > 0) {
     blockingIssues.push('production-capsule-attention')
+  }
+
+  if (productionRoughCutHealthExplanations.length > 0) {
+    blockingIssues.push('production-rough-cut-attention')
   }
 
   const health = {
@@ -119,11 +124,13 @@ export async function writeProjectHealth({
     },
     productionHealthExplanations,
     productionCapsuleHealthExplanations,
+    productionRoughCutHealthExplanations,
     operatorHealthExplanations: [
       ...assetHealthExplanations,
       ...derivativeHealthExplanations,
       ...productionHealthExplanations,
-      ...productionCapsuleHealthExplanations
+      ...productionCapsuleHealthExplanations,
+      ...productionRoughCutHealthExplanations
     ],
     operatorGuidanceOnly: true,
     localOnly: true,
@@ -172,6 +179,7 @@ function printHealthSummary(health, output) {
   console.log(`derivativeReadiness: ${health.mediaDerivativeReadiness?.readyAssets ?? 0}/${health.mediaDerivativeReadiness?.evaluatedAssets ?? 0}`)
   console.log(`derivativeAttention: ${health.mediaDerivativeReadiness?.attentionAssets ?? 0}`)
   console.log(`productionCapsuleAttention: ${health.productionCapsuleHealthExplanations?.length ?? 0}`)
+  console.log(`productionRoughCutAttention: ${health.productionRoughCutHealthExplanations?.length ?? 0}`)
   for (const explanation of health.operatorHealthExplanations ?? []) {
     console.log(formatHealthExplanation(explanation))
   }
@@ -290,6 +298,24 @@ function buildProductionCapsuleHealthExplanations(records) {
   ]
 }
 
+function buildProductionRoughCutHealthExplanations(records) {
+  const roughCuts = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaRoughCutCapsuleLocal)
+    .map((entry) => ({ ...entry.record, recordPath: entry.path }))
+  const roughCutAttention = roughCuts
+    .filter((roughCut) => roughCut.assemblyPosture?.state === 'needs-production-items')
+    .map((roughCut) => productionRoughCutExplanation({
+      roughCut,
+      issueCodes: ['rough_cut_items_missing'],
+      summary: `Rough-cut capsule ${roughCut.roughCutId} has no ordered production items.`,
+      nextAction: 'Create production capsules and a production bundle, then regenerate the rough-cut capsule.'
+    }))
+
+  return [
+    ...roughCutAttention
+  ]
+}
+
 function isProductionCapsuleEligibleAsset(asset) {
   const mediaKind = asset.metadataProbe?.mediaKind
   if (['image', 'video', 'audio'].includes(mediaKind)) return true
@@ -346,6 +372,49 @@ function productionCapsuleExplanation({
     summary,
     nextAction,
     sourceRefs,
+    nonClaims: healthNonClaims(),
+    localOnly: true,
+    operatorGuidanceOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    byteAvailabilityProof: false,
+    materializationProof: false,
+    providerTruth: false,
+    resourceAdmission: false,
+    approvalAuthority: false,
+    publicationAuthorization: false
+  }
+}
+
+function productionRoughCutExplanation({
+  roughCut,
+  issueCodes,
+  summary,
+  nextAction,
+  sourceRefs
+}) {
+  return {
+    subjectKind: 'media-rough-cut-capsule',
+    subjectRef: {
+      kind: 'media-rough-cut-capsule',
+      id: roughCut?.roughCutId ?? 'missing',
+      schema: artifactKinds.mediaRoughCutCapsuleLocal
+    },
+    path: roughCut?.recordPath,
+    healthState: 'needs-local-attention',
+    issueCodes,
+    summary,
+    nextAction,
+    sourceRefs: sourceRefs ?? [
+      {
+        kind: 'media-rough-cut-capsule',
+        id: roughCut.roughCutId,
+        schema: roughCut.schema,
+        path: roughCut.recordPath,
+        localOnly: true
+      }
+    ],
     nonClaims: healthNonClaims(),
     localOnly: true,
     operatorGuidanceOnly: true,

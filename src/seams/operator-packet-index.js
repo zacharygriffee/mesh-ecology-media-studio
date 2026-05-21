@@ -81,6 +81,9 @@ export async function writeOperatorPacketIndex({
   const productionBundleRefs = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProductionBundleLocal)
     .map(toInspectionRef)
+  const roughCutCapsuleRefs = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaRoughCutCapsuleLocal)
+    .map(toInspectionRef)
   const mediationRefs = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaRuleResolutionTraceLocal)
     .map(toInspectionRef)
@@ -97,6 +100,9 @@ export async function writeOperatorPacketIndex({
   const productionBundles = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProductionBundleLocal)
     .map((entry) => summarizeProductionBundle(entry.record, entry.relativePath))
+  const roughCutCapsules = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaRoughCutCapsuleLocal)
+    .map((entry) => summarizeRoughCutCapsule(entry.record, entry.relativePath))
   const productionApprovalLane = summarizeProductionApprovalLane({
     assetRecords: records
       .filter((entry) => entry.record.schema === artifactKinds.mediaAssetDescriptor)
@@ -132,11 +138,13 @@ export async function writeOperatorPacketIndex({
     providerLoopStatusRefs,
     productionCapsuleRefs,
     productionBundleRefs,
+    roughCutCapsuleRefs,
     mediationRefs,
     providerLoopStatuses,
     providerLoopDecisions,
     productionCapsules,
     productionBundles,
+    roughCutCapsules,
     productionApprovalLane,
     operatorHealthExplanations,
     summary: {
@@ -156,6 +164,8 @@ export async function writeOperatorPacketIndex({
       productionCapsulesNeedingAttention: productionCapsules.filter((capsule) => capsule.needsOperatorAttention).length,
       productionBundles: productionBundleRefs.length,
       productionBundlesNeedingAttention: productionBundles.filter((bundle) => bundle.needsOperatorAttention).length,
+      roughCutCapsules: roughCutCapsuleRefs.length,
+      roughCutCapsulesNeedingAttention: roughCutCapsules.filter((roughCut) => roughCut.needsOperatorAttention).length,
       productionApprovalCandidates: productionApprovalLane.candidates,
       productionApprovalPendingAuthority: productionApprovalLane.pendingAuthority,
       ruleResolutionTraces: mediationRefs.length,
@@ -166,6 +176,7 @@ export async function writeOperatorPacketIndex({
         providerLoopStatuses.filter((status) => status.needsOperatorAttention).length +
         productionCapsules.filter((capsule) => capsule.needsOperatorAttention).length +
         productionBundles.filter((bundle) => bundle.needsOperatorAttention).length +
+        roughCutCapsules.filter((roughCut) => roughCut.needsOperatorAttention).length +
         productionApprovalLane.attentionRows.length,
       newestRecordPath: newestPath(records),
       operatorGuidanceOnly: true
@@ -213,6 +224,9 @@ export async function writeOperatorPacketIndex({
     for (const bundle of index.productionBundles) {
       console.log(formatProductionBundle(bundle))
     }
+    for (const roughCut of index.roughCutCapsules) {
+      console.log(formatRoughCutCapsule(roughCut))
+    }
     if (index.productionApprovalLane.candidates > 0) {
       console.log(formatProductionApprovalLaneSummary(index.productionApprovalLane))
     }
@@ -240,6 +254,7 @@ function formatOperatorPacketIndexSummary(index, output) {
     `providerLoopDecisions=${summary.providerLoopDecisions ?? 0}`,
     `productionCapsules=${summary.productionCapsules ?? 0}`,
     `productionBundles=${summary.productionBundles ?? 0}`,
+    `roughCuts=${summary.roughCutCapsules ?? 0}`,
     `productionApprovalPending=${summary.productionApprovalPendingAuthority ?? 0}`,
     `ruleTraces=${summary.ruleResolutionTraces}`,
     `attention=${summary.attentionRows ?? summary.operatorHealthExplanations}`,
@@ -296,6 +311,19 @@ function formatProductionBundle(bundle) {
     `issues=${bundle.issueCodes.join(',') || 'none'}`,
     `nextAction=${bundle.nextAction}`,
     `path=${bundle.bundleRef.path}`
+  ].join(' | ')
+}
+
+function formatRoughCutCapsule(roughCut) {
+  return [
+    `rough cut: ${roughCut.roughCutRef.id}`,
+    `state=${roughCut.state}`,
+    `items=${roughCut.items}`,
+    `rendered=${roughCut.rendered}`,
+    `productionReady=${roughCut.productionReady}`,
+    `issues=${roughCut.issueCodes.join(',') || 'none'}`,
+    `nextAction=${roughCut.nextAction}`,
+    `path=${roughCut.roughCutRef.path}`
   ].join(' | ')
 }
 
@@ -377,6 +405,7 @@ const indexableSchemas = new Set([
   artifactKinds.mediaProviderLoopStatusLocal,
   artifactKinds.mediaProductionAssetCapsuleLocal,
   artifactKinds.mediaProductionBundleLocal,
+  artifactKinds.mediaRoughCutCapsuleLocal,
   artifactKinds.mediaRuleResolutionTraceLocal
 ])
 
@@ -486,6 +515,36 @@ function summarizeProductionBundle(record, relativePath) {
   }
 }
 
+function summarizeRoughCutCapsule(record, relativePath) {
+  const issueCodes = record.assemblyPosture?.state === 'needs-production-items'
+    ? ['rough_cut_items_missing']
+    : []
+
+  return {
+    roughCutRef: {
+      ...makeRef('media-rough-cut-capsule', record.roughCutId, record.schema),
+      path: relativePath,
+      localOnly: true
+    },
+    state: record.assemblyPosture?.state ?? 'unknown',
+    items: record.orderedItems?.length ?? 0,
+    pendingAuthorityItems: record.assemblyPosture?.pendingAuthorityItems ?? 0,
+    rendered: record.renderPosture?.rendered === true,
+    productionReady: record.productionReady === true,
+    issueCodes,
+    needsOperatorAttention: issueCodes.length > 0,
+    nextAction: issueCodes.length > 0
+      ? 'Create production capsules and a production bundle before regenerating the rough-cut capsule.'
+      : 'Review ordered rough-cut items locally; render/export/publication remain separate future work.',
+    approvalAuthority: false,
+    publicationAuthorization: false,
+    operatorGuidanceOnly: true,
+    localOnly: true,
+    meshTruth: false,
+    providerTruth: false
+  }
+}
+
 async function findJsonFiles(root, relativeRoot) {
   assertSafeLocalPath(relativeRoot)
   const absoluteRoot = path.join(root, relativeRoot)
@@ -556,6 +615,7 @@ function kindForSchema(schema) {
     [artifactKinds.mediaProviderLoopStatusLocal]: 'media-provider-loop-status',
     [artifactKinds.mediaProductionAssetCapsuleLocal]: 'media-production-asset-capsule',
     [artifactKinds.mediaProductionBundleLocal]: 'media-production-bundle',
+    [artifactKinds.mediaRoughCutCapsuleLocal]: 'media-rough-cut-capsule',
     [artifactKinds.mediaRuleResolutionTraceLocal]: 'media-rule-resolution-trace'
   }[schema] ?? schema
 }
@@ -570,6 +630,7 @@ function idForRecord(record) {
     record.requestId ??
     record.statusId ??
     record.capsuleId ??
+    record.roughCutId ??
     record.bundleId ??
     record.traceId
 }
