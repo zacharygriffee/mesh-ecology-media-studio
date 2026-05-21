@@ -240,6 +240,7 @@ export async function createFfmpegExportReceipt({
     sourceExportCandidateRef: exportPlan.sourceExportCandidateRef,
     sourceRoughCutRef: exportPlan.sourceRoughCutRef,
     sourceRenderReceiptRef: exportPlan.sourceRenderReceiptRef,
+    reviewDecisionRef: exportPlan.reviewDecisionRef,
     sourceOutputLocalRef: {
       ...makeRef('ffmpeg-export-source-items', exportPlan.planId, exportPlan.schema),
       path: packageRoot,
@@ -253,11 +254,17 @@ export async function createFfmpegExportReceipt({
       localOnly: true
     },
     orderedItems: renderedItems.map((item) => ({
-      itemRef: item.item.itemRef,
+      itemRef: item.item.itemRef ?? {
+        kind: item.item.kind,
+        id: item.item.id,
+        schema: item.item.schema,
+        order: item.item.order,
+        localOnly: true
+      },
       acceptedAssetRef: item.item.acceptedAssetRef,
       productionAssetCapsuleRef: item.item.productionAssetCapsuleRef,
       sourceLocalRef: item.item.localRef,
-      order: item.item.itemRef?.order ?? item.index,
+      order: item.item.itemRef?.order ?? item.item.order ?? item.index,
       seconds: secondsPerItem,
       bytesRead: true,
       exported: true,

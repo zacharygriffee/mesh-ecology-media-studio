@@ -181,6 +181,7 @@ export async function createLocalExportReceipt({
     sourceExportCandidateRef: exportPlan.sourceExportCandidateRef,
     sourceRoughCutRef: exportPlan.sourceRoughCutRef,
     sourceRenderReceiptRef,
+    reviewDecisionRef: exportPlan.reviewDecisionRef,
     sourceOutputLocalRef: {
       ...renderReceipt.outputLocalRef,
       hash: sourceHash,
@@ -215,6 +216,22 @@ export async function createLocalExportReceipt({
       byteAvailabilityProof: false,
       materializationProof: false
     },
+    orderedItems: (exportPlan.orderedItems ?? []).map((item, index) => ({
+      itemRef: item.itemRef ?? {
+        kind: item.kind,
+        id: item.id,
+        schema: item.schema,
+        order: item.order,
+        localOnly: true
+      },
+      acceptedAssetRef: item.acceptedAssetRef,
+      productionAssetCapsuleRef: item.productionAssetCapsuleRef,
+      sourceLocalRef: item.localRef,
+      order: item.itemRef?.order ?? item.order ?? index,
+      bytesRead: true,
+      exported: true,
+      localOnly: true
+    })),
     sourceRefs,
     nextActions: [
       'Review the local delivery package before any publication or authority lane.',

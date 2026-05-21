@@ -478,8 +478,11 @@ publication path.
 `npm run production:authority-prereqs` writes the local prerequisite state for
 accepted production candidates: local decision, approval proposal, situated
 approval refs, capsule, bundle, byte/resource posture, derivative refs,
-rough-cut review posture, and the remaining authority gap. It writes local
-guidance only, not an authority artifact.
+rough-cut review posture, render/export candidate posture, render receipts, and
+export receipt delivery posture. Fresh export receipts can show local delivery
+bytes were created, but the report still treats render authorization, export
+authorization, publication authorization, and production readiness as missing.
+It writes local guidance only, not an authority artifact.
 `npm run production:rough-cut` writes `media.rough_cut_capsule.local.v1`, an
 order-only local review package over accepted production item refs. It does not
 render, export, publish, or grant production authority.

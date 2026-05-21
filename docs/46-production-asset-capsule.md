@@ -150,14 +150,15 @@ local prerequisite posture record showing whether an accepted production
 candidate has the local package expected before a future authority review:
 
 ```txt
-production authority prerequisites: project=venice-smoke-project | candidates=1 | localPackageComplete=1 | missingLocalPrerequisites=0 | roughCutReviewed=1 | roughCutChangesRequested=0 | roughCutDeferred=0 | pendingAuthority=1 | productionReady=0
+production authority prerequisites: project=venice-smoke-project | candidates=1 | localPackageComplete=1 | missingLocalPrerequisites=0 | roughCutReviewed=1 | roughCutChangesRequested=0 | roughCutDeferred=0 | renderExportCandidates=1 | renderReceipts=1 | exportReceipts=1 | deliveryCreated=1 | exportPerformed=1 | renderAuthorizationMissing=1 | exportAuthorizationMissing=1 | pendingAuthority=1 | productionReady=0
 ```
 
 The report checks local decision, approval proposal, situated approval refs,
 production capsule, production bundle, byte descriptor proposal, resource-ref
-candidate, rough-cut review posture, and derivative refs. It does not create an
-authority artifact and it
-does not make the bundle production-ready.
+candidate, rough-cut review posture, render/export candidate posture, render
+receipt posture, export receipt posture, and derivative refs. Export receipts
+show local delivery evidence only. The report does not create an authority
+artifact and it does not make the bundle production-ready.
 
 ## Authority Handoff Candidate
 
