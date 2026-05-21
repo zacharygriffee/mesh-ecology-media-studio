@@ -52,6 +52,7 @@
     "production:render-adapter-contract": "node src/production/render-adapter-contract.js",
     "production:render-plan": "node src/production/render-plan-candidate.js",
     "production:render-contact-sheet": "node src/production/render-contact-sheet.js",
+    "production:render-ffmpeg": "node src/production/render-ffmpeg.js",
     "resource:refs": "node src/local/resource-ref-candidates.js",
     "repair:local-posture": "node src/local/repair-local-posture.js",
     "media:import": "node src/assets/import-media.js",
@@ -70,6 +71,7 @@
     "url": "git+ssh://git@github.com:zacharygriffee/mesh-ecology-media-studio.git"
   },
   "dependencies": {
+    "ffmpeg-static": "^5.3.0",
     "sharp": "^0.33.5"
   }
 }

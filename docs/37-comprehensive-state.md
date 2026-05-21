@@ -508,6 +508,11 @@ bytes, render, export, publish, or grant authority.
 review. This is a bounded render receipt only: it does not create an export
 delivery, authorize publication, make the package production-ready, or grant
 approval/ratifier authority.
+`npm run production:render-ffmpeg` writes the same render receipt family for a
+local MP4 preview. ffmpeg is the default local video renderer posture and is
+provided through npm-managed `ffmpeg-static`, while `--disable-ffmpeg` or
+`MEDIA_STUDIO_FFMPEG=disabled` can skip execution. The receipt remains local
+render evidence only, not export delivery, publication, or authority.
 
 The first production assembly boundary is now explicit: capsules package one
 accepted production asset, bundles group capsules, rough cuts order accepted

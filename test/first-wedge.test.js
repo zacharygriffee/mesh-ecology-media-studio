@@ -117,6 +117,7 @@ import { writeRenderAdapterContract } from '../src/production/render-adapter-con
 import { writeRenderExportMediation } from '../src/production/render-export-mediation.js'
 import { writeRenderPlanCandidate } from '../src/production/render-plan-candidate.js'
 import { writeContactSheetRender } from '../src/production/render-contact-sheet.js'
+import { writeFfmpegRender } from '../src/production/render-ffmpeg.js'
 
 const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 
@@ -3076,6 +3077,41 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.ok(contactSheetOutput.lines.some((line) => line.includes('contact sheet render:')))
   assert.ok(contactSheetOutput.lines.some((line) => line.includes('renderPerformed=true')))
   assert.ok(contactSheetOutput.lines.some((line) => line.includes('exportPerformed=false')))
+
+  const ffmpegDisabledOutput = await captureConsole(() => writeFfmpegRender({ projectDir: dir, disableFfmpeg: true }))
+  assert.equal(ffmpegDisabledOutput.result.receipt, null)
+  assert.equal(ffmpegDisabledOutput.result.skipped.reason, 'ffmpeg disabled')
+  assert.equal(ffmpegDisabledOutput.result.skipped.renderPerformed, false)
+  assert.ok(ffmpegDisabledOutput.lines.some((line) => line.includes('ffmpeg render: skipped')))
+
+  const ffmpegOutput = await captureConsole(() => writeFfmpegRender({
+    projectDir: dir,
+    secondsPerItem: 1,
+    width: 320,
+    height: 180,
+    fps: 12
+  }))
+  const ffmpegReceipt = ffmpegOutput.result.receipt
+  assert.equal(ffmpegReceipt.schema, 'media.render_receipt.local.v1')
+  assert.equal(ffmpegReceipt.renderKind, 'local-ffmpeg-review-mp4')
+  assert.equal(ffmpegReceipt.sourceRenderPlanRef.id, renderPlan.planId)
+  assert.equal(ffmpegReceipt.outputLocalRef.contentType, 'video/mp4')
+  assert.equal(ffmpegReceipt.outputLocalRef.path.startsWith('media/exports/render-preview/ffmpeg-review-'), true)
+  assert.equal(ffmpegReceipt.executionPosture.rendererSelected, true)
+  assert.equal(ffmpegReceipt.executionPosture.rendererEngine, 'ffmpeg')
+  assert.equal(ffmpegReceipt.executionPosture.ffmpegDefault, true)
+  assert.equal(ffmpegReceipt.executionPosture.ffmpegDisableSupported, true)
+  assert.equal(ffmpegReceipt.renderPerformed, true)
+  assert.equal(ffmpegReceipt.exportPerformed, false)
+  assert.equal(ffmpegReceipt.productionReady, false)
+  assert.equal(ffmpegReceipt.publicationAuthorization, false)
+  assert.equal(ffmpegReceipt.materializationProof, false)
+  assert.equal(validateRequiredRecord(ffmpegReceipt), true)
+  const ffmpegBytes = await readFile(path.join(dir, ffmpegReceipt.outputLocalRef.path))
+  assert.equal(ffmpegBytes.length, ffmpegReceipt.output.bytes)
+  assert.ok(ffmpegOutput.lines.some((line) => line.includes('ffmpeg render:')))
+  assert.ok(ffmpegOutput.lines.some((line) => line.includes('renderPerformed=true')))
+  assert.ok(ffmpegOutput.lines.some((line) => line.includes('exportPerformed=false')))
 
   await writeRoughCutReviewDecision({
     projectDir: dir,

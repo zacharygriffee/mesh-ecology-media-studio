@@ -262,6 +262,10 @@ only. It does not read media bytes, render, export, publish, or grant authority.
 execution path. It reads the planned image refs and writes a PNG contact sheet
 for local review, but it still does not create an export delivery, publish,
 make the project production-ready, or grant authority.
+`npm run production:render-ffmpeg` is the default local MP4 preview renderer.
+It uses an npm-managed ffmpeg binary by default and can be skipped with
+`--disable-ffmpeg` or `MEDIA_STUDIO_FFMPEG=disabled`. It still produces only a
+local render receipt, not an export delivery, publication, or authority.
 
 Create a local provider-loop operator decision request:
 
