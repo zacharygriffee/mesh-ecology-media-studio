@@ -2783,6 +2783,47 @@ test('rough cut request changes surfaces local revision posture', async () => {
   assert.ok(prereqs.rows[0].safeNextAction.includes('Regenerate or revise'))
 })
 
+test('rough cut defer surfaces local deferred review posture', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-rough-cut-defer-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+  await writeAuthorityHandoffCandidate({ projectDir: dir, quiet: true })
+  await writeRoughCutCapsule({ projectDir: dir })
+
+  const decisionOutput = await captureConsole(() => writeRoughCutReviewDecision({
+    projectDir: dir,
+    decision: 'defer',
+    output: 'records/decisions/media-rough-cut-defer.local.json'
+  }))
+  const decision = decisionOutput.result.decision
+  assert.equal(decision.decisionType, 'defer')
+  assert.equal(decision.reviewAcknowledged, false)
+  assert.equal(decision.requestChanges, false)
+  assert.equal(decision.deferred, true)
+  assert.equal(decision.executionPerformed, false)
+  assert.equal(decision.authorityGranted, false)
+
+  const summary = await createMediaSummary({ projectDir: dir })
+  assert.equal(summary.productionRoughCuts.reviewed, 0)
+  assert.equal(summary.productionRoughCuts.changesRequested, 0)
+  assert.equal(summary.productionRoughCuts.deferred, 1)
+  assert.deepEqual(summary.productionRoughCuts.attentionRows[0].issueCodes, ['rough_cut_review_deferred'])
+  assert.ok(summary.productionRoughCuts.attentionRows[0].nextAction.includes('Resolve deferred'))
+
+  const health = await writeProjectHealth({ projectDir: dir, summary: true })
+  assert.deepEqual(health.health.productionRoughCutHealthExplanations[0].issueCodes, ['rough_cut_review_deferred'])
+
+  const index = await writeOperatorPacketIndex({ projectDir: dir })
+  assert.equal(index.index.summary.roughCutCapsulesNeedingAttention, 1)
+  assert.ok(index.index.roughCutCapsules[0].issueCodes.includes('rough_cut_review_deferred'))
+
+  const prereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
+  assert.equal(prereqs.roughCutReviewed, 0)
+  assert.equal(prereqs.roughCutChangesRequested, 0)
+  assert.equal(prereqs.roughCutDeferred, 1)
+  assert.equal(prereqs.rows[0].roughCutReviewPosture.state, 'rough-cut-review-deferred')
+  assert.ok(prereqs.rows[0].safeNextAction.includes('deferred rough-cut review'))
+})
+
 test('project health reports missing production asset capsules for accepted provider assets', async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-capsule-health-'))
   await runVeniceOperationalLoop({
