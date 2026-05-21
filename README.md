@@ -301,6 +301,7 @@ npm run production:render-adapter-contract -- --project-dir examples/venice-smok
 npm run production:render-plan -- --project-dir examples/venice-smoke
 npm run production:export-candidate -- --project-dir examples/venice-smoke
 npm run production:export-plan -- --project-dir examples/venice-smoke
+npm run production:export-local-package -- --project-dir examples/venice-smoke
 ```
 
 The first real local render commands consume the dry-run render plan:
@@ -325,6 +326,9 @@ publication authorization, production readiness, or authority.
 delivery candidate over the reviewed rough cut and existing preview receipts.
 They resolve refs and target output placement only; they do not read media bytes,
 create delivery files, authorize publication, or make the package production-ready.
+`production:export-local-package` copies the selected local preview into a
+review delivery folder and writes a manifest/receipt. It is still local-only
+delivery evidence, not publication authorization or production readiness.
 
 ## Inspection And Edge-Compatible Artifacts
 

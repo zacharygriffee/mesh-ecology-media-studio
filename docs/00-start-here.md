@@ -174,6 +174,7 @@ npm run production:render-contact-sheet -- --project-dir examples/venice-smoke
 npm run production:render-ffmpeg -- --project-dir examples/venice-smoke
 npm run production:export-candidate -- --project-dir examples/venice-smoke
 npm run production:export-plan -- --project-dir examples/venice-smoke
+npm run production:export-local-package -- --project-dir examples/venice-smoke
 npm run provider:venice:rehearse-production -- --project-dir examples/venice-smoke
 npm run approval:proposal -- --project-dir examples/card-to-candidate
 npm run bytes:proposal -- --project-dir examples/card-to-candidate

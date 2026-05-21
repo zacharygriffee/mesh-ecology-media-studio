@@ -56,6 +56,7 @@ export const artifactKinds = Object.freeze({
   mediaRenderReceiptLocal: 'media.render_receipt.local.v1',
   mediaExportCandidateLocal: 'media.export_candidate.local.v1',
   mediaExportPlanCandidateLocal: 'media.export_plan_candidate.local.v1',
+  mediaExportReceiptLocal: 'media.export_receipt.local.v1',
   mediaApprovalProposalLocal: 'media.approval_proposal.local.v1',
   mediaByteDescriptorProposalLocal: 'media.byte_descriptor_proposal.local.v1',
   mediaLocalLayerResourceRefCandidateLocal: 'media.local_layer_resource_ref_candidate.local.v1',

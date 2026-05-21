@@ -237,6 +237,12 @@ render receipt. They resolve refs and planned delivery placement only. They do
 not read media bytes, create delivery files, authorize publication, or make the
 package production-ready.
 
+`npm run production:export-local-package` consumes the dry-run export plan and
+copies the selected local render preview into a delivery-candidate folder with a
+manifest and `media.export_receipt.local.v1`. This is local export execution for
+review only. It does not publish, authorize publication, grant authority, or
+make the package production-ready.
+
 ## Non-Claims
 
 The capsule is local operator guidance only:

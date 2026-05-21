@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "media.export_receipt.local.v1",
+  "title": "Media Export Receipt Local",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "exportReceiptId",
+    "projectId",
+    "mode",
+    "exportKind",
+    "sourceExportPlanRef",
+    "sourceExportCandidateRef",
+    "sourceRenderReceiptRef",
+    "sourceOutputLocalRef",
+    "deliveryLocalRef",
+    "deliveryManifestRef",
+    "executionPosture",
+    "sourceRefs",
+    "createdAt",
+    "operatorGuidanceOnly",
+    "exportPerformed",
+    "deliveryCreated",
+    "productionReady",
+    "publicationAuthorization",
+    "localOnly",
+    "meshTruth"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.export_receipt.local.v1"
+    },
+    "exportReceiptId": {
+      "type": "string"
+    },
+    "projectId": {
+      "type": "string"
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "exportKind": {
+      "const": "local-review-package-copy"
+    },
+    "sourceRefs": {
+      "type": "array"
+    },
+    "operatorGuidanceOnly": {
+      "const": true
+    },
+    "exportPerformed": {
+      "const": true
+    },
+    "deliveryCreated": {
+      "const": true
+    },
+    "productionReady": {
+      "const": false
+    },
+    "publicationAuthorization": {
+      "const": false
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    }
+  }
+}

@@ -835,6 +835,7 @@ function countRecords(records) {
     renderReceipts: bySchema(artifactKinds.mediaRenderReceiptLocal),
     exportCandidates: bySchema(artifactKinds.mediaExportCandidateLocal),
     exportPlanCandidates: bySchema(artifactKinds.mediaExportPlanCandidateLocal),
+    exportReceipts: bySchema(artifactKinds.mediaExportReceiptLocal),
     approvalProposals: bySchema(artifactKinds.mediaApprovalProposalLocal),
     byteDescriptorProposals: bySchema(artifactKinds.mediaByteDescriptorProposalLocal),
     resourceRefCandidates: bySchema(artifactKinds.mediaLocalLayerResourceRefCandidateLocal),

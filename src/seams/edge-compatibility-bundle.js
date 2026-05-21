@@ -68,7 +68,8 @@ const productionSourceSchemas = new Set([
   artifactKinds.mediaRenderPlanCandidateLocal,
   artifactKinds.mediaRenderReceiptLocal,
   artifactKinds.mediaExportCandidateLocal,
-  artifactKinds.mediaExportPlanCandidateLocal
+  artifactKinds.mediaExportPlanCandidateLocal,
+  artifactKinds.mediaExportReceiptLocal
 ])
 
 function parseArgs(argv) {
@@ -616,6 +617,7 @@ function kindForSchema(schema) {
     [artifactKinds.mediaRenderReceiptLocal]: 'media-render-receipt',
     [artifactKinds.mediaExportCandidateLocal]: 'media-export-candidate',
     [artifactKinds.mediaExportPlanCandidateLocal]: 'media-export-plan-candidate',
+    [artifactKinds.mediaExportReceiptLocal]: 'media-export-receipt',
     [artifactKinds.mediaApprovalProposalLocal]: 'media-approval-proposal',
     [artifactKinds.mediaByteDescriptorProposalLocal]: 'media-byte-descriptor-proposal',
     [artifactKinds.mediaLocalLayerResourceRefCandidateLocal]: 'media-local-layer-resource-ref-candidate',
@@ -649,6 +651,7 @@ function idForRecord(record) {
     record.roughCutId ??
     record.candidateId ??
     record.exportCandidateId ??
+    record.exportReceiptId ??
     record.contractId ??
     record.planId ??
     record.renderReceiptId ??

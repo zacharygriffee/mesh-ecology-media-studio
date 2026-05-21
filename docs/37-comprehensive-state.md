@@ -522,12 +522,19 @@ delivery placement without reading media bytes or creating delivery output.
 Both remain dry-run/local-only and keep publication authorization and
 production readiness false.
 
+`npm run production:export-local-package` writes
+`media.export_receipt.local.v1` after copying a local render preview into the
+planned delivery-candidate folder and writing a small manifest. This is the
+first local export execution path, but it remains review delivery evidence
+only: it does not publish, grant authority, or make the package production-ready.
+
 The first production assembly boundary is now explicit: capsules package one
 accepted production asset, bundles group capsules, rough cuts order accepted
 items for local review, rough-cut decisions record local review posture,
 render/export candidates and plans describe preparation inputs, and render
-receipts can record local preview evidence. None of these records create export
-deliverables, publish to mesh, or grant approval/ratifier/publication authority.
+receipts can record local preview evidence. Export receipts can create local
+delivery copies, but they still do not publish to mesh or grant
+approval/ratifier/publication authority.
 
 ## Current Verification Baseline
 
