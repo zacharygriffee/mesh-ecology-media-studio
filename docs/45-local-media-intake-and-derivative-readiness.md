@@ -189,7 +189,20 @@ accepted/rejected placement.
 
 ## Full Local Generated-Image Loop
 
-The current operational loop for one Venice-generated image is:
+The compact command for one local Venice-shaped generated image loop is:
+
+```bash
+npm run provider:venice:loop
+```
+
+By default this uses an injected Venice-shaped response and does not call the
+provider. Use the real Venice API only with explicit opt-in:
+
+```bash
+VENICE_LIVE=1 npm run provider:venice:loop -- --live-provider
+```
+
+The expanded equivalent operational loop is:
 
 ```bash
 VENICE_LIVE=1 npm run provider:venice:smoke

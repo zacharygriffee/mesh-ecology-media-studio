@@ -170,6 +170,18 @@ The Venice smoke inspector now summarizes generated candidates, promoted
 accepted/rejected assets, derivative readiness, and byte/resource posture when
 those local records exist.
 
+Run the full local Venice image loop without a live provider call:
+
+```bash
+npm run provider:venice:loop
+```
+
+Use the real Venice API only with the explicit live switch:
+
+```bash
+VENICE_LIVE=1 npm run provider:venice:loop -- --live-provider
+```
+
 Current full local generated-image loop:
 
 ```bash

@@ -61,6 +61,7 @@ import {
   resolveVeniceApiKey,
   runVeniceLiveSmoke
 } from '../src/providers/venice-live-smoke.js'
+import { runVeniceOperationalLoop } from '../src/providers/venice-operational-loop.js'
 import { inspectLocalRun } from '../src/seams/inspect-local-run.js'
 import { exportInspectionBundle } from '../src/seams/export-inspection-bundle.js'
 import { indexInspectionRecords } from '../src/seams/index-inspection-records.js'
@@ -1058,6 +1059,68 @@ test('Venice smoke inspection summarizes promoted assets derivatives and resourc
   assert.ok(result.packet.generatedArtifactRefs.some((ref) => ref.kind === 'media-derivative'))
   assert.equal(result.packet.operationalSummary.materializationProof, false)
   assert.equal(validateRequiredRecord(result.packet), true)
+})
+
+test('Venice operational loop completes locally without live provider by default', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-venice-loop-'))
+
+  const status = await runVeniceOperationalLoop({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+
+  assert.equal(status.state, 'complete_review_only')
+  assert.equal(status.liveProviderCalled, false)
+  assert.equal(status.provider.generatedAssets, 1)
+  assert.equal(status.mediaSummary.generatedCandidates.total, 1)
+  assert.equal(status.mediaSummary.generatedCandidates.reviewed, 1)
+  assert.equal(status.mediaSummary.generatedCandidates.promotedAccepted, 1)
+  assert.equal(status.mediaSummary.derivatives.readyAssets, 2)
+  assert.equal(status.mediaSummary.derivatives.evaluatedAssets, 2)
+  assert.equal(status.mediaSummary.identity.byteContent.coveredContentIds, 1)
+  assert.equal(status.mediaSummary.identity.resourceSituations.coveredSituationPlacements, 1)
+  assert.equal(status.mediaSummary.remainingAttention, 0)
+  assert.equal(status.edgeCalled, false)
+  assert.equal(status.meshPublished, false)
+  assert.equal(status.materializationProof, false)
+
+  const providerResult = JSON.parse(
+    await readFile(path.join(dir, 'records', 'provider-results', 'venice-live-smoke-provider-result.local.json'), 'utf8')
+  )
+  assert.equal(providerResult.providerResult.rawProviderRef.apiCalled, false)
+})
+
+test('Venice operational loop reports provider-stage failure without claiming truth', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-venice-loop-fail-'))
+
+  const status = await runVeniceOperationalLoop({
+    projectDir: dir,
+    liveProvider: true,
+    env: {
+      VENICE_LIVE: '1',
+      VENICE_INFERENCE_KEY: 'test-key'
+    },
+    envPath: path.join(dir, '.env-missing'),
+    fetchImpl: async () => ({
+      status: 429,
+      async json() {
+        return {
+          id: 'venice-live-failure',
+          error: { message: 'budget capped' }
+        }
+      }
+    })
+  })
+
+  assert.equal(status.state, 'failed_review_only')
+  assert.equal(status.failedStep, 'provider_smoke')
+  assert.equal(status.liveProviderCalled, true)
+  assert.match(status.nextAction, /VENICE_LIVE/)
+  assert.equal(status.meshTruth, false)
+  assert.equal(status.providerTruth, false)
+  assert.equal(status.edgeCalled, false)
+  assert.equal(status.meshPublished, false)
 })
 
 test('generic local-run inspection packet exports first-wedge records', async () => {

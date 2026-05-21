@@ -96,6 +96,12 @@ The optional Venice live smoke command is intentionally gated:
 VENICE_LIVE=1 npm run provider:venice:smoke
 ```
 
+For the full local generated-image loop without a provider call:
+
+```bash
+npm run provider:venice:loop
+```
+
 That command writes ignored local smoke artifacts under
 `examples/venice-smoke/`. It does not run as part of `npm test`. Venice
 provider capability and failure fixtures are local-only and validate without

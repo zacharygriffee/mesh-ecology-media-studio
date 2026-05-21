@@ -60,6 +60,7 @@ text is not the durable contract.
 | Command | compact | artifact | json | refs | churn |
 | --- | --- | --- | --- | --- | --- |
 | `npm run provider:venice:smoke` | yes | yes | no | yes | gated runtime output under ignored smoke paths |
+| `npm run provider:venice:loop` | yes | yes | `--print` | yes | default local injected response; live API only with `--live-provider` |
 | `npm run rule:example` | yes | yes | no | yes | deterministic example ids; runtime output is ignored |
 
 ## Fixture Commands

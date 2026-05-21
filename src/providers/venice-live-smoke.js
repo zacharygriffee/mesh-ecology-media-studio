@@ -168,7 +168,7 @@ export function buildVeniceLiveSmokeProviderInput(generationRequest) {
   return providerInput
 }
 
-export function createVeniceLiveSmokeAdapter({ apiKey, fetchImpl }) {
+export function createVeniceLiveSmokeAdapter({ apiKey, fetchImpl, externalApiCall = true }) {
   if (!apiKey) throw new Error('Venice live smoke adapter is missing apiKey')
   if (typeof fetchImpl !== 'function') throw new Error('Venice live smoke adapter requires fetchImpl')
 
@@ -190,14 +190,16 @@ export function createVeniceLiveSmokeAdapter({ apiKey, fetchImpl }) {
 
       return {
         httpStatus: response.status,
-        responseJson: await response.json()
+        responseJson: await response.json(),
+        apiCalled: externalApiCall
       }
     },
     normalizeResult({ generationRequest, rawProviderOutput }) {
       return normalizeVeniceLiveImageResult({
         generationRequest,
         responseJson: rawProviderOutput.responseJson,
-        httpStatus: rawProviderOutput.httpStatus
+        httpStatus: rawProviderOutput.httpStatus,
+        apiCalled: rawProviderOutput.apiCalled !== false
       })
     },
     summarizeProviderInput(providerInput) {
@@ -218,7 +220,7 @@ export function createVeniceLiveSmokeAdapter({ apiKey, fetchImpl }) {
   }
 }
 
-export function normalizeVeniceLiveImageResult({ generationRequest, responseJson, httpStatus = 200 }) {
+export function normalizeVeniceLiveImageResult({ generationRequest, responseJson, httpStatus = 200, apiCalled = true }) {
   if (!responseJson || typeof responseJson !== 'object') {
     throw new Error('Venice live response must be an object')
   }
@@ -258,9 +260,9 @@ export function normalizeVeniceLiveImageResult({ generationRequest, responseJson
     timing: responseJson.timing,
     failure,
     rawProviderRef: {
-      kind: 'venice-live-response',
+      kind: apiCalled ? 'venice-live-response' : 'venice-local-simulated-response',
       responseId: responseJson.id,
-      apiCalled: true,
+      apiCalled,
       storedRawBytes: false,
       providerTruth: false
     }
@@ -303,7 +305,8 @@ export async function writeVeniceSmokeGeneratedAssets({
   operatorRef = 'local-operator',
   workPacket = createWorkPacket({ card, operatorRef }),
   providerResult,
-  responseJson
+  responseJson,
+  sourceApiCalled = true
 }) {
   const outputs = extractVeniceBase64Images(responseJson).map((image) => ({
     index: image.index,
@@ -322,9 +325,13 @@ export async function writeVeniceSmokeGeneratedAssets({
     outputSubdir: 'provider-smoke',
     filenamePrefix: 'venice-live-smoke',
     recordPrefix: 'venice-live-smoke',
-    sourceApiCalled: true,
-    lifecycleReason: 'Venice live smoke output placed locally after provider result normalization.',
-    transitionSummary: 'Venice live smoke output decoded from provider response and placed as a local generated asset.'
+    sourceApiCalled,
+    lifecycleReason: sourceApiCalled
+      ? 'Venice live smoke output placed locally after provider result normalization.'
+      : 'Venice smoke dry-run output placed locally from an injected provider-shaped response.',
+    transitionSummary: sourceApiCalled
+      ? 'Venice live smoke output decoded from provider response and placed as a local generated asset.'
+      : 'Venice smoke dry-run output decoded from injected provider-shaped response and placed as a local generated asset.'
   })
 }
 
@@ -360,7 +367,8 @@ export async function writeVeniceSmokeManifest({
   generationRequest,
   providerResult,
   reviews,
-  recordRefs
+  recordRefs,
+  externalApiCall = true
 }) {
   if (generatedAssets.assets.length === 0) return undefined
 
@@ -394,7 +402,9 @@ export async function writeVeniceSmokeManifest({
     generatedRecordPaths,
     warnings: [
       'Mode 0 standalone-local Venice smoke output only.',
-      'Provider result came from a live Venice smoke call but is still not provider truth.',
+      externalApiCall
+        ? 'Provider result came from a live Venice smoke call but is still not provider truth.'
+        : 'Provider result came from an injected Venice-shaped response and is not provider truth.',
       'Local file existence and local hashes are not byte availability or materialization proof.',
       'Operator decision is local-only and is not mesh authorization.'
     ]
@@ -418,7 +428,8 @@ export async function runVeniceLiveSmoke({
   env = process.env,
   envPath = '.env',
   projectDir = 'examples/venice-smoke',
-  fetchImpl = globalThis.fetch
+  fetchImpl = globalThis.fetch,
+  externalApiCall = true
 } = {}) {
   assertVeniceLiveGate(env)
 
@@ -432,9 +443,9 @@ export async function runVeniceLiveSmoke({
   const workPacket = createWorkPacket({ card })
   const generationRequest = createGenerationRequestFromCard({ card })
   const adapterResult = await executeProviderAdapter({
-    adapter: createVeniceLiveSmokeAdapter({ apiKey, fetchImpl }),
+    adapter: createVeniceLiveSmokeAdapter({ apiKey, fetchImpl, externalApiCall }),
     generationRequest,
-    mode: 'live-smoke'
+    mode: externalApiCall ? 'live-smoke' : 'dry-run'
   })
   const { providerInput, providerResult, adapterRun } = adapterResult
   const { responseJson, httpStatus } = adapterResult.rawProviderOutput
@@ -449,7 +460,8 @@ export async function runVeniceLiveSmoke({
       generationRequest,
       workPacket,
       providerResult,
-      responseJson
+      responseJson,
+      sourceApiCalled: externalApiCall
     })
     : { workPacket: undefined, assets: [] }
   const reviews = providerResult.status === 'succeeded'
@@ -517,7 +529,8 @@ export async function runVeniceLiveSmoke({
         workPacket: workPacketRef,
         generationRequest: generationRequestRef,
         providerResult: resultRef
-      }
+      },
+      externalApiCall
     })
     : undefined
   await mkdir(path.dirname(outputPath), { recursive: true })
@@ -577,7 +590,7 @@ export async function runVeniceLiveSmoke({
   return {
     providerId: veniceLiveSmokeConfig.providerId,
     endpointId: veniceLiveSmokeConfig.endpointId,
-    live: true,
+    live: externalApiCall,
     generationRequest,
     providerInput,
     providerResult,

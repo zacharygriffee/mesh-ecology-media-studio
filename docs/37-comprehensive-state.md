@@ -182,6 +182,10 @@ Venice live smoke requires explicit opt-in:
 VENICE_LIVE=1 npm run provider:venice:smoke
 ```
 
+`npm run provider:venice:loop` runs the full local generated-image loop with
+an injected Venice-shaped response by default. Add `-- --live-provider` with
+`VENICE_LIVE=1` only when intentionally spending provider credits.
+
 Provider IDs and job IDs remain provenance only.
 
 ## Production State
