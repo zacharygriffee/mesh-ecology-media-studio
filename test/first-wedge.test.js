@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { copyFile, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
@@ -160,6 +160,50 @@ function assertLayeredAssetIdentity(assetDescriptor, {
   assert.equal(assetDescriptor.originRef.localOnly, true)
   assert.equal(assetDescriptor.causalRefs.deferred, true)
   assert.equal(assetDescriptor.causalRefs.causalTruth, false)
+}
+
+async function addSecondAcceptedProductionAssetFixture(projectDir) {
+  const firstAssetRecord = 'records/assets/promoted-candidate-accepted.local.json'
+  const secondAssetRecord = 'records/assets/promoted-candidate-accepted-second.local.json'
+  const firstAsset = JSON.parse(await readFile(path.join(projectDir, firstAssetRecord), 'utf8'))
+  const secondPath = 'media/accepted/venice-live-smoke-1.png'
+  await copyFile(
+    path.join(projectDir, firstAsset.localRef.path),
+    path.join(projectDir, secondPath)
+  )
+
+  const secondAsset = JSON.parse(JSON.stringify(firstAsset))
+  secondAsset.assetId = `${firstAsset.assetId}-second`
+  secondAsset.localRef.path = secondPath
+  secondAsset.placementRef = {
+    ...firstAsset.placementRef,
+    id: `placement:${firstAsset.projectId}:${secondPath}`,
+    path: secondPath
+  }
+  secondAsset.situationRef = {
+    ...firstAsset.situationRef,
+    id: `situation:${sha256Hex(`${firstAsset.situationRef.id}:${secondPath}`).slice(0, 16)}`,
+    role: 'accepted-candidate',
+    placementRef: secondAsset.placementRef
+  }
+  secondAsset.assetDescriptorRef = {
+    ...firstAsset.assetDescriptorRef,
+    id: secondAsset.assetId,
+    path: secondAssetRecord
+  }
+  secondAsset.artifactDescriptorRef = secondAsset.assetDescriptorRef
+  secondAsset.localRef.placementClass = 'media-accepted'
+  secondAsset.provenance = {
+    ...firstAsset.provenance,
+    lifecycle: {
+      ...(firstAsset.provenance?.lifecycle ?? {}),
+      assetId: secondAsset.assetId
+    }
+  }
+  secondAsset.createdAt = '2026-05-19T00:00:01.000Z'
+
+  await writeFile(path.join(projectDir, secondAssetRecord), `${JSON.stringify(secondAsset, null, 2)}\n`)
+  return secondAssetRecord
 }
 
 function createTestOperationCandidate(overrides = {}) {
@@ -2823,6 +2867,44 @@ test('rough cut revision regenerates local capsule from request changes', async 
   const prereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
   assert.equal(prereqs.roughCutChangesRequested, 0)
   assert.equal(prereqs.rows[0].roughCutReviewPosture.state, 'rough-cut-review-missing')
+})
+
+test('rough cut capsule orders two accepted production items', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-rough-cut-two-items-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+  const secondAssetRecord = await addSecondAcceptedProductionAssetFixture(dir)
+
+  await writeProductionAssetCapsule({
+    projectDir: dir,
+    assetRecord: 'records/assets/promoted-candidate-accepted.local.json',
+    output: 'records/production/media-production-asset-capsule-first.local.json',
+    quiet: true
+  })
+  await writeProductionAssetCapsule({
+    projectDir: dir,
+    assetRecord: secondAssetRecord,
+    output: 'records/production/media-production-asset-capsule-second.local.json',
+    quiet: true
+  })
+  await writeProductionBundle({ projectDir: dir, quiet: true })
+  await writeAuthorityHandoffCandidate({ projectDir: dir, quiet: true })
+
+  const output = await writeRoughCutCapsule({ projectDir: dir, quiet: true })
+  const roughCut = output.roughCut
+
+  assert.equal(roughCut.orderedItems.length, 2)
+  assert.deepEqual(roughCut.orderedItems.map((item) => item.order), [1, 2])
+  assert.deepEqual(roughCut.orderedItems.map((item) => item.localRef.path), [
+    'media/accepted/venice-live-smoke-0.png',
+    'media/accepted/venice-live-smoke-1.png'
+  ])
+  assert.equal(new Set(roughCut.orderedItems.map((item) => item.itemId)).size, 2)
+  assert.equal(new Set(roughCut.orderedItems.map((item) => item.productionAssetCapsuleRef.id)).size, 2)
+  assert.equal(roughCut.assemblyPosture.itemCount, 2)
+  assert.equal(roughCut.renderPosture.rendered, false)
+  assert.equal(roughCut.productionReady, false)
+  assert.equal(roughCut.approvalAuthority, false)
+  assert.equal(validateRequiredRecord(roughCut), true)
 })
 
 test('rough cut defer surfaces local deferred review posture', async () => {
