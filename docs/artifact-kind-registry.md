@@ -93,10 +93,10 @@ over a reviewed rough cut. They resolve refs and target output placement only;
 they do not read media bytes, create delivery files, authorize publication, or
 make a package production-ready.
 
-`media.export_receipt.local.v1` records a local delivery-candidate copy and
-manifest for review. It can prove Studio performed a local copy operation, but
-it is not publication authorization, production readiness, byte availability
-proof, or materialization proof.
+`media.export_receipt.local.v1` records a local delivery-candidate copy or
+ffmpeg delivery render plus manifest for review. It can prove Studio performed a
+local export operation, but it is not publication authorization, production
+readiness, byte availability proof, or materialization proof.
 
 Future candidate artifact kinds, not implemented and not active schema
 contracts:

@@ -528,6 +528,12 @@ planned delivery-candidate folder and writing a small manifest. This is the
 first local export execution path, but it remains review delivery evidence
 only: it does not publish, grant authority, or make the package production-ready.
 
+`npm run production:export-ffmpeg` writes the same export receipt family after
+using ffmpeg to render a local MP4 delivery candidate from the export plan. It
+uses npm-managed `ffmpeg-static` by default and supports `--disable-ffmpeg`.
+The receipt remains local delivery evidence only, not publication
+authorization, approval authority, or production readiness.
+
 The first production assembly boundary is now explicit: capsules package one
 accepted production asset, bundles group capsules, rough cuts order accepted
 items for local review, rough-cut decisions record local review posture,

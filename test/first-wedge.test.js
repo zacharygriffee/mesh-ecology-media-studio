@@ -121,6 +121,7 @@ import { writeFfmpegRender } from '../src/production/render-ffmpeg.js'
 import { writeExportCandidate } from '../src/production/export-candidate.js'
 import { writeExportPlanCandidate } from '../src/production/export-plan-candidate.js'
 import { writeLocalExportPackage } from '../src/production/export-local-package.js'
+import { writeFfmpegExport } from '../src/production/export-ffmpeg.js'
 import { evaluateRenderReceiptFreshness, summarizeRenderReceipts } from '../src/production/render-receipts.js'
 
 const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
@@ -3267,6 +3268,50 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.equal(exportedMediaSummary.exportReceipts.deliveryCreated, 1)
   assert.equal(exportedMediaSummary.exportReceipts.publicationAuthorization, 0)
   assert.equal(exportedMediaSummary.exportReceipts.productionReady, 0)
+
+  const ffmpegExportDisabledOutput = await captureConsole(() => writeFfmpegExport({ projectDir: dir, disableFfmpeg: true }))
+  assert.equal(ffmpegExportDisabledOutput.result.receipt, null)
+  assert.equal(ffmpegExportDisabledOutput.result.skipped.reason, 'ffmpeg disabled')
+  assert.equal(ffmpegExportDisabledOutput.result.skipped.exportPerformed, false)
+  assert.ok(ffmpegExportDisabledOutput.lines.some((line) => line.includes('ffmpeg export: skipped')))
+
+  const ffmpegExportOutput = await captureConsole(() => writeFfmpegExport({
+    projectDir: dir,
+    secondsPerItem: 1,
+    width: 320,
+    height: 180,
+    fps: 12
+  }))
+  const ffmpegExport = ffmpegExportOutput.result.receipt
+  assert.equal(ffmpegExport.schema, 'media.export_receipt.local.v1')
+  assert.equal(ffmpegExport.exportKind, 'local-ffmpeg-review-delivery')
+  assert.equal(ffmpegExport.sourceExportPlanRef.id, exportPlan.planId)
+  assert.equal(ffmpegExport.sourceRenderReceiptRef.id, ffmpegReceipt.renderReceiptId)
+  assert.equal(ffmpegExport.deliveryLocalRef.path.startsWith(`${exportPlan.targetOutputRef.path}/ffmpeg-delivery-`), true)
+  assert.equal(ffmpegExport.deliveryLocalRef.contentType, 'video/mp4')
+  assert.equal(ffmpegExport.executionPosture.exportEngine, 'ffmpeg')
+  assert.equal(ffmpegExport.executionPosture.ffmpegDefault, true)
+  assert.equal(ffmpegExport.executionPosture.ffmpegDisableSupported, true)
+  assert.equal(ffmpegExport.executionPosture.sourceBytesRead, true)
+  assert.equal(ffmpegExport.executionPosture.deliveryBytesCreated, true)
+  assert.equal(ffmpegExport.exportPerformed, true)
+  assert.equal(ffmpegExport.deliveryCreated, true)
+  assert.equal(ffmpegExport.publicationAuthorization, false)
+  assert.equal(ffmpegExport.productionReady, false)
+  assert.equal(ffmpegExport.materializationProof, false)
+  assert.equal(validateRequiredRecord(ffmpegExport), true)
+  const ffmpegDeliveryBytes = await readFile(path.join(dir, ffmpegExport.deliveryLocalRef.path))
+  assert.equal(ffmpegDeliveryBytes.length, ffmpegExport.output.bytes)
+  assert.ok(ffmpegExportOutput.lines.some((line) => line.includes('ffmpeg export:')))
+  assert.ok(ffmpegExportOutput.lines.some((line) => line.includes('deliveryCreated=true')))
+  assert.ok(ffmpegExportOutput.lines.some((line) => line.includes('publicationAuthorization=false')))
+
+  const ffmpegExportedMediaSummary = await createMediaSummary({ projectDir: dir })
+  assert.equal(ffmpegExportedMediaSummary.exportReceipts.total, 2)
+  assert.equal(ffmpegExportedMediaSummary.exportReceipts.exportPerformed, 2)
+  assert.equal(ffmpegExportedMediaSummary.exportReceipts.deliveryCreated, 2)
+  assert.equal(ffmpegExportedMediaSummary.exportReceipts.publicationAuthorization, 0)
+  assert.equal(ffmpegExportedMediaSummary.exportReceipts.productionReady, 0)
 
   await writeRoughCutReviewDecision({
     projectDir: dir,

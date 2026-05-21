@@ -41,7 +41,10 @@
       "const": "standalone-local"
     },
     "exportKind": {
-      "const": "local-review-package-copy"
+      "enum": [
+        "local-review-package-copy",
+        "local-ffmpeg-review-delivery"
+      ]
     },
     "sourceRefs": {
       "type": "array"

@@ -56,6 +56,7 @@
     "production:export-candidate": "node src/production/export-candidate.js",
     "production:export-plan": "node src/production/export-plan-candidate.js",
     "production:export-local-package": "node src/production/export-local-package.js",
+    "production:export-ffmpeg": "node src/production/export-ffmpeg.js",
     "resource:refs": "node src/local/resource-ref-candidates.js",
     "repair:local-posture": "node src/local/repair-local-posture.js",
     "media:import": "node src/assets/import-media.js",

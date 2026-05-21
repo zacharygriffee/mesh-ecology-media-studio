@@ -2741,7 +2741,7 @@ export function validateRecordShape(record, schemaId = record.schema) {
   }
 
   if (schemaId === artifactKinds.mediaExportReceiptLocal) {
-    if (record.exportKind !== 'local-review-package-copy') {
+    if (!['local-review-package-copy', 'local-ffmpeg-review-delivery'].includes(record.exportKind)) {
       throw new Error(`Record ${schemaId} has invalid export kind: ${record.exportKind}`)
     }
 

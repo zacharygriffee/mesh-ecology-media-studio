@@ -243,6 +243,11 @@ manifest and `media.export_receipt.local.v1`. This is local export execution for
 review only. It does not publish, authorize publication, grant authority, or
 make the package production-ready.
 
+`npm run production:export-ffmpeg` consumes the same export plan but renders the
+delivery candidate directly with ffmpeg. ffmpeg remains the default local video
+export posture and can be disabled with `--disable-ffmpeg`. The resulting export
+receipt remains local delivery evidence only.
+
 ## Non-Claims
 
 The capsule is local operator guidance only:

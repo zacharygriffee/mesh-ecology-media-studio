@@ -302,6 +302,7 @@ npm run production:render-plan -- --project-dir examples/venice-smoke
 npm run production:export-candidate -- --project-dir examples/venice-smoke
 npm run production:export-plan -- --project-dir examples/venice-smoke
 npm run production:export-local-package -- --project-dir examples/venice-smoke
+npm run production:export-ffmpeg -- --project-dir examples/venice-smoke
 ```
 
 The first real local render commands consume the dry-run render plan:
@@ -329,6 +330,9 @@ create delivery files, authorize publication, or make the package production-rea
 `production:export-local-package` copies the selected local preview into a
 review delivery folder and writes a manifest/receipt. It is still local-only
 delivery evidence, not publication authorization or production readiness.
+`production:export-ffmpeg` renders a local MP4 delivery candidate from the
+export plan using `ffmpeg-static` by default. It also supports
+`--disable-ffmpeg` and remains local-only delivery evidence.
 
 ## Inspection And Edge-Compatible Artifacts
 
