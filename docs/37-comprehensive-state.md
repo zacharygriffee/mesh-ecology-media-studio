@@ -455,7 +455,10 @@ byte/resource, provider-loop, local decision, and approval proposal refs where
 present. It does not copy bytes or grant production authority.
 `npm run media:summary` and `npm run operator:index` surface capsule counts and
 capsule state so an operator can see whether accepted generated assets have a
-local production package without opening raw JSON.
+local production package without opening raw JSON. Project health now reports
+missing production capsules as local attention, and regenerated local inspection
+packets, export bundles, and Edge compatibility bundles include capsule refs
+when the records exist.
 
 ## Current Verification Baseline
 

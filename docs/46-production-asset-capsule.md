@@ -60,8 +60,15 @@ existing proposal through the proper authority lane.
 production capsules: total=1 | expected=1 | missing=0 | attention=0
 ```
 
+`npm run health:summary` reports missing production capsules as project
+attention when accepted provider-generated assets do not yet have a capsule.
+That health row is operator guidance only; it does not make the asset
+production-ready.
+
 `npm run operator:index` includes capsule refs and prints compact capsule rows
-when records exist.
+when records exist. Regenerated inspection packets, export bundles, and Edge
+compatibility bundles include production capsule record refs so Edge-compatible
+surfaces can inspect the package later without Studio calling Edge.
 
 ## Non-Claims
 

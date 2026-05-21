@@ -7,6 +7,7 @@ import {
   createEdgeInspectionPacket,
   makeRef
 } from '../contracts/constructors.js'
+import { artifactKinds } from '../contracts/artifact-kinds.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
 
@@ -37,6 +38,7 @@ const extraInspectionSchemas = new Set([
   'media.continuity_band.v1',
   'media.render_strategy.v1',
   'media.production_descriptor.local.v1',
+  artifactKinds.mediaProductionAssetCapsuleLocal,
   'media.approval_proposal.local.v1',
   'media.byte_descriptor_proposal.local.v1',
   'media.local_layer_resource_ref_candidate.local.v1',
@@ -230,6 +232,7 @@ function nameForSchema(schema, relativePath) {
     'media.continuity_band.v1': `continuityBand:${path.basename(relativePath, '.json')}`,
     'media.render_strategy.v1': `renderStrategy:${path.basename(relativePath, '.json')}`,
     'media.production_descriptor.local.v1': `productionDescriptor:${path.basename(relativePath, '.json')}`,
+    [artifactKinds.mediaProductionAssetCapsuleLocal]: `productionAssetCapsule:${path.basename(relativePath, '.json')}`,
     'media.approval_proposal.local.v1': `approvalProposal:${path.basename(relativePath, '.json')}`,
     'media.byte_descriptor_proposal.local.v1': `byteDescriptorProposal:${path.basename(relativePath, '.json')}`,
     'media.local_layer_resource_ref_candidate.local.v1': `resourceRefCandidate:${path.basename(relativePath, '.json')}`,
@@ -261,6 +264,7 @@ function kindForSchema(schema) {
     'media.continuity_band.v1': 'media-continuity-band',
     'media.render_strategy.v1': 'media-render-strategy',
     'media.production_descriptor.local.v1': 'media-production-descriptor',
+    [artifactKinds.mediaProductionAssetCapsuleLocal]: 'media-production-asset-capsule',
     'media.approval_proposal.local.v1': 'media-approval-proposal',
     'media.byte_descriptor_proposal.local.v1': 'media-byte-descriptor-proposal',
     'media.local_layer_resource_ref_candidate.local.v1': 'media-local-layer-resource-ref-candidate',

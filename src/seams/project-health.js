@@ -7,7 +7,7 @@ import { nowIso } from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
 import { writeEdgeReadinessGuidance } from './edge-readiness-guidance.js'
-import { writeProjectStatus } from './project-status.js'
+import { readProjectRecords, writeProjectStatus } from './project-status.js'
 import { validateProductionRecordsInProject } from '../production/validate-production-records.js'
 
 const modulePath = fileURLToPath(import.meta.url)
@@ -54,6 +54,7 @@ export async function writeProjectHealth({
   const statusResult = await writeProjectStatus({ projectDir, quiet: summary })
   const readinessResult = await writeEdgeReadinessGuidance({ projectDir, quiet: summary })
   const productionValidation = await validateProductionRecordsInProject({ projectDir, quiet: summary })
+  const records = await readProjectRecords(root)
   const projectId = statusResult.status.projectId
   const blockingIssues = []
   const assetHealthExplanations = (statusResult.status.assetResourceConsistency.assetExplanations ?? [])
@@ -61,6 +62,7 @@ export async function writeProjectHealth({
   const derivativeHealthExplanations = (statusResult.status.mediaDerivativeReadiness?.assetExplanations ?? [])
     .filter((entry) => entry.state !== 'ready-for-local-inspection')
   const productionHealthExplanations = buildProductionHealthExplanations(productionValidation)
+  const productionCapsuleHealthExplanations = buildProductionCapsuleHealthExplanations(records)
 
   if (statusResult.status.assetResourceConsistency.readyForEdgeInspection !== true) {
     blockingIssues.push('asset-resource-consistency-not-ready')
@@ -76,6 +78,10 @@ export async function writeProjectHealth({
 
   if (productionValidation.freshness?.fresh === false) {
     blockingIssues.push('production-freshness-stale')
+  }
+
+  if (productionCapsuleHealthExplanations.length > 0) {
+    blockingIssues.push('production-capsule-attention')
   }
 
   const health = {
@@ -112,10 +118,12 @@ export async function writeProjectHealth({
       localOnly: true
     },
     productionHealthExplanations,
+    productionCapsuleHealthExplanations,
     operatorHealthExplanations: [
       ...assetHealthExplanations,
       ...derivativeHealthExplanations,
-      ...productionHealthExplanations
+      ...productionHealthExplanations,
+      ...productionCapsuleHealthExplanations
     ],
     operatorGuidanceOnly: true,
     localOnly: true,
@@ -163,6 +171,7 @@ function printHealthSummary(health, output) {
   console.log(`staleResourceCandidates: ${health.assetResourceConsistency.staleResourceCandidateIds.length}`)
   console.log(`derivativeReadiness: ${health.mediaDerivativeReadiness?.readyAssets ?? 0}/${health.mediaDerivativeReadiness?.evaluatedAssets ?? 0}`)
   console.log(`derivativeAttention: ${health.mediaDerivativeReadiness?.attentionAssets ?? 0}`)
+  console.log(`productionCapsuleAttention: ${health.productionCapsuleHealthExplanations?.length ?? 0}`)
   for (const explanation of health.operatorHealthExplanations ?? []) {
     console.log(formatHealthExplanation(explanation))
   }
@@ -237,6 +246,119 @@ function buildProductionHealthExplanations(productionValidation) {
       resourceAdmission: false
     }
   })
+}
+
+function buildProductionCapsuleHealthExplanations(records) {
+  const acceptedProviderAssets = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaAssetDescriptor)
+    .filter((entry) => entry.record.localRef?.placementClass === 'media-accepted')
+    .filter((entry) => entry.record.source?.sourceType === 'provider-result')
+    .filter((entry) => isProductionCapsuleEligibleAsset(entry.record))
+  const capsules = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaProductionAssetCapsuleLocal)
+    .map((entry) => ({ ...entry.record, recordPath: entry.path }))
+  const capsulesBySubjectPath = new Map()
+
+  for (const capsule of capsules) {
+    for (const key of [capsule.subjectAssetRef?.path, capsule.localRef?.path].filter(Boolean)) {
+      if (!capsulesBySubjectPath.has(key)) capsulesBySubjectPath.set(key, capsule)
+    }
+  }
+
+  const missingCapsules = acceptedProviderAssets
+    .filter((entry) => !capsulesBySubjectPath.has(entry.record.assetDescriptorRef?.path ?? entry.record.localRef?.path))
+    .map((entry) => productionCapsuleExplanation({
+      asset: entry.record,
+      assetRecordPath: entry.path,
+      issueCodes: ['missing_production_asset_capsule'],
+      summary: `Accepted generated asset ${entry.record.localRef?.path ?? entry.record.assetId} is missing a local production asset capsule.`,
+      nextAction: 'Run npm run production:capsule for the accepted generated asset.'
+    }))
+
+  const capsuleAttention = capsules
+    .filter((capsule) => capsule.productionPosture?.state === 'needs-approval-proposal')
+    .map((capsule) => productionCapsuleExplanation({
+      capsule,
+      issueCodes: ['approval_proposal_missing'],
+      summary: `Production asset capsule ${capsule.capsuleId} is missing a local approval proposal ref.`,
+      nextAction: 'Run npm run approval:proposal, then regenerate the production capsule.'
+    }))
+
+  return [
+    ...missingCapsules,
+    ...capsuleAttention
+  ]
+}
+
+function isProductionCapsuleEligibleAsset(asset) {
+  const mediaKind = asset.metadataProbe?.mediaKind
+  if (['image', 'video', 'audio'].includes(mediaKind)) return true
+
+  const contentType = asset.contentType ?? asset.localRef?.contentType
+  return ['image/', 'video/', 'audio/'].some((prefix) => contentType?.startsWith(prefix))
+}
+
+function productionCapsuleExplanation({
+  asset,
+  assetRecordPath,
+  capsule,
+  issueCodes,
+  summary,
+  nextAction
+}) {
+  const subjectRef = capsule
+    ? {
+        kind: 'media-production-asset-capsule',
+        id: capsule.capsuleId,
+        schema: artifactKinds.mediaProductionAssetCapsuleLocal
+      }
+    : {
+        kind: 'media-asset',
+        id: asset.assetId,
+        schema: asset.schema
+      }
+  const sourceRefs = capsule
+    ? [
+        {
+          kind: 'media-production-asset-capsule',
+          id: capsule.capsuleId,
+          schema: capsule.schema,
+          path: capsule.recordPath,
+          localOnly: true
+        }
+      ]
+    : [
+        {
+          kind: 'media-asset-descriptor',
+          id: asset.assetId,
+          schema: asset.schema,
+          path: assetRecordPath,
+          localOnly: true
+        }
+      ]
+
+  return {
+    subjectKind: 'media-production-asset-capsule',
+    subjectRef,
+    path: capsule?.localRef?.path ?? capsule?.subjectAssetRef?.path ?? asset?.localRef?.path,
+    healthState: 'needs-local-attention',
+    issueCodes,
+    summary,
+    nextAction,
+    sourceRefs,
+    nonClaims: healthNonClaims(),
+    localOnly: true,
+    operatorGuidanceOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    byteAvailabilityProof: false,
+    materializationProof: false,
+    providerTruth: false,
+    resourceAdmission: false,
+    approvalAuthority: false,
+    publicationAuthorization: false
+  }
 }
 
 function healthNonClaims() {

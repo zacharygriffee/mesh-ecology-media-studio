@@ -51,7 +51,8 @@ const productionSourceSchemas = new Set([
   artifactKinds.mediaReferencePrimitive,
   artifactKinds.mediaContinuityBand,
   artifactKinds.mediaRenderStrategy,
-  artifactKinds.mediaProductionDescriptorLocal
+  artifactKinds.mediaProductionDescriptorLocal,
+  artifactKinds.mediaProductionAssetCapsuleLocal
 ])
 
 function parseArgs(argv) {
@@ -575,6 +576,7 @@ function kindForSchema(schema) {
     [artifactKinds.mediaContinuityBand]: 'media-continuity-band',
     [artifactKinds.mediaRenderStrategy]: 'media-render-strategy',
     [artifactKinds.mediaProductionDescriptorLocal]: 'media-production-descriptor',
+    [artifactKinds.mediaProductionAssetCapsuleLocal]: 'media-production-asset-capsule',
     [artifactKinds.mediaApprovalProposalLocal]: 'media-approval-proposal',
     [artifactKinds.mediaByteDescriptorProposalLocal]: 'media-byte-descriptor-proposal',
     [artifactKinds.mediaLocalLayerResourceRefCandidateLocal]: 'media-local-layer-resource-ref-candidate',
@@ -601,6 +603,7 @@ function idForRecord(record) {
     record.bandId ??
     record.strategyId ??
     record.descriptorId ??
+    record.capsuleId ??
     record.proposalId ??
     record.byteDescriptorProposalId ??
     record.resourceRefCandidateId ??

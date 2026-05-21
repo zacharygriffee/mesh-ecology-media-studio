@@ -282,7 +282,8 @@ function summarizeSafeNextAction({
 function summarizeProductionCapsules(assetRecords, records) {
   const acceptedProviderAssets = assetRecords.filter((record) =>
     record.localRef?.placementClass === 'media-accepted' &&
-    record.source?.sourceType === 'provider-result'
+    record.source?.sourceType === 'provider-result' &&
+    isProductionCapsuleEligibleAsset(record)
   )
   const capsules = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProductionAssetCapsuleLocal)
@@ -355,6 +356,14 @@ function summarizeProductionCapsules(assetRecords, records) {
     approvalAuthority: false,
     publicationAuthorization: false
   }
+}
+
+function isProductionCapsuleEligibleAsset(asset) {
+  const mediaKind = asset.metadataProbe?.mediaKind
+  if (['image', 'video', 'audio'].includes(mediaKind)) return true
+
+  const contentType = asset.contentType ?? asset.localRef?.contentType
+  return ['image/', 'video/', 'audio/'].some((prefix) => contentType?.startsWith(prefix))
 }
 
 function summarizeProviderLoops(records) {

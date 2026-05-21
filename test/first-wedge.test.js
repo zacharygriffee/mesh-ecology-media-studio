@@ -1065,7 +1065,11 @@ test('Venice smoke inspection summarizes promoted assets derivatives and resourc
   const repair = await repairLocalPosture({ projectDir: dir })
   const result = await inspectVeniceSmoke({ projectDir: dir })
 
-  assert.equal(repair.remainingAttention, 0)
+  assert.equal(repair.remainingAttention, 1)
+  assert.ok(repair.skippedIssues.some((entry) =>
+    entry.issueCode === 'missing_production_asset_capsule' &&
+    entry.nonBlocking === false
+  ))
   assert.ok(repair.skippedIssues.some((entry) =>
     entry.issueCode === 'inspection_refresh_skipped' &&
     entry.nonBlocking === true &&
@@ -2304,6 +2308,63 @@ test('production asset capsule packages accepted asset refs without authority', 
   assert.equal(index.summary.productionCapsulesNeedingAttention, 0)
   assert.ok(indexOutput.lines.some((line) => line.includes('productionCapsules=1')))
   assert.ok(indexOutput.lines.some((line) => line.includes('production capsule: media/accepted/venice-live-smoke-0.png')))
+
+  const health = await writeProjectHealth({ projectDir: dir, summary: true })
+  assert.equal(health.health.productionCapsuleHealthExplanations.length, 0)
+
+  const inspection = await inspectLocalRun({
+    projectDir: dir,
+    manifest: 'records/manifests/venice-live-smoke-manifest.local.json'
+  })
+  assert.ok(Object.values(inspection.packet.recordRefs).some((ref) => ref.schema === 'media.production_asset_capsule.local.v1'))
+  assert.ok(inspection.packet.artifactKinds.includes('media.production_asset_capsule.local.v1'))
+
+  const bundleExport = await exportInspectionBundle({
+    projectDir: dir,
+    packet: inspection.output,
+    outputDir: 'records/exports/bundles/production-capsule-test'
+  })
+  assert.ok(bundleExport.manifest.includedRecordRefs.some((ref) => ref.schema === 'media.production_asset_capsule.local.v1'))
+
+  await writeProjectStatus({ projectDir: dir })
+  await writeControlSurfaceProjection({ projectDir: dir })
+  const compatibility = await writeEdgeCompatibilityBundle({ projectDir: dir })
+  assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.production_asset_capsule.local.v1'))
+})
+
+test('project health reports missing production asset capsules for accepted provider assets', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-capsule-health-'))
+  await runVeniceOperationalLoop({
+    projectDir: dir,
+    decision: 'accepted'
+  })
+
+  const before = await writeProjectHealth({ projectDir: dir, summary: true })
+  const missing = before.health.productionCapsuleHealthExplanations
+    .find((entry) => entry.issueCodes.includes('missing_production_asset_capsule'))
+
+  assert.ok(missing)
+  assert.equal(missing.subjectKind, 'media-production-asset-capsule')
+  assert.equal(missing.localOnly, true)
+  assert.equal(missing.meshTruth, false)
+  assert.equal(missing.byteAvailabilityProof, false)
+  assert.equal(missing.resourceAdmission, false)
+  assert.ok(before.health.operatorHealthExplanations.some((entry) => entry.issueCodes.includes('missing_production_asset_capsule')))
+  assert.ok(before.health.blockingIssues.includes('production-capsule-attention'))
+
+  await writeApprovalProposal({
+    projectDir: dir,
+    decision: 'records/decisions/promoted-candidate-accepted-decision.local.json',
+    asset: 'records/assets/promoted-candidate-accepted.local.json',
+    output: 'records/approvals/promoted-candidate-accepted-approval-proposal.local.json'
+  })
+  await writeProductionAssetCapsule({ projectDir: dir, quiet: true })
+
+  const after = await writeProjectHealth({ projectDir: dir, summary: true })
+  assert.equal(
+    after.health.productionCapsuleHealthExplanations.some((entry) => entry.issueCodes.includes('missing_production_asset_capsule')),
+    false
+  )
 })
 
 test('byte descriptor proposal previews bytes without materialization proof', async () => {

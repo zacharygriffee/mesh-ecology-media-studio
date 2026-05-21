@@ -347,6 +347,10 @@ stale against byte proposal, resource-ref candidate, or production descriptor
 posture. These rows suggest safe local next actions only; they do not prove byte
 availability, materialization, resource admission, or authority.
 
+For accepted provider-generated assets, project health also reports missing
+production asset capsules. Regenerated inspection/export and Edge compatibility
+surfaces include capsule refs when the local capsule record exists.
+
 Byte posture is reported by `contentId`; resource posture is reported by
 descriptor/situation/placement subject. `assetId` remains a compatibility
 descriptor id and must not be used alone for new byte or resource behavior.
