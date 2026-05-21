@@ -65,6 +65,7 @@ import {
   runVeniceOperationalLoop,
   selectVenicePromotionCandidate
 } from '../src/providers/venice-operational-loop.js'
+import { runVeniceProductionRehearsal } from '../src/providers/venice-production-rehearsal.js'
 import { inspectLocalRun } from '../src/seams/inspect-local-run.js'
 import { exportInspectionBundle } from '../src/seams/export-inspection-bundle.js'
 import { indexInspectionRecords } from '../src/seams/index-inspection-records.js'
@@ -2448,6 +2449,37 @@ test('production bundle groups production capsules without authority', async () 
   await writeControlSurfaceProjection({ projectDir: dir })
   const compatibility = await writeEdgeCompatibilityBundle({ projectDir: dir })
   assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.production_bundle.local.v1'))
+})
+
+test('Venice production rehearsal completes review bundle without authority', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-venice-rehearsal-'))
+  const result = await runVeniceProductionRehearsal({ projectDir: dir })
+
+  assert.equal(result.rehearsal.schema, 'media.venice_production_rehearsal.local.v1')
+  assert.equal(result.rehearsal.state, 'complete_review_only_authority_missing')
+  assert.equal(result.rehearsal.liveProviderCalled, false)
+  assert.equal(result.rehearsal.providerLoopState, 'complete_review_only')
+  assert.equal(result.rehearsal.productionApprovalLane.localDecisions, 1)
+  assert.equal(result.rehearsal.productionApprovalLane.approvalProposals, 1)
+  assert.equal(result.rehearsal.productionApprovalLane.capsules, 1)
+  assert.equal(result.rehearsal.productionApprovalLane.bundles, 1)
+  assert.equal(result.rehearsal.productionApprovalLane.pendingAuthority, 1)
+  assert.equal(result.rehearsal.productionApprovalLane.productionReady, 0)
+  assert.equal(result.rehearsal.approvalAuthority, false)
+  assert.equal(result.rehearsal.publicationAuthorization, false)
+  assert.equal(result.rehearsal.edgeCalled, false)
+  assert.equal(result.rehearsal.meshPublished, false)
+  assert.equal(result.health.health.healthState, 'ready-for-local-inspection')
+  assert.equal(result.operatorIndex.index.summary.productionApprovalPendingAuthority, 1)
+  assert.equal(result.operatorIndex.index.operatorHealthExplanations.some((entry) =>
+    entry.issueCodes?.includes('missing_production_asset_capsule')
+  ), false)
+  assert.ok(result.edgeCompatibility.bundle.studioSourceRefs.some((ref) =>
+    ref.path === 'records/exports/venice-smoke-edge-inspection-packet.local.json'
+  ))
+  assert.ok(result.edgeCompatibility.bundle.studioSourceRefs.some((ref) =>
+    ref.schema === 'media.approval_proposal.local.v1'
+  ))
 })
 
 test('project health reports missing production asset capsules for accepted provider assets', async () => {

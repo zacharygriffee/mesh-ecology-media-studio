@@ -29,6 +29,7 @@ text is not the durable contract.
 | `npm run production:validate` | yes | no | no | reads production refs | no committed output |
 | `npm run production:capsule` | yes | yes | `--print` | yes | packages accepted asset refs only; no byte copying or authority |
 | `npm run production:bundle` | yes | yes | `--print` | yes | groups production capsule refs only; no byte copying or authority |
+| `npm run provider:venice:rehearse-production` | yes | yes | `--print` | yes | composes the local Venice loop, approval proposal, capsule, bundle, inspection, operator index, and Edge-compatible bundle; no live provider unless explicitly requested |
 
 ## Byte And Resource Posture
 

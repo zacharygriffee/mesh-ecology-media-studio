@@ -214,6 +214,12 @@ exists, whether a retry/defer decision exists, and whether a live retry is
 still gated. It also prints production blockers so a completed local review
 loop is not mistaken for production-ready media.
 
+`npm run provider:venice:rehearse-production` composes the local Venice loop,
+approval proposal, production capsule, production bundle, Venice inspection,
+operator index, and Edge-compatible bundle. It is a rehearsal path: compact,
+local-only, no live provider unless explicitly requested, and still no approval
+or production authority.
+
 Create a local provider-loop operator decision request:
 
 ```bash

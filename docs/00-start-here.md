@@ -162,6 +162,7 @@ npm run production:from-card -- --project-dir examples/card-to-candidate
 npm run production:validate -- --project-dir examples/card-to-candidate
 npm run production:capsule -- --project-dir examples/venice-smoke
 npm run production:bundle -- --project-dir examples/venice-smoke
+npm run provider:venice:rehearse-production -- --project-dir examples/venice-smoke
 npm run approval:proposal -- --project-dir examples/card-to-candidate
 npm run bytes:proposal -- --project-dir examples/card-to-candidate
 npm run resource:refs -- --project-dir examples/card-to-candidate

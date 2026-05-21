@@ -29,6 +29,7 @@
     "export:inspection-bundle": "node src/seams/export-inspection-bundle.js",
     "provider:venice:smoke": "node src/providers/venice-live-smoke.js",
     "provider:venice:loop": "node src/providers/venice-operational-loop.js",
+    "provider:venice:rehearse-production": "node src/providers/venice-production-rehearsal.js",
     "rule:example": "node src/contracts/rule-resolution.js",
     "promote:candidate": "node src/local/promote-candidate.js",
     "review:candidates": "node src/review/candidate-review.js",

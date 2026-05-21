@@ -106,10 +106,10 @@ export async function writeOperatorPacketIndex({
   const readinessStates = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProjectHealthLocal)
     .map((entry) => entry.record.healthState)
-  const operatorHealthExplanations = records
+  const operatorHealthExplanations = filterCurrentHealthExplanations(records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProjectHealthLocal)
     .flatMap((entry) => entry.record.operatorHealthExplanations ?? [])
-    .filter((entry) => (entry.healthState ?? entry.state) !== 'ready-for-local-inspection')
+    .filter((entry) => (entry.healthState ?? entry.state) !== 'ready-for-local-inspection'), productionApprovalLane)
 
   const index = {
     schema: artifactKinds.mediaOperatorPacketIndexLocal,
@@ -323,6 +323,21 @@ function formatProductionApprovalLaneRow(row) {
     `issues=${row.issueCodes.join(',')}`,
     `nextAction=${row.nextAction}`
   ].join(' | ')
+}
+
+function filterCurrentHealthExplanations(explanations, productionApprovalLane) {
+  const pathsWithCapsules = new Set(
+    productionApprovalLane.rows
+      .filter((row) => row.capsuleState === 'present')
+      .map((row) => row.path)
+      .filter(Boolean)
+  )
+
+  return explanations.filter((explanation) => {
+    const issueCodes = explanation.issueCodes ?? []
+    if (!issueCodes.includes('missing_production_asset_capsule')) return true
+    return !pathsWithCapsules.has(explanation.path)
+  })
 }
 
 async function readIndexableRecords(root) {

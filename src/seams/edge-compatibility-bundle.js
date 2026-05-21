@@ -29,6 +29,9 @@ const sourceRecordPaths = Object.freeze({
   edgeReadinessGuidance: 'records/readiness/media-edge-inspection-readiness.local.json',
   providerRunLedger: 'records/provider-results/media-provider-run-ledger.local.json'
 })
+const inspectionPacketFallbackPaths = Object.freeze([
+  'records/exports/venice-smoke-edge-inspection-packet.local.json'
+])
 const optionalSourceRecordPaths = Object.freeze({
   approvalProposal: 'records/approvals/media-approval-proposal.local.json',
   operatorPacketIndex: 'records/exports/media-operator-packet-index.local.json',
@@ -36,11 +39,13 @@ const optionalSourceRecordPaths = Object.freeze({
   operatorDecisionRequest: 'records/requests/media-operator-decision-request.local.json'
 })
 const optionalSourceRoots = Object.freeze([
+  'records/approvals',
   'records/bytes',
   'records/resources',
   'records/rule-traces'
 ])
 const optionalSourceSchemas = new Set([
+  artifactKinds.mediaApprovalProposalLocal,
   artifactKinds.mediaByteDescriptorProposalLocal,
   artifactKinds.mediaLocalLayerResourceRefCandidateLocal,
   artifactKinds.mediaOperationCandidateLocal,
@@ -224,6 +229,16 @@ async function readSourceRecords(root) {
     sources[name] = { record, relativePath }
   }
 
+  if (!sources.inspectionPacket) {
+    for (const relativePath of inspectionPacketFallbackPaths) {
+      const record = await readOptionalJson(root, relativePath)
+      if (!record?.schema) continue
+      validateRequiredRecord(record)
+      sources.inspectionPacket = { record, relativePath }
+      break
+    }
+  }
+
   for (const [name, relativePath] of Object.entries(optionalSourceRecordPaths)) {
     const record = await readOptionalJson(root, relativePath)
     if (!record?.schema) continue
@@ -241,7 +256,10 @@ async function readSourceRecords(root) {
 
   for (const required of ['inspectionPacket', 'controlSurfaceProjection']) {
     if (!sources[required]) {
-      throw new Error(`Edge compatibility bundle requires ${sourceRecordPaths[required]}`)
+      const expected = required === 'inspectionPacket'
+        ? [sourceRecordPaths.inspectionPacket, ...inspectionPacketFallbackPaths].join(' or ')
+        : sourceRecordPaths[required]
+      throw new Error(`Edge compatibility bundle requires ${expected}`)
     }
   }
 

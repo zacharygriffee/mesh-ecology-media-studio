@@ -468,6 +468,10 @@ approval lane that distinguishes local decisions, approval proposals, production
 capsules, production bundles, and missing authority. The lane is operator
 readability over existing local refs only; it does not add approval authority or
 production readiness.
+`npm run provider:venice:rehearse-production` composes the current Venice local
+loop through that lane and writes the local inspection, operator index, and
+Edge-compatible bundle surfaces. It is a rehearsal path, not an authority or
+publication path.
 
 ## Current Verification Baseline
 

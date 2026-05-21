@@ -105,6 +105,23 @@ The bundle is also local operator guidance only. It does not copy bytes, grant
 approval, prove availability, publish to mesh, call Edge, or authorize
 production use.
 
+## Venice Production Rehearsal
+
+`npm run provider:venice:rehearse-production` runs the current local Venice
+operational path through approval proposal, production capsule, production
+bundle, Venice inspection, operator index, and Edge-compatible bundle creation.
+It defaults to the local Venice-shaped provider fixture; `--live-provider` is
+still explicit.
+
+The command is useful for checking the operational lane end to end:
+
+```txt
+venice production rehearsal: state=complete_review_only_authority_missing
+```
+
+That state means the local records are inspectable and bundled, but production
+authority is still absent.
+
 ## Non-Claims
 
 The capsule is local operator guidance only:
