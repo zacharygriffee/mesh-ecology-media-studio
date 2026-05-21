@@ -1155,7 +1155,7 @@ const localGeneratedSchemas = new Set([
 ])
 
 const readinessStates = new Set(['draft', 'blocked', 'ready', 'caution', 'complete'])
-const decisionTypes = new Set(['accept', 'reject', 'request_changes', 'defer'])
+const decisionTypes = new Set(['accept', 'reject', 'request_changes', 'review_provider_loop', 'retry_provider_loop', 'defer'])
 const productionUnitKinds = new Set([
   'project',
   'episode',

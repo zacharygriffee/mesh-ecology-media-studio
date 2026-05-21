@@ -207,6 +207,19 @@ npm run operator:provider-loop-request -- --project-dir examples/venice-smoke
 For complete loops this requests review/defer. For failed loops this requests
 retry/defer, but it does not execute the retry.
 
+Record a local retry/defer decision from that request:
+
+```bash
+npm run operator:provider-loop-decision -- --project-dir examples/venice-smoke --decision retry_provider_loop
+```
+
+If a live Venice loop is retried after a failed status, pass the local decision
+record explicitly:
+
+```bash
+VENICE_LIVE=1 npm run provider:venice:loop -- --live-provider --retry-decision records/decisions/media-provider-loop-operator-decision.local.json
+```
+
 Use the real Venice API only with the explicit live switch:
 
 ```bash

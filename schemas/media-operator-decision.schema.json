@@ -31,6 +31,8 @@
         "accept",
         "reject",
         "request_changes",
+        "review_provider_loop",
+        "retry_provider_loop",
         "defer"
       ]
     },

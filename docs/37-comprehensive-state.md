@@ -198,6 +198,9 @@ status refs, including failed or incomplete loops, as local attention guidance.
 Provider-loop status can also produce `review-provider-loop` operator decision
 requests. Those requests may ask for retry/defer on failed loops, but they do
 not execute retries or grant authority.
+Provider-loop requests can now produce local operator decisions. A live retry
+after a failed loop must pass the retry decision record explicitly; the gate
+prevents accidental repeat provider calls, but remains local-only guidance.
 `media:summary` distinguishes local provider-loop completion, retry-decision
 needs, and broader production-review readiness so a completed provider loop is
 not overread as production-ready media.

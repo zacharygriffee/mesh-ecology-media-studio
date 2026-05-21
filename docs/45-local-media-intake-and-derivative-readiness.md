@@ -227,6 +227,22 @@ provider loops: total=1 | complete=1 | needsDecision=0 | productionReady=0
 Failed provider loops show `needsDecision` and an attention row. That guidance
 points to the operator request command; it does not retry automatically.
 
+To record a local retry/defer decision, consume the request explicitly:
+
+```bash
+npm run operator:provider-loop-decision -- --decision retry_provider_loop
+```
+
+If a previous live loop failed, a later live retry must point at that local
+decision record:
+
+```bash
+VENICE_LIVE=1 npm run provider:venice:loop -- --live-provider --retry-decision records/decisions/media-provider-loop-operator-decision.local.json
+```
+
+The decision and retry gate are local-only. They do not grant provider truth,
+resource admission, mesh truth, or publication authority.
+
 Use the real Venice API only with explicit opt-in:
 
 ```bash

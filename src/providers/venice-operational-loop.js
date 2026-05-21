@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import { artifactKinds } from '../contracts/artifact-kinds.js'
@@ -33,6 +33,7 @@ function parseArgs(argv) {
     assetRecord: undefined,
     decision: 'accepted',
     operatorRef: 'local-operator',
+    retryDecision: undefined,
     liveProvider: false,
     verbose: false,
     print: false
@@ -57,6 +58,9 @@ function parseArgs(argv) {
     } else if (arg === '--operator-ref') {
       args.operatorRef = next
       i += 1
+    } else if (arg === '--retry-decision') {
+      args.retryDecision = next
+      i += 1
     } else if (arg === '--live-provider') {
       args.liveProvider = true
     } else if (arg === '--no-live-provider') {
@@ -77,6 +81,7 @@ export async function runVeniceOperationalLoop({
   assetRecord,
   decision = 'accepted',
   operatorRef = 'local-operator',
+  retryDecision,
   liveProvider = false,
   verbose = false,
   env = process.env,
@@ -99,6 +104,13 @@ export async function runVeniceOperationalLoop({
     decision,
     liveProviderRequested: liveProvider,
     liveProviderCalled: false,
+    retryGate: {
+      required: false,
+      satisfied: false,
+      localOnly: true,
+      executionPerformed: false,
+      authorityGranted: false
+    },
     state: 'running',
     completedSteps: [],
     failedStep: null,
@@ -116,6 +128,21 @@ export async function runVeniceOperationalLoop({
     meshPublished: false,
     localTruthLabel: 'local status',
     truthStatus
+  }
+
+  try {
+    status.retryGate = await evaluateRetryGate({
+      projectDir,
+      output,
+      retryDecision,
+      liveProvider
+    })
+  } catch (error) {
+    return writeAndReturnStatus(projectDir, output, failStatus(status, {
+      failedStep: 'retry_decision_gate',
+      error,
+      nextAction: 'Create a local provider-loop retry decision with npm run operator:provider-loop-decision before retrying live provider execution.'
+    }))
   }
 
   try {
@@ -141,7 +168,7 @@ export async function runVeniceOperationalLoop({
       failedStep: 'provider_smoke',
       error,
       nextAction: liveProvider
-        ? 'Check VENICE_LIVE, VENICE_INFERENCE_KEY, network access, provider budget, and provider failure evidence.'
+        ? 'Check VENICE_LIVE, VENICE_INFERENCE_KEY, network access, provider budget, retry decision, and provider failure evidence.'
         : 'Check the local Venice-shaped smoke response and provider normalization path.'
     }))
   }
@@ -325,6 +352,73 @@ function failStatus(status, { failedStep, error, nextAction }) {
     resourceAdmission: false,
     edgeCalled: false,
     meshPublished: false
+  }
+}
+
+async function evaluateRetryGate({
+  projectDir,
+  output,
+  retryDecision,
+  liveProvider
+}) {
+  const base = {
+    required: false,
+    satisfied: false,
+    reason: liveProvider
+      ? 'No prior failed provider-loop status requires retry mediation.'
+      : 'Dry-run provider loop does not require retry mediation.',
+    localOnly: true,
+    executionPerformed: false,
+    authorityGranted: false,
+    providerTruth: false,
+    meshTruth: false
+  }
+
+  if (!liveProvider) return base
+
+  const previousStatus = await readExistingStatus(projectDir, output)
+  if (previousStatus?.state !== 'failed_review_only') return base
+
+  if (!retryDecision) {
+    throw new Error('Live provider retry requires --retry-decision after a failed provider-loop status')
+  }
+
+  assertSafeLocalPath(retryDecision)
+  const decision = JSON.parse(await readFile(path.join(projectDir, retryDecision), 'utf8'))
+  validateRequiredRecord(decision, artifactKinds.mediaOperatorDecision)
+
+  if (decision.decisionType !== 'retry_provider_loop' || decision.allowsExplicitRetryAttempt !== true) {
+    throw new Error(`Retry decision must be retry_provider_loop with allowsExplicitRetryAttempt=true, received ${decision.decisionType}`)
+  }
+
+  if (decision.subjectRef?.id !== previousStatus.statusId) {
+    throw new Error(`Retry decision subject ${decision.subjectRef?.id ?? 'missing'} does not match failed provider-loop status ${previousStatus.statusId}`)
+  }
+
+  return {
+    required: true,
+    satisfied: true,
+    reason: 'Prior failed provider-loop status has an explicit local retry decision.',
+    previousStatusRef: output,
+    decisionRef: retryDecision,
+    decisionId: decision.decisionId,
+    localOnly: true,
+    executionPerformed: false,
+    authorityGranted: false,
+    providerTruth: false,
+    meshTruth: false
+  }
+}
+
+async function readExistingStatus(projectDir, output) {
+  try {
+    assertSafeLocalPath(output)
+    const record = JSON.parse(await readFile(path.join(projectDir, output), 'utf8'))
+    if (record.schema !== artifactKinds.mediaProviderLoopStatusLocal) return undefined
+    return record
+  } catch (error) {
+    if (error?.code === 'ENOENT') return undefined
+    throw error
   }
 }
 

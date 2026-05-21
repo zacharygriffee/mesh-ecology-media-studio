@@ -1238,10 +1238,67 @@ test('Venice operational loop reports provider-stage failure without claiming tr
   assert.equal(requestResult.request.providerTruth, false)
   assert.equal(validateRequiredRecord(requestResult.request), true)
 
+  const failedMediaSummary = await createMediaSummary({ projectDir: dir })
+  assert.equal(failedMediaSummary.providerLoops.needsRetryDecision, 1)
+  assert.equal(failedMediaSummary.providerLoops.attentionRows[0].readinessState, 'needs-retry-decision')
+  assert.match(failedMediaSummary.providerLoops.attentionRows[0].nextAction, /retry is not automatic/)
+
+  const { result: decisionResult } = await captureConsole(() => writeOperatorDecisionRequest({
+    projectDir: dir,
+    providerLoopRequest: 'records/requests/media-provider-loop-operator-decision-request.local.json',
+    decision: 'retry_provider_loop',
+    output: 'records/decisions/media-provider-loop-operator-decision.local.json'
+  }))
+  assert.equal(decisionResult.decision.decisionType, 'retry_provider_loop')
+  assert.equal(decisionResult.decision.allowsExplicitRetryAttempt, true)
+  assert.equal(decisionResult.decision.executionPerformed, false)
+  assert.equal(decisionResult.decision.providerTruth, false)
+  assert.equal(validateRequiredRecord(decisionResult.decision), true)
+
+  const blockedRetry = await runVeniceOperationalLoop({
+    projectDir: dir,
+    liveProvider: true,
+    env: {
+      VENICE_LIVE: '1',
+      VENICE_INFERENCE_KEY: 'test-key'
+    },
+    envPath: path.join(dir, '.env-missing'),
+    fetchImpl: async () => {
+      throw new Error('retry should be gated before provider fetch')
+    }
+  })
+  assert.equal(blockedRetry.state, 'failed_review_only')
+  assert.equal(blockedRetry.failedStep, 'retry_decision_gate')
+  assert.equal(blockedRetry.liveProviderCalled, false)
+
+  const retried = await runVeniceOperationalLoop({
+    projectDir: dir,
+    liveProvider: true,
+    retryDecision: 'records/decisions/media-provider-loop-operator-decision.local.json',
+    env: {
+      VENICE_LIVE: '1',
+      VENICE_INFERENCE_KEY: 'test-key'
+    },
+    envPath: path.join(dir, '.env-missing'),
+    fetchImpl: async () => ({
+      status: 200,
+      async json() {
+        return {
+          id: 'venice-live-retry-success',
+          images: [onePixelPngBase64],
+          request: { format: 'png' }
+        }
+      }
+    })
+  })
+  assert.equal(retried.retryGate.required, true)
+  assert.equal(retried.retryGate.satisfied, true)
+  assert.equal(retried.liveProviderCalled, true)
+  assert.equal(retried.providerTruth, false)
+
   const mediaSummary = await createMediaSummary({ projectDir: dir })
-  assert.equal(mediaSummary.providerLoops.needsRetryDecision, 1)
-  assert.equal(mediaSummary.providerLoops.attentionRows[0].readinessState, 'needs-retry-decision')
-  assert.match(mediaSummary.providerLoops.attentionRows[0].nextAction, /retry is not automatic/)
+  assert.equal(mediaSummary.providerLoops.completeReviewOnly, 1)
+  assert.equal(mediaSummary.providerLoops.latest.readinessState, 'loop-complete-local-review-only')
 })
 
 test('committed Venice provider-loop failure fixture is inspectable without truth claims', async () => {

@@ -102,7 +102,14 @@ For the full local generated-image loop without a provider call:
 npm run provider:venice:loop
 ```
 
-That command writes ignored local smoke artifacts under
+Failed provider loops can produce local retry/defer requests and decisions:
+
+```bash
+npm run operator:provider-loop-request
+npm run operator:provider-loop-decision -- --decision retry_provider_loop
+```
+
+The provider loop writes ignored local smoke artifacts under
 `examples/venice-smoke/`. It does not run as part of `npm test`. Venice
 provider capability and failure fixtures are local-only and validate without
 calling the provider.

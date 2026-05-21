@@ -12,13 +12,19 @@ const truthStatus = 'not mesh truth; not distributed proof; not ratified shared 
 const defaultProjectDir = 'examples/card-to-candidate'
 const defaultHandoff = 'records/exports/media-edge-handoff-candidate.local.json'
 const defaultProviderLoopStatus = 'records/provider-results/media-provider-loop-status.local.json'
+const defaultProviderLoopRequest = 'records/requests/media-provider-loop-operator-decision-request.local.json'
 const defaultOutput = 'records/requests/media-operator-decision-request.local.json'
+const defaultProviderLoopDecisionOutput = 'records/decisions/media-provider-loop-operator-decision.local.json'
 
 function parseArgs(argv) {
   const args = {
     projectDir: defaultProjectDir,
     handoff: defaultHandoff,
     providerLoopStatus: undefined,
+    providerLoopRequest: undefined,
+    decision: undefined,
+    operatorRef: 'local-operator',
+    reason: undefined,
     output: defaultOutput,
     print: false
   }
@@ -36,6 +42,19 @@ function parseArgs(argv) {
     } else if (arg === '--provider-loop-status') {
       args.providerLoopStatus = next ?? defaultProviderLoopStatus
       i += 1
+    } else if (arg === '--provider-loop-request') {
+      args.providerLoopRequest = next ?? defaultProviderLoopRequest
+      args.output = args.output === defaultOutput ? defaultProviderLoopDecisionOutput : args.output
+      i += 1
+    } else if (arg === '--decision') {
+      args.decision = next
+      i += 1
+    } else if (arg === '--operator-ref') {
+      args.operatorRef = next
+      i += 1
+    } else if (arg === '--reason') {
+      args.reason = next
+      i += 1
     } else if (arg === '--output') {
       args.output = next
       i += 1
@@ -51,10 +70,26 @@ export async function writeOperatorDecisionRequest({
   projectDir = defaultProjectDir,
   handoff = defaultHandoff,
   providerLoopStatus,
+  providerLoopRequest,
+  decision,
+  operatorRef = 'local-operator',
+  reason,
   output = defaultOutput,
   print = false
 } = {}) {
   assertSafeLocalPath(output)
+
+  if (providerLoopRequest) {
+    return writeProviderLoopOperatorDecision({
+      projectDir,
+      providerLoopRequest,
+      decision,
+      operatorRef,
+      reason,
+      output: output === defaultOutput ? defaultProviderLoopDecisionOutput : output,
+      print
+    })
+  }
 
   const root = path.resolve(projectDir)
   const request = providerLoopStatus
@@ -76,6 +111,52 @@ export async function writeOperatorDecisionRequest({
 
   return {
     request,
+    output
+  }
+}
+
+export async function writeProviderLoopOperatorDecision({
+  projectDir = defaultProjectDir,
+  providerLoopRequest = defaultProviderLoopRequest,
+  decision,
+  operatorRef = 'local-operator',
+  reason,
+  output = defaultProviderLoopDecisionOutput,
+  print = false
+} = {}) {
+  assertSafeLocalPath(providerLoopRequest)
+  assertSafeLocalPath(output)
+
+  const root = path.resolve(projectDir)
+  const request = JSON.parse(await readFile(path.join(root, providerLoopRequest), 'utf8'))
+  validateRequiredRecord(request, artifactKinds.mediaOperatorDecisionRequestLocal)
+
+  const operatorDecision = createProviderLoopOperatorDecision({
+    request,
+    requestPath: providerLoopRequest,
+    decision,
+    operatorRef,
+    reason
+  })
+
+  const outputPath = path.join(root, output)
+  await mkdir(path.dirname(outputPath), { recursive: true })
+  await writeFile(outputPath, `${JSON.stringify(operatorDecision, null, 2)}\n`)
+
+  if (print) {
+    console.log(JSON.stringify(operatorDecision, null, 2))
+  } else {
+    console.log([
+      `operator decision: ${operatorDecision.decisionType}`,
+      `subject=${operatorDecision.subjectRef.id}`,
+      `executionPerformed=${operatorDecision.executionPerformed}`,
+      `output=${output}`
+    ].join(' | '))
+    console.log(`nextAction: ${operatorDecision.nextAction}`)
+  }
+
+  return {
+    decision: operatorDecision,
     output
   }
 }
@@ -232,6 +313,89 @@ export function createProviderLoopDecisionRequest({
 
   validateRequiredRecord(request)
   return request
+}
+
+export function createProviderLoopOperatorDecision({
+  request,
+  requestPath = defaultProviderLoopRequest,
+  decision,
+  operatorRef = 'local-operator',
+  reason,
+  createdAt = nowIso()
+}) {
+  if (request.requestKind !== 'review-provider-loop') {
+    throw new Error(`Provider-loop operator decision requires review-provider-loop request, received ${request.requestKind}`)
+  }
+
+  if (!decision) {
+    throw new Error('Provider-loop operator decision requires --decision')
+  }
+
+  if (!request.requestedDecisionTypes.includes(decision)) {
+    throw new Error(`Decision ${decision} is not allowed by request ${request.requestId}`)
+  }
+
+  const retry = decision === 'retry_provider_loop'
+  const review = decision === 'review_provider_loop'
+  const defer = decision === 'defer'
+
+  const operatorDecision = {
+    schema: artifactKinds.mediaOperatorDecision,
+    decisionId: `decision-provider-loop-${request.projectId}-${decision}`,
+    projectId: request.projectId,
+    subjectRef: request.subjectRef,
+    decisionType: decision,
+    operatorRef,
+    reason: reason ?? providerLoopDecisionReason(decision),
+    evidenceRefs: request.sourceRefs,
+    sourceRequestRef: {
+      ...makeRef('media-operator-decision-request', request.requestId, request.schema),
+      path: requestPath,
+      localOnly: true
+    },
+    providerLoopDecision: decision,
+    allowsExplicitRetryAttempt: retry,
+    reviewAcknowledged: review,
+    deferred: defer,
+    nextAction: retry
+      ? 'Rerun npm run provider:venice:loop with --live-provider and --retry-decision pointing at this local decision record.'
+      : 'Keep the provider loop in review/deferred posture; no retry was authorized locally.',
+    localDecisionOnly: true,
+    operatorGuidanceOnly: true,
+    executionPerformed: false,
+    authorityGranted: false,
+    approvalAuthority: false,
+    ratifierAuthority: false,
+    publicationAuthorization: false,
+    localOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    providerTruth: false,
+    byteAvailabilityProof: false,
+    materializationProof: false,
+    resourceAdmission: false,
+    edgeCalled: false,
+    meshPublished: false,
+    localTruthLabel: 'local decision',
+    truthStatus,
+    createdAt
+  }
+
+  validateRequiredRecord(operatorDecision)
+  return operatorDecision
+}
+
+function providerLoopDecisionReason(decision) {
+  if (decision === 'retry_provider_loop') {
+    return 'Local operator chose to permit one explicit provider-loop retry attempt; this does not execute the retry or grant provider truth.'
+  }
+
+  if (decision === 'review_provider_loop') {
+    return 'Local operator acknowledged provider-loop output for review; this does not make it production-ready or authoritative.'
+  }
+
+  return 'Local operator deferred provider-loop action; no retry or broader production use is authorized locally.'
 }
 
 function formatDecisionRequestSummary(request, output) {
