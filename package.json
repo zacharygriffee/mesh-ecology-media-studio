@@ -49,6 +49,7 @@
     "production:rough-cut-revise": "node src/production/rough-cut-revision.js",
     "production:render-export-candidate": "node src/production/render-export-candidate.js",
     "production:render-export-mediate": "node src/production/render-export-mediation.js",
+    "production:render-adapter-contract": "node src/production/render-adapter-contract.js",
     "resource:refs": "node src/local/resource-ref-candidates.js",
     "repair:local-posture": "node src/local/repair-local-posture.js",
     "media:import": "node src/assets/import-media.js",

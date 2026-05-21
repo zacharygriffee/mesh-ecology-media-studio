@@ -113,6 +113,7 @@ import { writeRoughCutCapsule } from '../src/production/rough-cut-capsule.js'
 import { writeRoughCutReviewDecision } from '../src/production/rough-cut-review-decision.js'
 import { writeRoughCutRevision } from '../src/production/rough-cut-revision.js'
 import { evaluateRenderExportCandidateFreshness, writeRenderExportCandidate } from '../src/production/render-export-candidate.js'
+import { writeRenderAdapterContract } from '../src/production/render-adapter-contract.js'
 import { writeRenderExportMediation } from '../src/production/render-export-mediation.js'
 
 const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
@@ -3005,6 +3006,26 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.ok(trace.blockedClaims.includes('export authorization'))
   assert.ok(mediationOutput.lines.some((line) => line.includes('render/export mediation:')))
   assert.ok(mediationOutput.lines.some((line) => line.includes('resolution=ask_operator')))
+
+  const adapterContractOutput = await captureConsole(() => writeRenderAdapterContract({ projectDir: dir }))
+  const adapterContract = adapterContractOutput.result.contract
+  assert.equal(adapterContract.schema, 'media.render_adapter_contract.local.v1')
+  assert.equal(adapterContract.contractKind, 'local-renderer-adapter-contract')
+  assert.equal(adapterContract.sourceRenderExportCandidateRef.id, candidate.candidateId)
+  assert.equal(adapterContract.orderedItems.length, 1)
+  assert.equal(adapterContract.targetFormat.formatId, 'local-review-preview')
+  assert.equal(adapterContract.targetFormat.formatSelected, false)
+  assert.equal(adapterContract.outputPlacement.relativePath, 'media/exports/render-preview')
+  assert.equal(adapterContract.outputPlacement.materializationPlanned, false)
+  assert.equal(adapterContract.adapterSelection.adapterSelected, false)
+  assert.equal(adapterContract.renderPerformed, false)
+  assert.equal(adapterContract.exportPerformed, false)
+  assert.equal(adapterContract.productionReady, false)
+  assert.equal(adapterContract.publicationAuthorization, false)
+  assert.equal(adapterContract.nonClaims.outputBytesCreated, false)
+  assert.ok(adapterContract.capabilityRequirements.some((entry) => entry.includes('ordered rough-cut item refs')))
+  assert.ok(adapterContractOutput.lines.some((line) => line.includes('render adapter contract:')))
+  assert.ok(adapterContractOutput.lines.some((line) => line.includes('adapterSelected=false')))
 
   await writeRoughCutReviewDecision({
     projectDir: dir,

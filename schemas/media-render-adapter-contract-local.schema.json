@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "media.render_adapter_contract.local.v1",
+  "title": "Media Render Adapter Contract Local",
+  "type": "object",
+  "required": [
+    "schema",
+    "contractId",
+    "projectId",
+    "mode",
+    "contractKind",
+    "sourceRenderExportCandidateRef",
+    "sourceRoughCutRef",
+    "orderedItems",
+    "targetFormat",
+    "outputPlacement",
+    "capabilityRequirements",
+    "nonClaims",
+    "createdAt",
+    "localOnly",
+    "operatorGuidanceOnly",
+    "productionReady",
+    "renderPerformed",
+    "exportPerformed"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.render_adapter_contract.local.v1"
+    },
+    "contractId": {
+      "type": "string"
+    },
+    "projectId": {
+      "type": "string"
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "contractKind": {
+      "const": "local-renderer-adapter-contract"
+    },
+    "sourceRenderExportCandidateRef": {
+      "type": "object"
+    },
+    "sourceRoughCutRef": {
+      "type": "object"
+    },
+    "orderedItems": {
+      "type": "array"
+    },
+    "targetFormat": {
+      "type": "object"
+    },
+    "outputPlacement": {
+      "type": "object"
+    },
+    "capabilityRequirements": {
+      "type": "array"
+    },
+    "nonClaims": {
+      "type": "object"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "operatorGuidanceOnly": {
+      "const": true
+    },
+    "productionReady": {
+      "const": false
+    },
+    "renderPerformed": {
+      "const": false
+    },
+    "exportPerformed": {
+      "const": false
+    },
+    "publicationAuthorization": {
+      "const": false
+    }
+  },
+  "additionalProperties": true
+}
