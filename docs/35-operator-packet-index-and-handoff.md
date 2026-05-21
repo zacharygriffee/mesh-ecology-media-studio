@@ -6,11 +6,15 @@ This phase adds two local-only control-surface artifacts:
 - `media.edge_handoff_candidate.local.v1`
 
 The packet index is a compact scanning record for local inspection packets,
-export bundles, compatibility bundles, project health records, and handoff
-candidates. It is an operator aid, not a UI contract and not shared truth.
+export bundles, compatibility bundles, project health records, provider-loop
+status records, and handoff candidates. It is an operator aid, not a UI
+contract and not shared truth.
 When project health has asset or production attention rows, the packet index
 also carries those `operatorHealthExplanations` and prints compact attention
 rows with subject, issue codes, and safe local next action.
+When a provider-loop status is failed or incomplete, it prints a compact
+provider-loop attention row. That row is review guidance only; it does not make
+the provider response true or authorize retry.
 
 The handoff candidate gathers the local inspection packet, Edge compatibility
 bundle, project health snapshot, and packet index into one Edge-facing review

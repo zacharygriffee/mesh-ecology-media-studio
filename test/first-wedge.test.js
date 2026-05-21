@@ -1192,6 +1192,100 @@ test('Venice operational loop reports provider-stage failure without claiming tr
   assert.equal(validateRequiredRecord(statusRecord), true)
   assert.equal(statusRecord.state, 'failed_review_only')
   assert.equal(statusRecord.providerTruth, false)
+
+  const { result: inspection } = await captureConsole(() => inspectVeniceLoop({ projectDir: dir }))
+  assert.equal(inspection.summary.state, 'failed_review_only')
+  assert.equal(inspection.summary.failedStep, 'provider_smoke')
+  assert.equal(inspection.summary.providerTruth, false)
+
+  const { result: indexResult } = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
+  assert.equal(indexResult.index.providerLoopStatusRefs.length, 1)
+  assert.equal(indexResult.index.providerLoopStatuses[0].state, 'failed_review_only')
+  assert.equal(indexResult.index.providerLoopStatuses[0].needsOperatorAttention, true)
+  assert.equal(indexResult.index.summary.providerLoopsWithAttention, 1)
+  assert.equal(indexResult.index.summary.attentionRows, 1)
+  assert.equal(validateRequiredRecord(indexResult.index), true)
+})
+
+test('committed Venice provider-loop failure fixture is inspectable without truth claims', async () => {
+  const fixtureDir = 'examples/provider-loop-fixtures/venice-provider-failed'
+
+  const { result: inspection } = await captureConsole(() => inspectVeniceLoop({
+    projectDir: fixtureDir
+  }))
+
+  assert.equal(inspection.summary.state, 'failed_review_only')
+  assert.equal(inspection.summary.failedStep, 'provider_smoke')
+  assert.equal(inspection.summary.providerTruth, false)
+  assert.equal(inspection.summary.meshTruth, false)
+})
+
+test('cross-project operator index surfaces provider loop attention by ref', async () => {
+  const baseDir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-cross-project-provider-loop-'))
+  const projectDir = path.join(baseDir, 'failed-provider-loop')
+  await mkdir(path.join(projectDir, 'records', 'provider-results'), { recursive: true })
+
+  const fixture = JSON.parse(
+    await readFile('examples/provider-loop-fixtures/venice-provider-failed/records/provider-results/media-provider-loop-status.local.json', 'utf8')
+  )
+  await writeFile(path.join(projectDir, 'records', 'provider-results', 'media-provider-loop-status.local.json'), `${JSON.stringify(fixture, null, 2)}\n`)
+
+  const inputList = {
+    schema: 'media.cross_project_inspection_input_list.local.v1',
+    inputListId: 'provider-loop-attention-fixture',
+    createdAt: '2026-05-20T00:00:00.000Z',
+    mode: 'standalone-local',
+    projects: [
+      {
+        projectId: 'venice-provider-failed-fixture',
+        label: 'Venice provider failed fixture',
+        rootRef: {
+          kind: 'local-directory',
+          id: 'failed-provider-loop',
+          schema: 'media.local_ref.v1',
+          path: 'failed-provider-loop',
+          localOnly: true
+        },
+        artifactRefs: {
+          providerLoopStatus: {
+            kind: 'media-provider-loop-status',
+            id: 'provider-loop-status-venice-provider-failed-fixture',
+            schema: 'media.provider_loop_status.local.v1',
+            path: 'records/provider-results/media-provider-loop-status.local.json',
+            localOnly: true
+          }
+        }
+      }
+    ],
+    warnings: [
+      'Provider-loop fixture input list only.',
+      'Provider-loop status is local operator guidance only.'
+    ],
+    operatorGuidanceOnly: true,
+    localOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    providerTruth: false,
+    edgeRuntimeBuilt: false,
+    edgeRuntimeVerified: false,
+    localTruthLabel: 'local draft',
+    truthStatus: 'not mesh truth; not distributed proof; not ratified shared state'
+  }
+  await writeFile(path.join(baseDir, 'input-list.local.json'), `${JSON.stringify(inputList, null, 2)}\n`)
+
+  const { result } = await captureConsole(() => writeCrossProjectOperatorIndex({
+    baseDir,
+    inputList: 'input-list.local.json',
+    output: 'cross-project-provider-loop.local.json'
+  }))
+
+  assert.equal(result.index.summary.providerLoopStatuses, 1)
+  assert.equal(result.index.summary.providerLoopsWithAttention, 1)
+  assert.equal(result.index.summary.attentionRows, 1)
+  assert.equal(result.index.projectSummaries[0].providerLoopStatus.state, 'failed_review_only')
+  assert.equal(result.index.projectSummaries[0].providerLoopStatus.providerTruth, false)
+  assert.equal(validateRequiredRecord(result.index), true)
 })
 
 test('generic local-run inspection packet exports first-wedge records', async () => {

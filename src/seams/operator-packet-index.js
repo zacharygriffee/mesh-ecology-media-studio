@@ -62,9 +62,15 @@ export async function writeOperatorPacketIndex({
   const operatorDecisionRequestRefs = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaOperatorDecisionRequestLocal)
     .map(toInspectionRef)
+  const providerLoopStatusRefs = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaProviderLoopStatusLocal)
+    .map(toInspectionRef)
   const mediationRefs = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaRuleResolutionTraceLocal)
     .map(toInspectionRef)
+  const providerLoopStatuses = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaProviderLoopStatusLocal)
+    .map((entry) => summarizeProviderLoopStatus(entry.record, entry.relativePath))
   const readinessStates = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProjectHealthLocal)
     .map((entry) => entry.record.healthState)
@@ -89,7 +95,9 @@ export async function writeOperatorPacketIndex({
     healthRefs,
     handoffCandidateRefs,
     operatorDecisionRequestRefs,
+    providerLoopStatusRefs,
     mediationRefs,
+    providerLoopStatuses,
     operatorHealthExplanations,
     summary: {
       packets: packetRefs.length,
@@ -97,10 +105,13 @@ export async function writeOperatorPacketIndex({
       healthRecords: healthRefs.length,
       handoffCandidates: handoffCandidateRefs.length,
       operatorDecisionRequests: operatorDecisionRequestRefs.length,
+      providerLoopStatuses: providerLoopStatusRefs.length,
+      providerLoopsWithAttention: providerLoopStatuses.filter((status) => status.needsOperatorAttention).length,
       ruleResolutionTraces: mediationRefs.length,
       readyHealthRecords: readinessStates.filter((state) => state === 'ready-for-local-inspection').length,
       needsAttentionHealthRecords: readinessStates.filter((state) => state === 'needs-local-attention').length,
       operatorHealthExplanations: operatorHealthExplanations.length,
+      attentionRows: operatorHealthExplanations.length + providerLoopStatuses.filter((status) => status.needsOperatorAttention).length,
       newestRecordPath: newestPath(records),
       operatorGuidanceOnly: true
     },
@@ -134,6 +145,9 @@ export async function writeOperatorPacketIndex({
     for (const explanation of index.operatorHealthExplanations) {
       console.log(formatHealthExplanation(explanation))
     }
+    for (const providerLoop of index.providerLoopStatuses.filter((status) => status.needsOperatorAttention)) {
+      console.log(formatProviderLoopAttention(providerLoop))
+    }
   }
 
   return {
@@ -149,8 +163,9 @@ function formatOperatorPacketIndexSummary(index, output) {
     `bundles=${summary.bundles}`,
     `handoffs=${summary.handoffCandidates}`,
     `decisionRequests=${summary.operatorDecisionRequests}`,
+    `providerLoops=${summary.providerLoopStatuses ?? 0}`,
     `ruleTraces=${summary.ruleResolutionTraces}`,
-    `attention=${summary.operatorHealthExplanations}`,
+    `attention=${summary.attentionRows ?? summary.operatorHealthExplanations}`,
     `output=${output}`
   ].join(' | ')
 }
@@ -165,10 +180,20 @@ function formatHealthExplanation(explanation) {
   ].join(' | ')
 }
 
+function formatProviderLoopAttention(providerLoop) {
+  return [
+    `provider-loop attention: ${providerLoop.providerId}:${providerLoop.loopKind}`,
+    `state=${providerLoop.state}`,
+    `failedStep=${providerLoop.failedStep ?? 'none'}`,
+    `nextAction=${providerLoop.nextAction ?? 'none'}`
+  ].join(' | ')
+}
+
 async function readIndexableRecords(root) {
   const candidates = [
     ...(await findJsonFiles(root, 'records/exports')),
     ...(await findJsonFiles(root, 'records/manifests')),
+    ...(await findJsonFiles(root, 'records/provider-results')),
     ...(await findJsonFiles(root, 'records/requests')),
     ...(await findJsonFiles(root, 'records/rule-traces'))
   ]
@@ -191,8 +216,32 @@ const indexableSchemas = new Set([
   artifactKinds.mediaProjectHealthLocal,
   artifactKinds.mediaEdgeHandoffCandidateLocal,
   artifactKinds.mediaOperatorDecisionRequestLocal,
+  artifactKinds.mediaProviderLoopStatusLocal,
   artifactKinds.mediaRuleResolutionTraceLocal
 ])
+
+function summarizeProviderLoopStatus(record, relativePath) {
+  return {
+    statusRef: {
+      ...makeRef('media-provider-loop-status', record.statusId, record.schema),
+      path: relativePath,
+      localOnly: true
+    },
+    providerId: record.providerId,
+    loopKind: record.loopKind,
+    state: record.state,
+    failedStep: record.failedStep ?? null,
+    completedSteps: record.completedSteps.length,
+    nextAction: record.nextAction,
+    needsOperatorAttention: record.state !== 'complete_review_only',
+    operatorGuidanceOnly: true,
+    localOnly: true,
+    meshTruth: false,
+    providerTruth: false,
+    edgeCalled: false,
+    meshPublished: false
+  }
+}
 
 async function findJsonFiles(root, relativeRoot) {
   assertSafeLocalPath(relativeRoot)
@@ -255,6 +304,7 @@ function kindForSchema(schema) {
     [artifactKinds.mediaProjectHealthLocal]: 'media-project-health',
     [artifactKinds.mediaEdgeHandoffCandidateLocal]: 'media-edge-handoff-candidate',
     [artifactKinds.mediaOperatorDecisionRequestLocal]: 'media-operator-decision-request',
+    [artifactKinds.mediaProviderLoopStatusLocal]: 'media-provider-loop-status',
     [artifactKinds.mediaRuleResolutionTraceLocal]: 'media-rule-resolution-trace'
   }[schema] ?? schema
 }
@@ -266,6 +316,7 @@ function idForRecord(record) {
     record.healthId ??
     record.handoffCandidateId ??
     record.requestId ??
+    record.statusId ??
     record.traceId
 }
 

@@ -6,7 +6,8 @@ discover projects, crawl adjacent repos, or infer authority from local files.
 
 `media.cross_project_operator_index.local.v1` summarizes those refs across
 projects for later operator attention. It can show health state, handoff state,
-operator decision request kind, blocking issue count, and next actions.
+operator decision request kind, provider-loop status, blocking issue count, and
+next actions.
 
 ## Command
 
@@ -45,6 +46,11 @@ missing: operatorDecisionRequest | expected=... | nextAction=Run npm run operato
 
 Missing-artifact rows are local repair guidance only. They do not prove Edge
 runtime state, operator authorization, mesh truth, or ratified shared state.
+
+If an input project includes a `providerLoopStatus` artifact ref, the index
+also surfaces failed or incomplete provider loops as attention rows. These rows
+are local review guidance only: provider IDs and provider job posture remain
+provenance, not authority or truth.
 
 ## Boundary
 

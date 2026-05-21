@@ -203,6 +203,9 @@
     "readyForEdgeInspection": 0,
     "needsLocalAttention": 3,
     "unknownHandoffState": 0,
+    "providerLoopStatuses": 0,
+    "providerLoopsWithAttention": 0,
+    "attentionRows": 3,
     "blockingIssues": 5,
     "missingArtifacts": 0,
     "operatorGuidanceOnly": true

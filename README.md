@@ -191,6 +191,11 @@ Inspect the last loop status without rerunning work:
 npm run inspect:venice-loop
 ```
 
+Provider-loop statuses are local operator guidance. `operator:index` and
+`operator:cross-project-index` can surface failed or incomplete loop status refs
+as attention rows without treating Venice, provider jobs, or provider responses
+as Studio truth.
+
 Use the real Venice API only with the explicit live switch:
 
 ```bash

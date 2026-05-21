@@ -1813,6 +1813,16 @@ export function validateRecordShape(record, schemaId = record.schema) {
 
       record.mediationRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.mediationRefs[${index}]`))
     }
+    if (record.providerLoopStatusRefs !== undefined) {
+      if (!Array.isArray(record.providerLoopStatusRefs)) {
+        throw new Error(`Record ${schemaId}.providerLoopStatusRefs must be an array`)
+      }
+
+      record.providerLoopStatusRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.providerLoopStatusRefs[${index}]`))
+    }
+    if (record.providerLoopStatuses !== undefined && !Array.isArray(record.providerLoopStatuses)) {
+      throw new Error(`Record ${schemaId}.providerLoopStatuses must be an array`)
+    }
 
     if (!record.summary || typeof record.summary !== 'object') {
       throw new Error(`Record ${schemaId}.summary must be an object`)
