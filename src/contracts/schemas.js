@@ -82,6 +82,7 @@ export const schemaFiles = {
   'media.production_descriptor.local.v1': 'schemas/media-production-descriptor-local.schema.json',
   'media.production_asset_capsule.local.v1': 'schemas/media-production-asset-capsule-local.schema.json',
   'media.production_bundle.local.v1': 'schemas/media-production-bundle-local.schema.json',
+  'media.authority_handoff_candidate.local.v1': 'schemas/media-authority-handoff-candidate-local.schema.json',
   'media.approval_proposal.local.v1': 'schemas/media-approval-proposal-local.schema.json',
   'media.byte_descriptor_proposal.local.v1': 'schemas/media-byte-descriptor-proposal-local.schema.json',
   'media.local_layer_resource_ref_candidate.local.v1': 'schemas/media-local-layer-resource-ref-candidate-local.schema.json',
@@ -169,6 +170,39 @@ export const requiredFields = {
     'localTruthLabel',
     'truthStatus',
     'createdAt'
+  ],
+  'media.authority_handoff_candidate.local.v1': [
+    'schema',
+    'handoffCandidateId',
+    'projectId',
+    'handoffKind',
+    'mode',
+    'targetAuthorityLane',
+    'prerequisiteSummary',
+    'authorityReviewInputs',
+    'acceptedCandidateRows',
+    'sourceRefs',
+    'authorityGaps',
+    'nextActions',
+    'createdAt',
+    'operatorGuidanceOnly',
+    'productionReady',
+    'approvalAuthority',
+    'ratifierAuthority',
+    'publicationAuthorization',
+    'providerTruth',
+    'byteAvailabilityProof',
+    'materializationProof',
+    'resourceAdmission',
+    'causalTruth',
+    'edgeCalled',
+    'meshPublished',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'localTruthLabel',
+    'truthStatus'
   ],
   'media.local_run_manifest.v1': [
     'schema',
@@ -1134,6 +1168,7 @@ const idFields = {
   [artifactKinds.mediaProductionDescriptorLocal]: 'descriptorId',
   [artifactKinds.mediaProductionAssetCapsuleLocal]: 'capsuleId',
   [artifactKinds.mediaProductionBundleLocal]: 'bundleId',
+  [artifactKinds.mediaAuthorityHandoffCandidateLocal]: 'handoffCandidateId',
   [artifactKinds.mediaApprovalProposalLocal]: 'proposalId',
   [artifactKinds.mediaByteDescriptorProposalLocal]: 'byteDescriptorProposalId',
   [artifactKinds.mediaLocalLayerResourceRefCandidateLocal]: 'resourceRefCandidateId',
@@ -1171,6 +1206,7 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaProductionDescriptorLocal,
   artifactKinds.mediaProductionAssetCapsuleLocal,
   artifactKinds.mediaProductionBundleLocal,
+  artifactKinds.mediaAuthorityHandoffCandidateLocal,
   artifactKinds.mediaApprovalProposalLocal,
   artifactKinds.mediaByteDescriptorProposalLocal,
   artifactKinds.mediaLocalLayerResourceRefCandidateLocal,
@@ -1213,6 +1249,7 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaProductionDescriptorLocal,
   artifactKinds.mediaProductionAssetCapsuleLocal,
   artifactKinds.mediaProductionBundleLocal,
+  artifactKinds.mediaAuthorityHandoffCandidateLocal,
   artifactKinds.mediaApprovalProposalLocal,
   artifactKinds.mediaByteDescriptorProposalLocal,
   artifactKinds.mediaLocalLayerResourceRefCandidateLocal,
@@ -2221,6 +2258,44 @@ export function validateRecordShape(record, schemaId = record.schema) {
     }
 
     for (const flag of ['approvalAuthority', 'ratifierAuthority', 'publicationAuthorization', 'providerTruth', 'byteAvailabilityProof', 'materializationProof', 'resourceAdmission', 'causalTruth']) {
+      if (record[flag] !== false) {
+        throw new Error(`Record ${schemaId} must set ${flag}=false`)
+      }
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaAuthorityHandoffCandidateLocal) {
+    if (!['production-authority-review-candidate'].includes(record.handoffKind)) {
+      throw new Error(`Record ${schemaId} has invalid handoff kind: ${record.handoffKind}`)
+    }
+
+    if (record.mode !== 'standalone-local') {
+      throw new Error(`Record ${schemaId} has invalid mode: ${record.mode}`)
+    }
+
+    if (record.targetAuthorityLane !== 'future-authority-lane') {
+      throw new Error(`Record ${schemaId} must target future-authority-lane`)
+    }
+
+    for (const collection of ['authorityReviewInputs', 'acceptedCandidateRows', 'sourceRefs', 'authorityGaps', 'nextActions']) {
+      if (!Array.isArray(record[collection])) {
+        throw new Error(`Record ${schemaId}.${collection} must be an array`)
+      }
+    }
+
+    record.sourceRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.sourceRefs[${index}]`))
+
+    if (!record.prerequisiteSummary || typeof record.prerequisiteSummary !== 'object') {
+      throw new Error(`Record ${schemaId}.prerequisiteSummary must be an object`)
+    }
+
+    if (record.operatorGuidanceOnly !== true || record.productionReady !== false) {
+      throw new Error(`Record ${schemaId} must remain handoff-only and productionReady=false`)
+    }
+
+    for (const flag of ['approvalAuthority', 'ratifierAuthority', 'publicationAuthorization', 'providerTruth', 'byteAvailabilityProof', 'materializationProof', 'resourceAdmission', 'causalTruth', 'edgeCalled', 'meshPublished']) {
       if (record[flag] !== false) {
         throw new Error(`Record ${schemaId} must set ${flag}=false`)
       }

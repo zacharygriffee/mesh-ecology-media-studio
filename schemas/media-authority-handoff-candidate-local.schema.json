@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-authority-handoff-candidate-local.schema.json",
+  "title": "media.authority_handoff_candidate.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "handoffCandidateId",
+    "projectId",
+    "handoffKind",
+    "mode",
+    "targetAuthorityLane",
+    "prerequisiteSummary",
+    "authorityReviewInputs",
+    "acceptedCandidateRows",
+    "sourceRefs",
+    "authorityGaps",
+    "nextActions",
+    "createdAt",
+    "operatorGuidanceOnly",
+    "productionReady",
+    "approvalAuthority",
+    "ratifierAuthority",
+    "publicationAuthorization",
+    "providerTruth",
+    "byteAvailabilityProof",
+    "materializationProof",
+    "resourceAdmission",
+    "causalTruth",
+    "edgeCalled",
+    "meshPublished",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "localTruthLabel",
+    "truthStatus"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.authority_handoff_candidate.local.v1"
+    },
+    "handoffCandidateId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "handoffKind": {
+      "const": "production-authority-review-candidate"
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "targetAuthorityLane": {
+      "const": "future-authority-lane"
+    },
+    "prerequisiteSummary": {
+      "type": "object"
+    },
+    "authorityReviewInputs": {
+      "type": "array"
+    },
+    "acceptedCandidateRows": {
+      "type": "array"
+    },
+    "sourceRefs": {
+      "type": "array"
+    },
+    "authorityGaps": {
+      "type": "array"
+    },
+    "nextActions": {
+      "type": "array"
+    },
+    "operatorGuidanceOnly": {
+      "const": true
+    },
+    "productionReady": {
+      "const": false
+    },
+    "approvalAuthority": {
+      "const": false
+    },
+    "ratifierAuthority": {
+      "const": false
+    },
+    "publicationAuthorization": {
+      "const": false
+    },
+    "providerTruth": {
+      "const": false
+    },
+    "byteAvailabilityProof": {
+      "const": false
+    },
+    "materializationProof": {
+      "const": false
+    },
+    "resourceAdmission": {
+      "const": false
+    },
+    "causalTruth": {
+      "const": false
+    },
+    "edgeCalled": {
+      "const": false
+    },
+    "meshPublished": {
+      "const": false
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    }
+  }
+}

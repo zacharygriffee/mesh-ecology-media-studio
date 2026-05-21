@@ -222,6 +222,11 @@ or production authority.
 `npm run production:authority-prereqs` reads those local refs and reports which
 local package prerequisites are present, what is missing, and why a future
 authority lane is still required.
+`npm run production:authority-handoff` writes a local
+`media.authority_handoff_candidate.local.v1` record that packages the bundle,
+approval proposal, capsule, situated identity refs, and authority gaps for a
+future authority lane. It is not approval, ratification, publication
+authorization, or production readiness.
 
 Create a local provider-loop operator decision request:
 

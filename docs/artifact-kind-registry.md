@@ -50,6 +50,7 @@ Known Studio artifact kinds:
 - `media.production_descriptor.local.v1`
 - `media.production_asset_capsule.local.v1`
 - `media.production_bundle.local.v1`
+- `media.authority_handoff_candidate.local.v1`
 - `media.approval_proposal.local.v1`
 - `media.byte_descriptor_proposal.local.v1`
 - `media.local_layer_resource_ref_candidate.local.v1`
@@ -60,6 +61,11 @@ Known Studio artifact kinds:
 `media.rule_resolution_trace.local.v1` are local-only mediation artifacts. They
 describe candidate operations and mediation pressure; they do not execute work
 or grant authority.
+
+`media.authority_handoff_candidate.local.v1` packages local production bundle,
+approval proposal, capsule, situated identity, and prerequisite refs for a
+future authority lane. It is candidate-only and does not grant approval,
+ratification, publication authorization, or production readiness.
 
 Future candidate artifact kinds, not implemented and not active schema
 contracts:

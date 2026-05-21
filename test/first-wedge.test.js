@@ -108,6 +108,7 @@ import { validateProductionRecordsInProject } from '../src/production/validate-p
 import { writeProductionAssetCapsule } from '../src/production/asset-capsule.js'
 import { writeProductionBundle } from '../src/production/bundle.js'
 import { createProductionAuthorityPrerequisiteReport, writeProductionAuthorityPrerequisiteReport } from '../src/production/authority-prerequisites.js'
+import { writeAuthorityHandoffCandidate } from '../src/production/authority-handoff-candidate.js'
 
 const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 
@@ -2537,6 +2538,48 @@ test('production authority prerequisite report separates local package from auth
   assert.equal(row.publicationAuthorization, false)
   assert.ok(output.lines.some((line) => line === 'production authority prerequisites: project=venice-smoke-project | candidates=1 | localPackageComplete=1 | missingLocalPrerequisites=0 | pendingAuthority=1 | productionReady=0'))
   assert.ok(output.lines.some((line) => line.includes('authority-prereq: media/accepted/venice-live-smoke-0.png | localPackage=local-package-complete-authority-missing | authority=authority-missing')))
+})
+
+test('authority handoff candidate packages local refs without authority', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-authority-handoff-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+
+  const output = await captureConsole(() => writeAuthorityHandoffCandidate({ projectDir: dir }))
+  const candidate = output.result.candidate
+
+  assert.equal(candidate.schema, 'media.authority_handoff_candidate.local.v1')
+  assert.equal(candidate.handoffKind, 'production-authority-review-candidate')
+  assert.equal(candidate.targetAuthorityLane, 'future-authority-lane')
+  assert.equal(candidate.prerequisiteSummary.candidates, 1)
+  assert.equal(candidate.prerequisiteSummary.localPackageComplete, 1)
+  assert.equal(candidate.prerequisiteSummary.pendingAuthority, 1)
+  assert.equal(candidate.prerequisiteSummary.productionReady, 0)
+  assert.equal(candidate.acceptedCandidateRows.length, 1)
+  assert.equal(candidate.acceptedCandidateRows[0].acceptedAssetPath, 'media/accepted/venice-live-smoke-0.png')
+  assert.equal(candidate.acceptedCandidateRows[0].approvalProposalIdentity.situatedRefsPresent, true)
+  assert.ok(candidate.authorityReviewInputs.find((input) => input.inputKind === 'production-bundle').refs[0].path)
+  assert.ok(candidate.authorityReviewInputs.find((input) => input.inputKind === 'approval-proposal').refs[0].path)
+  assert.ok(candidate.authorityReviewInputs.find((input) => input.inputKind === 'production-asset-capsule').refs[0].path)
+  assert.equal(candidate.authorityReviewInputs.find((input) => input.inputKind === 'situated-identity').present, true)
+  assert.ok(candidate.sourceRefs.some((ref) => ref.schema === 'media.production_bundle.local.v1'))
+  assert.ok(candidate.sourceRefs.some((ref) => ref.schema === 'media.approval_proposal.local.v1'))
+  assert.ok(candidate.sourceRefs.some((ref) => ref.schema === 'media.production_asset_capsule.local.v1'))
+  assert.ok(candidate.authorityGaps.includes('approval_authority_missing'))
+  assert.equal(candidate.productionReady, false)
+  assert.equal(candidate.approvalAuthority, false)
+  assert.equal(candidate.ratifierAuthority, false)
+  assert.equal(candidate.publicationAuthorization, false)
+  assert.equal(candidate.edgeCalled, false)
+  assert.equal(candidate.meshPublished, false)
+  assert.equal(validateRequiredRecord(candidate), true)
+  assert.ok(output.lines.some((line) => line.startsWith('authority handoff candidate: project=venice-smoke-project')))
+  assert.ok(output.lines.some((line) => line.includes('productionReady=false')))
+
+  const written = JSON.parse(
+    await readFile(path.join(dir, 'records', 'production', 'media-authority-handoff-candidate.local.json'), 'utf8')
+  )
+  assert.equal(written.handoffCandidateId, candidate.handoffCandidateId)
+  assert.equal(validateRequiredRecord(written), true)
 })
 
 test('project health reports missing production asset capsules for accepted provider assets', async () => {

@@ -137,6 +137,22 @@ production capsule, production bundle, byte descriptor proposal, resource-ref
 candidate, and derivative refs. It does not create an authority artifact and it
 does not make the bundle production-ready.
 
+## Authority Handoff Candidate
+
+`npm run production:authority-handoff` writes
+`media.authority_handoff_candidate.local.v1`. This is the first local contract
+for the future authority boundary:
+
+```txt
+authority handoff candidate: project=venice-smoke-project | candidates=1 | localPackageComplete=1 | pendingAuthority=1 | bundles=1 | proposals=1 | capsules=1 | authorityGaps=5 | productionReady=false
+```
+
+The handoff candidate packages the production bundle, approval proposal,
+production asset capsule, situated identity refs, and embedded prerequisite
+summary so a future authority lane can inspect what it would need to review. It
+does not implement that lane and does not grant approval, ratification,
+publication authorization, or production readiness.
+
 ## Non-Claims
 
 The capsule is local operator guidance only:
