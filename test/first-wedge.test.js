@@ -2534,6 +2534,8 @@ test('Venice production rehearsal completes review bundle without authority', as
   assert.equal(result.rehearsal.productionApprovalLane.approvalProposals, 1)
   assert.equal(result.rehearsal.productionApprovalLane.capsules, 1)
   assert.equal(result.rehearsal.productionApprovalLane.bundles, 1)
+  assert.equal(result.rehearsal.roughCutPosture.total, 0)
+  assert.equal(result.rehearsal.roughCutPosture.reviewed, 0)
   assert.equal(result.rehearsal.productionApprovalLane.pendingAuthority, 1)
   assert.equal(result.rehearsal.productionApprovalLane.productionReady, 0)
   assert.equal(result.rehearsal.approvalAuthority, false)
@@ -2551,6 +2553,28 @@ test('Venice production rehearsal completes review bundle without authority', as
   assert.ok(result.edgeCompatibility.bundle.studioSourceRefs.some((ref) =>
     ref.schema === 'media.approval_proposal.local.v1'
   ))
+})
+
+test('Venice production rehearsal recognizes locally reviewed rough cut posture', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-venice-reviewed-rough-cut-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+  await writeAuthorityHandoffCandidate({ projectDir: dir, quiet: true })
+  await writeRoughCutCapsule({ projectDir: dir, quiet: true })
+  await writeRoughCutReviewDecision({ projectDir: dir })
+
+  const result = await runVeniceProductionRehearsal({ projectDir: dir })
+
+  assert.equal(result.rehearsal.state, 'complete_review_only_authority_missing')
+  assert.equal(result.rehearsal.roughCutPosture.total, 1)
+  assert.equal(result.rehearsal.roughCutPosture.reviewed, 1)
+  assert.equal(result.rehearsal.roughCutPosture.changesRequested, 0)
+  assert.equal(result.rehearsal.roughCutPosture.deferred, 0)
+  assert.equal(result.rehearsal.roughCutPosture.productionReady, false)
+  assert.equal(result.rehearsal.productionApprovalLane.pendingAuthority, 1)
+  assert.equal(result.rehearsal.productionApprovalLane.productionReady, 0)
+  assert.equal(result.rehearsal.approvalAuthority, false)
+  assert.equal(result.rehearsal.publicationAuthorization, false)
+  assert.equal(result.rehearsal.safeNextAction, 'Route pending approval proposals through the proper authority lane; local proposals and bundles are not approval.')
 })
 
 test('production authority prerequisite report separates local package from authority', async () => {

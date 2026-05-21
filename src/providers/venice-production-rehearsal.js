@@ -82,6 +82,16 @@ export async function runVeniceProductionRehearsal({
   const edgeCompatibility = await runStep(() => writeEdgeCompatibilityBundle({ projectDir }))
   const mediaSummary = await createMediaSummary({ projectDir })
   const lane = mediaSummary.productionApprovalLane
+  const roughCutPosture = {
+    total: mediaSummary.productionRoughCuts.total,
+    reviewed: mediaSummary.productionRoughCuts.reviewed,
+    changesRequested: mediaSummary.productionRoughCuts.changesRequested,
+    deferred: mediaSummary.productionRoughCuts.deferred,
+    attention: mediaSummary.productionRoughCuts.attentionRows.length,
+    productionReady: false,
+    localOnly: true,
+    operatorGuidanceOnly: true
+  }
 
   const rehearsal = {
     schema: 'media.venice_production_rehearsal.local.v1',
@@ -141,6 +151,7 @@ export async function runVeniceProductionRehearsal({
     },
     healthState: health.health.healthState,
     productionApprovalLane: lane,
+    roughCutPosture,
     safeNextAction: mediaSummary.safeNextAction,
     localOnly: true,
     operatorGuidanceOnly: true,
@@ -189,6 +200,8 @@ export function formatVeniceProductionRehearsal(rehearsal) {
     `proposals=${lane.approvalProposals}`,
     `capsules=${lane.capsules}`,
     `bundles=${lane.bundles}`,
+    `roughCuts=${rehearsal.roughCutPosture?.total ?? 0}`,
+    `roughCutReviewed=${rehearsal.roughCutPosture?.reviewed ?? 0}`,
     `pendingAuthority=${lane.pendingAuthority}`,
     `productionReady=${lane.productionReady}`
   ].join(' | ')
