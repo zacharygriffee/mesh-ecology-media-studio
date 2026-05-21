@@ -269,7 +269,7 @@ function printMediaSummary(summary) {
     ].join(' | '))
   }
 
-  console.log('nonClaims: local-only; no mesh truth; no byte/materialization proof; no resource admission')
+  console.log('nonClaims: local-only; no mesh truth; no approval authority; no publication authorization; no byte/materialization proof; no resource admission')
 }
 
 function summarizeSafeNextAction({

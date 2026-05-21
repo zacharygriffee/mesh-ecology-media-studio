@@ -1958,6 +1958,7 @@ test('media summary reports intake derivative and identity posture compactly', a
   assert.ok(output.lines.some((line) => line === 'approval lane: proposals=0 | pendingAuthority=0 | approved=0 | blocked=0'))
   assert.ok(output.lines.some((line) => line.includes('attention: media/source/source-pixel.png')))
   assert.ok(output.lines.some((line) => line.includes('unsupported_media_type')))
+  assert.ok(output.lines.some((line) => line === 'nonClaims: local-only; no mesh truth; no approval authority; no publication authorization; no byte/materialization proof; no resource admission'))
 
   await generateThumbnailDerivatives({ projectDir: dir, maxSize: 64 })
   const after = await createMediaSummary({ projectDir: dir })
