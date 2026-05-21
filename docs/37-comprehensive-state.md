@@ -195,6 +195,9 @@ The loop persists a generic `media.provider_loop_status.local.v1` status record
 so operators can inspect the last run without treating Venice as provider canon.
 Operator packet indexes and cross-project indexes can now surface provider-loop
 status refs, including failed or incomplete loops, as local attention guidance.
+Provider-loop status can also produce `review-provider-loop` operator decision
+requests. Those requests may ask for retry/defer on failed loops, but they do
+not execute retries or grant authority.
 
 Provider IDs and job IDs remain provenance only.
 

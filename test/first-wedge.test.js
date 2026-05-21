@@ -1108,9 +1108,21 @@ test('Venice operational loop completes locally without live provider by default
 
   const { result: inspection } = await captureConsole(() => inspectVeniceLoop({ projectDir: dir }))
   assert.equal(inspection.summary.state, 'complete_review_only')
+  assert.equal(inspection.summary.completionScope, 'generated-candidate-local-loop')
+  assert.equal(inspection.summary.productionReady, false)
   assert.equal(inspection.summary.selectedCandidate.path, 'media/generated/provider-smoke/venice-live-smoke-0.png')
   assert.equal(inspection.summary.providerRuns.total, 1)
   assert.equal(inspection.summary.providerTruth, false)
+
+  const { result: requestResult } = await captureConsole(() => writeOperatorDecisionRequest({
+    projectDir: dir,
+    providerLoopStatus: 'records/provider-results/media-provider-loop-status.local.json',
+    output: 'records/requests/media-provider-loop-operator-decision-request.local.json'
+  }))
+  assert.equal(requestResult.request.requestKind, 'review-provider-loop')
+  assert.deepEqual(requestResult.request.requestedDecisionTypes, ['review_provider_loop', 'defer'])
+  assert.equal(requestResult.request.providerTruth, false)
+  assert.equal(validateRequiredRecord(requestResult.request), true)
 })
 
 test('Venice operational loop selects latest generated provider candidate', async () => {
@@ -1196,6 +1208,7 @@ test('Venice operational loop reports provider-stage failure without claiming tr
   const { result: inspection } = await captureConsole(() => inspectVeniceLoop({ projectDir: dir }))
   assert.equal(inspection.summary.state, 'failed_review_only')
   assert.equal(inspection.summary.failedStep, 'provider_smoke')
+  assert.equal(inspection.summary.productionReady, false)
   assert.equal(inspection.summary.providerTruth, false)
 
   const { result: indexResult } = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
@@ -1205,6 +1218,17 @@ test('Venice operational loop reports provider-stage failure without claiming tr
   assert.equal(indexResult.index.summary.providerLoopsWithAttention, 1)
   assert.equal(indexResult.index.summary.attentionRows, 1)
   assert.equal(validateRequiredRecord(indexResult.index), true)
+
+  const { result: requestResult } = await captureConsole(() => writeOperatorDecisionRequest({
+    projectDir: dir,
+    providerLoopStatus: 'records/provider-results/media-provider-loop-status.local.json',
+    output: 'records/requests/media-provider-loop-operator-decision-request.local.json'
+  }))
+  assert.equal(requestResult.request.requestKind, 'review-provider-loop')
+  assert.deepEqual(requestResult.request.requestedDecisionTypes, ['retry_provider_loop', 'defer'])
+  assert.match(requestResult.request.nextActions.join(' '), /does not execute retries/)
+  assert.equal(requestResult.request.providerTruth, false)
+  assert.equal(validateRequiredRecord(requestResult.request), true)
 })
 
 test('committed Venice provider-loop failure fixture is inspectable without truth claims', async () => {

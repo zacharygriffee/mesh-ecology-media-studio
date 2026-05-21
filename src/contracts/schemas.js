@@ -1223,9 +1223,9 @@ const approvalProposalTypes = new Set([
   'publication-approval'
 ])
 const approvalProposalStatuses = new Set(['proposed', 'withdrawn', 'superseded'])
-const operatorDecisionRequestKinds = new Set(['review-ready-handoff', 'resolve-local-attention'])
+const operatorDecisionRequestKinds = new Set(['review-ready-handoff', 'resolve-local-attention', 'review-provider-loop'])
 const operatorDecisionRequestStatuses = new Set(['proposed', 'withdrawn', 'superseded'])
-const requestedOperatorDecisionTypes = new Set(['review_handoff', 'resolve_blockers', 'request_changes', 'defer'])
+const requestedOperatorDecisionTypes = new Set(['review_handoff', 'resolve_blockers', 'request_changes', 'review_provider_loop', 'retry_provider_loop', 'defer'])
 
 export async function readSchema(schemaId, options = {}) {
   const rootDir = options.rootDir ?? process.cwd()

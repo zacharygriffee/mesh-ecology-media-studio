@@ -29,6 +29,7 @@ operator authority, publish to the mesh, or ratify state.
 npm run operator:index -- --project-dir examples/card-to-candidate
 npm run handoff:edge -- --project-dir examples/card-to-candidate
 npm run operator:decision-request -- --project-dir examples/card-to-candidate
+npm run operator:provider-loop-request -- --project-dir examples/venice-smoke
 ```
 
 If the handoff candidate is created after the first index, run the index again
@@ -78,6 +79,9 @@ repair.
 attention Studio will eventually ask Edge to mediate. A ready handoff produces
 a `review-ready-handoff` request. A blocked or stale handoff produces a
 `resolve-local-attention` request carrying the diagnosis next actions.
+A provider-loop status produces a `review-provider-loop` request. Complete
+loops request review/defer. Failed loops request retry/defer, but the request
+does not run the retry and does not treat provider output as truth.
 
 These records are not approvals, ratifier outputs, or Edge decisions. They are
 request-only local guidance and require a later operator boundary.

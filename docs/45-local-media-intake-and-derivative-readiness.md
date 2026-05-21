@@ -211,6 +211,13 @@ without rerunning work:
 npm run inspect:venice-loop
 ```
 
+Provider-loop completion is scoped to the local generated-candidate loop. It is
+not broader production readiness. To request operator review of the loop status:
+
+```bash
+npm run operator:provider-loop-request
+```
+
 Use the real Venice API only with explicit opt-in:
 
 ```bash

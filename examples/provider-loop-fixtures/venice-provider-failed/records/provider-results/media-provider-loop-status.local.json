@@ -6,6 +6,9 @@
   "loopKind": "generated-image-provider-loop",
   "adapterFixture": "venice",
   "createdAt": "2026-05-20T00:00:00.000Z",
+  "completionScope": "generated-candidate-local-loop",
+  "productionReady": false,
+  "productionReadiness": "not assessed; local generated-candidate loop status only",
   "projectDir": "examples/provider-loop-fixtures/venice-provider-failed",
   "output": "records/provider-results/media-provider-loop-status.local.json",
   "decision": "accepted",
@@ -14,7 +17,7 @@
   "state": "failed_review_only",
   "failedStep": "provider_smoke",
   "completedSteps": [],
-  "nextAction": "Check the local Venice-shaped smoke response and provider normalization path.",
+  "nextAction": "Check the local Venice-shaped smoke response and provider normalization path. Operator retry must be explicit; this status does not execute retries automatically.",
   "error": {
     "message": "fixture provider smoke failure"
   },

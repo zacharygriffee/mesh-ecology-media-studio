@@ -70,6 +70,9 @@ export function createVeniceLoopInspectionSummary(record, statusRef = defaultSta
     providerId: record.providerId,
     adapterFixture: record.adapterFixture,
     loopKind: record.loopKind,
+    completionScope: record.completionScope ?? 'generated-candidate-local-loop',
+    productionReady: record.productionReady === true,
+    productionReadiness: record.productionReadiness ?? 'not assessed; provider-loop status only',
     state: record.state,
     failedStep: record.failedStep,
     completedSteps: record.completedSteps,
@@ -113,6 +116,7 @@ function printVeniceLoopInspectionSummary(summary) {
   console.log([
     `venice loop inspection: state=${summary.state}`,
     `project=${summary.projectId}`,
+    `scope=${summary.completionScope}`,
     `candidate=${summary.selectedCandidate?.path ?? 'none'}`,
     `generated=${summary.generatedCandidates?.total ?? 0}`,
     `reviewed=${summary.generatedCandidates?.reviewed ?? 0}`,
@@ -126,6 +130,7 @@ function printVeniceLoopInspectionSummary(summary) {
   if (summary.failedStep) {
     console.log(`failedStep: ${summary.failedStep}`)
   }
+  console.log(`productionReady: ${summary.productionReady}`)
   console.log(`nextAction: ${summary.nextAction}`)
   console.log('nonClaims: local-only; no Edge call; no mesh truth; no provider truth; no byte/materialization proof; no resource admission')
 }

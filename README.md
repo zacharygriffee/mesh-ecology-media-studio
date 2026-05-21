@@ -196,6 +196,15 @@ Provider-loop statuses are local operator guidance. `operator:index` and
 as attention rows without treating Venice, provider jobs, or provider responses
 as Studio truth.
 
+Create a local provider-loop operator decision request:
+
+```bash
+npm run operator:provider-loop-request -- --project-dir examples/venice-smoke
+```
+
+For complete loops this requests review/defer. For failed loops this requests
+retry/defer, but it does not execute the retry.
+
 Use the real Venice API only with the explicit live switch:
 
 ```bash
