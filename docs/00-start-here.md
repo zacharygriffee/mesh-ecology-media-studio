@@ -166,6 +166,7 @@ npm run production:authority-prereqs -- --project-dir examples/venice-smoke
 npm run production:authority-handoff -- --project-dir examples/venice-smoke
 npm run production:rough-cut -- --project-dir examples/venice-smoke
 npm run production:rough-cut-review -- --project-dir examples/venice-smoke
+npm run production:rough-cut-revise -- --project-dir examples/venice-smoke
 npm run provider:venice:rehearse-production -- --project-dir examples/venice-smoke
 npm run approval:proposal -- --project-dir examples/card-to-candidate
 npm run bytes:proposal -- --project-dir examples/card-to-candidate

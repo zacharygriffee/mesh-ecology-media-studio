@@ -181,6 +181,11 @@ acknowledges local review of the ordered items only. It sets execution,
 approval authority, ratifier authority, publication authorization, rendering,
 Edge calls, and mesh publication claims to false.
 
+`npm run production:rough-cut-revise` consumes a local `request_changes`
+rough-cut decision and regenerates rough-cut refs for another local review
+pass. This is a local revision posture only; it does not edit media bytes,
+render a timeline, export, publish, approve, or grant production authority.
+
 ## Non-Claims
 
 The capsule is local operator guidance only:

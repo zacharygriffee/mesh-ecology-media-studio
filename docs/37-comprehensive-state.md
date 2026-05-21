@@ -488,6 +488,9 @@ Edge-compatible bundles.
 `npm run production:rough-cut-review` records a local `review_rough_cut`
 operator decision over the rough-cut capsule. It is local review only and does
 not render, export, authorize publication, or make the cut production-ready.
+`npm run production:rough-cut-revise` consumes a local `request_changes`
+decision and regenerates the rough-cut capsule for another local review pass
+without editing bytes, rendering, exporting, or granting authority.
 
 ## Current Verification Baseline
 

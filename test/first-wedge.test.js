@@ -111,6 +111,7 @@ import { createProductionAuthorityPrerequisiteReport, writeProductionAuthorityPr
 import { writeAuthorityHandoffCandidate } from '../src/production/authority-handoff-candidate.js'
 import { writeRoughCutCapsule } from '../src/production/rough-cut-capsule.js'
 import { writeRoughCutReviewDecision } from '../src/production/rough-cut-review-decision.js'
+import { writeRoughCutRevision } from '../src/production/rough-cut-revision.js'
 
 const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 
@@ -2781,6 +2782,47 @@ test('rough cut request changes surfaces local revision posture', async () => {
   assert.equal(prereqs.roughCutDeferred, 0)
   assert.equal(prereqs.rows[0].roughCutReviewPosture.state, 'rough-cut-changes-requested')
   assert.ok(prereqs.rows[0].safeNextAction.includes('Regenerate or revise'))
+})
+
+test('rough cut revision regenerates local capsule from request changes', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-rough-cut-revision-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+  await writeAuthorityHandoffCandidate({ projectDir: dir, quiet: true })
+  const original = await writeRoughCutCapsule({ projectDir: dir, quiet: true })
+  const requestChanges = await writeRoughCutReviewDecision({
+    projectDir: dir,
+    decision: 'request_changes',
+    output: 'records/decisions/media-rough-cut-request-changes.local.json',
+    quiet: true
+  })
+
+  const output = await captureConsole(() => writeRoughCutRevision({ projectDir: dir }))
+  const revised = output.result.roughCut
+
+  assert.equal(revised.schema, 'media.rough_cut_capsule.local.v1')
+  assert.notEqual(revised.roughCutId, original.roughCut.roughCutId)
+  assert.equal(revised.revisionPosture.revisionOfRef.id, original.roughCut.roughCutId)
+  assert.equal(revised.revisionPosture.sourceChangeRequestRef.id, requestChanges.decision.decisionId)
+  assert.equal(revised.revisionPosture.changesAddressedLocally, true)
+  assert.equal(revised.revisionPosture.rendered, false)
+  assert.equal(revised.revisionPosture.productionReady, false)
+  assert.equal(revised.productionReady, false)
+  assert.equal(revised.approvalAuthority, false)
+  assert.equal(revised.publicationAuthorization, false)
+  assert.ok(revised.sourceRefs.some((ref) => ref.id === original.roughCut.roughCutId))
+  assert.ok(revised.sourceRefs.some((ref) => ref.id === requestChanges.decision.decisionId))
+  assert.ok(output.lines.some((line) => line.startsWith('rough cut revision: project=venice-smoke-project')))
+  assert.ok(output.lines.some((line) => line.includes('productionReady=false')))
+  assert.equal(validateRequiredRecord(revised), true)
+
+  const summary = await createMediaSummary({ projectDir: dir })
+  assert.equal(summary.productionRoughCuts.reviewed, 0)
+  assert.equal(summary.productionRoughCuts.changesRequested, 0)
+  assert.deepEqual(summary.productionRoughCuts.attentionRows[0].issueCodes, ['rough_cut_review_missing'])
+
+  const prereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
+  assert.equal(prereqs.roughCutChangesRequested, 0)
+  assert.equal(prereqs.rows[0].roughCutReviewPosture.state, 'rough-cut-review-missing')
 })
 
 test('rough cut defer surfaces local deferred review posture', async () => {

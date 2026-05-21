@@ -33,6 +33,7 @@ text is not the durable contract.
 | `npm run production:authority-handoff` | yes | yes | `--print` | yes | packages bundle/proposal/capsule/situated refs as a candidate for future authority review; does not grant authority |
 | `npm run production:rough-cut` | yes | yes | `--print` | yes | orders accepted production item refs for review; no editor, render, export, or authority |
 | `npm run production:rough-cut-review` | yes | yes | `--print` | yes | records a local rough-cut review decision; no render, export, approval, or authority |
+| `npm run production:rough-cut-revise` | yes | yes | `--print` | yes | regenerates rough-cut refs from a local request-changes decision; no editor, render, export, or authority |
 | `npm run provider:venice:rehearse-production` | yes | yes | `--print` | yes | composes the local Venice loop, approval proposal, capsule, bundle, inspection, operator index, and Edge-compatible bundle; no live provider unless explicitly requested |
 
 ## Byte And Resource Posture

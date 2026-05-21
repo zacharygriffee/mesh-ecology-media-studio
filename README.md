@@ -235,6 +235,10 @@ timeline, create an export, or grant authority.
 `review_rough_cut` operator decision for that rough-cut capsule. It acknowledges
 local review only; it does not render, export, approve, publish, or grant
 authority.
+`npm run production:rough-cut-revise` consumes a local `request_changes`
+decision and regenerates rough-cut refs for another local review pass. It does
+not edit media bytes, render a timeline, export, publish, approve, or grant
+authority.
 Media summary, project health, Venice inspection, operator index, and
 Edge-compatible bundles surface rough-cut capsule refs when present.
 
