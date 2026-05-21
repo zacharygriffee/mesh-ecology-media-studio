@@ -49,6 +49,10 @@ Read in this order:
 41. [Identity Migration Boundary](44-identity-migration-boundary.md)
 42. [Local Media Intake And Derivative Readiness](45-local-media-intake-and-derivative-readiness.md)
 
+Spine now uses Rulebook Cascade (RBC) as the family-wide vocabulary for
+effective rule-book posture. Studio docs align to RBC as a policy-domain
+consumer while keeping Studio's resolver local and non-authoritative.
+
 The first executable path is:
 
 ```bash

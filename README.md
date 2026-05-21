@@ -455,16 +455,19 @@ project discovery or Edge runtime calls.
 Phase 28 makes resource promotion posture explicit so local resource-ref
 candidates remain candidate-only and cannot be mistaken for admitted resource
 identity.
-Phase 29 aligns Studio with the repo family: Spine rule-book and projection
-posture, Edge operator seams, Packs control-surface doctrine, Bytes references,
-causal-substrate continuity, Platform activation boundaries, mesh-v0-2 actor
-hygiene, Identity authority, and Testbed proof scope.
+Phase 29 aligns Studio with the repo family: Spine Rulebook Cascade (RBC),
+rule-book and projection posture, Edge operator seams, Packs control-surface
+doctrine, Bytes references, causal-substrate continuity, Platform activation
+boundaries, mesh-v0-2 actor hygiene, Identity authority, and Testbed proof
+scope.
 Studio now also points at Spine's Virtualia placement posture: Studio owns
 media-specific projection and asset workflows, while Virtualia remains an
 emergent cross-repo continuum and not a Studio runtime target.
 Phase 39 adds local media operation candidates and rule-resolution traces so
 Studio can describe `auto_prepare`, `ask_operator`, and `forbid` mediation
 pressure without executing media operations or calling Edge.
+Those traces are Studio-local mediation artifacts inside RBC, not a shared RBC
+engine, token/grant verifier, or rule-book activation lane.
 The REPL posture note clarifies that REPL is a transitional lab/debug surface;
 Studio should target CLI/status JSON, artifacts, refs, inspection packets,
 handoff candidates, decision requests, and Packs-aligned projections instead of

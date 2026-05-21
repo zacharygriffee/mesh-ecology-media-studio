@@ -81,6 +81,7 @@ Edge local/operator layer:
   cross-repo handoff review
 
 Spine:
+  Rulebook Cascade (RBC) vocabulary
   reusable rule-book posture
   mediation posture
   identity layering and storage posture
@@ -93,8 +94,11 @@ Spine:
 
 Studio adopts these Spine concepts directly:
 
+- Rulebook Cascade (RBC) is the family-wide inheritance/overlay vocabulary for
+  deriving effective rule-book posture.
 - a rule book is an elected compatibility boundary, not global law
 - mediation pressure should be explicit and operator-visible
+- repos own policy domains inside RBC; they do not redefine rule-book semantics
 - rule resolution should eventually produce a trace
 - projection events are derived/source-referenced, not truth
 - content identity, byte publication identity, artifact descriptor identity,
@@ -116,7 +120,17 @@ with shared authority.
 
 ## Rule Book And Mediation Posture
 
-A Studio rule book is an elected compatibility boundary for media work.
+Spine now names the family-wide umbrella `Rulebook Cascade` (`RBC`). RBC is the
+CSS-like inheritance/overlay posture that derives an effective rule-book view
+from defaults, parent contexts, local overlays, operator elections, scoped
+capability grants, and non-overridable constraints.
+
+Studio consumes RBC as a policy-domain owner. Studio may define media-specific
+policy dimensions and operation candidates, but it does not own the family-wide
+meaning of rule books, operator election, scoped grants, or effective views.
+
+A Studio rule book is an elected compatibility boundary for media work inside
+RBC.
 
 It is not:
 
@@ -150,16 +164,23 @@ Current posture:
 - `auto_execute` is not implemented.
 - Loosening requires explicit operator approval.
 - Stricter rules win by default.
-- CSS-like rule-book inheritance is the preferred future model:
+- RBC inheritance is the preferred future model:
 
 ```text
+repo-family default posture
 operator baseline rule book
 -> local layer rule book
 -> device rule book
 -> project/context rule book
 -> media operation constraints
-= effective Studio media rule book
+-> operator election / scoped capability token where applicable
+= effective Studio media rule-book view
 ```
+
+Future Studio RBC-aware traces should preserve contributing rulebook refs,
+non-overridable constraints, operator election refs, capability token refs, and
+the effective posture result. The current implementation remains a local
+deterministic resolver, not a shared RBC engine.
 
 Studio now produces these candidate local artifacts:
 

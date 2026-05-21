@@ -462,8 +462,8 @@ Studio:
   media-domain semantics and local media records
 
 Spine:
-  rule-book posture, mediation posture, projection-event posture,
-  storage-lane direction, and proof standards
+  Rulebook Cascade (RBC), rule-book posture, mediation posture,
+  projection-event posture, storage-lane direction, and proof standards
 
 Edge:
   operator workbench/control loop and later inspection of Studio handoff
@@ -485,6 +485,10 @@ Platform:
 mesh-v0-2:
   canonical mesh participation and actor hygiene
 ```
+
+RBC is the shared Spine vocabulary for deriving effective rule-book posture.
+Studio remains a media policy-domain owner inside that cascade; it does not
+implement the shared RBC engine or redefine rule-book semantics.
 
 See [Repo Family Alignment](38-repo-family-alignment.md).
 

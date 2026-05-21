@@ -61,6 +61,10 @@ operator guidance, but it does not run the operation behind the trace.
 
 ## Spine Rule-Book Posture
 
+Spine now uses `Rulebook Cascade` (`RBC`) as the family-wide vocabulary for
+inherited and overlaid rule-book posture. Studio owns media policy dimensions
+inside RBC; it does not redefine family-wide rule-book semantics.
+
 Studio adopts Spine's rule-book doctrine:
 
 ```text
@@ -86,6 +90,8 @@ Current posture:
 - Loosening requires explicit operator approval.
 - The current resolver is deterministic and local.
 - This is not a full inherited rule-book engine.
+- This is not a shared RBC engine, token/grant verifier, or rule-book
+  activation lane.
 
 ## Initial Resolver
 
