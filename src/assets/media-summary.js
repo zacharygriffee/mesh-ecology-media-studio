@@ -486,6 +486,11 @@ function summarizeProductionBundles(records) {
 }
 
 function summarizeProductionRoughCuts(records) {
+  const productionBundles = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaProductionBundleLocal)
+    .map((entry) => ({ ...entry.record, path: entry.path }))
+    .sort((left, right) => (right.createdAt ?? '').localeCompare(left.createdAt ?? ''))
+  const latestProductionBundle = productionBundles[0]
   const roughCuts = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaRoughCutCapsuleLocal)
     .map((entry) => ({ ...entry.record, path: entry.path }))
@@ -506,7 +511,8 @@ function summarizeProductionRoughCuts(records) {
     const reviewed = latestDecision?.decisionType === 'review_rough_cut'
     const changesRequested = latestDecision?.decisionType === 'request_changes'
     const deferred = latestDecision?.decisionType === 'defer'
-    const issueCodes = roughCutIssueCodes({ state, reviewed, changesRequested, deferred })
+    const staleProductionBundle = isRoughCutStaleForProductionBundle(roughCut, latestProductionBundle)
+    const issueCodes = roughCutIssueCodes({ state, reviewed, changesRequested, deferred, staleProductionBundle })
     const nextAction = roughCutNextAction(issueCodes)
 
     return {
@@ -520,6 +526,16 @@ function summarizeProductionRoughCuts(records) {
       reviewed,
       changesRequested,
       deferred,
+      staleProductionBundle,
+      latestProductionBundleRef: latestProductionBundle
+        ? {
+            kind: 'media-production-bundle',
+            id: latestProductionBundle.bundleId,
+            schema: latestProductionBundle.schema,
+            path: latestProductionBundle.path,
+            localOnly: true
+          }
+        : null,
       latestReviewDecisionRef: latestDecision
         ? {
             kind: 'media-operator-decision',
@@ -568,8 +584,9 @@ function summarizeProductionRoughCuts(records) {
   }
 }
 
-function roughCutIssueCodes({ state, reviewed, changesRequested, deferred }) {
+function roughCutIssueCodes({ state, reviewed, changesRequested, deferred, staleProductionBundle }) {
   if (state === 'needs-production-items') return ['rough_cut_items_missing']
+  if (staleProductionBundle) return ['rough_cut_stale_production_bundle']
   if (changesRequested) return ['rough_cut_changes_requested']
   if (deferred) return ['rough_cut_review_deferred']
   if (!reviewed) return ['rough_cut_review_missing']
@@ -579,6 +596,9 @@ function roughCutIssueCodes({ state, reviewed, changesRequested, deferred }) {
 function roughCutNextAction(issueCodes) {
   if (issueCodes.includes('rough_cut_items_missing')) {
     return 'Create production capsules and a production bundle before regenerating the rough-cut capsule.'
+  }
+  if (issueCodes.includes('rough_cut_stale_production_bundle')) {
+    return 'Regenerate the rough-cut capsule from the current production bundle.'
   }
   if (issueCodes.includes('rough_cut_changes_requested')) {
     return 'Regenerate or revise the rough-cut capsule before authority handoff review.'
@@ -590,6 +610,20 @@ function roughCutNextAction(issueCodes) {
     return 'Run npm run production:rough-cut-review to record a local rough-cut review decision.'
   }
   return 'Review decision is recorded locally; render/export/publication remain separate future work.'
+}
+
+function isRoughCutStaleForProductionBundle(roughCut, latestProductionBundle) {
+  if (!latestProductionBundle?.bundleId) return false
+  const roughCutBundleRefs = roughCut.sourceRefs ?? []
+  const includesLatestBundle = roughCutBundleRefs.some((ref) =>
+    ref.schema === artifactKinds.mediaProductionBundleLocal &&
+    ref.id === latestProductionBundle.bundleId
+  )
+  if (includesLatestBundle) return false
+
+  const latestBundleTime = Date.parse(latestProductionBundle.createdAt ?? '') || 0
+  const roughCutTime = Date.parse(roughCut.createdAt ?? '') || 0
+  return latestBundleTime >= roughCutTime
 }
 
 function compareRecordCreatedAtDescending(left, right) {

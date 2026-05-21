@@ -299,6 +299,11 @@ function buildProductionCapsuleHealthExplanations(records) {
 }
 
 function buildProductionRoughCutHealthExplanations(records) {
+  const productionBundles = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaProductionBundleLocal)
+    .map((entry) => ({ ...entry.record, recordPath: entry.path }))
+    .sort(compareCreatedAtDescending)
+  const latestProductionBundle = productionBundles[0]
   const roughCuts = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaRoughCutCapsuleLocal)
     .map((entry) => ({ ...entry.record, recordPath: entry.path }))
@@ -322,6 +327,19 @@ function buildProductionRoughCutHealthExplanations(records) {
           issueCodes: ['rough_cut_items_missing'],
           summary: `Rough-cut capsule ${roughCut.roughCutId} has no ordered production items.`,
           nextAction: 'Create production capsules and a production bundle, then regenerate the rough-cut capsule.'
+        })
+      }
+
+      if (isRoughCutStaleForProductionBundle(roughCut, latestProductionBundle)) {
+        return productionRoughCutExplanation({
+          roughCut,
+          issueCodes: ['rough_cut_stale_production_bundle'],
+          summary: `Rough-cut capsule ${roughCut.roughCutId} does not reference the latest production bundle.`,
+          nextAction: 'Regenerate the rough-cut capsule from the current production bundle.',
+          sourceRefs: roughCutSourceRefs({
+            roughCut,
+            latestBundle: latestProductionBundle
+          })
         })
       }
 
@@ -354,7 +372,7 @@ function buildProductionRoughCutHealthExplanations(records) {
   ]
 }
 
-function roughCutSourceRefs({ roughCut, latestDecision }) {
+function roughCutSourceRefs({ roughCut, latestDecision, latestBundle }) {
   return [
     {
       kind: 'media-rough-cut-capsule',
@@ -363,14 +381,21 @@ function roughCutSourceRefs({ roughCut, latestDecision }) {
       path: roughCut.recordPath,
       localOnly: true
     },
-    {
+    latestDecision ? {
       kind: 'media-operator-decision',
       id: latestDecision.decisionId,
       schema: latestDecision.schema,
       path: latestDecision.recordPath,
       localOnly: true
-    }
-  ]
+    } : null,
+    latestBundle ? {
+      kind: 'media-production-bundle',
+      id: latestBundle.bundleId,
+      schema: latestBundle.schema,
+      path: latestBundle.recordPath,
+      localOnly: true
+    } : null
+  ].filter(Boolean)
 }
 
 function compareCreatedAtDescending(left, right) {
@@ -378,6 +403,19 @@ function compareCreatedAtDescending(left, right) {
   const leftTime = Date.parse(left.createdAt ?? '') || 0
   if (rightTime !== leftTime) return rightTime - leftTime
   return (right.recordPath ?? '').localeCompare(left.recordPath ?? '')
+}
+
+function isRoughCutStaleForProductionBundle(roughCut, latestProductionBundle) {
+  if (!latestProductionBundle?.bundleId) return false
+  const includesLatestBundle = (roughCut.sourceRefs ?? []).some((ref) =>
+    ref.schema === artifactKinds.mediaProductionBundleLocal &&
+    ref.id === latestProductionBundle.bundleId
+  )
+  if (includesLatestBundle) return false
+
+  const latestBundleTime = Date.parse(latestProductionBundle.createdAt ?? '') || 0
+  const roughCutTime = Date.parse(roughCut.createdAt ?? '') || 0
+  return latestBundleTime >= roughCutTime
 }
 
 function isProductionCapsuleEligibleAsset(asset) {

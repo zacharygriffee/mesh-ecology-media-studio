@@ -105,9 +105,14 @@ export async function writeOperatorPacketIndex({
   const productionBundles = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProductionBundleLocal)
     .map((entry) => summarizeProductionBundle(entry.record, entry.relativePath))
+  const latestProductionBundle = [...productionBundles]
+    .sort((left, right) => (right.createdAt ?? '').localeCompare(left.createdAt ?? ''))[0]
   const roughCutCapsules = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaRoughCutCapsuleLocal)
-    .map((entry) => summarizeRoughCutCapsule(entry.record, entry.relativePath, roughCutDecisionBySubject.get(entry.record.roughCutId)))
+    .map((entry) => summarizeRoughCutCapsule(entry.record, entry.relativePath, {
+      latestDecision: roughCutDecisionBySubject.get(entry.record.roughCutId),
+      latestProductionBundle
+    }))
   const productionApprovalLane = summarizeProductionApprovalLane({
     assetRecords: records
       .filter((entry) => entry.record.schema === artifactKinds.mediaAssetDescriptor)
@@ -552,6 +557,7 @@ function summarizeProductionBundle(record, relativePath) {
     assetRefs: record.assetRefs?.length ?? 0,
     contentRefs: record.contentRefs?.length ?? 0,
     productionReady: record.productionReady === true,
+    createdAt: record.createdAt,
     issueCodes,
     needsOperatorAttention: issueCodes.length > 0,
     nextAction: issueCodes.length > 0
@@ -566,8 +572,12 @@ function summarizeProductionBundle(record, relativePath) {
   }
 }
 
-function summarizeRoughCutCapsule(record, relativePath, latestDecision) {
-  const issueCodes = roughCutIssueCodes(record, latestDecision)
+function summarizeRoughCutCapsule(record, relativePath, {
+  latestDecision,
+  latestProductionBundle
+} = {}) {
+  const staleProductionBundle = isRoughCutStaleForProductionBundle(record, latestProductionBundle)
+  const issueCodes = roughCutIssueCodes(record, latestDecision, staleProductionBundle)
 
   return {
     roughCutRef: {
@@ -580,6 +590,7 @@ function summarizeRoughCutCapsule(record, relativePath, latestDecision) {
     pendingAuthorityItems: record.assemblyPosture?.pendingAuthorityItems ?? 0,
     rendered: record.renderPosture?.rendered === true,
     reviewDecisionType: latestDecision?.decisionType ?? null,
+    staleProductionBundle,
     productionReady: record.productionReady === true,
     issueCodes,
     needsOperatorAttention: issueCodes.length > 0,
@@ -606,8 +617,9 @@ function latestRoughCutDecisionBySubject(decisions) {
   return output
 }
 
-function roughCutIssueCodes(record, latestDecision) {
+function roughCutIssueCodes(record, latestDecision, staleProductionBundle) {
   if (record.assemblyPosture?.state === 'needs-production-items') return ['rough_cut_items_missing']
+  if (staleProductionBundle) return ['rough_cut_stale_production_bundle']
   if (latestDecision?.decisionType === 'request_changes') return ['rough_cut_changes_requested']
   if (latestDecision?.decisionType === 'defer') return ['rough_cut_review_deferred']
   return []
@@ -617,6 +629,9 @@ function roughCutNextAction(issueCodes) {
   if (issueCodes.includes('rough_cut_items_missing')) {
     return 'Create production capsules and a production bundle before regenerating the rough-cut capsule.'
   }
+  if (issueCodes.includes('rough_cut_stale_production_bundle')) {
+    return 'Regenerate the rough-cut capsule from the current production bundle.'
+  }
   if (issueCodes.includes('rough_cut_changes_requested')) {
     return 'Regenerate or revise the rough-cut capsule before authority handoff review.'
   }
@@ -624,6 +639,19 @@ function roughCutNextAction(issueCodes) {
     return 'Resolve deferred rough-cut review before authority handoff review.'
   }
   return 'Review ordered rough-cut items locally; render/export/publication remain separate future work.'
+}
+
+function isRoughCutStaleForProductionBundle(record, latestProductionBundle) {
+  if (!latestProductionBundle?.bundleRef?.id) return false
+  const includesLatestBundle = (record.sourceRefs ?? []).some((ref) =>
+    ref.schema === artifactKinds.mediaProductionBundleLocal &&
+    ref.id === latestProductionBundle.bundleRef.id
+  )
+  if (includesLatestBundle) return false
+
+  const latestBundleTime = Date.parse(latestProductionBundle.createdAt ?? '') || 0
+  const roughCutTime = Date.parse(record.createdAt ?? '') || 0
+  return latestBundleTime >= roughCutTime
 }
 
 async function findJsonFiles(root, relativeRoot) {

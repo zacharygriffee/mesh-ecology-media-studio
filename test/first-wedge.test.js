@@ -2907,6 +2907,36 @@ test('rough cut capsule orders two accepted production items', async () => {
   assert.equal(validateRequiredRecord(roughCut), true)
 })
 
+test('rough cut summaries detect stale production bundle changes', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-rough-cut-stale-bundle-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+  await writeAuthorityHandoffCandidate({ projectDir: dir, quiet: true })
+  const roughCutResult = await writeRoughCutCapsule({ projectDir: dir, quiet: true })
+  const originalRoughCut = roughCutResult.roughCut
+
+  const secondAssetRecord = await addSecondAcceptedProductionAssetFixture(dir)
+  await writeProductionAssetCapsule({
+    projectDir: dir,
+    assetRecord: secondAssetRecord,
+    output: 'records/production/media-production-asset-capsule-second.local.json',
+    quiet: true
+  })
+  const newBundle = await writeProductionBundle({ projectDir: dir, quiet: true })
+  assert.ok(!originalRoughCut.sourceRefs.some((ref) => ref.id === newBundle.bundle.bundleId))
+
+  const summary = await createMediaSummary({ projectDir: dir })
+  assert.equal(summary.productionRoughCuts.attentionRows.length, 1)
+  assert.deepEqual(summary.productionRoughCuts.attentionRows[0].issueCodes, ['rough_cut_stale_production_bundle'])
+  assert.ok(summary.productionRoughCuts.attentionRows[0].nextAction.includes('Regenerate the rough-cut capsule'))
+
+  const health = await writeProjectHealth({ projectDir: dir, summary: true })
+  assert.deepEqual(health.health.productionRoughCutHealthExplanations[0].issueCodes, ['rough_cut_stale_production_bundle'])
+
+  const index = await writeOperatorPacketIndex({ projectDir: dir })
+  assert.equal(index.index.summary.roughCutCapsulesNeedingAttention, 1)
+  assert.ok(index.index.roughCutCapsules[0].issueCodes.includes('rough_cut_stale_production_bundle'))
+})
+
 test('rough cut defer surfaces local deferred review posture', async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-rough-cut-defer-'))
   await runVeniceProductionRehearsal({ projectDir: dir })
