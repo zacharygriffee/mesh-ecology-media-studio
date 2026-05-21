@@ -302,18 +302,82 @@ function buildProductionRoughCutHealthExplanations(records) {
   const roughCuts = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaRoughCutCapsuleLocal)
     .map((entry) => ({ ...entry.record, recordPath: entry.path }))
+  const reviewDecisionsBySubject = new Map()
+  for (const entry of records) {
+    if (entry.record.schema !== artifactKinds.mediaOperatorDecision) continue
+    if (!entry.record.roughCutReview || !entry.record.subjectRef?.id) continue
+    const decisions = reviewDecisionsBySubject.get(entry.record.subjectRef.id) ?? []
+    decisions.push({ ...entry.record, recordPath: entry.path })
+    reviewDecisionsBySubject.set(entry.record.subjectRef.id, decisions)
+  }
   const roughCutAttention = roughCuts
-    .filter((roughCut) => roughCut.assemblyPosture?.state === 'needs-production-items')
-    .map((roughCut) => productionRoughCutExplanation({
-      roughCut,
-      issueCodes: ['rough_cut_items_missing'],
-      summary: `Rough-cut capsule ${roughCut.roughCutId} has no ordered production items.`,
-      nextAction: 'Create production capsules and a production bundle, then regenerate the rough-cut capsule.'
-    }))
+    .map((roughCut) => {
+      const decisions = (reviewDecisionsBySubject.get(roughCut.roughCutId) ?? [])
+        .sort(compareCreatedAtDescending)
+      const latestDecision = decisions[0]
+
+      if (roughCut.assemblyPosture?.state === 'needs-production-items') {
+        return productionRoughCutExplanation({
+          roughCut,
+          issueCodes: ['rough_cut_items_missing'],
+          summary: `Rough-cut capsule ${roughCut.roughCutId} has no ordered production items.`,
+          nextAction: 'Create production capsules and a production bundle, then regenerate the rough-cut capsule.'
+        })
+      }
+
+      if (latestDecision?.decisionType === 'request_changes') {
+        return productionRoughCutExplanation({
+          roughCut,
+          issueCodes: ['rough_cut_changes_requested'],
+          summary: `Rough-cut capsule ${roughCut.roughCutId} has a local request-changes decision.`,
+          nextAction: 'Regenerate or revise the rough-cut capsule before authority handoff review.',
+          sourceRefs: roughCutSourceRefs({ roughCut, latestDecision })
+        })
+      }
+
+      if (latestDecision?.decisionType === 'defer') {
+        return productionRoughCutExplanation({
+          roughCut,
+          issueCodes: ['rough_cut_review_deferred'],
+          summary: `Rough-cut capsule ${roughCut.roughCutId} has deferred local review.`,
+          nextAction: 'Resolve deferred rough-cut review before authority handoff review.',
+          sourceRefs: roughCutSourceRefs({ roughCut, latestDecision })
+        })
+      }
+
+      return null
+    })
+    .filter(Boolean)
 
   return [
     ...roughCutAttention
   ]
+}
+
+function roughCutSourceRefs({ roughCut, latestDecision }) {
+  return [
+    {
+      kind: 'media-rough-cut-capsule',
+      id: roughCut.roughCutId,
+      schema: roughCut.schema,
+      path: roughCut.recordPath,
+      localOnly: true
+    },
+    {
+      kind: 'media-operator-decision',
+      id: latestDecision.decisionId,
+      schema: latestDecision.schema,
+      path: latestDecision.recordPath,
+      localOnly: true
+    }
+  ]
+}
+
+function compareCreatedAtDescending(left, right) {
+  const rightTime = Date.parse(right.createdAt ?? '') || 0
+  const leftTime = Date.parse(left.createdAt ?? '') || 0
+  if (rightTime !== leftTime) return rightTime - leftTime
+  return (right.recordPath ?? '').localeCompare(left.recordPath ?? '')
 }
 
 function isProductionCapsuleEligibleAsset(asset) {

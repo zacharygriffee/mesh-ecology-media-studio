@@ -223,6 +223,8 @@ function printMediaSummary(summary) {
     `rough cuts: total=${summary.productionRoughCuts.total}`,
     `items=${summary.productionRoughCuts.itemRefs}`,
     `reviewed=${summary.productionRoughCuts.reviewed}`,
+    `changesRequested=${summary.productionRoughCuts.changesRequested}`,
+    `deferred=${summary.productionRoughCuts.deferred}`,
     `pendingAuthority=${summary.productionRoughCuts.pendingAuthorityItems}`,
     `rendered=${summary.productionRoughCuts.rendered}`,
     `attention=${summary.productionRoughCuts.attentionRows.length}`
@@ -498,16 +500,14 @@ function summarizeProductionRoughCuts(records) {
   }
   const rows = roughCuts.map((roughCut) => {
     const state = roughCut.assemblyPosture?.state ?? 'unknown'
-    const reviewDecisions = reviewDecisionsBySubject.get(roughCut.roughCutId) ?? []
-    const reviewed = reviewDecisions.some((decision) => decision.decisionType === 'review_rough_cut')
-    const issueCodes = state === 'needs-production-items'
-      ? ['rough_cut_items_missing']
-      : reviewed ? [] : ['rough_cut_review_missing']
-    const nextAction = issueCodes.includes('rough_cut_items_missing')
-      ? 'Create production capsules and a production bundle before regenerating the rough-cut capsule.'
-      : issueCodes.includes('rough_cut_review_missing')
-        ? 'Run npm run production:rough-cut-review to record a local rough-cut review decision.'
-        : 'Review decision is recorded locally; render/export/publication remain separate future work.'
+    const reviewDecisions = (reviewDecisionsBySubject.get(roughCut.roughCutId) ?? [])
+      .sort(compareRecordCreatedAtDescending)
+    const latestDecision = reviewDecisions[0]
+    const reviewed = latestDecision?.decisionType === 'review_rough_cut'
+    const changesRequested = latestDecision?.decisionType === 'request_changes'
+    const deferred = latestDecision?.decisionType === 'defer'
+    const issueCodes = roughCutIssueCodes({ state, reviewed, changesRequested, deferred })
+    const nextAction = roughCutNextAction(issueCodes)
 
     return {
       roughCutId: roughCut.roughCutId,
@@ -518,6 +518,18 @@ function summarizeProductionRoughCuts(records) {
       pendingAuthorityItems: roughCut.assemblyPosture?.pendingAuthorityItems ?? 0,
       rendered: roughCut.renderPosture?.rendered === true,
       reviewed,
+      changesRequested,
+      deferred,
+      latestReviewDecisionRef: latestDecision
+        ? {
+            kind: 'media-operator-decision',
+            id: latestDecision.decisionId,
+            schema: latestDecision.schema,
+            path: latestDecision.path,
+            decisionType: latestDecision.decisionType,
+            localOnly: true
+          }
+        : null,
       reviewDecisionRefs: reviewDecisions.map((decision) => ({
         kind: 'media-operator-decision',
         id: decision.decisionId,
@@ -543,6 +555,8 @@ function summarizeProductionRoughCuts(records) {
     pendingAuthorityItems: rows.reduce((sum, row) => sum + row.pendingAuthorityItems, 0),
     rendered: rows.filter((row) => row.rendered).length,
     reviewed: rows.filter((row) => row.reviewed).length,
+    changesRequested: rows.filter((row) => row.changesRequested).length,
+    deferred: rows.filter((row) => row.deferred).length,
     rows,
     attentionRows: rows.filter((row) => row.issueCodes.length > 0),
     productionReady: 0,
@@ -552,6 +566,37 @@ function summarizeProductionRoughCuts(records) {
     approvalAuthority: false,
     publicationAuthorization: false
   }
+}
+
+function roughCutIssueCodes({ state, reviewed, changesRequested, deferred }) {
+  if (state === 'needs-production-items') return ['rough_cut_items_missing']
+  if (changesRequested) return ['rough_cut_changes_requested']
+  if (deferred) return ['rough_cut_review_deferred']
+  if (!reviewed) return ['rough_cut_review_missing']
+  return []
+}
+
+function roughCutNextAction(issueCodes) {
+  if (issueCodes.includes('rough_cut_items_missing')) {
+    return 'Create production capsules and a production bundle before regenerating the rough-cut capsule.'
+  }
+  if (issueCodes.includes('rough_cut_changes_requested')) {
+    return 'Regenerate or revise the rough-cut capsule before authority handoff review.'
+  }
+  if (issueCodes.includes('rough_cut_review_deferred')) {
+    return 'Resolve deferred rough-cut review before authority handoff review.'
+  }
+  if (issueCodes.includes('rough_cut_review_missing')) {
+    return 'Run npm run production:rough-cut-review to record a local rough-cut review decision.'
+  }
+  return 'Review decision is recorded locally; render/export/publication remain separate future work.'
+}
+
+function compareRecordCreatedAtDescending(left, right) {
+  const rightTime = Date.parse(right.createdAt ?? '') || 0
+  const leftTime = Date.parse(left.createdAt ?? '') || 0
+  if (rightTime !== leftTime) return rightTime - leftTime
+  return (right.path ?? '').localeCompare(left.path ?? '')
 }
 
 function summarizeProviderLoops(records) {

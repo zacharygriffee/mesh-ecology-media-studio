@@ -2664,7 +2664,7 @@ test('rough cut capsule orders production items without rendering or authority',
   assert.equal(summary.productionRoughCuts.reviewed, 0)
   assert.equal(summary.productionRoughCuts.attentionRows.length, 1)
   assert.deepEqual(summary.productionRoughCuts.attentionRows[0].issueCodes, ['rough_cut_review_missing'])
-  assert.ok(summaryOutput.lines.some((line) => line === 'rough cuts: total=1 | items=1 | reviewed=0 | pendingAuthority=1 | rendered=0 | attention=1'))
+  assert.ok(summaryOutput.lines.some((line) => line === 'rough cuts: total=1 | items=1 | reviewed=0 | changesRequested=0 | deferred=0 | pendingAuthority=1 | rendered=0 | attention=1'))
 
   const decisionOutput = await captureConsole(() => writeRoughCutReviewDecision({ projectDir: dir }))
   const decision = decisionOutput.result.decision
@@ -2692,7 +2692,7 @@ test('rough cut capsule orders production items without rendering or authority',
   const reviewedSummary = await createMediaSummary({ projectDir: dir })
   assert.equal(reviewedSummary.productionRoughCuts.reviewed, 1)
   assert.equal(reviewedSummary.productionRoughCuts.attentionRows.length, 0)
-  assert.ok(reviewedSummaryOutput.lines.some((line) => line === 'rough cuts: total=1 | items=1 | reviewed=1 | pendingAuthority=1 | rendered=0 | attention=0'))
+  assert.ok(reviewedSummaryOutput.lines.some((line) => line === 'rough cuts: total=1 | items=1 | reviewed=1 | changesRequested=0 | deferred=0 | pendingAuthority=1 | rendered=0 | attention=0'))
 
   const reviewedPrereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
   assert.equal(reviewedPrereqs.roughCutReviewed, 1)
@@ -2737,6 +2737,50 @@ test('rough cut capsule orders production items without rendering or authority',
   const compatibility = await writeEdgeCompatibilityBundle({ projectDir: dir })
   assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.rough_cut_capsule.local.v1'))
   assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.id === decision.decisionId))
+})
+
+test('rough cut request changes surfaces local revision posture', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-rough-cut-changes-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+  await writeAuthorityHandoffCandidate({ projectDir: dir, quiet: true })
+  await writeRoughCutCapsule({ projectDir: dir })
+
+  const decisionOutput = await captureConsole(() => writeRoughCutReviewDecision({
+    projectDir: dir,
+    decision: 'request_changes',
+    reason: 'Tighten the local order before authority review.',
+    output: 'records/decisions/media-rough-cut-request-changes.local.json'
+  }))
+  const decision = decisionOutput.result.decision
+  assert.equal(decision.decisionType, 'request_changes')
+  assert.equal(decision.reviewAcknowledged, false)
+  assert.equal(decision.requestChanges, true)
+  assert.equal(decision.executionPerformed, false)
+  assert.equal(decision.authorityGranted, false)
+
+  const summary = await createMediaSummary({ projectDir: dir })
+  assert.equal(summary.productionRoughCuts.reviewed, 0)
+  assert.equal(summary.productionRoughCuts.changesRequested, 1)
+  assert.equal(summary.productionRoughCuts.deferred, 0)
+  assert.deepEqual(summary.productionRoughCuts.attentionRows[0].issueCodes, ['rough_cut_changes_requested'])
+  assert.ok(summary.productionRoughCuts.attentionRows[0].nextAction.includes('Regenerate or revise'))
+
+  const health = await writeProjectHealth({ projectDir: dir, summary: true })
+  assert.equal(health.health.productionRoughCutHealthExplanations.length, 1)
+  assert.deepEqual(health.health.productionRoughCutHealthExplanations[0].issueCodes, ['rough_cut_changes_requested'])
+
+  const indexOutput = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
+  const index = indexOutput.result.index
+  assert.equal(index.summary.roughCutCapsulesNeedingAttention, 1)
+  assert.ok(index.roughCutCapsules[0].issueCodes.includes('rough_cut_changes_requested'))
+  assert.ok(indexOutput.lines.some((line) => line.includes('requestChanges=true')))
+
+  const prereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
+  assert.equal(prereqs.roughCutReviewed, 0)
+  assert.equal(prereqs.roughCutChangesRequested, 1)
+  assert.equal(prereqs.roughCutDeferred, 0)
+  assert.equal(prereqs.rows[0].roughCutReviewPosture.state, 'rough-cut-changes-requested')
+  assert.ok(prereqs.rows[0].safeNextAction.includes('Regenerate or revise'))
 })
 
 test('project health reports missing production asset capsules for accepted provider assets', async () => {

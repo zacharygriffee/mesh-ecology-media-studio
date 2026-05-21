@@ -98,6 +98,7 @@ export async function writeOperatorPacketIndex({
     .filter((entry) => entry.record.schema === artifactKinds.mediaOperatorDecision)
     .filter((entry) => entry.record.roughCutReview)
     .map((entry) => summarizeRoughCutReviewDecision(entry.record, entry.relativePath))
+  const roughCutDecisionBySubject = latestRoughCutDecisionBySubject(roughCutReviewDecisions)
   const productionCapsules = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProductionAssetCapsuleLocal)
     .map((entry) => summarizeProductionCapsule(entry.record, entry.relativePath))
@@ -106,7 +107,7 @@ export async function writeOperatorPacketIndex({
     .map((entry) => summarizeProductionBundle(entry.record, entry.relativePath))
   const roughCutCapsules = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaRoughCutCapsuleLocal)
-    .map((entry) => summarizeRoughCutCapsule(entry.record, entry.relativePath))
+    .map((entry) => summarizeRoughCutCapsule(entry.record, entry.relativePath, roughCutDecisionBySubject.get(entry.record.roughCutId)))
   const productionApprovalLane = summarizeProductionApprovalLane({
     assetRecords: records
       .filter((entry) => entry.record.schema === artifactKinds.mediaAssetDescriptor)
@@ -305,6 +306,8 @@ function formatRoughCutReviewDecision(decision) {
   return [
     `rough-cut decision: ${decision.decisionType}`,
     `items=${decision.itemCount}`,
+    `requestChanges=${decision.requestChanges}`,
+    `deferred=${decision.deferred}`,
     `rendered=${decision.rendered}`,
     `productionReady=${decision.productionReady}`,
     `authorityGranted=${decision.authorityGranted}`,
@@ -487,6 +490,7 @@ function summarizeRoughCutReviewDecision(record, relativePath) {
     },
     subjectRef: record.subjectRef,
     decisionType: record.decisionType,
+    createdAt: record.createdAt,
     itemCount: record.roughCutReview?.itemCount ?? 0,
     rendered: record.roughCutReview?.rendered === true,
     productionReady: record.roughCutReview?.productionReady === true,
@@ -562,10 +566,8 @@ function summarizeProductionBundle(record, relativePath) {
   }
 }
 
-function summarizeRoughCutCapsule(record, relativePath) {
-  const issueCodes = record.assemblyPosture?.state === 'needs-production-items'
-    ? ['rough_cut_items_missing']
-    : []
+function summarizeRoughCutCapsule(record, relativePath, latestDecision) {
+  const issueCodes = roughCutIssueCodes(record, latestDecision)
 
   return {
     roughCutRef: {
@@ -577,12 +579,11 @@ function summarizeRoughCutCapsule(record, relativePath) {
     items: record.orderedItems?.length ?? 0,
     pendingAuthorityItems: record.assemblyPosture?.pendingAuthorityItems ?? 0,
     rendered: record.renderPosture?.rendered === true,
+    reviewDecisionType: latestDecision?.decisionType ?? null,
     productionReady: record.productionReady === true,
     issueCodes,
     needsOperatorAttention: issueCodes.length > 0,
-    nextAction: issueCodes.length > 0
-      ? 'Create production capsules and a production bundle before regenerating the rough-cut capsule.'
-      : 'Review ordered rough-cut items locally; render/export/publication remain separate future work.',
+    nextAction: roughCutNextAction(issueCodes),
     approvalAuthority: false,
     publicationAuthorization: false,
     operatorGuidanceOnly: true,
@@ -590,6 +591,39 @@ function summarizeRoughCutCapsule(record, relativePath) {
     meshTruth: false,
     providerTruth: false
   }
+}
+
+function latestRoughCutDecisionBySubject(decisions) {
+  const output = new Map()
+  for (const decision of decisions) {
+    const subjectId = decision.subjectRef?.id
+    if (!subjectId) continue
+    const existing = output.get(subjectId)
+    if (!existing || (decision.createdAt ?? '').localeCompare(existing.createdAt ?? '') > 0) {
+      output.set(subjectId, decision)
+    }
+  }
+  return output
+}
+
+function roughCutIssueCodes(record, latestDecision) {
+  if (record.assemblyPosture?.state === 'needs-production-items') return ['rough_cut_items_missing']
+  if (latestDecision?.decisionType === 'request_changes') return ['rough_cut_changes_requested']
+  if (latestDecision?.decisionType === 'defer') return ['rough_cut_review_deferred']
+  return []
+}
+
+function roughCutNextAction(issueCodes) {
+  if (issueCodes.includes('rough_cut_items_missing')) {
+    return 'Create production capsules and a production bundle before regenerating the rough-cut capsule.'
+  }
+  if (issueCodes.includes('rough_cut_changes_requested')) {
+    return 'Regenerate or revise the rough-cut capsule before authority handoff review.'
+  }
+  if (issueCodes.includes('rough_cut_review_deferred')) {
+    return 'Resolve deferred rough-cut review before authority handoff review.'
+  }
+  return 'Review ordered rough-cut items locally; render/export/publication remain separate future work.'
 }
 
 async function findJsonFiles(root, relativeRoot) {
