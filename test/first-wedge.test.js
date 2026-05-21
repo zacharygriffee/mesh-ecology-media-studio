@@ -1123,6 +1123,13 @@ test('Venice operational loop completes locally without live provider by default
   assert.deepEqual(requestResult.request.requestedDecisionTypes, ['review_provider_loop', 'defer'])
   assert.equal(requestResult.request.providerTruth, false)
   assert.equal(validateRequiredRecord(requestResult.request), true)
+
+  const mediaSummary = await createMediaSummary({ projectDir: dir })
+  assert.equal(mediaSummary.providerLoops.total, 1)
+  assert.equal(mediaSummary.providerLoops.completeReviewOnly, 1)
+  assert.equal(mediaSummary.providerLoops.readyForProductionReview, 0)
+  assert.equal(mediaSummary.providerLoops.latest.readinessState, 'loop-complete-local-review-only')
+  assert.equal(mediaSummary.providerLoops.providerTruth, false)
 })
 
 test('Venice operational loop selects latest generated provider candidate', async () => {
@@ -1227,8 +1234,14 @@ test('Venice operational loop reports provider-stage failure without claiming tr
   assert.equal(requestResult.request.requestKind, 'review-provider-loop')
   assert.deepEqual(requestResult.request.requestedDecisionTypes, ['retry_provider_loop', 'defer'])
   assert.match(requestResult.request.nextActions.join(' '), /does not execute retries/)
+  assert.equal(requestResult.request.retryPreview.executionPerformed, false)
   assert.equal(requestResult.request.providerTruth, false)
   assert.equal(validateRequiredRecord(requestResult.request), true)
+
+  const mediaSummary = await createMediaSummary({ projectDir: dir })
+  assert.equal(mediaSummary.providerLoops.needsRetryDecision, 1)
+  assert.equal(mediaSummary.providerLoops.attentionRows[0].readinessState, 'needs-retry-decision')
+  assert.match(mediaSummary.providerLoops.attentionRows[0].nextAction, /retry is not automatic/)
 })
 
 test('committed Venice provider-loop failure fixture is inspectable without truth claims', async () => {

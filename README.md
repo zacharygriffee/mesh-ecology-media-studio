@@ -195,6 +195,8 @@ Provider-loop statuses are local operator guidance. `operator:index` and
 `operator:cross-project-index` can surface failed or incomplete loop status refs
 as attention rows without treating Venice, provider jobs, or provider responses
 as Studio truth.
+`media:summary` also reports provider-loop posture separately from generated
+candidate and production readiness.
 
 Create a local provider-loop operator decision request:
 

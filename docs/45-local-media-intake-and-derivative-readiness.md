@@ -218,6 +218,15 @@ not broader production readiness. To request operator review of the loop status:
 npm run operator:provider-loop-request
 ```
 
+`npm run media:summary` includes a compact provider-loop row:
+
+```text
+provider loops: total=1 | complete=1 | needsDecision=0 | productionReady=0
+```
+
+Failed provider loops show `needsDecision` and an attention row. That guidance
+points to the operator request command; it does not retry automatically.
+
 Use the real Venice API only with explicit opt-in:
 
 ```bash

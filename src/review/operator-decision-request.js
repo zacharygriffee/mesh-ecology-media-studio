@@ -198,6 +198,16 @@ export function createProviderLoopDecisionRequest({
       }
     ],
     requestedDecisionTypes,
+    retryPreview: complete
+      ? undefined
+      : {
+          command: 'npm run provider:venice:loop',
+          requiresOperatorDecision: true,
+          executionPerformed: false,
+          localOnly: true,
+          meshTruth: false,
+          providerTruth: false
+        },
     reason: complete
       ? 'Provider-loop status is complete for local review, but it is not production readiness, provider truth, or authority.'
       : `Provider-loop status is ${providerLoopStatus.state}${failed && providerLoopStatus.failedStep ? ` at ${providerLoopStatus.failedStep}` : ''}; operator review is required before any retry.`,

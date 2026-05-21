@@ -44,6 +44,7 @@ export async function createMediaSummary({
   const lifecycleStates = countBy(assetRecords, (record) => record.provenance?.lifecycle?.state ?? 'unknown')
   const derivativeKinds = countBy(derivativeRecords, (record) => record.derivativeKind ?? 'unknown')
   const generatedCandidates = summarizeGeneratedCandidates(assetRecords, records)
+  const providerLoops = summarizeProviderLoops(records)
   const derivativeReadiness = status.mediaDerivativeReadiness
   const attentionRows = derivativeReadiness.assetExplanations
     .filter((entry) => entry.state !== 'ready-for-local-inspection')
@@ -96,6 +97,7 @@ export async function createMediaSummary({
       }
     },
     generatedCandidates,
+    providerLoops,
     identity: {
       assetIdPosture: 'compatibility descriptor id',
       contentId: 'byte sameness',
@@ -160,6 +162,12 @@ function printMediaSummary(summary) {
     `promotedRejected=${summary.generatedCandidates.promotedRejected}`
   ].join(' | '))
   console.log([
+    `provider loops: total=${summary.providerLoops.total}`,
+    `complete=${summary.providerLoops.completeReviewOnly}`,
+    `needsDecision=${summary.providerLoops.needsRetryDecision}`,
+    `productionReady=${summary.providerLoops.readyForProductionReview}`
+  ].join(' | '))
+  console.log([
     `identity: byteContent=${summary.identity.byteContent.coveredContentIds}/${summary.identity.byteContent.expectedContentIds}`,
     `resourceSituations=${summary.identity.resourceSituations.coveredSituationPlacements}/${summary.identity.resourceSituations.expectedSituationPlacements}`
   ].join(' | '))
@@ -170,8 +178,81 @@ function printMediaSummary(summary) {
   for (const row of summary.generatedCandidates.attentionRows) {
     console.log(`generated candidate: ${row.path} | issues=${row.issueCodes.join(',')} | nextAction=${row.nextAction}`)
   }
+  for (const row of summary.providerLoops.attentionRows) {
+    console.log(`provider-loop: ${row.providerId}:${row.loopKind} | state=${row.state} | readiness=${row.readinessState} | nextAction=${row.nextAction}`)
+  }
 
   console.log('nonClaims: local-only; no mesh truth; no byte/materialization proof; no resource admission')
+}
+
+function summarizeProviderLoops(records) {
+  const statuses = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaProviderLoopStatusLocal)
+    .map((entry) => ({ ...entry.record, path: entry.path }))
+    .sort((left, right) => (right.createdAt ?? '').localeCompare(left.createdAt ?? ''))
+  const rows = statuses.map((status) => {
+    const readinessState = readinessStateForProviderLoop(status)
+    return {
+      statusId: status.statusId,
+      path: status.path,
+      providerId: status.providerId,
+      loopKind: status.loopKind,
+      state: status.state,
+      failedStep: status.failedStep ?? null,
+      completionScope: status.completionScope ?? 'generated-candidate-local-loop',
+      productionReady: status.productionReady === true,
+      productionReadiness: status.productionReadiness ?? 'not assessed; provider-loop status only',
+      readinessState,
+      nextAction: nextActionForProviderLoop(status, readinessState),
+      completedSteps: status.completedSteps?.length ?? 0,
+      localOnly: true,
+      operatorGuidanceOnly: true,
+      meshTruth: false,
+      providerTruth: false,
+      edgeCalled: false,
+      meshPublished: false,
+      resourceAdmission: false
+    }
+  })
+  const attentionRows = rows.filter((row) => row.readinessState !== 'loop-complete-local-review-only')
+
+  return {
+    total: rows.length,
+    completeReviewOnly: rows.filter((row) => row.state === 'complete_review_only').length,
+    needsRetryDecision: rows.filter((row) => row.readinessState === 'needs-retry-decision').length,
+    readyForProductionReview: rows.filter((row) => row.productionReady === true).length,
+    rows,
+    attentionRows,
+    latest: rows[0],
+    localOnly: true,
+    operatorGuidanceOnly: true,
+    meshTruth: false,
+    providerTruth: false,
+    resourceAdmission: false
+  }
+}
+
+function readinessStateForProviderLoop(status) {
+  if (status.state === 'failed_review_only') return 'needs-retry-decision'
+  if (status.state === 'complete_with_attention') return 'loop-complete-with-local-attention'
+  if (status.state === 'complete_review_only') return 'loop-complete-local-review-only'
+  return 'loop-incomplete-local-review-only'
+}
+
+function nextActionForProviderLoop(status, readinessState) {
+  if (readinessState === 'needs-retry-decision') {
+    return 'Run npm run operator:provider-loop-request to request retry/defer; retry is not automatic.'
+  }
+
+  if (readinessState === 'loop-complete-with-local-attention') {
+    return status.nextAction ?? 'Review media summary attention rows before production review.'
+  }
+
+  if (readinessState === 'loop-complete-local-review-only') {
+    return 'Run npm run operator:provider-loop-request to request review/defer before broader production use.'
+  }
+
+  return status.nextAction ?? 'Inspect provider-loop status before continuing.'
 }
 
 function summarizeGeneratedCandidates(assetRecords, records) {
