@@ -9,6 +9,7 @@ import { assertSafeLocalPath } from '../local/project-layout.js'
 import { writeEdgeReadinessGuidance } from './edge-readiness-guidance.js'
 import { readProjectRecords, writeProjectStatus } from './project-status.js'
 import { validateProductionRecordsInProject } from '../production/validate-production-records.js'
+import { evaluateRenderExportCandidateFreshness } from '../production/render-export-candidate.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
@@ -65,6 +66,25 @@ export async function writeProjectHealth({
   const productionCapsuleHealthExplanations = buildProductionCapsuleHealthExplanations(records)
   const productionRoughCutHealthExplanations = buildProductionRoughCutHealthExplanations(records)
   const renderExportCandidateSummary = summarizeRenderExportCandidates(records)
+  const renderExportCandidateHealthExplanations = renderExportCandidateSummary.attentionRows.map((row) => ({
+    subjectRef: {
+      kind: 'media-render-export-candidate',
+      id: row.candidateId,
+      schema: artifactKinds.mediaRenderExportCandidateLocal,
+      path: row.candidatePath,
+      localOnly: true
+    },
+    subjectKind: 'media-render-export-candidate',
+    healthState: 'needs-local-attention',
+    issueCodes: row.issueCodes,
+    summary: 'Render/export candidate source refs are stale against the current rough-cut review posture.',
+    nextAction: row.nextAction,
+    sourceRefs: row.sourceRefs ?? [],
+    localOnly: true,
+    operatorGuidanceOnly: true,
+    meshTruth: false,
+    publicationAuthorization: false
+  }))
 
   if (statusResult.status.assetResourceConsistency.readyForEdgeInspection !== true) {
     blockingIssues.push('asset-resource-consistency-not-ready')
@@ -88,6 +108,10 @@ export async function writeProjectHealth({
 
   if (productionRoughCutHealthExplanations.length > 0) {
     blockingIssues.push('production-rough-cut-attention')
+  }
+
+  if (renderExportCandidateSummary.attentionRows.length > 0) {
+    blockingIssues.push('render-export-candidate-attention')
   }
 
   const health = {
@@ -127,12 +151,14 @@ export async function writeProjectHealth({
     productionCapsuleHealthExplanations,
     productionRoughCutHealthExplanations,
     renderExportCandidateSummary,
+    renderExportCandidateHealthExplanations,
     operatorHealthExplanations: [
       ...assetHealthExplanations,
       ...derivativeHealthExplanations,
       ...productionHealthExplanations,
       ...productionCapsuleHealthExplanations,
-      ...productionRoughCutHealthExplanations
+      ...productionRoughCutHealthExplanations,
+      ...renderExportCandidateHealthExplanations
     ],
     operatorGuidanceOnly: true,
     localOnly: true,
@@ -188,7 +214,8 @@ function printHealthSummary(health, output) {
     `rendererSelected=${health.renderExportCandidateSummary?.rendererSelected ?? 0}`,
     `renderPerformed=${health.renderExportCandidateSummary?.renderPerformed ?? 0}`,
     `exportPerformed=${health.renderExportCandidateSummary?.exportPerformed ?? 0}`,
-    `productionReady=${health.renderExportCandidateSummary?.productionReady ?? 0}`
+    `productionReady=${health.renderExportCandidateSummary?.productionReady ?? 0}`,
+    `stale=${health.renderExportCandidateSummary?.stale ?? 0}`
   ].join(' | '))
   for (const explanation of health.operatorHealthExplanations ?? []) {
     console.log(formatHealthExplanation(explanation))
@@ -385,18 +412,25 @@ function buildProductionRoughCutHealthExplanations(records) {
 function summarizeRenderExportCandidates(records) {
   const rows = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaRenderExportCandidateLocal)
-    .map((entry) => ({
-      candidateId: entry.record.candidateId,
-      candidatePath: entry.path,
-      roughCutId: entry.record.sourceRoughCutRef?.id ?? null,
-      reviewed: entry.record.reviewPosture?.reviewed === true,
-      rendererSelected: entry.record.renderPosture?.rendererSelected === true,
-      renderPerformed: entry.record.renderPosture?.renderPerformed === true,
-      exportPerformed: entry.record.exportPosture?.exportPerformed === true,
-      productionReady: entry.record.productionReady === true,
-      localOnly: true,
-      operatorGuidanceOnly: true
-    }))
+    .map((entry) => {
+      const freshness = evaluateRenderExportCandidateFreshness({ candidate: entry.record, records })
+      return {
+        candidateId: entry.record.candidateId,
+        candidatePath: entry.path,
+        roughCutId: entry.record.sourceRoughCutRef?.id ?? null,
+        reviewed: entry.record.reviewPosture?.reviewed === true,
+        rendererSelected: entry.record.renderPosture?.rendererSelected === true,
+        renderPerformed: entry.record.renderPosture?.renderPerformed === true,
+        exportPerformed: entry.record.exportPosture?.exportPerformed === true,
+        productionReady: entry.record.productionReady === true,
+        freshnessState: freshness.state,
+        issueCodes: freshness.issueCodes,
+        nextAction: freshness.nextAction,
+        sourceRefs: freshness.checkedRefs,
+        localOnly: true,
+        operatorGuidanceOnly: true
+      }
+    })
 
   return {
     total: rows.length,
@@ -405,7 +439,10 @@ function summarizeRenderExportCandidates(records) {
     renderPerformed: rows.filter((row) => row.renderPerformed).length,
     exportPerformed: rows.filter((row) => row.exportPerformed).length,
     productionReady: rows.filter((row) => row.productionReady).length,
+    fresh: rows.filter((row) => row.freshnessState === 'fresh').length,
+    stale: rows.filter((row) => row.freshnessState === 'stale').length,
     rows,
+    attentionRows: rows.filter((row) => row.issueCodes.length > 0),
     localOnly: true,
     operatorGuidanceOnly: true,
     meshTruth: false,

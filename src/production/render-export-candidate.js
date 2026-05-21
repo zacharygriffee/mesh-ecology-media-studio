@@ -119,6 +119,7 @@ export function createRenderExportCandidate({
     localRef: item.localRef ?? null,
     localOnly: true
   }))
+  const sourceSnapshot = createRenderExportSourceSnapshot({ roughCut, orderedItemRefs, reviewDecision })
   const sourceRefs = compactRefs([
     sourceRoughCutRef,
     reviewDecisionRef,
@@ -139,6 +140,20 @@ export function createRenderExportCandidate({
     sourceRoughCutRef,
     reviewDecisionRef,
     orderedItemRefs,
+    freshnessPosture: {
+      ...evaluateRenderExportCandidateFreshness({
+        candidate: {
+          sourceRoughCutRef,
+          reviewDecisionRef,
+          orderedItemRefs,
+          sourceSnapshot
+        },
+        records
+      }),
+      localOnly: true,
+      operatorGuidanceOnly: true
+    },
+    sourceSnapshot,
     reviewPosture: {
       reviewed: true,
       decisionType: reviewDecision.decisionType,
@@ -217,11 +232,118 @@ export function formatRenderExportCandidateSummary(candidate, output = defaultOu
   ].join(' | ')
 }
 
+export function evaluateRenderExportCandidateFreshness({
+  candidate,
+  records = []
+}) {
+  const issueCodes = []
+  const sourceRoughCut = findSourceRoughCutEntry(candidate, records)
+  const latestDecision = sourceRoughCut
+    ? latestRoughCutDecisionEntry(records, sourceRoughCut.record.roughCutId)
+    : undefined
+
+  if (!sourceRoughCut) {
+    issueCodes.push('source_rough_cut_missing')
+  } else {
+    const expectedRoughCutId = candidate.sourceRoughCutRef?.id
+    if (expectedRoughCutId && sourceRoughCut.record.roughCutId !== expectedRoughCutId) {
+      issueCodes.push('source_rough_cut_changed')
+    }
+
+    const currentOrderedItems = orderedItemSignatureFromRoughCut(sourceRoughCut.record)
+    const candidateOrderedItems = orderedItemSignatureFromCandidate(candidate)
+    if (currentOrderedItems !== candidateOrderedItems) {
+      issueCodes.push('ordered_items_changed')
+    }
+
+    const snapshot = candidate.sourceSnapshot
+    if (snapshot?.sourceRoughCutCreatedAt && sourceRoughCut.record.createdAt !== snapshot.sourceRoughCutCreatedAt) {
+      issueCodes.push('source_rough_cut_changed')
+    }
+  }
+
+  if (!latestDecision) {
+    issueCodes.push('latest_rough_cut_review_missing')
+  } else {
+    const expectedDecisionId = candidate.reviewDecisionRef?.id
+    if (expectedDecisionId && latestDecision.record.decisionId !== expectedDecisionId) {
+      issueCodes.push('latest_rough_cut_review_changed')
+    }
+    if (latestDecision.record.decisionType !== 'review_rough_cut') {
+      issueCodes.push('latest_rough_cut_review_not_approved_for_render_export')
+    }
+    if (candidate.sourceSnapshot?.reviewDecisionCreatedAt && latestDecision.record.createdAt !== candidate.sourceSnapshot.reviewDecisionCreatedAt) {
+      issueCodes.push('latest_rough_cut_review_changed')
+    }
+  }
+
+  const uniqueIssues = [...new Set(issueCodes)]
+  return {
+    state: uniqueIssues.length === 0 ? 'fresh' : 'stale',
+    issueCodes: uniqueIssues,
+    checkedRefs: compactRefs([
+      candidate.sourceRoughCutRef,
+      candidate.reviewDecisionRef,
+      sourceRoughCut ? localRecordRef('media-rough-cut-capsule', sourceRoughCut.record.roughCutId, sourceRoughCut.record.schema, sourceRoughCut.path) : null,
+      latestDecision ? localRecordRef('media-operator-decision', latestDecision.record.decisionId, latestDecision.record.schema, latestDecision.path) : null
+    ]),
+    nextAction: uniqueIssues.length === 0
+      ? 'Render/export candidate source refs are current for local review.'
+      : 'Regenerate the render/export candidate from the latest reviewed rough cut before selecting a renderer.',
+    candidateOnly: true,
+    renderFeasibilityClaimed: false,
+    renderPerformed: false,
+    exportPerformed: false,
+    productionReady: false,
+    localOnly: true,
+    operatorGuidanceOnly: true,
+    meshTruth: false,
+    publicationAuthorization: false
+  }
+}
+
 function latestRoughCutDecisionEntry(records, roughCutId) {
   return records
     .filter((entry) => entry.record.schema === artifactKinds.mediaOperatorDecision)
     .filter((entry) => entry.record.roughCutReview && entry.record.subjectRef?.id === roughCutId)
     .sort(compareRecordCreatedAt)[0]
+}
+
+function findSourceRoughCutEntry(candidate, records) {
+  const roughCutPath = candidate.sourceRoughCutRef?.path
+  const roughCutId = candidate.sourceRoughCutRef?.id
+  return records.find((entry) => entry.record.schema === artifactKinds.mediaRoughCutCapsuleLocal && roughCutPath && entry.path === roughCutPath) ??
+    records.find((entry) => entry.record.schema === artifactKinds.mediaRoughCutCapsuleLocal && roughCutId && entry.record.roughCutId === roughCutId)
+}
+
+function createRenderExportSourceSnapshot({ roughCut, orderedItemRefs, reviewDecision }) {
+  return {
+    sourceRoughCutId: roughCut.roughCutId,
+    sourceRoughCutCreatedAt: roughCut.createdAt,
+    orderedItemSignature: orderedItemSignatureFromRefs(orderedItemRefs),
+    reviewDecisionId: reviewDecision.decisionId,
+    reviewDecisionCreatedAt: reviewDecision.createdAt,
+    localOnly: true,
+    operatorGuidanceOnly: true
+  }
+}
+
+function orderedItemSignatureFromRoughCut(roughCut) {
+  return orderedItemSignatureFromRefs((roughCut.orderedItems ?? []).map((item) => ({
+    order: item.order,
+    id: item.itemId
+  })))
+}
+
+function orderedItemSignatureFromCandidate(candidate) {
+  return candidate.sourceSnapshot?.orderedItemSignature ??
+    orderedItemSignatureFromRefs(candidate.orderedItemRefs ?? [])
+}
+
+function orderedItemSignatureFromRefs(items) {
+  return items
+    .map((item) => `${item.order}:${item.id}`)
+    .join('|')
 }
 
 function localRecordRef(kind, id, schema, relativePath) {

@@ -11,6 +11,7 @@ import { artifactKinds } from '../contracts/artifact-kinds.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
 import { createMediaSummary } from '../assets/media-summary.js'
+import { evaluateRenderExportCandidateFreshness } from '../production/render-export-candidate.js'
 import { readProjectRecords } from './project-status.js'
 
 const modulePath = fileURLToPath(import.meta.url)
@@ -211,7 +212,8 @@ export async function inspectVeniceSmoke({
     productionBundles,
     roughCutCapsules,
     renderExportCandidates,
-    roughCutReviewDecisions
+    roughCutReviewDecisions,
+    projectRecords
   })
 
   validateRequiredRecord(packet)
@@ -331,20 +333,26 @@ function createVeniceOperationalSummary(mediaSummary, {
   productionBundles,
   roughCutCapsules,
   renderExportCandidates,
-  roughCutReviewDecisions
+  roughCutReviewDecisions,
+  projectRecords
 }) {
-  const renderExportRows = renderExportCandidates.map((entry) => ({
-    candidateId: entry.record.candidateId,
-    path: entry.path,
-    roughCutId: entry.record.sourceRoughCutRef?.id ?? null,
-    reviewed: entry.record.reviewPosture?.reviewed === true,
-    rendererSelected: entry.record.renderPosture?.rendererSelected === true,
-    renderPerformed: entry.record.renderPosture?.renderPerformed === true,
-    exportPerformed: entry.record.exportPosture?.exportPerformed === true,
-    productionReady: entry.record.productionReady === true,
-    localOnly: true,
-    operatorGuidanceOnly: true
-  }))
+  const renderExportRows = renderExportCandidates.map((entry) => {
+    const freshness = evaluateRenderExportCandidateFreshness({ candidate: entry.record, records: projectRecords })
+    return {
+      candidateId: entry.record.candidateId,
+      path: entry.path,
+      roughCutId: entry.record.sourceRoughCutRef?.id ?? null,
+      reviewed: entry.record.reviewPosture?.reviewed === true,
+      rendererSelected: entry.record.renderPosture?.rendererSelected === true,
+      renderPerformed: entry.record.renderPosture?.renderPerformed === true,
+      exportPerformed: entry.record.exportPosture?.exportPerformed === true,
+      productionReady: entry.record.productionReady === true,
+      freshnessState: freshness.state,
+      issueCodes: freshness.issueCodes,
+      localOnly: true,
+      operatorGuidanceOnly: true
+    }
+  })
 
   return {
     summaryKind: 'venice-smoke-operational-summary',
@@ -402,6 +410,8 @@ function createVeniceOperationalSummary(mediaSummary, {
       renderPerformed: renderExportRows.filter((row) => row.renderPerformed).length,
       exportPerformed: renderExportRows.filter((row) => row.exportPerformed).length,
       productionReady: renderExportRows.filter((row) => row.productionReady).length,
+      fresh: renderExportRows.filter((row) => row.freshnessState === 'fresh').length,
+      stale: renderExportRows.filter((row) => row.freshnessState === 'stale').length,
       rows: renderExportRows,
       localOnly: true,
       operatorGuidanceOnly: true
@@ -428,6 +438,7 @@ function printVeniceInspectionSummary(summary) {
     `rawProviderBytesStored=${summary.providerExecution.storedRawBytes}`,
     `derivatives=${summary.derivativeReadiness.readyAssets}/${summary.derivativeReadiness.evaluatedAssets}`,
     `renderExportCandidates=${summary.renderExportCandidates?.total ?? 0}`,
+    `renderExportStale=${summary.renderExportCandidates?.stale ?? 0}`,
     `renderPerformed=${summary.renderExportCandidates?.renderPerformed ?? 0}`,
     `exportPerformed=${summary.renderExportCandidates?.exportPerformed ?? 0}`,
     `byteContent=${summary.identity.byteContent.coveredContentIds}/${summary.identity.byteContent.expectedContentIds}`,

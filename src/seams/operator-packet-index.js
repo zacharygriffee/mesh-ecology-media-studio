@@ -7,6 +7,7 @@ import { makeRef, nowIso } from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
 import { summarizeProductionApprovalLane } from '../production/approval-lane.js'
+import { evaluateRenderExportCandidateFreshness } from '../production/render-export-candidate.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
@@ -118,7 +119,7 @@ export async function writeOperatorPacketIndex({
     }))
   const renderExportCandidates = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaRenderExportCandidateLocal)
-    .map((entry) => summarizeRenderExportCandidate(entry.record, entry.relativePath))
+    .map((entry) => summarizeRenderExportCandidate(entry.record, entry.relativePath, records))
   const productionApprovalLane = summarizeProductionApprovalLane({
     assetRecords: records
       .filter((entry) => entry.record.schema === artifactKinds.mediaAssetDescriptor)
@@ -380,6 +381,7 @@ function formatRenderExportCandidate(candidate) {
     `renderPerformed=${candidate.renderPerformed}`,
     `exportPerformed=${candidate.exportPerformed}`,
     `productionReady=${candidate.productionReady}`,
+    `freshness=${candidate.freshnessState}`,
     `issues=${candidate.issueCodes.join(',') || 'none'}`,
     `path=${candidate.candidateRef.path}`
   ].join(' | ')
@@ -634,8 +636,9 @@ function summarizeRoughCutCapsule(record, relativePath, {
   }
 }
 
-function summarizeRenderExportCandidate(record, relativePath) {
-  const issueCodes = []
+function summarizeRenderExportCandidate(record, relativePath, records) {
+  const freshness = evaluateRenderExportCandidateFreshness({ candidate: record, records })
+  const issueCodes = freshness.issueCodes
 
   return {
     candidateRef: {
@@ -651,9 +654,12 @@ function summarizeRenderExportCandidate(record, relativePath) {
     renderPerformed: record.renderPosture?.renderPerformed === true,
     exportPerformed: record.exportPosture?.exportPerformed === true,
     productionReady: record.productionReady === true,
+    freshnessState: freshness.state,
     issueCodes,
     needsOperatorAttention: issueCodes.length > 0,
-    nextAction: record.nextActions?.[0] ?? 'Choose a renderer/export adapter in a future lane before producing bytes.',
+    nextAction: issueCodes.length > 0
+      ? freshness.nextAction
+      : record.nextActions?.[0] ?? 'Choose a renderer/export adapter in a future lane before producing bytes.',
     approvalAuthority: false,
     publicationAuthorization: false,
     operatorGuidanceOnly: true,

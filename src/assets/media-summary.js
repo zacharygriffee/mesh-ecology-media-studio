@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url'
 
 import { artifactKinds } from '../contracts/artifact-kinds.js'
 import { summarizeProductionApprovalLane } from '../production/approval-lane.js'
+import { evaluateRenderExportCandidateFreshness } from '../production/render-export-candidate.js'
 import { writeProjectStatus, readProjectRecords } from '../seams/project-status.js'
 
 const modulePath = fileURLToPath(import.meta.url)
@@ -239,6 +240,7 @@ function printMediaSummary(summary) {
     `renderPerformed=${summary.renderExportCandidates.renderPerformed}`,
     `exportPerformed=${summary.renderExportCandidates.exportPerformed}`,
     `productionReady=${summary.renderExportCandidates.productionReady}`,
+    `stale=${summary.renderExportCandidates.stale}`,
     `attention=${summary.renderExportCandidates.attentionRows.length}`
   ].join(' | '))
   console.log([
@@ -292,6 +294,8 @@ function printMediaSummary(summary) {
       `renderPerformed=${row.renderPerformed}`,
       `exportPerformed=${row.exportPerformed}`,
       `productionReady=${row.productionReady}`,
+      `freshness=${row.freshnessState}`,
+      `issues=${row.issueCodes.join(',') || 'none'}`,
       `path=${row.candidatePath}`
     ].join(' | '))
   }
@@ -618,23 +622,27 @@ function summarizeRenderExportCandidates(records) {
     .filter((entry) => entry.record.schema === artifactKinds.mediaRenderExportCandidateLocal)
     .map((entry) => ({ ...entry.record, path: entry.path }))
     .sort(compareRecordCreatedAtDescending)
-  const rows = candidates.map((candidate) => ({
-    candidateId: candidate.candidateId,
-    candidatePath: candidate.path,
-    roughCutId: candidate.sourceRoughCutRef?.id ?? null,
-    reviewed: candidate.reviewPosture?.reviewed === true,
-    itemRefs: candidate.orderedItemRefs?.length ?? 0,
-    rendererSelected: candidate.renderPosture?.rendererSelected === true,
-    renderPerformed: candidate.renderPosture?.renderPerformed === true,
-    exportPerformed: candidate.exportPosture?.exportPerformed === true,
-    productionReady: candidate.productionReady === true,
-    issueCodes: [],
-    nextAction: 'Choose a renderer/export adapter in a future lane before producing bytes.',
-    localOnly: true,
-    operatorGuidanceOnly: true,
-    approvalAuthority: false,
-    publicationAuthorization: false
-  }))
+  const rows = candidates.map((candidate) => {
+    const freshness = evaluateRenderExportCandidateFreshness({ candidate, records })
+    return {
+      candidateId: candidate.candidateId,
+      candidatePath: candidate.path,
+      roughCutId: candidate.sourceRoughCutRef?.id ?? null,
+      reviewed: candidate.reviewPosture?.reviewed === true,
+      itemRefs: candidate.orderedItemRefs?.length ?? 0,
+      rendererSelected: candidate.renderPosture?.rendererSelected === true,
+      renderPerformed: candidate.renderPosture?.renderPerformed === true,
+      exportPerformed: candidate.exportPosture?.exportPerformed === true,
+      productionReady: candidate.productionReady === true,
+      freshnessState: freshness.state,
+      issueCodes: freshness.issueCodes,
+      nextAction: freshness.nextAction,
+      localOnly: true,
+      operatorGuidanceOnly: true,
+      approvalAuthority: false,
+      publicationAuthorization: false
+    }
+  })
 
   return {
     total: rows.length,
@@ -644,6 +652,8 @@ function summarizeRenderExportCandidates(records) {
     renderPerformed: rows.filter((row) => row.renderPerformed).length,
     exportPerformed: rows.filter((row) => row.exportPerformed).length,
     productionReady: rows.filter((row) => row.productionReady).length,
+    fresh: rows.filter((row) => row.freshnessState === 'fresh').length,
+    stale: rows.filter((row) => row.freshnessState === 'stale').length,
     rows,
     attentionRows: rows.filter((row) => row.issueCodes.length > 0),
     localOnly: true,

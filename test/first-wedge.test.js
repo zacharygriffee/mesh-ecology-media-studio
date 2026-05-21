@@ -73,7 +73,7 @@ import { indexProviderRuns } from '../src/seams/index-provider-runs.js'
 import { inspectProviderFailure } from '../src/seams/inspect-provider-failure.js'
 import { inspectVeniceSmoke } from '../src/seams/inspect-venice-smoke.js'
 import { inspectVeniceLoop } from '../src/seams/inspect-venice-loop.js'
-import { writeProjectStatus } from '../src/seams/project-status.js'
+import { readProjectRecords, writeProjectStatus } from '../src/seams/project-status.js'
 import { writeProjectHealth } from '../src/seams/project-health.js'
 import { writeEdgeReadinessGuidance } from '../src/seams/edge-readiness-guidance.js'
 import { writeControlSurfaceProjection } from '../src/seams/control-surface-projection.js'
@@ -112,7 +112,7 @@ import { writeAuthorityHandoffCandidate } from '../src/production/authority-hand
 import { writeRoughCutCapsule } from '../src/production/rough-cut-capsule.js'
 import { writeRoughCutReviewDecision } from '../src/production/rough-cut-review-decision.js'
 import { writeRoughCutRevision } from '../src/production/rough-cut-revision.js'
-import { writeRenderExportCandidate } from '../src/production/render-export-candidate.js'
+import { evaluateRenderExportCandidateFreshness, writeRenderExportCandidate } from '../src/production/render-export-candidate.js'
 
 const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 
@@ -2879,6 +2879,8 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.equal(candidate.candidateKind, 'rough-cut-render-export-candidate')
   assert.equal(candidate.sourceRoughCutRef.schema, 'media.rough_cut_capsule.local.v1')
   assert.equal(candidate.reviewDecisionRef.id, review.decision.decisionId)
+  assert.equal(candidate.freshnessPosture.state, 'fresh')
+  assert.equal(candidate.freshnessPosture.renderFeasibilityClaimed, false)
   assert.equal(candidate.reviewPosture.reviewed, true)
   assert.equal(candidate.reviewPosture.decisionType, 'review_rough_cut')
   assert.equal(candidate.orderedItemRefs.length, 1)
@@ -2916,18 +2918,22 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.equal(mediaSummary.renderExportCandidates.renderPerformed, 0)
   assert.equal(mediaSummary.renderExportCandidates.exportPerformed, 0)
   assert.equal(mediaSummary.renderExportCandidates.productionReady, 0)
-  assert.ok(mediaSummaryOutput.lines.some((line) => line === 'render/export candidates: total=1 | reviewed=1 | rendererSelected=0 | renderPerformed=0 | exportPerformed=0 | productionReady=0 | attention=0'))
+  assert.equal(mediaSummary.renderExportCandidates.fresh, 1)
+  assert.equal(mediaSummary.renderExportCandidates.stale, 0)
+  assert.ok(mediaSummaryOutput.lines.some((line) => line === 'render/export candidates: total=1 | reviewed=1 | rendererSelected=0 | renderPerformed=0 | exportPerformed=0 | productionReady=0 | stale=0 | attention=0'))
   assert.ok(mediaSummaryOutput.lines.some((line) => line.includes(`render/export candidate: ${candidate.candidateId}`)))
 
   const healthOutput = await captureConsole(() => writeProjectHealth({ projectDir: dir, summary: true }))
   assert.equal(healthOutput.result.health.renderExportCandidateSummary.total, 1)
   assert.equal(healthOutput.result.health.renderExportCandidateSummary.renderPerformed, 0)
-  assert.ok(healthOutput.lines.some((line) => line === 'renderExportCandidates: total=1 | reviewed=1 | rendererSelected=0 | renderPerformed=0 | exportPerformed=0 | productionReady=0'))
+  assert.equal(healthOutput.result.health.renderExportCandidateSummary.stale, 0)
+  assert.ok(healthOutput.lines.some((line) => line === 'renderExportCandidates: total=1 | reviewed=1 | rendererSelected=0 | renderPerformed=0 | exportPerformed=0 | productionReady=0 | stale=0'))
 
   const indexOutput = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
   assert.equal(indexOutput.result.index.summary.renderExportCandidates, 1)
   assert.equal(indexOutput.result.index.renderExportCandidates[0].renderPerformed, false)
   assert.equal(indexOutput.result.index.renderExportCandidates[0].exportPerformed, false)
+  assert.equal(indexOutput.result.index.renderExportCandidates[0].freshnessState, 'fresh')
   assert.ok(indexOutput.lines.some((line) => line.includes('renderExportCandidates=1')))
   assert.ok(indexOutput.lines.some((line) => line.includes(`render/export candidate: ${candidate.candidateId}`)))
 
@@ -2938,6 +2944,29 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.equal(inspection.packet.operationalSummary.renderExportCandidates.renderPerformed, 0)
   assert.equal(inspection.packet.operationalSummary.renderExportCandidates.exportPerformed, 0)
   assert.equal(inspection.packet.operationalSummary.renderExportCandidates.productionReady, 0)
+  assert.equal(inspection.packet.operationalSummary.renderExportCandidates.stale, 0)
+
+  await writeRoughCutReviewDecision({
+    projectDir: dir,
+    decision: 'request_changes',
+    output: 'records/decisions/media-rough-cut-review-request-changes.local.json',
+    createdAt: '2999-01-01T00:00:00.000Z',
+    print: false
+  })
+  const projectRecords = await readProjectRecords(dir)
+  const freshness = evaluateRenderExportCandidateFreshness({ candidate, records: projectRecords })
+  assert.equal(freshness.state, 'stale')
+  assert.ok(freshness.issueCodes.includes('latest_rough_cut_review_changed'))
+  assert.ok(freshness.issueCodes.includes('latest_rough_cut_review_not_approved_for_render_export'))
+
+  const staleSummary = await createMediaSummary({ projectDir: dir })
+  assert.equal(staleSummary.renderExportCandidates.stale, 1)
+  assert.ok(staleSummary.renderExportCandidates.attentionRows[0].issueCodes.includes('latest_rough_cut_review_changed'))
+  const staleHealthOutput = await captureConsole(() => writeProjectHealth({ projectDir: dir, summary: true }))
+  assert.ok(staleHealthOutput.result.health.blockingIssues.includes('render-export-candidate-attention'))
+  assert.equal(staleHealthOutput.result.health.renderExportCandidateHealthExplanations.length, 1)
+  const staleIndexOutput = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
+  assert.equal(staleIndexOutput.result.index.summary.renderExportCandidatesNeedingAttention, 1)
 
   const compatibility = await writeEdgeCompatibilityBundle({ projectDir: dir })
   assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.render_export_candidate.local.v1'))
