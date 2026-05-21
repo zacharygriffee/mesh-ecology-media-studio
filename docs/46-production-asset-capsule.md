@@ -70,6 +70,28 @@ when records exist. Regenerated inspection packets, export bundles, and Edge
 compatibility bundles include production capsule record refs so Edge-compatible
 surfaces can inspect the package later without Studio calling Edge.
 
+## Production Bundle
+
+`npm run production:bundle` writes `media.production_bundle.local.v1`.
+
+The bundle groups existing production capsule refs:
+
+```txt
+capsuleRefs
+assetRefs
+contentRefs
+productionPosture
+```
+
+It is useful when an operator wants one compact production review/handoff
+artifact over multiple accepted assets. It does not replace
+`media.production_asset_capsule.local.v1`; capsules remain the per-asset
+package, and the bundle is only a ref grouping over those packages.
+
+The bundle is also local operator guidance only. It does not copy bytes, grant
+approval, prove availability, publish to mesh, call Edge, or authorize
+production use.
+
 ## Non-Claims
 
 The capsule is local operator guidance only:

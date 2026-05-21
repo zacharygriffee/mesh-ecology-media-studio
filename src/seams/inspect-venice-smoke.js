@@ -97,6 +97,8 @@ export async function inspectVeniceSmoke({
     .filter((entry) => entry.record.schema === artifactKinds.mediaLocalLayerResourceRefCandidateLocal)
   const productionCapsules = projectRecords
     .filter((entry) => entry.record.schema === artifactKinds.mediaProductionAssetCapsuleLocal)
+  const productionBundles = projectRecords
+    .filter((entry) => entry.record.schema === artifactKinds.mediaProductionBundleLocal)
   const optionalWarnings = []
   const promotedArtifactRefs = await optionalPromotedArtifactRefs({ root, promotedAssets, warnings: optionalWarnings })
   const derivativeArtifactRefs = await optionalDerivativeArtifactRefs({ root, derivatives, warnings: optionalWarnings })
@@ -119,6 +121,10 @@ export async function inspectVeniceSmoke({
       ...Object.fromEntries(productionCapsules.map((entry) => [
         `productionAssetCapsule:${path.basename(entry.path, '.json')}`,
         localRecordRef('media-production-asset-capsule', entry.path, entry.record.schema)
+      ])),
+      ...Object.fromEntries(productionBundles.map((entry) => [
+        `productionBundle:${path.basename(entry.path, '.json')}`,
+        localRecordRef('media-production-bundle', entry.path, entry.record.schema)
       ]))
     },
     artifactKinds: [
@@ -137,6 +143,7 @@ export async function inspectVeniceSmoke({
       ...byteProposals.map((entry) => entry.record.schema),
       ...resourceCandidates.map((entry) => entry.record.schema),
       ...productionCapsules.map((entry) => entry.record.schema),
+      ...productionBundles.map((entry) => entry.record.schema),
       'media.byte_reference.preview.local.v1',
       'media.edge_inspection_packet.local.v1'
     ].filter(Boolean),
@@ -176,7 +183,8 @@ export async function inspectVeniceSmoke({
     derivatives,
     byteProposals,
     resourceCandidates,
-    productionCapsules
+    productionCapsules,
+    productionBundles
   })
 
   validateRequiredRecord(packet)
@@ -290,7 +298,8 @@ function createVeniceOperationalSummary(mediaSummary, {
   derivatives,
   byteProposals,
   resourceCandidates,
-  productionCapsules
+  productionCapsules,
+  productionBundles
 }) {
   return {
     summaryKind: 'venice-smoke-operational-summary',
@@ -312,14 +321,16 @@ function createVeniceOperationalSummary(mediaSummary, {
       derivatives: derivatives.length,
       byteDescriptorProposals: byteProposals.length,
       resourceRefCandidates: resourceCandidates.length,
-      productionAssetCapsules: productionCapsules.length
+      productionAssetCapsules: productionCapsules.length,
+      productionBundles: productionBundles.length
     },
     recordRefs: {
       promotedAssets: promotedAssets.map((entry) => localRecordRef('media-asset', entry.path, entry.record.schema)),
       derivatives: derivatives.map((entry) => localRecordRef('media-derivative', entry.path, entry.record.schema)),
       byteDescriptorProposals: byteProposals.map((entry) => localRecordRef('media-byte-descriptor-proposal', entry.path, entry.record.schema)),
       resourceRefCandidates: resourceCandidates.map((entry) => localRecordRef('media-resource-ref-candidate', entry.path, entry.record.schema)),
-      productionAssetCapsules: productionCapsules.map((entry) => localRecordRef('media-production-asset-capsule', entry.path, entry.record.schema))
+      productionAssetCapsules: productionCapsules.map((entry) => localRecordRef('media-production-asset-capsule', entry.path, entry.record.schema)),
+      productionBundles: productionBundles.map((entry) => localRecordRef('media-production-bundle', entry.path, entry.record.schema))
     },
     localOnly: true,
     operatorGuidanceOnly: true,

@@ -49,6 +49,7 @@ Known Studio artifact kinds:
 - `media.render_strategy.v1`
 - `media.production_descriptor.local.v1`
 - `media.production_asset_capsule.local.v1`
+- `media.production_bundle.local.v1`
 - `media.approval_proposal.local.v1`
 - `media.byte_descriptor_proposal.local.v1`
 - `media.local_layer_resource_ref_candidate.local.v1`

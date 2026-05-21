@@ -270,6 +270,7 @@ npm run repair:local-posture -- --project-dir examples/venice-smoke
 npm run inspect:venice-smoke
 npm run media:summary -- --project-dir examples/venice-smoke
 npm run production:capsule -- --project-dir examples/venice-smoke
+npm run production:bundle -- --project-dir examples/venice-smoke
 ```
 
 Expected final summary shape:
@@ -280,6 +281,7 @@ generated candidates: total=1 | reviewed=1 | pending=0 | promotedAccepted=1
 production review: ready=0 | needsReview=1 | proposed=0 | notCandidates=0
 approval lane: proposals=0 | pendingAuthority=0 | approved=0 | blocked=0
 production capsules: total=0 | expected=1 | missing=1 | attention=1
+production bundles: total=0 | capsules=0 | attention=0
 identity: byteContent=1/1 | resourceSituations=1/1
 safeNextAction: Run npm run approval:proposal for accepted generated assets before production use.
 ```

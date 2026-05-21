@@ -105,6 +105,7 @@ import {
 import { writeProductionRecordsFromCard } from '../src/production/create-production-records.js'
 import { validateProductionRecordsInProject } from '../src/production/validate-production-records.js'
 import { writeProductionAssetCapsule } from '../src/production/asset-capsule.js'
+import { writeProductionBundle } from '../src/production/bundle.js'
 
 const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 
@@ -2330,6 +2331,87 @@ test('production asset capsule packages accepted asset refs without authority', 
   await writeControlSurfaceProjection({ projectDir: dir })
   const compatibility = await writeEdgeCompatibilityBundle({ projectDir: dir })
   assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.production_asset_capsule.local.v1'))
+})
+
+test('production bundle groups production capsules without authority', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-production-bundle-'))
+  await runVeniceOperationalLoop({
+    projectDir: dir,
+    decision: 'accepted'
+  })
+  await writeApprovalProposal({
+    projectDir: dir,
+    decision: 'records/decisions/promoted-candidate-accepted-decision.local.json',
+    asset: 'records/assets/promoted-candidate-accepted.local.json',
+    output: 'records/approvals/promoted-candidate-accepted-approval-proposal.local.json'
+  })
+  await writeProductionAssetCapsule({ projectDir: dir, quiet: true })
+
+  const { bundle, output } = await writeProductionBundle({ projectDir: dir, quiet: true })
+
+  assert.equal(bundle.schema, 'media.production_bundle.local.v1')
+  assert.equal(bundle.bundleKind, 'production-capsule-set')
+  assert.equal(bundle.productionPosture.state, 'review-only-bundle')
+  assert.equal(bundle.capsuleRefs.length, 1)
+  assert.equal(bundle.assetRefs.length, 1)
+  assert.equal(bundle.contentRefs.length, 1)
+  assert.equal(bundle.productionReady, false)
+  assert.equal(bundle.approvalAuthority, false)
+  assert.equal(bundle.ratifierAuthority, false)
+  assert.equal(bundle.publicationAuthorization, false)
+  assert.equal(bundle.providerTruth, false)
+  assert.equal(bundle.byteAvailabilityProof, false)
+  assert.equal(bundle.materializationProof, false)
+  assert.equal(bundle.resourceAdmission, false)
+  assert.equal(validateRequiredRecord(bundle), true)
+
+  const written = JSON.parse(await readFile(path.join(dir, output), 'utf8'))
+  assert.equal(written.bundleId, bundle.bundleId)
+
+  const printed = await captureConsole(() => writeProductionBundle({
+    projectDir: dir,
+    print: true
+  }))
+  const printedBundle = JSON.parse(printed.lines.join('\n'))
+  assert.equal(printedBundle.bundleId, bundle.bundleId)
+
+  const summaryOutput = await captureConsole(() => writeMediaSummary({ projectDir: dir }))
+  const summary = await createMediaSummary({ projectDir: dir })
+  assert.equal(summary.productionBundles.total, 1)
+  assert.equal(summary.productionBundles.capsuleRefs, 1)
+  assert.equal(summary.productionBundles.attentionRows.length, 0)
+  assert.ok(summaryOutput.lines.some((line) => line === 'production bundles: total=1 | capsules=1 | attention=0'))
+
+  const indexOutput = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
+  const index = indexOutput.result.index
+  assert.equal(index.productionBundleRefs.length, 1)
+  assert.equal(index.summary.productionBundles, 1)
+  assert.equal(index.summary.productionBundlesNeedingAttention, 0)
+  assert.ok(indexOutput.lines.some((line) => line.includes('productionBundles=1')))
+  assert.ok(indexOutput.lines.some((line) => line.includes('production bundle: production-bundle-')))
+
+  const inspection = await inspectLocalRun({
+    projectDir: dir,
+    manifest: 'records/manifests/venice-live-smoke-manifest.local.json'
+  })
+  assert.ok(Object.values(inspection.packet.recordRefs).some((ref) => ref.schema === 'media.production_bundle.local.v1'))
+  assert.ok(inspection.packet.artifactKinds.includes('media.production_bundle.local.v1'))
+
+  const bundleExport = await exportInspectionBundle({
+    projectDir: dir,
+    packet: inspection.output,
+    outputDir: 'records/exports/bundles/production-bundle-test'
+  })
+  assert.ok(bundleExport.manifest.includedRecordRefs.some((ref) => ref.schema === 'media.production_bundle.local.v1'))
+
+  const postExportIndex = await writeOperatorPacketIndex({ projectDir: dir })
+  assert.equal(postExportIndex.index.productionCapsuleRefs.length, 1)
+  assert.equal(postExportIndex.index.productionBundleRefs.length, 1)
+
+  await writeProjectStatus({ projectDir: dir })
+  await writeControlSurfaceProjection({ projectDir: dir })
+  const compatibility = await writeEdgeCompatibilityBundle({ projectDir: dir })
+  assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.production_bundle.local.v1'))
 })
 
 test('project health reports missing production asset capsules for accepted provider assets', async () => {

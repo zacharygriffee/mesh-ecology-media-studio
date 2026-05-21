@@ -71,6 +71,9 @@ export async function writeOperatorPacketIndex({
   const productionCapsuleRefs = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProductionAssetCapsuleLocal)
     .map(toInspectionRef)
+  const productionBundleRefs = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaProductionBundleLocal)
+    .map(toInspectionRef)
   const mediationRefs = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaRuleResolutionTraceLocal)
     .map(toInspectionRef)
@@ -84,6 +87,9 @@ export async function writeOperatorPacketIndex({
   const productionCapsules = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProductionAssetCapsuleLocal)
     .map((entry) => summarizeProductionCapsule(entry.record, entry.relativePath))
+  const productionBundles = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaProductionBundleLocal)
+    .map((entry) => summarizeProductionBundle(entry.record, entry.relativePath))
   const readinessStates = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProjectHealthLocal)
     .map((entry) => entry.record.healthState)
@@ -111,10 +117,12 @@ export async function writeOperatorPacketIndex({
     operatorDecisionRefs,
     providerLoopStatusRefs,
     productionCapsuleRefs,
+    productionBundleRefs,
     mediationRefs,
     providerLoopStatuses,
     providerLoopDecisions,
     productionCapsules,
+    productionBundles,
     operatorHealthExplanations,
     summary: {
       packets: packetRefs.length,
@@ -129,13 +137,16 @@ export async function writeOperatorPacketIndex({
       providerLoopsWithAttention: providerLoopStatuses.filter((status) => status.needsOperatorAttention).length,
       productionCapsules: productionCapsuleRefs.length,
       productionCapsulesNeedingAttention: productionCapsules.filter((capsule) => capsule.needsOperatorAttention).length,
+      productionBundles: productionBundleRefs.length,
+      productionBundlesNeedingAttention: productionBundles.filter((bundle) => bundle.needsOperatorAttention).length,
       ruleResolutionTraces: mediationRefs.length,
       readyHealthRecords: readinessStates.filter((state) => state === 'ready-for-local-inspection').length,
       needsAttentionHealthRecords: readinessStates.filter((state) => state === 'needs-local-attention').length,
       operatorHealthExplanations: operatorHealthExplanations.length,
       attentionRows: operatorHealthExplanations.length +
         providerLoopStatuses.filter((status) => status.needsOperatorAttention).length +
-        productionCapsules.filter((capsule) => capsule.needsOperatorAttention).length,
+        productionCapsules.filter((capsule) => capsule.needsOperatorAttention).length +
+        productionBundles.filter((bundle) => bundle.needsOperatorAttention).length,
       newestRecordPath: newestPath(records),
       operatorGuidanceOnly: true
     },
@@ -179,6 +190,9 @@ export async function writeOperatorPacketIndex({
     for (const capsule of index.productionCapsules) {
       console.log(formatProductionCapsule(capsule))
     }
+    for (const bundle of index.productionBundles) {
+      console.log(formatProductionBundle(bundle))
+    }
   }
 
   return {
@@ -198,6 +212,7 @@ function formatOperatorPacketIndexSummary(index, output) {
     `providerLoops=${summary.providerLoopStatuses ?? 0}`,
     `providerLoopDecisions=${summary.providerLoopDecisions ?? 0}`,
     `productionCapsules=${summary.productionCapsules ?? 0}`,
+    `productionBundles=${summary.productionBundles ?? 0}`,
     `ruleTraces=${summary.ruleResolutionTraces}`,
     `attention=${summary.attentionRows ?? summary.operatorHealthExplanations}`,
     `output=${output}`
@@ -244,6 +259,18 @@ function formatProductionCapsule(capsule) {
   ].join(' | ')
 }
 
+function formatProductionBundle(bundle) {
+  return [
+    `production bundle: ${bundle.bundleRef.id}`,
+    `state=${bundle.state}`,
+    `capsules=${bundle.capsuleRefs}`,
+    `productionReady=${bundle.productionReady}`,
+    `issues=${bundle.issueCodes.join(',') || 'none'}`,
+    `nextAction=${bundle.nextAction}`,
+    `path=${bundle.bundleRef.path}`
+  ].join(' | ')
+}
+
 async function readIndexableRecords(root) {
   const candidates = [
     ...(await findJsonFiles(root, 'records/exports')),
@@ -253,7 +280,7 @@ async function readIndexableRecords(root) {
     ...(await findJsonFiles(root, 'records/requests')),
     ...(await findJsonFiles(root, 'records/decisions')),
     ...(await findJsonFiles(root, 'records/rule-traces'))
-  ]
+  ].filter(isIndexableRecordPath)
   const entries = []
 
   for (const relativePath of candidates.sort()) {
@@ -276,6 +303,7 @@ const indexableSchemas = new Set([
   artifactKinds.mediaOperatorDecisionRequestLocal,
   artifactKinds.mediaProviderLoopStatusLocal,
   artifactKinds.mediaProductionAssetCapsuleLocal,
+  artifactKinds.mediaProductionBundleLocal,
   artifactKinds.mediaRuleResolutionTraceLocal
 ])
 
@@ -355,6 +383,36 @@ function summarizeProductionCapsule(record, relativePath) {
   }
 }
 
+function summarizeProductionBundle(record, relativePath) {
+  const issueCodes = record.productionPosture?.state === 'needs-capsules'
+    ? ['production_capsules_missing']
+    : (record.productionPosture?.blockers ?? []).filter((issue) => issue !== 'authority_not_granted')
+
+  return {
+    bundleRef: {
+      ...makeRef('media-production-bundle', record.bundleId, record.schema),
+      path: relativePath,
+      localOnly: true
+    },
+    state: record.productionPosture?.state ?? 'unknown',
+    capsuleRefs: record.capsuleRefs?.length ?? 0,
+    assetRefs: record.assetRefs?.length ?? 0,
+    contentRefs: record.contentRefs?.length ?? 0,
+    productionReady: record.productionReady === true,
+    issueCodes,
+    needsOperatorAttention: issueCodes.length > 0,
+    nextAction: issueCodes.length > 0
+      ? record.productionPosture?.nextAction
+      : 'Inspect bundled capsules and route approval proposals through the proper authority lane before production use.',
+    approvalAuthority: false,
+    publicationAuthorization: false,
+    operatorGuidanceOnly: true,
+    localOnly: true,
+    meshTruth: false,
+    providerTruth: false
+  }
+}
+
 async function findJsonFiles(root, relativeRoot) {
   assertSafeLocalPath(relativeRoot)
   const absoluteRoot = path.join(root, relativeRoot)
@@ -379,6 +437,11 @@ async function collectJsonFiles(absoluteDir, relativeDir, files) {
       files.push(relativePath)
     }
   }
+}
+
+function isIndexableRecordPath(relativePath) {
+  if (!relativePath.startsWith('records/exports/bundles/')) return true
+  return relativePath.endsWith('/bundle-manifest.local.json')
 }
 
 async function readOptionalRecord(root, relativePath) {
@@ -419,6 +482,7 @@ function kindForSchema(schema) {
     [artifactKinds.mediaOperatorDecisionRequestLocal]: 'media-operator-decision-request',
     [artifactKinds.mediaProviderLoopStatusLocal]: 'media-provider-loop-status',
     [artifactKinds.mediaProductionAssetCapsuleLocal]: 'media-production-asset-capsule',
+    [artifactKinds.mediaProductionBundleLocal]: 'media-production-bundle',
     [artifactKinds.mediaRuleResolutionTraceLocal]: 'media-rule-resolution-trace'
   }[schema] ?? schema
 }
@@ -433,6 +497,7 @@ function idForRecord(record) {
     record.requestId ??
     record.statusId ??
     record.capsuleId ??
+    record.bundleId ??
     record.traceId
 }
 

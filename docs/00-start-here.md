@@ -161,6 +161,7 @@ npm run continuity:draft -- --project-dir examples/card-to-candidate
 npm run production:from-card -- --project-dir examples/card-to-candidate
 npm run production:validate -- --project-dir examples/card-to-candidate
 npm run production:capsule -- --project-dir examples/venice-smoke
+npm run production:bundle -- --project-dir examples/venice-smoke
 npm run approval:proposal -- --project-dir examples/card-to-candidate
 npm run bytes:proposal -- --project-dir examples/card-to-candidate
 npm run resource:refs -- --project-dir examples/card-to-candidate
@@ -170,7 +171,7 @@ npm run readiness:edge -- --project-dir examples/card-to-candidate
 `npm run health:summary`, `npm run inspect:summary`, handoff candidates, and
 `npm run operator:cross-project-index` surface per-asset attention rows for
 missing byte proposals, missing or stale resource-ref candidates, accepted
-assets without byte/resource posture, and stale production descriptors. These
+assets without byte/resource posture, missing production capsules, and stale production descriptors. These
 rows are operator guidance only and do not prove byte availability,
 materialization, resource admission, or authority.
 `npm run media:summary` also includes a compact approval lane so pending local

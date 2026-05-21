@@ -828,6 +828,8 @@ function countRecords(records) {
     continuityBands: bySchema(artifactKinds.mediaContinuityBand),
     renderStrategies: bySchema(artifactKinds.mediaRenderStrategy),
     productionDescriptors: bySchema(artifactKinds.mediaProductionDescriptorLocal),
+    productionCapsules: bySchema(artifactKinds.mediaProductionAssetCapsuleLocal),
+    productionBundles: bySchema(artifactKinds.mediaProductionBundleLocal),
     approvalProposals: bySchema(artifactKinds.mediaApprovalProposalLocal),
     byteDescriptorProposals: bySchema(artifactKinds.mediaByteDescriptorProposalLocal),
     resourceRefCandidates: bySchema(artifactKinds.mediaLocalLayerResourceRefCandidateLocal),

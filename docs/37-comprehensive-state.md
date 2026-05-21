@@ -459,6 +459,10 @@ local production package without opening raw JSON. Project health now reports
 missing production capsules as local attention, and regenerated local inspection
 packets, export bundles, and Edge compatibility bundles include capsule refs
 when the records exist.
+`npm run production:bundle` writes `media.production_bundle.local.v1`, a
+local-only grouping over production capsule refs. Bundles are for operator
+handoff/review readability only; they do not copy bytes, grant production use,
+or replace the capsule as the per-asset package.
 
 ## Current Verification Baseline
 

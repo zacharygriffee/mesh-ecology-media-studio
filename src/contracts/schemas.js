@@ -81,6 +81,7 @@ export const schemaFiles = {
   'media.render_strategy.v1': 'schemas/media-render-strategy.schema.json',
   'media.production_descriptor.local.v1': 'schemas/media-production-descriptor-local.schema.json',
   'media.production_asset_capsule.local.v1': 'schemas/media-production-asset-capsule-local.schema.json',
+  'media.production_bundle.local.v1': 'schemas/media-production-bundle-local.schema.json',
   'media.approval_proposal.local.v1': 'schemas/media-approval-proposal-local.schema.json',
   'media.byte_descriptor_proposal.local.v1': 'schemas/media-byte-descriptor-proposal-local.schema.json',
   'media.local_layer_resource_ref_candidate.local.v1': 'schemas/media-local-layer-resource-ref-candidate-local.schema.json',
@@ -929,6 +930,33 @@ export const requiredFields = {
     'localTruthLabel',
     'truthStatus'
   ],
+  'media.production_bundle.local.v1': [
+    'schema',
+    'bundleId',
+    'projectId',
+    'bundleKind',
+    'capsuleRefs',
+    'assetRefs',
+    'contentRefs',
+    'productionPosture',
+    'createdAt',
+    'operatorGuidanceOnly',
+    'productionReady',
+    'approvalAuthority',
+    'ratifierAuthority',
+    'publicationAuthorization',
+    'providerTruth',
+    'byteAvailabilityProof',
+    'materializationProof',
+    'resourceAdmission',
+    'causalTruth',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'localTruthLabel',
+    'truthStatus'
+  ],
   'media.approval_proposal.local.v1': [
     'schema',
     'proposalId',
@@ -1105,6 +1133,7 @@ const idFields = {
   [artifactKinds.mediaRenderStrategy]: 'strategyId',
   [artifactKinds.mediaProductionDescriptorLocal]: 'descriptorId',
   [artifactKinds.mediaProductionAssetCapsuleLocal]: 'capsuleId',
+  [artifactKinds.mediaProductionBundleLocal]: 'bundleId',
   [artifactKinds.mediaApprovalProposalLocal]: 'proposalId',
   [artifactKinds.mediaByteDescriptorProposalLocal]: 'byteDescriptorProposalId',
   [artifactKinds.mediaLocalLayerResourceRefCandidateLocal]: 'resourceRefCandidateId',
@@ -1141,6 +1170,7 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaRenderStrategy,
   artifactKinds.mediaProductionDescriptorLocal,
   artifactKinds.mediaProductionAssetCapsuleLocal,
+  artifactKinds.mediaProductionBundleLocal,
   artifactKinds.mediaApprovalProposalLocal,
   artifactKinds.mediaByteDescriptorProposalLocal,
   artifactKinds.mediaLocalLayerResourceRefCandidateLocal,
@@ -1182,6 +1212,7 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaRenderStrategy,
   artifactKinds.mediaProductionDescriptorLocal,
   artifactKinds.mediaProductionAssetCapsuleLocal,
+  artifactKinds.mediaProductionBundleLocal,
   artifactKinds.mediaApprovalProposalLocal,
   artifactKinds.mediaByteDescriptorProposalLocal,
   artifactKinds.mediaLocalLayerResourceRefCandidateLocal,
@@ -2147,6 +2178,42 @@ export function validateRecordShape(record, schemaId = record.schema) {
 
     if (!Array.isArray(record.bundleRefs)) {
       throw new Error(`Record ${schemaId} bundleRefs must be an array`)
+    }
+
+    if (record.operatorGuidanceOnly !== true || record.productionReady !== false) {
+      throw new Error(`Record ${schemaId} must remain review-only and productionReady=false`)
+    }
+
+    for (const flag of ['approvalAuthority', 'ratifierAuthority', 'publicationAuthorization', 'providerTruth', 'byteAvailabilityProof', 'materializationProof', 'resourceAdmission', 'causalTruth']) {
+      if (record[flag] !== false) {
+        throw new Error(`Record ${schemaId} must set ${flag}=false`)
+      }
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaProductionBundleLocal) {
+    if (!['production-capsule-set'].includes(record.bundleKind)) {
+      throw new Error(`Record ${schemaId} has invalid bundle kind: ${record.bundleKind}`)
+    }
+
+    if (!['needs-capsules', 'review-only-bundle'].includes(record.productionPosture?.state)) {
+      throw new Error(`Record ${schemaId} has invalid production posture state: ${record.productionPosture?.state}`)
+    }
+
+    for (const [field, label] of [
+      [record.capsuleRefs, 'capsuleRefs'],
+      [record.assetRefs, 'assetRefs'],
+      [record.contentRefs, 'contentRefs']
+    ]) {
+      if (!Array.isArray(field)) {
+        throw new Error(`Record ${schemaId}.${label} must be an array`)
+      }
+    }
+
+    for (const ref of record.capsuleRefs) {
+      validateRef(ref, `${schemaId}.capsuleRefs[]`)
     }
 
     if (record.operatorGuidanceOnly !== true || record.productionReady !== false) {

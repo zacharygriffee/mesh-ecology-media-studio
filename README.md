@@ -350,6 +350,8 @@ availability, materialization, resource admission, or authority.
 For accepted provider-generated assets, project health also reports missing
 production asset capsules. Regenerated inspection/export and Edge compatibility
 surfaces include capsule refs when the local capsule record exists.
+`npm run production:bundle` groups existing production capsule refs into a
+local-only review bundle without copying bytes or granting production authority.
 
 Byte posture is reported by `contentId`; resource posture is reported by
 descriptor/situation/placement subject. `assetId` remains a compatibility
