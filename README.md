@@ -286,6 +286,12 @@ publication authorization, or production readiness.
 After local render/export delivery evidence exists, the authority prerequisite
 surface can show `localProductionPackageComplete=true` while still reporting
 `authorityMissing=true` and `productionReady=false`.
+`production:authority-prereqs` and `production:authority-handoff` can also
+carry optional `mesh-ecology-layer` refs with `--layer-ref`,
+`--layer-profile-ref`, `--layer-continuity-ref`, `--layer-desync-posture-ref`,
+and `--layer-rbc-profile-ref`. These are import refs only; they do not select a
+continuity substrate, approve durable append, admit a layer participant, or
+grant production authority.
 
 `request_changes` rough-cut decisions can regenerate the local rough-cut refs:
 

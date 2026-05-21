@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { artifactKinds } from '../contracts/artifact-kinds.js'
 import { makeRef, nowIso } from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
+import { collectLayerInteropOptions, createLayerInteropPosture } from '../layer/layer-interop.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
 import { readProjectRecords } from '../seams/project-status.js'
 import { createProductionAuthorityPrerequisiteReport } from './authority-prerequisites.js'
@@ -40,7 +41,10 @@ function parseArgs(argv) {
     }
   }
 
-  return args
+  return {
+    ...args,
+    ...collectLayerInteropOptions(argv)
+  }
 }
 
 export async function writeAuthorityHandoffCandidate({
@@ -48,17 +52,33 @@ export async function writeAuthorityHandoffCandidate({
   output = defaultOutput,
   print = false,
   quiet = false,
-  createdAt = nowIso()
+  createdAt = nowIso(),
+  layerRef,
+  layerProfileRef,
+  continuityRef,
+  desyncPostureRef,
+  rbcProfileRefs
 } = {}) {
   assertSafeLocalPath(output)
 
   const root = path.resolve(projectDir)
   const records = await readProjectRecords(root)
-  const prerequisiteReport = await createProductionAuthorityPrerequisiteReport({ projectDir })
+  const layerInteropOptions = {
+    layerRef,
+    layerProfileRef,
+    continuityRef,
+    desyncPostureRef,
+    rbcProfileRefs
+  }
+  const prerequisiteReport = await createProductionAuthorityPrerequisiteReport({
+    projectDir,
+    ...layerInteropOptions
+  })
   const candidate = createAuthorityHandoffCandidateFromRecords({
     records,
     prerequisiteReport,
-    createdAt
+    createdAt,
+    ...layerInteropOptions
   })
 
   const outputPath = path.join(root, output)
@@ -82,7 +102,12 @@ export async function writeAuthorityHandoffCandidate({
 export function createAuthorityHandoffCandidateFromRecords({
   records,
   prerequisiteReport,
-  createdAt = nowIso()
+  createdAt = nowIso(),
+  layerRef,
+  layerProfileRef,
+  continuityRef,
+  desyncPostureRef,
+  rbcProfileRefs
 }) {
   const projectId = prerequisiteReport.projectId ??
     records.find((entry) => typeof entry.record.projectId === 'string')?.record.projectId ??
@@ -132,6 +157,13 @@ export function createAuthorityHandoffCandidateFromRecords({
     publicationAuthorization: false,
     localOnly: true
   }))
+  const layerInteropPosture = prerequisiteReport.layerInteropPosture ?? createLayerInteropPosture({
+    layerRef,
+    layerProfileRef,
+    continuityRef,
+    desyncPostureRef,
+    rbcProfileRefs
+  })
   const sourceRefs = compactRefs([
     ...productionBundleRefs,
     ...productionCapsuleRefs,
@@ -172,6 +204,7 @@ export function createAuthorityHandoffCandidateFromRecords({
     exportReceiptsStale: prerequisiteReport.exportReceiptsStale ?? 0,
     deliveryCreated: prerequisiteReport.deliveryCreated ?? 0,
     exportPerformed: prerequisiteReport.exportPerformed ?? 0,
+    layerInteropState: layerInteropPosture.interopState,
     renderAuthorizationMissing: prerequisiteReport.renderAuthorizationMissing ?? 0,
     exportAuthorizationMissing: prerequisiteReport.exportAuthorizationMissing ?? 0,
     productionReady: prerequisiteReport.productionReady,
@@ -271,6 +304,24 @@ export function createAuthorityHandoffCandidateFromRecords({
       },
       exportReceiptInput,
       {
+        inputKind: 'layer-posture-ref',
+        refs: compactLayerRefs([
+          layerInteropPosture.layerRef,
+          layerInteropPosture.layerProfileRef,
+          layerInteropPosture.continuityRef,
+          layerInteropPosture.desyncPostureRef,
+          ...(layerInteropPosture.rbcProfileRefs ?? [])
+        ]),
+        required: false,
+        present: layerInteropPosture.interopState === 'layer-refs-attached-review-only',
+        interopState: layerInteropPosture.interopState,
+        durableAppendApproved: false,
+        continuityClaimed: false,
+        layerAuthority: false,
+        localOnly: true,
+        operatorGuidanceOnly: true
+      },
+      {
         inputKind: 'situated-identity',
         refs: acceptedCandidateRows.map((row) => ({
           kind: 'media-situated-accepted-candidate',
@@ -300,6 +351,7 @@ export function createAuthorityHandoffCandidateFromRecords({
       }
     ],
     acceptedCandidateRows,
+    layerInteropPosture,
     sourceRefs,
     authorityGaps: [
       'approval_authority_missing',
@@ -361,6 +413,7 @@ export function formatAuthorityHandoffCandidateSummary(candidate, output = defau
     `exportReceipts=${candidate.prerequisiteSummary.exportReceipts ?? 0}`,
     `deliveryCreated=${candidate.prerequisiteSummary.deliveryCreated ?? 0}`,
     `exportPerformed=${candidate.prerequisiteSummary.exportPerformed ?? 0}`,
+    `layerInterop=${candidate.prerequisiteSummary.layerInteropState ?? 'layer-refs-not-attached'}`,
     `renderAuthorizationMissing=${candidate.prerequisiteSummary.renderAuthorizationMissing ?? 0}`,
     `exportAuthorizationMissing=${candidate.prerequisiteSummary.exportAuthorizationMissing ?? 0}`,
     `authorityGaps=${candidate.authorityGaps.length}`,
@@ -458,6 +511,18 @@ function compactRefs(refs) {
   const seen = new Set()
   for (const ref of refs.filter((candidate) => candidate?.id && candidate?.path)) {
     const key = `${ref.schema}:${ref.id}:${ref.path}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    output.push(ref)
+  }
+  return output
+}
+
+function compactLayerRefs(refs) {
+  const output = []
+  const seen = new Set()
+  for (const ref of refs.filter((candidate) => candidate?.id)) {
+    const key = `${ref.kind}:${ref.id}`
     if (seen.has(key)) continue
     seen.add(key)
     output.push(ref)

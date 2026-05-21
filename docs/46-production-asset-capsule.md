@@ -179,6 +179,22 @@ summary so a future authority lane can inspect what it would need to review. It
 does not implement that lane and does not grant approval, ratification,
 publication authorization, or production readiness.
 
+Both authority commands can carry optional `mesh-ecology-layer` refs:
+
+```bash
+npm run production:authority-handoff -- --project-dir examples/venice-smoke \
+  --layer-ref layer:operator-local:operator-alpha \
+  --layer-profile-ref layer-profile:operator-local:v0:example \
+  --layer-continuity-ref layer-continuity-ref:operator-local:decision-family:candidate \
+  --layer-desync-posture-ref layer-desync-posture:operator-local:example \
+  --layer-rbc-profile-ref rbc-profile:operator-local-default
+```
+
+These refs let an operator-local layer or future team layer inspect Studio work
+without making Studio a Layer runtime. The handoff still records
+`durableAppendApproved=false`, `continuityClaimed=false`, and
+`layerProfileIsAuthority=false`.
+
 ## Rough-Cut Capsule Seed
 
 `npm run production:rough-cut` writes

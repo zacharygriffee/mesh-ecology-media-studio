@@ -164,6 +164,9 @@ npm run production:capsule -- --project-dir examples/venice-smoke
 npm run production:bundle -- --project-dir examples/venice-smoke
 npm run production:authority-prereqs -- --project-dir examples/venice-smoke
 npm run production:authority-handoff -- --project-dir examples/venice-smoke
+npm run production:authority-handoff -- --project-dir examples/venice-smoke \
+  --layer-ref layer:operator-local:operator-alpha \
+  --layer-profile-ref layer-profile:operator-local:v0:example
 npm run production:rough-cut -- --project-dir examples/venice-smoke
 npm run production:rough-cut-review -- --project-dir examples/venice-smoke
 npm run production:rough-cut-revise -- --project-dir examples/venice-smoke

@@ -195,6 +195,11 @@ mediation cockpit. Edge delivers mediation pressure to the operator.
 
 Studio needs a local media layer, but it must follow Spine and Edge posture
 rather than inventing a competing local-layer doctrine.
+`mesh-ecology-layer` owns the family-wide layer-kernel vocabulary for operator
+local layers and future team layers. Studio should consume that vocabulary
+through import refs on handoff/prerequisite surfaces; it should not select the
+continuity substrate, approve durable append, or treat local JSON, renderer
+output, repo paths, or device files as layer authority.
 
 Use these terms:
 

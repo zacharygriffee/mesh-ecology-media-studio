@@ -472,6 +472,13 @@ production readiness.
 check from `localProductionPackageComplete`, which only becomes true after the
 reviewed rough cut has fresh local render/export delivery evidence. Even then,
 `authorityMissing=true` and `productionReady=false` remain explicit.
+The authority prerequisite and handoff commands can carry optional
+`mesh-ecology-layer` import refs (`layerRef`, `layerProfileRef`,
+`continuityRef`, `desyncPostureRef`, and RBC profile refs) so Studio packages
+can be inspected from an operator local layer or future team layer. These refs
+remain review-only: no continuity substrate is selected, no durable append is
+approved, no participant is admitted, and renderer/local JSON outputs remain
+scaffolds rather than layer authority.
 Approval proposal records keep the compatibility `subjectRef` from the local
 decision and now include situated asset descriptor/content/situation/placement
 refs when the asset descriptor is available.

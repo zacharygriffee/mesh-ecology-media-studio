@@ -2666,6 +2666,7 @@ test('authority handoff candidate packages local refs without authority', async 
   assert.equal(candidate.prerequisiteSummary.localProductionPackageComplete, 0)
   assert.equal(candidate.prerequisiteSummary.localProductionPackageState, 'local-production-package-incomplete')
   assert.equal(candidate.prerequisiteSummary.authorityMissing, true)
+  assert.equal(candidate.prerequisiteSummary.layerInteropState, 'layer-refs-not-attached')
   assert.equal(candidate.prerequisiteSummary.pendingAuthority, 1)
   assert.equal(candidate.prerequisiteSummary.renderExportCandidates, 0)
   assert.equal(candidate.prerequisiteSummary.renderAuthorizationMissing, 1)
@@ -2690,6 +2691,12 @@ test('authority handoff candidate packages local refs without authority', async 
   assert.equal(candidate.authorityReviewInputs.find((input) => input.inputKind === 'local-prerequisite-state').localProductionPackageComplete, 0)
   assert.equal(candidate.authorityReviewInputs.find((input) => input.inputKind === 'local-prerequisite-state').localProductionPackageState, 'local-production-package-incomplete')
   assert.equal(candidate.authorityReviewInputs.find((input) => input.inputKind === 'local-prerequisite-state').authorityMissing, true)
+  assert.equal(candidate.authorityReviewInputs.find((input) => input.inputKind === 'layer-posture-ref').present, false)
+  assert.equal(candidate.authorityReviewInputs.find((input) => input.inputKind === 'layer-posture-ref').durableAppendApproved, false)
+  assert.equal(candidate.layerInteropPosture.interopState, 'layer-refs-not-attached')
+  assert.equal(candidate.layerInteropPosture.substratePosture.durableAppendApproved, false)
+  assert.equal(candidate.layerInteropPosture.nonClaims.layerProfileIsAuthority, false)
+  assert.equal(candidate.layerInteropPosture.nonClaims.continuityClaimed, false)
   assert.ok(candidate.sourceRefs.some((ref) => ref.schema === 'media.production_bundle.local.v1'))
   assert.ok(candidate.sourceRefs.some((ref) => ref.schema === 'media.approval_proposal.local.v1'))
   assert.ok(candidate.sourceRefs.some((ref) => ref.schema === 'media.production_asset_capsule.local.v1'))
@@ -2704,6 +2711,7 @@ test('authority handoff candidate packages local refs without authority', async 
   assert.equal(candidate.meshPublished, false)
   assert.equal(validateRequiredRecord(candidate), true)
   assert.ok(output.lines.some((line) => line.startsWith('authority handoff candidate: project=venice-smoke-project')))
+  assert.ok(output.lines.some((line) => line.includes('layerInterop=layer-refs-not-attached')))
   assert.ok(output.lines.some((line) => line.includes('productionReady=false')))
 
   const written = JSON.parse(
@@ -2711,6 +2719,48 @@ test('authority handoff candidate packages local refs without authority', async 
   )
   assert.equal(written.handoffCandidateId, candidate.handoffCandidateId)
   assert.equal(validateRequiredRecord(written), true)
+})
+
+test('authority handoff candidate can carry Layer refs without selecting substrate', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-authority-layer-interop-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+
+  const output = await captureConsole(() => writeAuthorityHandoffCandidate({
+    projectDir: dir,
+    layerRef: 'layer:operator-local:operator-alpha',
+    layerProfileRef: 'layer-profile:operator-local:v0:example',
+    continuityRef: 'layer-continuity-ref:operator-local:decision-family:candidate',
+    desyncPostureRef: 'layer-desync-posture:operator-local:example',
+    rbcProfileRefs: ['rbc-profile:operator-local-default']
+  }))
+  const candidate = output.result.candidate
+  const layerInput = candidate.authorityReviewInputs.find((input) => input.inputKind === 'layer-posture-ref')
+
+  assert.equal(candidate.layerInteropPosture.repoRef, 'mesh-ecology-layer')
+  assert.equal(candidate.layerInteropPosture.interopState, 'layer-refs-attached-review-only')
+  assert.equal(candidate.layerInteropPosture.layerRef.id, 'layer:operator-local:operator-alpha')
+  assert.equal(candidate.layerInteropPosture.layerProfileRef.id, 'layer-profile:operator-local:v0:example')
+  assert.equal(candidate.layerInteropPosture.continuityRef.id, 'layer-continuity-ref:operator-local:decision-family:candidate')
+  assert.equal(candidate.layerInteropPosture.desyncPostureRef.id, 'layer-desync-posture:operator-local:example')
+  assert.equal(candidate.layerInteropPosture.rbcProfileRefs[0].id, 'rbc-profile:operator-local-default')
+  assert.equal(candidate.layerInteropPosture.substratePosture.substrateSelected, false)
+  assert.equal(candidate.layerInteropPosture.substratePosture.durableAppendApproved, false)
+  assert.equal(candidate.layerInteropPosture.nonClaims.layerProfileIsRuntime, false)
+  assert.equal(candidate.layerInteropPosture.nonClaims.layerProfileIsStorageBackend, false)
+  assert.equal(candidate.layerInteropPosture.nonClaims.layerProfileIsAuthority, false)
+  assert.equal(candidate.layerInteropPosture.nonClaims.layerRefsGrantAdmission, false)
+  assert.equal(candidate.layerInteropPosture.nonClaims.continuityClaimed, false)
+  assert.equal(candidate.layerInteropPosture.nonClaims.rendererOutputIsContinuity, false)
+  assert.equal(layerInput.present, true)
+  assert.equal(layerInput.interopState, 'layer-refs-attached-review-only')
+  assert.equal(layerInput.durableAppendApproved, false)
+  assert.equal(layerInput.continuityClaimed, false)
+  assert.equal(layerInput.layerAuthority, false)
+  assert.equal(candidate.prerequisiteSummary.layerInteropState, 'layer-refs-attached-review-only')
+  assert.equal(candidate.productionReady, false)
+  assert.equal(candidate.publicationAuthorization, false)
+  assert.ok(output.lines.some((line) => line.includes('layerInterop=layer-refs-attached-review-only')))
+  assert.equal(validateRequiredRecord(candidate), true)
 })
 
 test('rough cut capsule orders production items without rendering or authority', async () => {

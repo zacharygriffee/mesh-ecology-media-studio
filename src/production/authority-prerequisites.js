@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { artifactKinds } from '../contracts/artifact-kinds.js'
 import { nowIso } from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
+import { collectLayerInteropOptions, createLayerInteropPosture } from '../layer/layer-interop.js'
 import { readProjectRecords } from '../seams/project-status.js'
 import { evaluateRenderExportCandidateFreshness } from './render-export-candidate.js'
 import { summarizeRenderReceipts } from './render-receipts.js'
@@ -36,12 +37,20 @@ function parseArgs(argv) {
     }
   }
 
-  return args
+  return {
+    ...args,
+    ...collectLayerInteropOptions(argv)
+  }
 }
 
 export async function createProductionAuthorityPrerequisiteReport({
   projectDir = defaultProjectDir,
-  createdAt = nowIso()
+  createdAt = nowIso(),
+  layerRef,
+  layerProfileRef,
+  continuityRef,
+  desyncPostureRef,
+  rbcProfileRefs
 } = {}) {
   const root = path.resolve(projectDir)
   const records = await readProjectRecords(root)
@@ -71,6 +80,13 @@ export async function createProductionAuthorityPrerequisiteReport({
       ? 'local-production-package-complete-authority-missing'
       : 'local-production-package-incomplete',
     authorityMissing: true,
+    layerInteropPosture: createLayerInteropPosture({
+      layerRef,
+      layerProfileRef,
+      continuityRef,
+      desyncPostureRef,
+      rbcProfileRefs
+    }),
     missingLocalPrerequisites: rows.filter((row) => row.missingLocalPrerequisites.length > 0).length,
     roughCutReviewed: rows.filter((row) => row.roughCutReviewPosture?.state === 'rough-cut-reviewed-local').length,
     roughCutChangesRequested: rows.filter((row) => row.roughCutReviewPosture?.state === 'rough-cut-changes-requested').length,

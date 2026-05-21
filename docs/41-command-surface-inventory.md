@@ -29,8 +29,8 @@ text is not the durable contract.
 | `npm run production:validate` | yes | no | no | reads production refs | no committed output |
 | `npm run production:capsule` | yes | yes | `--print` | yes | packages accepted asset refs only; no byte copying or authority |
 | `npm run production:bundle` | yes | yes | `--print` | yes | groups production capsule refs only; no byte copying or authority |
-| `npm run production:authority-prereqs` | yes | yes | `--print` | yes | writes local and local-production package prerequisite posture plus future authority gaps without adding authority |
-| `npm run production:authority-handoff` | yes | yes | `--print` | yes | packages bundle/proposal/capsule/situated/export delivery refs and local production package state as a candidate for future authority review; does not grant authority |
+| `npm run production:authority-prereqs` | yes | yes | `--print` | yes | writes local/local-production prerequisite posture, optional Layer import refs, and future authority gaps without adding authority |
+| `npm run production:authority-handoff` | yes | yes | `--print` | yes | packages bundle/proposal/capsule/situated/export delivery refs, local production package state, and optional Layer import refs as a candidate for future authority review; does not grant authority |
 | `npm run production:rough-cut` | yes | yes | `--print` | yes | orders accepted production item refs for review; no editor, render, export, or authority |
 | `npm run production:rough-cut-review` | yes | yes | `--print` | yes | records a local rough-cut review decision; no render, export, approval, or authority |
 | `npm run production:rough-cut-revise` | yes | yes | `--print` | yes | regenerates rough-cut refs from a local request-changes decision; no editor, render, export, or authority |
