@@ -15,6 +15,7 @@
     "inspect:provider-failure": "node src/seams/inspect-provider-failure.js",
     "inspect:summary": "node src/seams/summarize-inspection-packet.js",
     "inspect:venice-smoke": "node src/seams/inspect-venice-smoke.js",
+    "inspect:venice-loop": "node src/seams/inspect-venice-loop.js",
     "status:project": "node src/seams/project-status.js",
     "health:project": "node src/seams/project-health.js",
     "health:summary": "node src/seams/project-health.js --summary",

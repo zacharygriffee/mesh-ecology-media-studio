@@ -168,6 +168,9 @@ Implemented:
 - provider failure fixture normalization
 - local provider run ledger
 
+Venice is an operational provider fixture only. Studio canon remains the
+provider-neutral request/result/ingest/review/posture/status path.
+
 Not implemented:
 
 - default live provider execution
@@ -187,6 +190,9 @@ an injected Venice-shaped response by default. Add `-- --live-provider` with
 `VENICE_LIVE=1` only when intentionally spending provider credits. The loop
 selects the latest generated provider candidate unless `--asset-record` is
 supplied.
+
+The loop persists a generic `media.provider_loop_status.local.v1` status record
+so operators can inspect the last run without treating Venice as provider canon.
 
 Provider IDs and job IDs remain provenance only.
 

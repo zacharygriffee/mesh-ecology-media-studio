@@ -47,6 +47,7 @@ text is not the durable contract.
 | `npm run inspect:provider-runs` | yes | yes | `--print` | yes | runtime ledger uses fresh timestamp |
 | `npm run inspect:provider-failure` | yes | yes | `--print` | yes | runtime packet uses fresh ids/timestamps |
 | `npm run inspect:venice-smoke` | yes | yes | `--print` | yes | smoke records are ignored runtime output |
+| `npm run inspect:venice-loop` | yes | no | `--print` | reads provider-loop status | no output mutation |
 | `npm run export:inspection-bundle` | yes | yes | `--print` | yes | bundle manifest uses fresh timestamp |
 | `npm run control:surface` | yes | yes | `--print` | yes | runtime projection uses fresh timestamp |
 | `npm run edge:compat` | yes | yes | `--print` | yes | runtime bundle uses fresh timestamp |

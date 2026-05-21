@@ -71,6 +71,7 @@ import { indexInspectionRecords } from '../src/seams/index-inspection-records.js
 import { indexProviderRuns } from '../src/seams/index-provider-runs.js'
 import { inspectProviderFailure } from '../src/seams/inspect-provider-failure.js'
 import { inspectVeniceSmoke } from '../src/seams/inspect-venice-smoke.js'
+import { inspectVeniceLoop } from '../src/seams/inspect-venice-loop.js'
 import { writeProjectStatus } from '../src/seams/project-status.js'
 import { writeProjectHealth } from '../src/seams/project-health.js'
 import { writeEdgeReadinessGuidance } from '../src/seams/edge-readiness-guidance.js'
@@ -1090,11 +1091,26 @@ test('Venice operational loop completes locally without live provider by default
   assert.equal(status.edgeCalled, false)
   assert.equal(status.meshPublished, false)
   assert.equal(status.materializationProof, false)
+  assert.equal(status.schema, 'media.provider_loop_status.local.v1')
+  assert.equal(status.statusRecordRef, 'records/provider-results/media-provider-loop-status.local.json')
 
   const providerResult = JSON.parse(
     await readFile(path.join(dir, 'records', 'provider-results', 'venice-live-smoke-provider-result.local.json'), 'utf8')
   )
   assert.equal(providerResult.providerResult.rawProviderRef.apiCalled, false)
+
+  const statusRecord = JSON.parse(
+    await readFile(path.join(dir, 'records', 'provider-results', 'media-provider-loop-status.local.json'), 'utf8')
+  )
+  assert.equal(validateRequiredRecord(statusRecord), true)
+  assert.equal(statusRecord.adapterFixture, 'venice')
+  assert.equal(statusRecord.providerTruth, false)
+
+  const { result: inspection } = await captureConsole(() => inspectVeniceLoop({ projectDir: dir }))
+  assert.equal(inspection.summary.state, 'complete_review_only')
+  assert.equal(inspection.summary.selectedCandidate.path, 'media/generated/provider-smoke/venice-live-smoke-0.png')
+  assert.equal(inspection.summary.providerRuns.total, 1)
+  assert.equal(inspection.summary.providerTruth, false)
 })
 
 test('Venice operational loop selects latest generated provider candidate', async () => {
@@ -1169,6 +1185,13 @@ test('Venice operational loop reports provider-stage failure without claiming tr
   assert.equal(status.providerTruth, false)
   assert.equal(status.edgeCalled, false)
   assert.equal(status.meshPublished, false)
+
+  const statusRecord = JSON.parse(
+    await readFile(path.join(dir, 'records', 'provider-results', 'media-provider-loop-status.local.json'), 'utf8')
+  )
+  assert.equal(validateRequiredRecord(statusRecord), true)
+  assert.equal(statusRecord.state, 'failed_review_only')
+  assert.equal(statusRecord.providerTruth, false)
 })
 
 test('generic local-run inspection packet exports first-wedge records', async () => {

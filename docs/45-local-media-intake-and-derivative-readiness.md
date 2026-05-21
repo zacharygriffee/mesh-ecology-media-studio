@@ -189,6 +189,10 @@ accepted/rejected placement.
 
 ## Full Local Generated-Image Loop
 
+Venice is used here as the first operational provider fixture. It is not the
+provider canon for Studio; the durable contract is still provider-neutral
+request/result/ingest/review/posture/status.
+
 The compact command for one local Venice-shaped generated image loop is:
 
 ```bash
@@ -198,6 +202,14 @@ npm run provider:venice:loop
 By default this uses an injected Venice-shaped response and does not call the
 provider. It selects the latest generated provider candidate for promotion,
 or a specific candidate can be supplied with `--asset-record`.
+
+The loop writes a generic local provider-loop status record at
+`records/provider-results/media-provider-loop-status.local.json`. Inspect it
+without rerunning work:
+
+```bash
+npm run inspect:venice-loop
+```
 
 Use the real Venice API only with explicit opt-in:
 

@@ -60,6 +60,7 @@ export const schemaFiles = {
   'media.provider_adapter_run.local.v1': 'schemas/media-provider-adapter-run-local.schema.json',
   'media.edge_export_bundle.local.v1': 'schemas/media-edge-export-bundle-local.schema.json',
   'media.provider_run_ledger.local.v1': 'schemas/media-provider-run-ledger-local.schema.json',
+  'media.provider_loop_status.local.v1': 'schemas/media-provider-loop-status-local.schema.json',
   'media.reference_ingest.local.v1': 'schemas/media-reference-ingest-local.schema.json',
   'media.derivative.local.v1': 'schemas/media-derivative-local.schema.json',
   'media.candidate_review.local.v1': 'schemas/media-candidate-review-local.schema.json',
@@ -445,6 +446,30 @@ export const requiredFields = {
     'distributedProof',
     'ratifiedSharedState',
     'providerTruth',
+    'localTruthLabel',
+    'truthStatus'
+  ],
+  'media.provider_loop_status.local.v1': [
+    'schema',
+    'statusId',
+    'projectId',
+    'providerId',
+    'loopKind',
+    'state',
+    'createdAt',
+    'completedSteps',
+    'nextAction',
+    'localOnly',
+    'operatorGuidanceOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'providerTruth',
+    'byteAvailabilityProof',
+    'materializationProof',
+    'resourceAdmission',
+    'edgeCalled',
+    'meshPublished',
     'localTruthLabel',
     'truthStatus'
   ],
@@ -1027,6 +1052,7 @@ const idFields = {
   [artifactKinds.mediaProviderAdapterRunLocal]: 'adapterRunId',
   [artifactKinds.mediaEdgeExportBundleLocal]: 'bundleId',
   [artifactKinds.mediaProviderRunLedgerLocal]: 'ledgerId',
+  [artifactKinds.mediaProviderLoopStatusLocal]: 'statusId',
   [artifactKinds.mediaReferenceIngestLocal]: 'ingestId',
   [artifactKinds.mediaDerivativeLocal]: 'derivativeId',
   [artifactKinds.mediaCandidateReviewLocal]: 'candidateReviewId',
@@ -1063,6 +1089,7 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaAssetLifecycle,
   artifactKinds.mediaGenerationRequest,
   artifactKinds.mediaProviderRunLedgerLocal,
+  artifactKinds.mediaProviderLoopStatusLocal,
   artifactKinds.mediaReferenceIngestLocal,
   artifactKinds.mediaDerivativeLocal,
   artifactKinds.mediaCandidateReviewLocal,
@@ -1481,6 +1508,28 @@ export function validateRecordShape(record, schemaId = record.schema) {
 
     if (record.providerTruth !== false) {
       throw new Error(`Record ${schemaId} must set providerTruth=false`)
+    }
+  }
+
+  if (schemaId === artifactKinds.mediaProviderLoopStatusLocal) {
+    if (!['running', 'complete_review_only', 'complete_with_attention', 'failed_review_only'].includes(record.state)) {
+      throw new Error(`Record ${schemaId} has invalid state: ${record.state}`)
+    }
+
+    if (!Array.isArray(record.completedSteps)) {
+      throw new Error(`Record ${schemaId} completedSteps must be an array`)
+    }
+
+    if (record.operatorGuidanceOnly !== true) {
+      throw new Error(`Record ${schemaId} must be operator guidance only`)
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+
+    for (const field of ['providerTruth', 'byteAvailabilityProof', 'materializationProof', 'resourceAdmission', 'edgeCalled', 'meshPublished']) {
+      if (record[field] !== false) {
+        throw new Error(`Record ${schemaId} must set ${field}=false`)
+      }
     }
   }
 

@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-provider-loop-status-local.schema.json",
+  "title": "media.provider_loop_status.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "statusId",
+    "projectId",
+    "providerId",
+    "loopKind",
+    "state",
+    "createdAt",
+    "completedSteps",
+    "nextAction",
+    "localOnly",
+    "operatorGuidanceOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "providerTruth",
+    "byteAvailabilityProof",
+    "materializationProof",
+    "resourceAdmission",
+    "edgeCalled",
+    "meshPublished",
+    "localTruthLabel",
+    "truthStatus"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.provider_loop_status.local.v1"
+    },
+    "statusId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "providerId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "state": {
+      "enum": [
+        "running",
+        "complete_review_only",
+        "complete_with_attention",
+        "failed_review_only"
+      ]
+    },
+    "completedSteps": {
+      "type": "array"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "operatorGuidanceOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    },
+    "providerTruth": {
+      "const": false
+    },
+    "byteAvailabilityProof": {
+      "const": false
+    },
+    "materializationProof": {
+      "const": false
+    },
+    "resourceAdmission": {
+      "const": false
+    },
+    "edgeCalled": {
+      "const": false
+    },
+    "meshPublished": {
+      "const": false
+    }
+  }
+}

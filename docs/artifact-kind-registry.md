@@ -28,6 +28,7 @@ Known Studio artifact kinds:
 - `media.provider_adapter_run.local.v1`
 - `media.edge_export_bundle.local.v1`
 - `media.provider_run_ledger.local.v1`
+- `media.provider_loop_status.local.v1`
 - `media.reference_ingest.local.v1`
 - `media.derivative.local.v1`
 - `media.candidate_review.local.v1`

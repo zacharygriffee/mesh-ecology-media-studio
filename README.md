@@ -151,6 +151,11 @@ Optional Venice live smoke testing is gated and off by default:
 VENICE_LIVE=1 npm run provider:venice:smoke
 ```
 
+Venice is the first operational provider fixture, not Studio provider canon.
+The canonical Studio contract remains provider-neutral: generation request,
+normalized provider result, local asset ingest, review, posture, and operator
+status records.
+
 The command reads `VENICE_INFERENCE_KEY` from the environment or ignored `.env`,
 uses a constrained image request, writes decoded bytes under
 `media/generated/provider-smoke/`, and records only local non-truth-bearing
@@ -179,6 +184,12 @@ npm run provider:venice:loop
 The loop selects the latest generated provider candidate by default. Pass
 `--asset-record records/assets/...local.json` to promote a specific generated
 asset record.
+
+Inspect the last loop status without rerunning work:
+
+```bash
+npm run inspect:venice-loop
+```
 
 Use the real Venice API only with the explicit live switch:
 
