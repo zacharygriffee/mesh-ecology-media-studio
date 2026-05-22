@@ -8,6 +8,7 @@ import { validateRequiredRecord } from '../contracts/schemas.js'
 import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
 import { summarizeExportReceipts } from '../production/export-receipts.js'
+import { latestLocalPackageReviewEntry } from '../production/package-authority-freshness.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
@@ -228,6 +229,7 @@ export async function writeEdgeCompatibilityBundle({
       `edge source refs: authorityPrereqs=${bundle.exportDeliverySummary.authorityPrerequisiteRefs}`,
       `authorityHandoffs=${bundle.exportDeliverySummary.authorityHandoffRefs}`,
       `localPackageReviews=${bundle.exportDeliverySummary.localPackageReviewDecisionRefs}`,
+      `localPackageReworkRequests=${bundle.exportDeliverySummary.localPackageReworkRequests}`,
       `publicationAuthorityRequests=${bundle.exportDeliverySummary.publicationAuthorityRequestRefs}`,
       `localDeliveryEvidenceIntact=${bundle.exportDeliverySummary.localDeliveryEvidenceIntact}`,
       `outputIntegrityBlocking=${bundle.exportDeliverySummary.outputIntegrityBlockingIssues}`,
@@ -514,9 +516,13 @@ function createExportDeliverySummary({ sources }) {
     .filter((source) => source.record.schema === artifactKinds.mediaProductionAuthorityPrerequisitesLocal)
   const authorityHandoffEntries = Object.values(sources)
     .filter((source) => source.record.schema === artifactKinds.mediaAuthorityHandoffCandidateLocal)
-  const localPackageReviewDecisionEntries = Object.values(sources)
-    .filter((source) => source.record.schema === artifactKinds.mediaOperatorDecision)
-    .filter((source) => source.record.decisionType === 'review_local_package')
+  const latestLocalPackageReview = latestLocalPackageReviewEntry(Object.values(sources)
+    .map((source) => ({ ...source, path: source.relativePath })))
+  const latestLocalPackageReviewReviewed =
+    latestLocalPackageReview?.record.decisionType === 'review_local_package' &&
+    latestLocalPackageReview.record.localPackageReview?.localPackageReviewed === true
+  const latestLocalPackageNeedsRework =
+    latestLocalPackageReview?.record.localPackageReview?.needsRework === true
   const publicationAuthorityRequestEntries = Object.values(sources)
     .filter((source) => source.record.schema === artifactKinds.mediaPublicationAuthorityRequestCandidateLocal)
   const authorityPrereqSummary = authorityPrereqEntries[0]?.record
@@ -526,7 +532,9 @@ function createExportDeliverySummary({ sources }) {
     exportReceipts: refs.length,
     authorityPrerequisiteRefs: authorityPrereqEntries.length,
     authorityHandoffRefs: authorityHandoffEntries.length,
-    localPackageReviewDecisionRefs: localPackageReviewDecisionEntries.length,
+    localPackageReviewDecisionRefs: latestLocalPackageReviewReviewed ? 1 : 0,
+    localPackageReworkRequests: latestLocalPackageNeedsRework ? 1 : 0,
+    localPackageReviewState: latestLocalPackageReview?.record.localPackageReview?.packageReviewState ?? 'not-reviewed',
     publicationAuthorityRequestRefs: publicationAuthorityRequestEntries.length,
     localPackageCopyExportReceipts: exportReceiptSummary.localPackageCopyExportReceipts,
     ffmpegDeliveryReceipts: exportReceiptSummary.ffmpegDeliveryReceipts,

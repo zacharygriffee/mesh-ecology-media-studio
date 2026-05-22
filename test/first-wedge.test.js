@@ -4122,6 +4122,15 @@ test('latest local package review decision controls publication request posture'
     row.ref.path === 'records/decisions/media-local-package-review-request-changes.local.json'
   ))
   assert.equal(mediaSummary.packageAuthority.rows.filter((row) => row.kind === 'local-package-review').length, 1)
+
+  const edgeCompatibility = await captureConsole(() => writeEdgeCompatibilityBundle({ projectDir: dir }))
+  assert.equal(edgeCompatibility.result.bundle.exportDeliverySummary.localPackageReviewDecisionRefs, 0)
+  assert.equal(edgeCompatibility.result.bundle.exportDeliverySummary.localPackageReworkRequests, 1)
+  assert.equal(edgeCompatibility.result.bundle.exportDeliverySummary.localPackageReviewState, 'needs_rework')
+  assert.ok(edgeCompatibility.lines.some((line) =>
+    line.includes('localPackageReviews=0') &&
+    line.includes('localPackageReworkRequests=1')
+  ))
 })
 
 test('local production output runner carries two accepted production items through reviewable delivery', async () => {
