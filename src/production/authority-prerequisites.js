@@ -72,6 +72,7 @@ export async function createProductionAuthorityPrerequisiteReport({
       isProductionAsset(asset)
     )
   const outputIntegrity = await evaluateLocalOutputIntegrity({ projectDir, records })
+  const exportReceiptSummary = summarizeExportReceipts(records)
   const rows = candidates.map((asset) => summarizeCandidateAuthorityPrerequisites(asset, records, outputIntegrity))
   const projectId = rows[0]?.projectId ??
     records.find((entry) => typeof entry.record.projectId === 'string')?.record.projectId ??
@@ -82,11 +83,11 @@ export async function createProductionAuthorityPrerequisiteReport({
   const localProductionPackageState = rows.length > 0 && rows.every((row) => row.localProductionPackageComplete)
     ? 'local-production-package-complete-authority-missing'
     : 'local-production-package-incomplete'
-  const exportReceiptCount = rows.reduce((sum, row) => sum + (row.exportReceiptPosture?.exportReceipts ?? 0), 0)
-  const exportReceiptsFresh = rows.reduce((sum, row) => sum + (row.exportReceiptPosture?.exportReceiptsFresh ?? 0), 0)
-  const exportReceiptsStale = rows.reduce((sum, row) => sum + (row.exportReceiptPosture?.exportReceiptsStale ?? 0), 0)
-  const localPackageCopyExportReceipts = rows.reduce((sum, row) => sum + (row.exportReceiptPosture?.localPackageCopyExportReceipts ?? 0), 0)
-  const ffmpegDeliveryReceipts = rows.reduce((sum, row) => sum + (row.exportReceiptPosture?.ffmpegDeliveryReceipts ?? 0), 0)
+  const exportReceiptCount = exportReceiptSummary.total
+  const exportReceiptsFresh = exportReceiptSummary.fresh
+  const exportReceiptsStale = exportReceiptSummary.stale
+  const localPackageCopyExportReceipts = exportReceiptSummary.localPackageCopyExportReceipts
+  const ffmpegDeliveryReceipts = exportReceiptSummary.ffmpegDeliveryReceipts
   const localDeliveryEvidencePresent = rows.filter((row) => row.exportReceiptPosture?.localDeliveryEvidencePresent).length
   const localDeliveryEvidenceIntact = rows.filter((row) => row.exportReceiptPosture?.localDeliveryEvidenceIntact).length
   const outputIntegrityBlockingIssues = rows.reduce((sum, row) => sum + (row.outputIntegrityBlockingIssues ?? 0), 0)
