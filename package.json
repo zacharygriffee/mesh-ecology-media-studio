@@ -58,6 +58,7 @@
     "production:export-local-package": "node src/production/export-local-package.js",
     "production:export-ffmpeg": "node src/production/export-ffmpeg.js",
     "production:local-package-review": "node src/production/local-package-review-decision.js",
+    "production:package-rework": "node src/production/package-rework-runner.js",
     "production:publication-authority-request": "node src/production/publication-authority-request-candidate.js",
     "production:local-output": "node src/production/local-output-runner.js",
     "resource:refs": "node src/local/resource-ref-candidates.js",

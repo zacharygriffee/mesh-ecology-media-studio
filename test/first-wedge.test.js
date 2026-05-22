@@ -129,6 +129,7 @@ import {
   evaluatePublicationAuthorityRequestFreshness
 } from '../src/production/package-authority-freshness.js'
 import { runLocalProductionOutput } from '../src/production/local-output-runner.js'
+import { runLocalPackageRework } from '../src/production/package-rework-runner.js'
 import { evaluateRenderReceiptFreshness, summarizeRenderReceipts } from '../src/production/render-receipts.js'
 import { evaluateExportReceiptFreshness } from '../src/production/export-receipts.js'
 import { evaluateLocalOutputIntegrity } from '../src/production/output-integrity.js'
@@ -4093,7 +4094,6 @@ test('latest local package review decision controls publication request posture'
     projectDir: dir,
     decision: 'request_changes',
     output: 'records/decisions/media-local-package-review-request-changes.local.json',
-    createdAt: '2999-01-01T00:00:00.000Z',
     quiet: true
   })
 
@@ -4131,6 +4131,60 @@ test('latest local package review decision controls publication request posture'
     line.includes('localPackageReviews=0') &&
     line.includes('localPackageReworkRequests=1')
   ))
+})
+
+test('local package rework runner regenerates output after needs rework', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-local-package-rework-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+  await runLocalProductionOutput({ projectDir: dir, quiet: true })
+
+  await writeLocalPackageReviewDecision({
+    projectDir: dir,
+    decision: 'request_changes',
+    output: 'records/decisions/media-local-package-review-request-changes.local.json',
+    quiet: true
+  })
+  await assert.rejects(
+    () => writePublicationAuthorityRequestCandidate({ projectDir: dir, quiet: true }),
+    /requires local package review decision/
+  )
+
+  const output = await captureConsole(() => runLocalPackageRework({
+    projectDir: dir,
+    createdAt: '3000-01-01T00:00:00.000Z'
+  }))
+  const result = output.result
+
+  assert.equal(result.reworkKind, 'local-package-rework-runner')
+  assert.equal(result.sourcePackageReviewDecisionRef.id, 'decision-local-package-venice-smoke-project-request_changes')
+  assert.equal(result.summary.localPackageReviewed, 1)
+  assert.equal(result.summary.publicationAuthorityRequests, 1)
+  assert.equal(result.summary.localProductionPackageComplete, 1)
+  assert.equal(result.summary.productionReady, 0)
+  assert.equal(result.nonClaims.publicationAuthorization, false)
+  assert.equal(result.nonClaims.meshTruth, false)
+  assert.equal(result.nonClaims.resourceAdmission, false)
+  assert.equal(result.nonClaims.edgeCalled, false)
+  assert.equal(result.nonClaims.meshPublished, false)
+  assert.ok(output.lines.some((line) =>
+    line.startsWith('local package rework: project=venice-smoke-project') &&
+    line.includes('localPackageReviewed=1') &&
+    line.includes('publicationAuthorityRequests=1') &&
+    line.includes('productionReady=0')
+  ))
+
+  const mediaSummary = await createMediaSummary({ projectDir: dir })
+  assert.equal(mediaSummary.packageAuthority.localPackageReviews, 1)
+  assert.equal(mediaSummary.packageAuthority.packageReworkRequests, 0)
+  assert.equal(mediaSummary.packageAuthority.freshRequests, 1)
+  assert.equal(mediaSummary.packageAuthority.staleRequests, 0)
+  assert.equal(mediaSummary.packageAuthority.productionReady, 0)
+
+  const prereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
+  assert.equal(prereqs.localPackageReviews, 1)
+  assert.equal(prereqs.localPackageReworkRequests, 0)
+  assert.equal(prereqs.publicationAuthorityRequestsFresh, 1)
+  assert.equal(prereqs.productionReady, 0)
 })
 
 test('local production output runner carries two accepted production items through reviewable delivery', async () => {

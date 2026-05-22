@@ -66,20 +66,21 @@ export async function writeLocalPackageReviewDecision({
   output = defaultOutput,
   print = false,
   quiet = false,
-  createdAt = nowIso()
+  createdAt
 } = {}) {
   assertSafeLocalPath(output)
 
   const root = path.resolve(projectDir)
   const records = await readProjectRecords(root)
   const prerequisiteReport = await createProductionAuthorityPrerequisiteReport({ projectDir })
+  const resolvedCreatedAt = createdAt ?? monotonicPackageReviewCreatedAt(records)
   const decision = createLocalPackageReviewDecision({
     records,
     prerequisiteReport,
     decision: requestedDecision,
     operatorRef,
     reason,
-    createdAt
+    createdAt: resolvedCreatedAt
   })
 
   const outputPath = path.join(root, output)
@@ -98,6 +99,19 @@ export async function writeLocalPackageReviewDecision({
     decision,
     output
   }
+}
+
+function monotonicPackageReviewCreatedAt(records = []) {
+  const currentTime = Date.now()
+  const latestPackageReviewTime = Math.max(
+    0,
+    ...records
+      .filter((entry) => entry.record.schema === artifactKinds.mediaOperatorDecision)
+      .filter((entry) => entry.record.localPackageReview)
+      .map((entry) => Date.parse(entry.record.createdAt))
+      .filter(Number.isFinite)
+  )
+  return new Date(Math.max(currentTime, latestPackageReviewTime + 1)).toISOString()
 }
 
 export function createLocalPackageReviewDecision({

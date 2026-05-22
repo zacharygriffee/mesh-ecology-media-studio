@@ -341,8 +341,16 @@ If multiple local package review decisions exist, the latest one is the active
 operator posture; a later `request_changes` decision blocks new
 publication/export authority request candidates until the package is reviewed
 again.
-It is an operator convenience command only; it does not add authority, publish,
-call Edge, or make the package production-ready.
+When the latest package review requests changes, rerun the local rework lane:
+
+```bash
+npm run production:package-rework -- --project-dir examples/venice-smoke
+```
+
+It regenerates the existing local output package, package review, request
+candidate, handoff, operator index, and Edge-compatible refs. It still does not
+grant authority, publish, call Edge, or make the package production-ready. It is
+an operator convenience command only.
 The runner uses the current production bundle, so ordered multi-item rough cuts
 stay part of the same local review/output lane.
 Pass `--disable-ffmpeg` to keep the orchestrated path on contact-sheet render

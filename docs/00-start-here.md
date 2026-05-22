@@ -220,6 +220,9 @@ refs together.
 When several local package review decisions exist, Studio treats the latest
 decision as active. A later `request_changes` decision is local rework posture,
 not publication/export authorization.
+Use `npm run production:package-rework` to regenerate the existing local output
+lane after package rework is requested; it keeps the same non-authority posture
+as `production:local-output`.
 Use `--disable-ffmpeg` when the local runner should avoid MP4 render/export
 execution and keep only contact-sheet plus local package-copy evidence.
 `production:authority-prereqs` checks the referenced local delivery/export
