@@ -60,6 +60,13 @@ If an input project includes an `approvalProposal` artifact ref, the index
 summarizes it as pending authority work. The row does not grant approval,
 ratifier authority, or publication authorization.
 
+If an input project includes an `operatorPacketIndex` artifact ref, the index
+can surface that project's Layer interop state and attention rows. This is
+useful for seeing mismatched authority prerequisite/handoff Layer refs across
+projects without opening raw JSON. It remains local consistency guidance only:
+no Layer runtime is called, no durable append is approved, and no continuity or
+authority is claimed.
+
 The index also prints one `safeNextAction` selected from the first current
 attention row. This is operator guidance only; it does not execute repair,
 approval, retry, or publication.

@@ -486,6 +486,9 @@ Those surfaces also flag mismatched Layer refs across local authority
 prerequisite and handoff records as local attention. The check only detects
 inconsistent local posture records; it does not validate Layer, approve durable
 append, claim continuity, or grant authority.
+`operator:cross-project-index` can carry the same Layer interop state forward
+from explicit per-project operator packet index refs, preserving the same
+non-claims.
 Approval proposal records keep the compatibility `subjectRef` from the local
 decision and now include situated asset descriptor/content/situation/placement
 refs when the asset descriptor is available.

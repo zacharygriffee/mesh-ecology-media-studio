@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { artifactKinds } from '../contracts/artifact-kinds.js'
 import { makeRef, nowIso } from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
+import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
 
 const modulePath = fileURLToPath(import.meta.url)
@@ -119,6 +120,9 @@ export async function writeCrossProjectOperatorIndex({
       if (project.approvalProposal?.needsOperatorAttention) {
         console.log(`  approval proposal: ${project.approvalProposal.proposalType} | state=${project.approvalProposal.laneState} | subject=${project.approvalProposal.subjectRef?.id ?? 'unknown'} | nextAction=${project.approvalProposal.nextAction}`)
       }
+      if (project.layerInterop?.needsOperatorAttention) {
+        console.log(`  layer interop: state=${project.layerInterop.state} | issues=${project.layerInterop.issueCodes.join(',')} | nextAction=${project.layerInterop.attentionRows[0]?.nextAction}`)
+      }
       for (const explanation of project.operatorHealthExplanations ?? []) {
         console.log(`  subject: ${explanation.path ?? `${explanation.subjectKind}:${explanation.subjectRef?.id ?? 'unknown'}`} | issues=${(explanation.issueCodes ?? []).join(',') || 'none'} | nextAction=${explanation.nextAction ?? 'none'}`)
       }
@@ -152,6 +156,8 @@ function formatCrossProjectSummary(index, output) {
     `providerProductionBlockers=${summary.providerLoopsWithProductionAttention ?? 0}`,
     `providerLoopDecisions=${summary.providerLoopDecisions ?? 0}`,
     `approvalProposals=${summary.approvalProposals ?? 0}`,
+    `layerInterop=${summary.layerInteropProjects ?? 0}`,
+    `layerAttention=${summary.layerInteropAttention ?? 0}`,
     `missingArtifacts=${summary.missingArtifacts}`,
     `output=${output}`
   ].join(' | ')
@@ -163,6 +169,7 @@ function attentionRows(projectSummaries) {
     project.providerLoopStatus?.needsOperatorAttention === true ||
     project.providerLoopStatus?.needsProductionAttention === true ||
     project.approvalProposal?.needsOperatorAttention === true ||
+    project.layerInterop?.needsOperatorAttention === true ||
     project.blockingIssues.length > 0 ||
     project.warnings.length > 0
   ))
@@ -207,6 +214,7 @@ async function summarizeProject(root, projectInput) {
   const providerLoopDecision = loaded.providerLoopDecision
   const providerLoopStatus = loaded.providerLoopStatus
   const approvalProposal = loaded.approvalProposal
+  const layerInterop = summarizeProjectLayerInterop(loaded, refs)
   const blockingIssues = health?.blockingIssues ?? []
   const operatorHealthExplanations = health?.operatorHealthExplanations ??
     handoff?.readinessDiagnosis?.operatorHealthExplanations ??
@@ -237,7 +245,8 @@ async function summarizeProject(root, projectInput) {
       missingArtifactRefs,
       providerLoopStatus: providerLoopStatus ? summarizeProviderLoopStatus(providerLoopStatus, refs.providerLoopStatus) : undefined,
       providerLoopDecision: providerLoopDecision ? summarizeProviderLoopDecision(providerLoopDecision, refs.providerLoopDecision) : undefined,
-      approvalProposal: approvalProposal ? summarizeApprovalProposal(approvalProposal, refs.approvalProposal) : undefined
+      approvalProposal: approvalProposal ? summarizeApprovalProposal(approvalProposal, refs.approvalProposal) : undefined,
+      layerInterop
     }),
     operatorGuidanceOnly: true,
     localOnly: true,
@@ -252,6 +261,10 @@ async function summarizeProject(root, projectInput) {
     summary.operatorHealthExplanations = operatorHealthExplanations
   }
 
+  if (layerInterop.state !== 'layer-refs-not-attached' || layerInterop.needsOperatorAttention) {
+    summary.layerInterop = layerInterop
+  }
+
   return summary
 }
 
@@ -261,7 +274,8 @@ function summarizeProjectSafeNextAction({
   missingArtifactRefs,
   providerLoopStatus,
   providerLoopDecision,
-  approvalProposal
+  approvalProposal,
+  layerInterop
 }) {
   if (missingArtifactRefs.length > 0) return missingArtifactRefs[0].nextAction
   if (providerLoopStatus?.state === 'failed_review_only' && !providerLoopDecision) {
@@ -269,6 +283,7 @@ function summarizeProjectSafeNextAction({
   }
   if (providerLoopStatus?.needsProductionAttention) return providerLoopStatus.productionNextAction
   if (approvalProposal?.needsOperatorAttention) return approvalProposal.nextAction
+  if (layerInterop?.needsOperatorAttention) return layerInterop.attentionRows[0].nextAction
   if (operatorHealthExplanations.length > 0) return operatorHealthExplanations[0].nextAction
   if (blockingIssues.length > 0) return 'Inspect project health blocking issues and regenerate the indicated local records.'
   return 'No local cross-project attention row is blocking inspection.'
@@ -278,6 +293,22 @@ function summarizeCrossProjectSafeNextAction(projectSummaries) {
   const attention = attentionRows(projectSummaries)
   if (attention.length === 0) return 'No local cross-project attention rows are blocking inspection.'
   return attention[0].safeNextAction ?? 'Inspect the first attention row and run its local repair command.'
+}
+
+function summarizeProjectLayerInterop(loaded, refs) {
+  if (loaded.operatorPacketIndex?.layerInterop) {
+    return {
+      ...loaded.operatorPacketIndex.layerInterop,
+      sourceRef: refs.operatorPacketIndex,
+      localOnly: true,
+      operatorGuidanceOnly: true
+    }
+  }
+
+  return summarizeLayerInteropFromRecords(Object.entries(loaded).map(([name, record]) => ({
+    record,
+    relativePath: refs[name]?.path
+  })))
 }
 
 async function readOptionalRecord(projectRoot, relativePath) {
@@ -306,6 +337,14 @@ function nextActionForMissingArtifact(name) {
 
   if (name === 'operatorPacketIndex') {
     return 'Run npm run operator:index for the project.'
+  }
+
+  if (name === 'authorityPrerequisites') {
+    return 'Run npm run production:authority-prereqs for the project.'
+  }
+
+  if (name === 'authorityHandoffCandidate') {
+    return 'Run npm run production:authority-handoff for the project.'
   }
 
   if (name === 'providerLoopStatus') {
@@ -452,11 +491,14 @@ function summarizeProjects(projectSummaries) {
   const providerLoopRetryDecisions = projectSummaries.filter((project) => project.providerLoopDecision?.allowsExplicitRetryAttempt).length
   const approvalProposals = projectSummaries.filter((project) => project.approvalProposal).length
   const approvalProposalsWithAttention = projectSummaries.filter((project) => project.approvalProposal?.needsOperatorAttention).length
+  const layerInteropProjects = projectSummaries.filter((project) => project.layerInterop?.state === 'layer-refs-attached-review-only').length
+  const layerInteropAttention = projectSummaries.filter((project) => project.layerInterop?.needsOperatorAttention).length
   const attentionRows = projectSummaries.filter((project) => (
     project.handoffState === 'needs-local-attention' ||
     project.providerLoopStatus?.needsOperatorAttention === true ||
     project.providerLoopStatus?.needsProductionAttention === true ||
     project.approvalProposal?.needsOperatorAttention === true ||
+    project.layerInterop?.needsOperatorAttention === true ||
     project.blockingIssues.length > 0 ||
     project.warnings.length > 0
   )).length
@@ -473,6 +515,8 @@ function summarizeProjects(projectSummaries) {
     providerLoopRetryDecisions,
     approvalProposals,
     approvalProposalsWithAttention,
+    layerInteropProjects,
+    layerInteropAttention,
     attentionRows,
     blockingIssues: projectSummaries.reduce((sum, project) => sum + project.blockingIssues.length, 0),
     missingArtifacts,

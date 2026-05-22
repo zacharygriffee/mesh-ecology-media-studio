@@ -213,6 +213,8 @@
     "providerLoopRetryDecisions": 0,
     "approvalProposals": 0,
     "approvalProposalsWithAttention": 0,
+    "layerInteropProjects": 0,
+    "layerInteropAttention": 0,
     "attentionRows": 3,
     "blockingIssues": 5,
     "missingArtifacts": 0,

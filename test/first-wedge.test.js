@@ -4961,6 +4961,96 @@ test('cross-project operator index reports missing artifact refs without failing
   assert.equal(validateRequiredRecord(result.index), true)
 })
 
+test('cross-project operator index surfaces Layer interop attention from operator index refs', async () => {
+  const baseDir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-cross-project-layer-'))
+  const projectDir = path.join(baseDir, 'layer-mismatch-project')
+  await runVeniceProductionRehearsal({ projectDir })
+  await writeProductionAuthorityPrerequisiteReport({
+    projectDir,
+    layerRef: 'layer:operator-local:operator-alpha',
+    layerProfileRef: 'layer-profile:operator-local:v0:alpha',
+    continuityRef: 'layer-continuity-ref:operator-local:alpha',
+    desyncPostureRef: 'layer-desync-posture:operator-local:alpha',
+    rbcProfileRefs: ['rbc-profile:operator-local-alpha']
+  })
+  await writeAuthorityHandoffCandidate({
+    projectDir,
+    quiet: true,
+    layerRef: 'layer:operator-local:operator-beta',
+    layerProfileRef: 'layer-profile:operator-local:v0:beta',
+    continuityRef: 'layer-continuity-ref:operator-local:beta',
+    desyncPostureRef: 'layer-desync-posture:operator-local:beta',
+    rbcProfileRefs: ['rbc-profile:operator-local-beta']
+  })
+  await captureConsole(() => writeOperatorPacketIndex({ projectDir }))
+
+  const inputList = {
+    schema: 'media.cross_project_inspection_input_list.local.v1',
+    inputListId: 'layer-interop-cross-project-fixture',
+    createdAt: '2026-05-20T00:00:00.000Z',
+    mode: 'standalone-local',
+    projects: [{
+      projectId: 'layer-mismatch-project',
+      label: 'Layer mismatch project',
+      rootRef: {
+        kind: 'local-directory',
+        id: 'layer-mismatch-project',
+        schema: 'media.local_ref.v1',
+        path: 'layer-mismatch-project',
+        localOnly: true
+      },
+      artifactRefs: {
+        operatorPacketIndex: {
+          kind: 'media-operator-packet-index',
+          id: 'operator-packet-index-venice-smoke-project',
+          schema: 'media.operator_packet_index.local.v1',
+          path: 'records/exports/media-operator-packet-index.local.json',
+          localOnly: true
+        }
+      }
+    }],
+    warnings: [
+      'Layer interop cross-project fixture only.'
+    ],
+    operatorGuidanceOnly: true,
+    localOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    providerTruth: false,
+    edgeRuntimeBuilt: false,
+    edgeRuntimeVerified: false,
+    localTruthLabel: 'local draft',
+    truthStatus: 'not mesh truth; not distributed proof; not ratified shared state'
+  }
+  await writeFile(path.join(baseDir, 'input-list.local.json'), `${JSON.stringify(inputList, null, 2)}\n`)
+
+  const { result, lines } = await captureConsole(() => writeCrossProjectOperatorIndex({
+    baseDir,
+    inputList: 'input-list.local.json',
+    output: 'cross-project-layer.local.json'
+  }))
+
+  assert.equal(result.index.summary.layerInteropProjects, 1)
+  assert.equal(result.index.summary.layerInteropAttention, 1)
+  assert.equal(result.index.summary.attentionRows, 1)
+  assert.equal(result.index.projectSummaries[0].layerInterop.state, 'layer-refs-attached-review-only')
+  assert.deepEqual(result.index.projectSummaries[0].layerInterop.issueCodes, [
+    'layer_ref_mismatch',
+    'layer_profile_ref_mismatch',
+    'layer_continuity_ref_mismatch',
+    'layer_desync_posture_ref_mismatch',
+    'layer_rbc_profile_ref_mismatch'
+  ])
+  assert.equal(result.index.projectSummaries[0].layerInterop.layerAuthority, false)
+  assert.equal(result.index.projectSummaries[0].layerInterop.continuityClaimed, false)
+  assert.equal(result.index.projectSummaries[0].safeNextAction, 'Regenerate authority prerequisite and handoff records with the same intended Layer refs, or remove stale authority posture records.')
+  assert.ok(lines.some((line) => line.includes('layerInterop=1') && line.includes('layerAttention=1')))
+  assert.ok(lines.some((line) => line.includes('layer interop: state=layer-refs-attached-review-only')))
+  assert.equal(validateRequiredRecord(inputList), true)
+  assert.equal(validateRequiredRecord(result.index), true)
+})
+
 test('cross-project input list rejects unsafe project refs', () => {
   const inputList = createCrossProjectInputList([
     { projectId: 'unsafe-project', rootPath: '../outside' }

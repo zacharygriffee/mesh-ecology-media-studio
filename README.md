@@ -298,6 +298,8 @@ without treating them as authority or continuity.
 If prerequisite and handoff records disagree about Layer refs, those same
 surfaces show local Layer interop attention so the operator can regenerate the
 stale record set. This is consistency guidance only, not Layer validation.
+`operator:cross-project-index` can also surface that Layer attention when an
+input project explicitly includes its operator packet index.
 
 `request_changes` rough-cut decisions can regenerate the local rough-cut refs:
 
