@@ -298,6 +298,7 @@ function printMediaSummary(summary) {
   ].join(' | '))
   console.log([
     `package authority: localPackageReviews=${summary.packageAuthority.localPackageReviews}`,
+    `needsRework=${summary.packageAuthority.packageReworkRequests}`,
     `staleReviews=${summary.packageAuthority.staleReviews}`,
     `publicationAuthorityRequests=${summary.packageAuthority.publicationAuthorityRequests}`,
     `staleRequests=${summary.packageAuthority.staleRequests}`,
@@ -565,7 +566,7 @@ function formatOutputIntegrityRow(label, row, issueCodes) {
 function summarizePackageAuthority(records, authorityPrerequisites) {
   const packageReviewRows = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaOperatorDecision)
-    .filter((entry) => entry.record.decisionType === 'review_local_package')
+    .filter((entry) => entry.record.localPackageReview)
     .map((entry) => summarizeLocalPackageReview(entry, records, authorityPrerequisites))
     .sort(compareRecordCreatedAtDescending)
   const publicationRequestRows = records
@@ -581,8 +582,9 @@ function summarizePackageAuthority(records, authorityPrerequisites) {
     localProductionPackageComplete: authorityPrerequisites.localProductionPackageComplete ?? 0,
     localDeliveryEvidenceIntact: authorityPrerequisites.localDeliveryEvidenceIntact ?? 0,
     outputIntegrityBlockingIssues: authorityPrerequisites.outputIntegrityBlockingIssues ?? 0,
-    localPackageReviews: packageReviewRows.length,
-    freshReviews: packageReviewRows.filter((row) => row.freshnessState === 'fresh').length,
+    localPackageReviews: packageReviewRows.filter((row) => row.localPackageReviewed).length,
+    packageReworkRequests: packageReviewRows.filter((row) => row.needsRework).length,
+    freshReviews: packageReviewRows.filter((row) => row.localPackageReviewed && row.freshnessState === 'fresh').length,
     staleReviews: packageReviewRows.filter((row) => row.freshnessState === 'stale').length,
     publicationAuthorityRequests: publicationRequestRows.length,
     freshRequests: publicationRequestRows.filter((row) => row.freshnessState === 'fresh').length,
@@ -622,12 +624,18 @@ function summarizeLocalPackageReview(entry, records, authorityPrerequisites) {
     },
     createdAt: entry.record.createdAt,
     freshnessState: freshness.state,
-    issueCodes: freshness.issueCodes,
+    issueCodes: [...new Set([
+      ...(entry.record.localPackageReview?.issueCodes ?? []),
+      ...freshness.issueCodes
+    ])],
     blockingIssueCodes: freshness.blockingIssueCodes,
     attentionIssueCodes: freshness.attentionIssueCodes,
     requestReviewBlocked: freshness.requestReviewBlocked,
     integrityBlocking: freshness.integrityBlocking,
-    nextAction: freshness.nextAction,
+    localPackageReviewed: entry.record.localPackageReview?.localPackageReviewed === true,
+    needsRework: entry.record.localPackageReview?.needsRework === true,
+    packageReviewState: entry.record.localPackageReview?.packageReviewState ?? 'unknown',
+    nextAction: entry.record.localPackageReview?.needsRework === true ? entry.record.nextAction : freshness.nextAction,
     publicationAuthorization: false,
     productionReady: false,
     localOnly: true,

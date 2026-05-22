@@ -156,6 +156,7 @@ export async function createProductionAuthorityPrerequisiteReport({
     renderAuthorizationMissing: rows.length,
     exportAuthorizationMissing: rows.length,
     localPackageReviews: packageAuthoritySummary.localPackageReviews,
+    localPackageReworkRequests: packageAuthoritySummary.packageReworkRequests,
     localPackageReviewsFresh: packageAuthoritySummary.freshReviews,
     localPackageReviewsStale: packageAuthoritySummary.staleReviews,
     publicationAuthorityRequests: packageAuthoritySummary.publicationAuthorityRequests,
@@ -383,7 +384,7 @@ function summarizeCandidateAuthorityPrerequisites(asset, records, outputIntegrit
 function summarizePackageAuthorityForPrereqs(records, report) {
   const packageReviewRows = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaOperatorDecision)
-    .filter((entry) => entry.record.decisionType === 'review_local_package')
+    .filter((entry) => entry.record.localPackageReview)
     .map((entry) => {
       const freshness = evaluateLocalPackageReviewFreshness({
         decision: entry.record,
@@ -394,12 +395,18 @@ function summarizePackageAuthorityForPrereqs(records, report) {
         kind: 'local-package-review',
         ref: refForEntry('media-operator-decision', entry),
         freshnessState: freshness.state,
-        issueCodes: freshness.issueCodes,
+        issueCodes: [...new Set([
+          ...(entry.record.localPackageReview?.issueCodes ?? []),
+          ...freshness.issueCodes
+        ])],
         blockingIssueCodes: freshness.blockingIssueCodes,
         attentionIssueCodes: freshness.attentionIssueCodes,
         requestReviewBlocked: freshness.requestReviewBlocked,
         integrityBlocking: freshness.integrityBlocking,
-        nextAction: freshness.nextAction,
+        localPackageReviewed: entry.record.localPackageReview?.localPackageReviewed === true,
+        needsRework: entry.record.localPackageReview?.needsRework === true,
+        packageReviewState: entry.record.localPackageReview?.packageReviewState ?? 'unknown',
+        nextAction: entry.record.localPackageReview?.needsRework === true ? entry.record.nextAction : freshness.nextAction,
         publicationAuthorization: false,
         productionReady: false,
         localOnly: true,
@@ -433,8 +440,9 @@ function summarizePackageAuthorityForPrereqs(records, report) {
   const rows = [...packageReviewRows, ...publicationRequestRows]
 
   return {
-    localPackageReviews: packageReviewRows.length,
-    freshReviews: packageReviewRows.filter((row) => row.freshnessState === 'fresh').length,
+    localPackageReviews: packageReviewRows.filter((row) => row.localPackageReviewed).length,
+    packageReworkRequests: packageReviewRows.filter((row) => row.needsRework).length,
+    freshReviews: packageReviewRows.filter((row) => row.localPackageReviewed && row.freshnessState === 'fresh').length,
     staleReviews: packageReviewRows.filter((row) => row.freshnessState === 'stale').length,
     publicationAuthorityRequests: publicationRequestRows.length,
     freshRequests: publicationRequestRows.filter((row) => row.freshnessState === 'fresh').length,
@@ -474,6 +482,7 @@ function printProductionAuthorityPrerequisiteReport(report, output = defaultOutp
     `deliveryCreated=${report.deliveryCreated ?? 0}`,
     `exportPerformed=${report.exportPerformed ?? 0}`,
     `localPackageReviews=${report.localPackageReviews ?? 0}`,
+    `localPackageReworkRequests=${report.localPackageReworkRequests ?? 0}`,
     `publicationAuthorityRequests=${report.publicationAuthorityRequests ?? 0}`,
     `staleAuthorityRequests=${report.publicationAuthorityRequestsStale ?? 0}`,
     `blockedAuthorityRequests=${report.publicationAuthorityRequestsBlocked ?? 0}`,

@@ -21,6 +21,7 @@ const truthStatus = 'not mesh truth; not distributed proof; not ratified shared 
 function parseArgs(argv) {
   const args = {
     projectDir: defaultProjectDir,
+    decision: 'review_local_package',
     operatorRef: 'local-operator',
     reason: undefined,
     output: defaultOutput,
@@ -34,6 +35,9 @@ function parseArgs(argv) {
 
     if (arg === '--project-dir') {
       args.projectDir = next
+      i += 1
+    } else if (arg === '--decision') {
+      args.decision = next
       i += 1
     } else if (arg === '--operator-ref') {
       args.operatorRef = next
@@ -56,6 +60,7 @@ function parseArgs(argv) {
 
 export async function writeLocalPackageReviewDecision({
   projectDir = defaultProjectDir,
+  decision: requestedDecision = 'review_local_package',
   operatorRef = 'local-operator',
   reason,
   output = defaultOutput,
@@ -71,6 +76,7 @@ export async function writeLocalPackageReviewDecision({
   const decision = createLocalPackageReviewDecision({
     records,
     prerequisiteReport,
+    decision: requestedDecision,
     operatorRef,
     reason,
     createdAt
@@ -97,25 +103,33 @@ export async function writeLocalPackageReviewDecision({
 export function createLocalPackageReviewDecision({
   records,
   prerequisiteReport,
+  decision: requestedDecision = 'review_local_package',
   operatorRef = 'local-operator',
   reason,
   createdAt = nowIso()
 }) {
   assertPackageReviewable(prerequisiteReport)
+  assertLocalPackageReviewDecision(requestedDecision)
   const projectId = prerequisiteReport.projectId
   const sourceRefs = packageReviewSourceRefs(records)
+  const reviewed = requestedDecision === 'review_local_package'
+  const needsRework = requestedDecision === 'request_changes'
   const decision = {
     schema: artifactKinds.mediaOperatorDecision,
-    decisionId: `decision-local-package-${projectId}-review_local_package`,
+    decisionId: `decision-local-package-${projectId}-${requestedDecision}`,
     projectId,
     subjectRef: makeRef('media-local-production-package', `local-production-package-${projectId}`, 'media.local_production_package.local.v1'),
-    decisionType: 'review_local_package',
+    decisionType: requestedDecision,
     operatorRef,
-    reason: reason ?? 'Operator locally reviewed the complete local output package after output integrity checks passed.',
+    reason: reason ?? localPackageReviewReason(requestedDecision),
     evidenceRefs: sourceRefs,
     localPackageReview: {
       projectId,
-      localPackageReviewed: true,
+      packageReviewState: reviewed ? 'reviewed_local_authority_missing' : 'needs_rework',
+      localPackageReviewed: reviewed,
+      requestChanges: needsRework,
+      needsRework,
+      issueCodes: needsRework ? ['local_package_needs_rework'] : [],
       localProductionPackageComplete: prerequisiteReport.localProductionPackageComplete ?? 0,
       localDeliveryEvidencePresent: prerequisiteReport.localDeliveryEvidencePresent ?? 0,
       localDeliveryEvidenceIntact: prerequisiteReport.localDeliveryEvidenceIntact ?? 0,
@@ -129,7 +143,7 @@ export function createLocalPackageReviewDecision({
       operatorGuidanceOnly: true
     },
     reviewAcknowledged: true,
-    nextAction: 'Create a publication/export authority request candidate if the operator wants future authority review; this local review does not authorize publication.',
+    nextAction: localPackageReviewNextAction(requestedDecision),
     localDecisionOnly: true,
     operatorGuidanceOnly: true,
     executionPerformed: false,
@@ -177,10 +191,32 @@ export function assertPackageReviewable(prerequisiteReport) {
   }
 }
 
+function assertLocalPackageReviewDecision(decision) {
+  if (!['review_local_package', 'request_changes'].includes(decision)) {
+    throw new Error(`Unsupported local package review decision: ${decision}`)
+  }
+}
+
+function localPackageReviewReason(decision) {
+  if (decision === 'request_changes') {
+    return 'Operator locally reviewed the completed output package and requested changes before any publication/export authority request.'
+  }
+  return 'Operator locally reviewed the complete local output package after output integrity checks passed.'
+}
+
+function localPackageReviewNextAction(decision) {
+  if (decision === 'request_changes') {
+    return 'Revise the rough cut or local output package, regenerate output integrity, and review the local package again before requesting publication/export authority.'
+  }
+  return 'Create a publication/export authority request candidate if the operator wants future authority review; this local review does not authorize publication.'
+}
+
 export function formatLocalPackageReviewDecisionSummary(decision, output = defaultOutput) {
   return [
     `local package review decision: ${decision.decisionType}`,
     `project=${decision.projectId}`,
+    `state=${decision.localPackageReview.packageReviewState}`,
+    `needsRework=${decision.localPackageReview.needsRework}`,
     `localProductionPackageComplete=${decision.localPackageReview.localProductionPackageComplete}`,
     `localDeliveryEvidenceIntact=${decision.localPackageReview.localDeliveryEvidenceIntact}`,
     `outputIntegrityBlockingIssues=${decision.localPackageReview.outputIntegrityBlockingIssues}`,

@@ -4030,6 +4030,60 @@ test('local production output runner can keep ffmpeg disabled without blocking l
   assert.equal(prereqs.productionReady, 0)
 })
 
+test('local package review can request changes without publication authority', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-local-package-request-changes-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+  await runLocalProductionOutput({ projectDir: dir, quiet: true })
+
+  const output = await captureConsole(() => writeLocalPackageReviewDecision({
+    projectDir: dir,
+    decision: 'request_changes',
+    reason: 'Delivery package needs local rework before authority review.'
+  }))
+  const decision = output.result.decision
+
+  assert.equal(decision.schema, 'media.operator_decision.v1')
+  assert.equal(decision.decisionType, 'request_changes')
+  assert.equal(decision.localPackageReview.packageReviewState, 'needs_rework')
+  assert.equal(decision.localPackageReview.localPackageReviewed, false)
+  assert.equal(decision.localPackageReview.needsRework, true)
+  assert.ok(decision.localPackageReview.issueCodes.includes('local_package_needs_rework'))
+  assert.equal(decision.publicationAuthorization, false)
+  assert.equal(decision.productionReady ?? decision.localPackageReview.productionReady, false)
+  assert.equal(decision.freshnessPosture.state, 'fresh')
+  assert.ok(output.lines.some((line) =>
+    line.includes('local package review decision: request_changes') &&
+    line.includes('state=needs_rework') &&
+    line.includes('needsRework=true') &&
+    line.includes('productionReady=false')
+  ))
+
+  await assert.rejects(
+    () => writePublicationAuthorityRequestCandidate({ projectDir: dir, quiet: true }),
+    /requires local package review decision/
+  )
+
+  const prereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
+  assert.equal(prereqs.localPackageReviews, 0)
+  assert.equal(prereqs.localPackageReworkRequests, 1)
+  assert.equal(prereqs.publicationAuthorityRequests, 1)
+  assert.equal(prereqs.publicationAuthorityRequestsStale, 1)
+  assert.equal(prereqs.productionReady, 0)
+  const mediaSummary = await captureConsole(() => writeMediaSummary({ projectDir: dir }))
+  assert.equal(mediaSummary.result.packageAuthority.localPackageReviews, 0)
+  assert.equal(mediaSummary.result.packageAuthority.packageReworkRequests, 1)
+  assert.equal(mediaSummary.result.packageAuthority.staleRequests, 1)
+  assert.ok(mediaSummary.lines.some((line) =>
+    line.startsWith('package authority: localPackageReviews=0 | needsRework=1') &&
+    line.includes('publicationAuthorityRequests=1') &&
+    line.includes('productionReady=0')
+  ))
+  assert.ok(mediaSummary.lines.some((line) =>
+    line.includes('package-authority:') &&
+    line.includes('local_package_needs_rework')
+  ))
+})
+
 test('local production output runner carries two accepted production items through reviewable delivery', async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-local-output-two-items-'))
   await runVeniceProductionRehearsal({ projectDir: dir })
@@ -4246,7 +4300,7 @@ test('local output integrity blocks production package when export delivery byte
   assert.equal(mediaSummary.result.packageAuthority.blockingRequests, 1)
   assert.equal(mediaSummary.result.packageAuthority.integrityBlockingRequests, 1)
   assert.ok(mediaSummary.lines.some((line) => line.startsWith('output integrity: deliveryIntact=0 | blocking=')))
-  assert.ok(mediaSummary.lines.some((line) => line.startsWith('package authority: localPackageReviews=1 | staleReviews=1 | publicationAuthorityRequests=1 | staleRequests=1 | blockingRequests=1')))
+  assert.ok(mediaSummary.lines.some((line) => line.startsWith('package authority: localPackageReviews=1 | needsRework=0 | staleReviews=1 | publicationAuthorityRequests=1 | staleRequests=1 | blockingRequests=1')))
   assert.ok(mediaSummary.lines.some((line) => line.includes('package-authority:') && line.includes('current_output_integrity_blocking')))
   assert.ok(mediaSummary.lines.some((line) => line.includes('output-integrity blocking:') && line.includes('missing_export_delivery_bytes')))
 
