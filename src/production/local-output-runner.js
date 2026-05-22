@@ -2,6 +2,8 @@ import { fileURLToPath } from 'node:url'
 
 import { createMediaSummary } from '../assets/media-summary.js'
 import { nowIso } from '../contracts/constructors.js'
+import { writeEdgeCompatibilityBundle } from '../seams/edge-compatibility-bundle.js'
+import { writeOperatorPacketIndex } from '../seams/operator-packet-index.js'
 import { writeAuthorityHandoffCandidate } from './authority-handoff-candidate.js'
 import { createProductionAuthorityPrerequisiteReport, writeProductionAuthorityPrerequisiteReport } from './authority-prerequisites.js'
 import { writeExportCandidate } from './export-candidate.js'
@@ -107,6 +109,12 @@ export async function runLocalProductionOutput({
   const authorityHandoff = await recordStep(steps, 'authority-handoff', () =>
     writeAuthorityHandoffCandidate({ projectDir, quiet: true, createdAt: stepTime() })
   )
+  const operatorIndex = await recordStep(steps, 'operator-index', () =>
+    writeOperatorPacketIndex({ projectDir, quiet: true })
+  )
+  const edgeCompatibility = await recordStep(steps, 'edge-compatibility-bundle', () =>
+    writeEdgeCompatibilityBundle({ projectDir, quiet: true })
+  )
   const mediaSummary = await createMediaSummary({ projectDir })
   const finalPrereqs = await createProductionAuthorityPrerequisiteReport({ projectDir })
 
@@ -126,7 +134,9 @@ export async function runLocalProductionOutput({
       exportPlanId: exportPlan.result.plan?.planId ?? null,
       localExportReceiptId: localExport.result?.receipt?.exportReceiptId ?? null,
       ffmpegExportReceiptId: ffmpegExport.result?.receipt?.exportReceiptId ?? null,
-      authorityHandoffCandidateId: authorityHandoff.result.candidate?.handoffCandidateId ?? null
+      authorityHandoffCandidateId: authorityHandoff.result.candidate?.handoffCandidateId ?? null,
+      operatorPacketIndexId: operatorIndex.result.index?.indexId ?? null,
+      edgeCompatibilityBundleId: edgeCompatibility.result.bundle?.compatibilityBundleId ?? null
     },
     summary: {
       roughCutItems: mediaSummary.productionRoughCuts.itemRefs,

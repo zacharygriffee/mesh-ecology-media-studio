@@ -208,8 +208,9 @@ themselves. Render plans and render receipts can produce local preview evidence,
 but those receipts are still not export delivery, publication authorization, or
 production readiness.
 `npm run production:local-output` chains the existing local rough-cut, render,
-export, authority-prereq, and handoff commands for operator convenience. It does
-not create a new authority path, call Edge, publish, or make production ready.
+export, authority-prereq, handoff, operator-index, and Edge-compatible bundle
+commands for operator convenience. It does not create a new authority path, call
+Edge, publish, or make production ready.
 Use `--disable-ffmpeg` when the local runner should avoid MP4 render/export
 execution and keep only contact-sheet plus local package-copy evidence.
 

@@ -21,7 +21,8 @@ function parseArgs(argv) {
   const args = {
     projectDir: defaultProjectDir,
     output: defaultOutput,
-    print: false
+    print: false,
+    quiet: false
   }
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -36,6 +37,8 @@ function parseArgs(argv) {
       i += 1
     } else if (arg === '--print') {
       args.print = true
+    } else if (arg === '--quiet') {
+      args.quiet = true
     }
   }
 
@@ -45,7 +48,8 @@ function parseArgs(argv) {
 export async function writeOperatorPacketIndex({
   projectDir = defaultProjectDir,
   output = defaultOutput,
-  print = false
+  print = false,
+  quiet = false
 } = {}) {
   assertSafeLocalPath(output)
 
@@ -273,7 +277,7 @@ export async function writeOperatorPacketIndex({
 
   if (print) {
     console.log(JSON.stringify(index, null, 2))
-  } else {
+  } else if (!quiet) {
     console.log(formatOperatorPacketIndexSummary(index, output))
     for (const explanation of index.operatorHealthExplanations) {
       console.log(formatHealthExplanation(explanation))

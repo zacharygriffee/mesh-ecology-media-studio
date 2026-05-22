@@ -79,7 +79,8 @@ function parseArgs(argv) {
   const args = {
     projectDir: defaultProjectDir,
     output: defaultOutput,
-    print: false
+    print: false,
+    quiet: false
   }
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -94,6 +95,8 @@ function parseArgs(argv) {
       i += 1
     } else if (arg === '--print') {
       args.print = true
+    } else if (arg === '--quiet') {
+      args.quiet = true
     }
   }
 
@@ -103,7 +106,8 @@ function parseArgs(argv) {
 export async function writeEdgeCompatibilityBundle({
   projectDir = defaultProjectDir,
   output = defaultOutput,
-  print = false
+  print = false,
+  quiet = false
 } = {}) {
   assertSafeLocalPath(output)
 
@@ -216,7 +220,7 @@ export async function writeEdgeCompatibilityBundle({
 
   if (print) {
     console.log(JSON.stringify(bundle, null, 2))
-  } else {
+  } else if (!quiet) {
     console.log(`edge compatibility bundle: ${output}`)
     console.log(`edge targets: ${bundle.edgeShapeTargets.map((target) => target.edgeArtifactKind).join(', ')}`)
   }

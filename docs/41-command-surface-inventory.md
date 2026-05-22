@@ -43,7 +43,7 @@ text is not the durable contract.
 | `npm run production:export-plan` | yes | yes | `--print` | yes | resolves export candidate refs and target output path only; no media bytes read, delivery output, publication, or authority |
 | `npm run production:export-local-package` | yes | yes | `--print` | yes | copies a local preview into a delivery-candidate package; no publication authorization, production readiness, or authority |
 | `npm run production:export-ffmpeg` | yes | yes | `--print` | yes | renders a local MP4 delivery candidate with ffmpeg by default; `--disable-ffmpeg` skips execution; no publication authorization, production readiness, or authority |
-| `npm run production:local-output` | yes | yes | `--print` | yes | orchestrates existing rough-cut, review, render, export, authority-prereq, and handoff commands; `--disable-ffmpeg` keeps execution to contact-sheet and local package-copy evidence; no new authority, publication, Edge call, or production readiness |
+| `npm run production:local-output` | yes | yes | `--print` | yes | orchestrates existing rough-cut, review, render, export, authority-prereq, handoff, operator-index, and Edge-compatible bundle commands; `--disable-ffmpeg` keeps execution to contact-sheet and local package-copy evidence; no new authority, publication, Edge call, or production readiness |
 | `npm run provider:venice:rehearse-production` | yes | yes | `--print` | yes | composes the local Venice loop, approval proposal, capsule, bundle, inspection, operator index, and Edge-compatible bundle; no live provider unless explicitly requested |
 
 ## Byte And Resource Posture

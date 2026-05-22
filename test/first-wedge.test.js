@@ -3820,10 +3820,12 @@ test('local production output runner creates reviewable delivery without authori
   assert.ok(result.refs.localExportReceiptId)
   assert.ok(result.refs.ffmpegExportReceiptId)
   assert.ok(result.refs.authorityHandoffCandidateId)
+  assert.ok(result.refs.operatorPacketIndexId)
+  assert.ok(result.refs.edgeCompatibilityBundleId)
   assert.equal(result.steps.every((step) => step.authorityGranted === false), true)
   assert.equal(result.steps.every((step) => step.productionReady === false), true)
   assert.ok(output.lines.some((line) =>
-    line === 'production local output: project=venice-smoke-project | steps=13/13 | roughCutItems=1 | roughCutReviewed=1 | renderReceipts=2 | exportReceipts=2 | ffmpegDeliveryReceipts=1 | localDeliveryEvidencePresent=2 | localProductionPackageComplete=1 | pendingAuthority=1 | productionReady=0'
+    line === 'production local output: project=venice-smoke-project | steps=15/15 | roughCutItems=1 | roughCutReviewed=1 | renderReceipts=2 | exportReceipts=2 | ffmpegDeliveryReceipts=1 | localDeliveryEvidencePresent=2 | localProductionPackageComplete=1 | pendingAuthority=1 | productionReady=0'
   ))
   assert.ok(output.lines.some((line) => line.includes('no approval authority')))
 
@@ -3876,7 +3878,7 @@ test('local production output runner can keep ffmpeg disabled without blocking l
     step.productionReady === false
   ))
   assert.ok(output.lines.some((line) =>
-    line === 'production local output: project=venice-smoke-project | steps=11/13 | roughCutItems=1 | roughCutReviewed=1 | renderReceipts=1 | exportReceipts=1 | ffmpegDeliveryReceipts=0 | localDeliveryEvidencePresent=1 | localProductionPackageComplete=1 | pendingAuthority=1 | productionReady=0'
+    line === 'production local output: project=venice-smoke-project | steps=13/15 | roughCutItems=1 | roughCutReviewed=1 | renderReceipts=1 | exportReceipts=1 | ffmpegDeliveryReceipts=0 | localDeliveryEvidencePresent=1 | localProductionPackageComplete=1 | pendingAuthority=1 | productionReady=0'
   ))
 
   const summary = await createMediaSummary({ projectDir: dir })
@@ -3912,7 +3914,7 @@ test('local production output runner carries two accepted production items throu
   assert.equal(result.nonClaims.publicationAuthorization, false)
   assert.equal(result.nonClaims.productionReady, false)
   assert.ok(output.lines.some((line) =>
-    line === 'production local output: project=venice-smoke-project | steps=13/13 | roughCutItems=2 | roughCutReviewed=1 | renderReceipts=2 | exportReceipts=2 | ffmpegDeliveryReceipts=1 | localDeliveryEvidencePresent=2 | localProductionPackageComplete=2 | pendingAuthority=2 | productionReady=0'
+    line === 'production local output: project=venice-smoke-project | steps=15/15 | roughCutItems=2 | roughCutReviewed=1 | renderReceipts=2 | exportReceipts=2 | ffmpegDeliveryReceipts=1 | localDeliveryEvidencePresent=2 | localProductionPackageComplete=2 | pendingAuthority=2 | productionReady=0'
   ))
 
   const roughCut = JSON.parse(await readFile(path.join(dir, 'records/production/media-rough-cut-capsule.local.json'), 'utf8'))
