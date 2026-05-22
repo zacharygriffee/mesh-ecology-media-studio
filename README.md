@@ -355,6 +355,8 @@ from authority: fresh export receipts can show `localDeliveryEvidencePresent`,
 `deliveryCreated=true`, and `exportPerformed=true`; ffmpeg MP4 delivery
 receipts are counted distinctly from package-copy receipts. Publication
 authorization and production readiness remain false.
+The same delivery-evidence distinction appears in `media:summary`,
+`operator:index`, Venice smoke inspection, and Edge-compatible bundles.
 
 ## Inspection And Edge-Compatible Artifacts
 

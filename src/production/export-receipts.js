@@ -10,8 +10,13 @@ export function summarizeExportReceipts(records = []) {
 
   return {
     total: rows.length,
+    localPackageCopyExportReceipts: rows.filter((row) => row.exportKind === 'local-review-package-copy').length,
+    ffmpegDeliveryReceipts: rows.filter((row) => row.exportKind === 'local-ffmpeg-review-delivery').length,
     exportPerformed: rows.filter((row) => row.exportPerformed).length,
     deliveryCreated: rows.filter((row) => row.deliveryCreated).length,
+    localDeliveryEvidencePresent: rows
+      .filter((row) => row.freshnessState === 'fresh')
+      .filter((row) => row.exportPerformed && row.deliveryCreated).length,
     productionReady: rows.filter((row) => row.productionReady).length,
     publicationAuthorization: rows.filter((row) => row.publicationAuthorization).length,
     fresh: rows.filter((row) => row.freshnessState === 'fresh').length,

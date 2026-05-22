@@ -7,6 +7,7 @@ import { makeRef, nowIso } from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
+import { summarizeExportReceipts } from '../production/export-receipts.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
@@ -494,10 +495,14 @@ function createExportDeliverySummary({ sources }) {
     schema: record.schema,
     relativePath
   }))
+  const exportReceiptSummary = summarizeExportReceipts(Object.values(sources))
 
   return {
     summaryKind: 'studio-export-delivery-summary',
     exportReceipts: refs.length,
+    localPackageCopyExportReceipts: exportReceiptSummary.localPackageCopyExportReceipts,
+    ffmpegDeliveryReceipts: exportReceiptSummary.ffmpegDeliveryReceipts,
+    localDeliveryEvidencePresent: exportReceiptSummary.localDeliveryEvidencePresent,
     deliveryCreated: exportEntries.filter((entry) => entry.record.deliveryCreated === true).length,
     exportPerformed: exportEntries.filter((entry) => entry.record.exportPerformed === true).length,
     publicationAuthorization: false,

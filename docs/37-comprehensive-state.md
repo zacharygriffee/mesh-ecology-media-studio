@@ -475,6 +475,9 @@ summary distinguishes render receipts from export receipts, counts ffmpeg MP4
 delivery receipts separately, and reports `localDeliveryEvidencePresent` without
 claiming publication. Even then, `authorityMissing=true` and
 `productionReady=false` remain explicit.
+`media:summary`, `operator:index`, Venice inspection, and Edge-compatible
+bundles expose the same local delivery-evidence counts without turning them
+into export authorization or production readiness.
 The authority prerequisite and handoff commands can carry optional
 `mesh-ecology-layer` import refs (`layerRef`, `layerProfileRef`,
 `continuityRef`, `desyncPostureRef`, and RBC profile refs) so Studio packages

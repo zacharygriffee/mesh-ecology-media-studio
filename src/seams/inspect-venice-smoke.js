@@ -484,6 +484,8 @@ function printVeniceInspectionSummary(summary) {
     `renderReceiptsStale=${summary.renderReceipts?.stale ?? 0}`,
     `renderPerformed=${summary.renderReceipts?.renderPerformed ?? 0}`,
     `exportReceipts=${summary.exportReceipts?.total ?? 0}`,
+    `ffmpegDeliveryReceipts=${summary.exportReceipts?.ffmpegDeliveryReceipts ?? 0}`,
+    `localDeliveryEvidencePresent=${summary.exportReceipts?.localDeliveryEvidencePresent ?? 0}`,
     `exportPerformed=${summary.exportReceipts?.exportPerformed ?? summary.renderReceipts?.exportPerformed ?? 0}`,
     `layerInterop=${summary.layerInterop?.state ?? 'layer-refs-not-attached'}`,
     `byteContent=${summary.identity.byteContent.coveredContentIds}/${summary.identity.byteContent.expectedContentIds}`,

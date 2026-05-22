@@ -9,7 +9,7 @@ import { assertSafeLocalPath } from '../local/project-layout.js'
 import { summarizeProductionApprovalLane } from '../production/approval-lane.js'
 import { evaluateRenderExportCandidateFreshness } from '../production/render-export-candidate.js'
 import { summarizeRenderReceipt } from '../production/render-receipts.js'
-import { summarizeExportReceipt } from '../production/export-receipts.js'
+import { summarizeExportReceipt, summarizeExportReceipts } from '../production/export-receipts.js'
 import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
 
 const modulePath = fileURLToPath(import.meta.url)
@@ -135,6 +135,7 @@ export async function writeOperatorPacketIndex({
   const exportReceipts = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaExportReceiptLocal)
     .map((entry) => summarizeExportReceipt(entry.record, entry.relativePath, normalizeRecordPaths(records)))
+  const exportReceiptSummary = summarizeExportReceipts(normalizeRecordPaths(records))
   const layerInterop = summarizeLayerInteropFromRecords(records)
   const productionApprovalLane = summarizeProductionApprovalLane({
     assetRecords: records
@@ -213,6 +214,9 @@ export async function writeOperatorPacketIndex({
       renderReceipts: renderReceiptRefs.length,
       renderReceiptsNeedingAttention: renderReceipts.filter((receipt) => receipt.issueCodes.length > 0).length,
       exportReceipts: exportReceiptRefs.length,
+      localPackageCopyExportReceipts: exportReceiptSummary.localPackageCopyExportReceipts,
+      ffmpegDeliveryReceipts: exportReceiptSummary.ffmpegDeliveryReceipts,
+      localDeliveryEvidencePresent: exportReceiptSummary.localDeliveryEvidencePresent,
       exportReceiptsNeedingAttention: exportReceipts.filter((receipt) => receipt.issueCodes.length > 0).length,
       layerInteropState: layerInterop.state,
       layerInteropHandoffs: layerInterop.authorityHandoffRecords,
@@ -336,6 +340,8 @@ function formatOperatorPacketIndexSummary(index, output) {
     `renderExportCandidates=${summary.renderExportCandidates ?? 0}`,
     `renderReceipts=${summary.renderReceipts ?? 0}`,
     `exportReceipts=${summary.exportReceipts ?? 0}`,
+    `ffmpegDeliveryReceipts=${summary.ffmpegDeliveryReceipts ?? 0}`,
+    `localDeliveryEvidencePresent=${summary.localDeliveryEvidencePresent ?? 0}`,
     `layerInterop=${summary.layerInteropState ?? 'layer-refs-not-attached'}`,
     `layerAttention=${summary.layerInteropAttention ?? 0}`,
     `productionApprovalPending=${summary.productionApprovalPendingAuthority ?? 0}`,

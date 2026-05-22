@@ -267,6 +267,9 @@ function printMediaSummary(summary) {
   ].join(' | '))
   console.log([
     `export receipts: total=${summary.exportReceipts.total}`,
+    `localPackageCopy=${summary.exportReceipts.localPackageCopyExportReceipts}`,
+    `ffmpegDelivery=${summary.exportReceipts.ffmpegDeliveryReceipts}`,
+    `localDeliveryEvidence=${summary.exportReceipts.localDeliveryEvidencePresent}`,
     `deliveryCreated=${summary.exportReceipts.deliveryCreated}`,
     `exportPerformed=${summary.exportReceipts.exportPerformed}`,
     `publicationAuthorization=${summary.exportReceipts.publicationAuthorization}`,
