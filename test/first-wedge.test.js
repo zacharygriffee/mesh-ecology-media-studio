@@ -4168,6 +4168,15 @@ test('media summary safe next action ignores stale inactive export receipts when
   assert.equal(operatorIndex.index.summary.historicalExportReceiptAttention, 1)
   assert.equal(operatorIndex.index.summary.activeDeliveryReceipts, 1)
 
+  const healthOutput = await captureConsole(() => writeProjectHealth({ projectDir: dir, summary: true }))
+  assert.equal(healthOutput.result.health.exportReceiptSummary.currentAttentionRows.length, 0)
+  assert.equal(healthOutput.result.health.exportReceiptSummary.historicalAttentionRows.length, 1)
+  assert.equal(healthOutput.result.health.exportReceiptSummary.activeDeliveryReceipts, 1)
+  assert.ok(healthOutput.lines.some((line) => line.includes('exportReceipts: total=2') &&
+    line.includes('activeDelivery=1') &&
+    line.includes('currentAttention=0') &&
+    line.includes('historicalAttention=1')))
+
   const compatibility = await writeEdgeCompatibilityBundle({ projectDir: dir, quiet: true })
   assert.equal(compatibility.bundle.exportDeliverySummary.currentAttentionRows.length, 0)
   assert.equal(compatibility.bundle.exportDeliverySummary.historicalAttentionRows.length, 1)

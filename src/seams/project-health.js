@@ -10,6 +10,7 @@ import { readProjectRecords, writeProjectStatus } from './project-status.js'
 import { validateProductionRecordsInProject } from '../production/validate-production-records.js'
 import { evaluateRenderExportCandidateFreshness } from '../production/render-export-candidate.js'
 import { summarizeRenderReceipts } from '../production/render-receipts.js'
+import { summarizeExportReceipts } from '../production/export-receipts.js'
 import { evaluateLocalOutputIntegrity } from '../production/output-integrity.js'
 import { writeJsonAtomic } from '../local/atomic-json.js'
 
@@ -69,6 +70,7 @@ export async function writeProjectHealth({
   const productionRoughCutHealthExplanations = buildProductionRoughCutHealthExplanations(records)
   const renderExportCandidateSummary = summarizeRenderExportCandidates(records)
   const renderReceiptSummary = summarizeRenderReceipts(records)
+  const exportReceiptSummary = summarizeExportReceipts(records)
   const outputIntegritySummary = await evaluateLocalOutputIntegrity({ projectDir, records })
   const renderExportCandidateHealthExplanations = renderExportCandidateSummary.attentionRows.map((row) => ({
     subjectRef: {
@@ -90,6 +92,7 @@ export async function writeProjectHealth({
       publicationAuthorization: false
     }))
   const outputIntegrityHealthExplanations = buildOutputIntegrityHealthExplanations(outputIntegritySummary)
+  const exportReceiptHealthExplanations = buildExportReceiptHealthExplanations(exportReceiptSummary)
 
   if (statusResult.status.assetResourceConsistency.readyForEdgeInspection !== true) {
     blockingIssues.push('asset-resource-consistency-not-ready')
@@ -121,6 +124,10 @@ export async function writeProjectHealth({
 
   if (renderReceiptSummary.attentionRows.length > 0) {
     blockingIssues.push('render-receipt-attention')
+  }
+
+  if (exportReceiptSummary.currentAttentionRows.length > 0) {
+    blockingIssues.push('export-receipt-attention')
   }
 
   if (outputIntegritySummary.outputIntegrityBlockingIssues > 0) {
@@ -166,6 +173,8 @@ export async function writeProjectHealth({
     renderExportCandidateSummary,
     renderExportCandidateHealthExplanations,
     renderReceiptSummary,
+    exportReceiptSummary,
+    exportReceiptHealthExplanations,
     outputIntegritySummary,
     outputIntegrityHealthExplanations,
     renderReceiptHealthExplanations: renderReceiptSummary.attentionRows.map((row) => ({
@@ -188,6 +197,7 @@ export async function writeProjectHealth({
       ...productionCapsuleHealthExplanations,
       ...productionRoughCutHealthExplanations,
       ...renderExportCandidateHealthExplanations,
+      ...exportReceiptHealthExplanations,
       ...outputIntegrityHealthExplanations,
       ...renderReceiptSummary.attentionRows.map((row) => ({
         subjectRef: row.receiptRef,
@@ -266,6 +276,15 @@ function printHealthSummary(health, output) {
     `exportPerformed=${health.renderReceiptSummary?.exportPerformed ?? 0}`,
     `productionReady=${health.renderReceiptSummary?.productionReady ?? 0}`,
     `stale=${health.renderReceiptSummary?.stale ?? 0}`
+  ].join(' | '))
+  console.log([
+    `exportReceipts: total=${health.exportReceiptSummary?.total ?? 0}`,
+    `localPackageCopy=${health.exportReceiptSummary?.localPackageCopyExportReceipts ?? 0}`,
+    `ffmpegDelivery=${health.exportReceiptSummary?.ffmpegDeliveryReceipts ?? 0}`,
+    `activeDelivery=${health.exportReceiptSummary?.activeDeliveryReceipts ?? 0}`,
+    `currentAttention=${health.exportReceiptSummary?.currentAttention ?? 0}`,
+    `historicalAttention=${health.exportReceiptSummary?.historicalAttention ?? 0}`,
+    `productionReady=${health.exportReceiptSummary?.productionReady ?? 0}`
   ].join(' | '))
   console.log([
     `outputIntegrity: deliveryIntact=${health.outputIntegritySummary?.localDeliveryEvidenceIntact ?? 0}`,
@@ -486,6 +505,31 @@ function buildOutputIntegrityHealthExplanations(outputIntegritySummary) {
     ...blockingRows,
     ...attentionRows
   ]
+}
+
+function buildExportReceiptHealthExplanations(exportReceiptSummary) {
+  return (exportReceiptSummary.currentAttentionRows ?? []).map((row) => ({
+    subjectKind: 'media-export-receipt',
+    subjectRef: row.receiptRef,
+    path: row.receiptRef?.path,
+    healthState: 'needs-local-attention',
+    issueCodes: row.issueCodes,
+    summary: 'Export receipt posture is stale or invalid and no active local delivery receipt currently supersedes it.',
+    nextAction: row.nextAction,
+    sourceRefs: row.sourceRefs ?? [],
+    nonClaims: healthNonClaims(),
+    localOnly: true,
+    operatorGuidanceOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    byteAvailabilityProof: false,
+    materializationProof: false,
+    providerTruth: false,
+    resourceAdmission: false,
+    approvalAuthority: false,
+    publicationAuthorization: false
+  }))
 }
 
 function outputIntegrityExplanation({
