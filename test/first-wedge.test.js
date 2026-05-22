@@ -3765,6 +3765,8 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.equal(publicationRequest.localPackageReviewDecisionRefs.length, 1)
   assert.equal(publicationRequest.freshnessPosture.state, 'fresh')
   assert.deepEqual(publicationRequest.freshnessPosture.issueCodes, [])
+  assert.equal(publicationRequest.freshnessPosture.requestReviewBlocked, false)
+  assert.equal(publicationRequest.freshnessPosture.integrityBlocking, false)
   assert.ok(publicationRequest.authorityReviewInputs.some((input) => input.inputKind === 'export-receipt' && input.present === true))
   assert.ok(publicationRequest.authorityGaps.includes('publication_authorization_missing'))
   assert.equal(publicationRequest.requestOnly, true)
@@ -3964,6 +3966,7 @@ test('local production output runner creates reviewable delivery without authori
     line.includes('localPackageReviews=1') &&
     line.includes('publicationAuthorityRequests=1') &&
     line.includes('staleAuthorityRequests=0') &&
+    line.includes('blockedAuthorityRequests=0') &&
     line.includes('productionReady=0')
   ))
 })
@@ -4161,10 +4164,18 @@ test('local output integrity blocks production package when export delivery byte
   assert.equal(prereqs.localPackageReviewsStale, 1)
   assert.equal(prereqs.publicationAuthorityRequests, 1)
   assert.equal(prereqs.publicationAuthorityRequestsStale, 1)
+  assert.equal(prereqs.publicationAuthorityRequestsBlocked, 1)
+  assert.equal(prereqs.publicationAuthorityRequestsIntegrityBlocked, 1)
   assert.equal(prereqs.pendingAuthority, 1)
   assert.equal(prereqs.productionReady, 0)
   assert.ok(prereqs.rows[0].outputIntegrityBlockingIssueCodes.includes('missing_export_delivery_bytes'))
   assert.equal(prereqs.rows[0].exportReceiptPosture.state, 'export-receipt-output-integrity-blocked')
+  const prereqOutput = await captureConsole(() => writeProductionAuthorityPrerequisiteReport({ projectDir: dir }))
+  assert.ok(prereqOutput.lines.some((line) =>
+    line.includes('staleAuthorityRequests=1') &&
+    line.includes('blockedAuthorityRequests=1') &&
+    line.includes('productionReady=0')
+  ))
   const recordsAfterRemoval = await readProjectRecords(dir)
   const packageFreshness = evaluateLocalPackageReviewFreshness({
     decision: packageReview,
@@ -4182,6 +4193,9 @@ test('local output integrity blocks production package when export delivery byte
   assert.equal(requestFreshness.state, 'stale')
   assert.ok(requestFreshness.issueCodes.includes('current_local_delivery_evidence_not_intact'))
   assert.ok(requestFreshness.issueCodes.includes('current_output_integrity_blocking'))
+  assert.equal(requestFreshness.requestReviewBlocked, true)
+  assert.equal(requestFreshness.integrityBlocking, true)
+  assert.ok(requestFreshness.blockingIssueCodes.includes('current_output_integrity_blocking'))
   await assert.rejects(
     () => writeLocalPackageReviewDecision({ projectDir: dir, quiet: true }),
     /complete local production package|output integrity/
@@ -4194,8 +4208,10 @@ test('local output integrity blocks production package when export delivery byte
   assert.equal(mediaSummary.result.packageAuthority.staleReviews, 1)
   assert.equal(mediaSummary.result.packageAuthority.publicationAuthorityRequests, 1)
   assert.equal(mediaSummary.result.packageAuthority.staleRequests, 1)
+  assert.equal(mediaSummary.result.packageAuthority.blockingRequests, 1)
+  assert.equal(mediaSummary.result.packageAuthority.integrityBlockingRequests, 1)
   assert.ok(mediaSummary.lines.some((line) => line.startsWith('output integrity: deliveryIntact=0 | blocking=')))
-  assert.ok(mediaSummary.lines.some((line) => line.startsWith('package authority: localPackageReviews=1 | staleReviews=1 | publicationAuthorityRequests=1 | staleRequests=1')))
+  assert.ok(mediaSummary.lines.some((line) => line.startsWith('package authority: localPackageReviews=1 | staleReviews=1 | publicationAuthorityRequests=1 | staleRequests=1 | blockingRequests=1')))
   assert.ok(mediaSummary.lines.some((line) => line.includes('package-authority:') && line.includes('current_output_integrity_blocking')))
   assert.ok(mediaSummary.lines.some((line) => line.includes('output-integrity blocking:') && line.includes('missing_export_delivery_bytes')))
 

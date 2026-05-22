@@ -201,9 +201,16 @@ function refsForRecords(entries = []) {
 }
 
 function freshnessPosture({ state, issueCodes, checkedRefs, nextAction }) {
+  const blockingIssueCodes = issueCodes.filter(isBlockingIssueCode)
+  const attentionIssueCodes = issueCodes.filter((issueCode) => !isBlockingIssueCode(issueCode))
   return {
     state,
     issueCodes,
+    blockingIssueCodes,
+    attentionIssueCodes,
+    requestReviewBlocked: blockingIssueCodes.length > 0,
+    integrityBlocking: blockingIssueCodes.includes('current_output_integrity_blocking') ||
+      blockingIssueCodes.includes('current_local_delivery_evidence_not_intact'),
     checkedRefs,
     nextAction,
     localOnly: true,
@@ -219,6 +226,16 @@ function freshnessPosture({ state, issueCodes, checkedRefs, nextAction }) {
     edgeCalled: false,
     meshPublished: false
   }
+}
+
+function isBlockingIssueCode(issueCode) {
+  return [
+    'current_production_candidates_missing',
+    'current_local_production_package_incomplete',
+    'current_local_delivery_evidence_not_intact',
+    'current_output_integrity_blocking',
+    'unexpected_production_ready_claim'
+  ].includes(issueCode)
 }
 
 function localRecordRef(kind, id, schema, recordPath) {
