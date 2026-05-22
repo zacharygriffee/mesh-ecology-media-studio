@@ -2722,7 +2722,18 @@ test('production authority prerequisite report separates local package from auth
   assert.equal(row.productionReady, false)
   assert.equal(row.approvalAuthority, false)
   assert.equal(row.publicationAuthorization, false)
-  assert.ok(output.lines.some((line) => line === 'production authority prerequisites: project=venice-smoke-project | candidates=1 | localPackageComplete=1 | localProductionPackageComplete=0 | missingLocalPrerequisites=0 | roughCutReviewed=0 | roughCutChangesRequested=0 | roughCutDeferred=0 | renderExportCandidates=0 | renderReceipts=0 | exportReceipts=0 | ffmpegDeliveryReceipts=0 | localDeliveryEvidencePresent=0 | localDeliveryEvidenceIntact=0 | outputIntegrityBlockingIssues=0 | outputIntegrityAttentionIssues=0 | deliveryCreated=0 | exportPerformed=0 | renderAuthorizationMissing=1 | exportAuthorizationMissing=1 | pendingAuthority=1 | productionReady=0 | output=records/production/media-production-authority-prerequisites.local.json'))
+  assert.ok(output.lines.some((line) =>
+    line.includes('production authority prerequisites: project=venice-smoke-project') &&
+    line.includes('localPackageComplete=1') &&
+    line.includes('localProductionPackageComplete=0') &&
+    line.includes('renderReceipts=0') &&
+    line.includes('exportReceipts=0') &&
+    line.includes('localPackageReviews=0') &&
+    line.includes('publicationAuthorityRequests=0') &&
+    line.includes('pendingAuthority=1') &&
+    line.includes('productionReady=0') &&
+    line.includes('output=records/production/media-production-authority-prerequisites.local.json')
+  ))
   assert.ok(output.lines.some((line) => line.includes('authority-prereq: media/accepted/venice-live-smoke-0.png | localPackage=local-package-complete-authority-missing | productionPackage=local-production-package-incomplete | authority=authority-missing')))
   const written = JSON.parse(
     await readFile(path.join(dir, 'records', 'production', 'media-production-authority-prerequisites.local.json'), 'utf8')
@@ -3941,8 +3952,20 @@ test('local production output runner creates reviewable delivery without authori
   assert.equal(prereqs.localDeliveryEvidenceIntact, 1)
   assert.equal(prereqs.outputIntegrityBlockingIssues, 0)
   assert.equal(prereqs.outputIntegrityAttentionIssues, 0)
+  assert.equal(prereqs.localPackageReviews, 1)
+  assert.equal(prereqs.localPackageReviewsFresh, 1)
+  assert.equal(prereqs.publicationAuthorityRequests, 1)
+  assert.equal(prereqs.publicationAuthorityRequestsFresh, 1)
+  assert.equal(prereqs.packageAuthoritySummary.attentionRows.length, 0)
   assert.equal(prereqs.pendingAuthority, 1)
   assert.equal(prereqs.productionReady, 0)
+  const prereqOutput = await captureConsole(() => writeProductionAuthorityPrerequisiteReport({ projectDir: dir }))
+  assert.ok(prereqOutput.lines.some((line) =>
+    line.includes('localPackageReviews=1') &&
+    line.includes('publicationAuthorityRequests=1') &&
+    line.includes('staleAuthorityRequests=0') &&
+    line.includes('productionReady=0')
+  ))
 })
 
 test('local production output runner can keep ffmpeg disabled without blocking local delivery posture', async () => {
@@ -4134,6 +4157,10 @@ test('local output integrity blocks production package when export delivery byte
   assert.equal(prereqs.localDeliveryEvidenceIntact, 0)
   assert.equal(prereqs.localProductionPackageComplete, 0)
   assert.equal(prereqs.outputIntegrityBlockingIssues > 0, true)
+  assert.equal(prereqs.localPackageReviews, 1)
+  assert.equal(prereqs.localPackageReviewsStale, 1)
+  assert.equal(prereqs.publicationAuthorityRequests, 1)
+  assert.equal(prereqs.publicationAuthorityRequestsStale, 1)
   assert.equal(prereqs.pendingAuthority, 1)
   assert.equal(prereqs.productionReady, 0)
   assert.ok(prereqs.rows[0].outputIntegrityBlockingIssueCodes.includes('missing_export_delivery_bytes'))

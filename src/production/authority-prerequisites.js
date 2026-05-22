@@ -11,6 +11,10 @@ import { evaluateRenderExportCandidateFreshness } from './render-export-candidat
 import { summarizeRenderReceipts } from './render-receipts.js'
 import { summarizeExportReceipts } from './export-receipts.js'
 import { evaluateLocalOutputIntegrity } from './output-integrity.js'
+import {
+  evaluateLocalPackageReviewFreshness,
+  evaluatePublicationAuthorityRequestFreshness
+} from './package-authority-freshness.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/venice-smoke'
@@ -72,18 +76,53 @@ export async function createProductionAuthorityPrerequisiteReport({
   const projectId = rows[0]?.projectId ??
     records.find((entry) => typeof entry.record.projectId === 'string')?.record.projectId ??
     path.basename(root)
+  const candidateCount = rows.length
+  const localPackageComplete = rows.filter((row) => row.localPackageState === 'local-package-complete-authority-missing').length
+  const localProductionPackageComplete = rows.filter((row) => row.localProductionPackageComplete).length
+  const localProductionPackageState = rows.length > 0 && rows.every((row) => row.localProductionPackageComplete)
+    ? 'local-production-package-complete-authority-missing'
+    : 'local-production-package-incomplete'
+  const exportReceiptCount = rows.reduce((sum, row) => sum + (row.exportReceiptPosture?.exportReceipts ?? 0), 0)
+  const exportReceiptsFresh = rows.reduce((sum, row) => sum + (row.exportReceiptPosture?.exportReceiptsFresh ?? 0), 0)
+  const exportReceiptsStale = rows.reduce((sum, row) => sum + (row.exportReceiptPosture?.exportReceiptsStale ?? 0), 0)
+  const localPackageCopyExportReceipts = rows.reduce((sum, row) => sum + (row.exportReceiptPosture?.localPackageCopyExportReceipts ?? 0), 0)
+  const ffmpegDeliveryReceipts = rows.reduce((sum, row) => sum + (row.exportReceiptPosture?.ffmpegDeliveryReceipts ?? 0), 0)
+  const localDeliveryEvidencePresent = rows.filter((row) => row.exportReceiptPosture?.localDeliveryEvidencePresent).length
+  const localDeliveryEvidenceIntact = rows.filter((row) => row.exportReceiptPosture?.localDeliveryEvidenceIntact).length
+  const outputIntegrityBlockingIssues = rows.reduce((sum, row) => sum + (row.outputIntegrityBlockingIssues ?? 0), 0)
+  const outputIntegrityAttentionIssues = rows.reduce((sum, row) => sum + (row.outputIntegrityAttentionIssues ?? 0), 0)
+  const pendingAuthority = rows.filter((row) => row.authorityState === 'authority-missing').length
+  const packageAuthoritySummary = summarizePackageAuthorityForPrereqs(records, {
+    schema: artifactKinds.mediaProductionAuthorityPrerequisitesLocal,
+    candidates: candidateCount,
+    localProductionPackageComplete,
+    localDeliveryEvidencePresent,
+    localDeliveryEvidenceIntact,
+    outputIntegrityBlockingIssues,
+    outputIntegrityAttentionIssues,
+    roughCutReviewed: rows.filter((row) => row.roughCutReviewPosture?.state === 'rough-cut-reviewed-local').length,
+    roughCutChangesRequested: rows.filter((row) => row.roughCutReviewPosture?.state === 'rough-cut-changes-requested').length,
+    renderReceipts: rows.filter((row) => row.renderReceiptPosture?.present).length,
+    renderReceiptsFresh: rows.filter((row) => row.renderReceiptPosture?.freshnessState === 'fresh').length,
+    renderReceiptsStale: rows.filter((row) => row.renderReceiptPosture?.freshnessState === 'stale').length,
+    exportReceipts: exportReceiptCount,
+    exportReceiptsFresh,
+    exportReceiptsStale,
+    localPackageCopyExportReceipts,
+    ffmpegDeliveryReceipts,
+    pendingAuthority,
+    productionReady: 0
+  })
 
   return {
     schema: artifactKinds.mediaProductionAuthorityPrerequisitesLocal,
     reportId: `production-authority-prerequisites-${projectId}`,
     projectId,
     mode: 'standalone-local',
-    candidates: rows.length,
-    localPackageComplete: rows.filter((row) => row.localPackageState === 'local-package-complete-authority-missing').length,
-    localProductionPackageComplete: rows.filter((row) => row.localProductionPackageComplete).length,
-    localProductionPackageState: rows.length > 0 && rows.every((row) => row.localProductionPackageComplete)
-      ? 'local-production-package-complete-authority-missing'
-      : 'local-production-package-incomplete',
+    candidates: candidateCount,
+    localPackageComplete,
+    localProductionPackageComplete,
+    localProductionPackageState,
     authorityMissing: true,
     layerInteropPosture: createLayerInteropPosture({
       layerRef,
@@ -102,20 +141,27 @@ export async function createProductionAuthorityPrerequisiteReport({
     renderReceipts: rows.filter((row) => row.renderReceiptPosture?.present).length,
     renderReceiptsFresh: rows.filter((row) => row.renderReceiptPosture?.freshnessState === 'fresh').length,
     renderReceiptsStale: rows.filter((row) => row.renderReceiptPosture?.freshnessState === 'stale').length,
-    exportReceipts: rows.reduce((sum, row) => sum + (row.exportReceiptPosture?.exportReceipts ?? 0), 0),
-    exportReceiptsFresh: rows.reduce((sum, row) => sum + (row.exportReceiptPosture?.exportReceiptsFresh ?? 0), 0),
-    exportReceiptsStale: rows.reduce((sum, row) => sum + (row.exportReceiptPosture?.exportReceiptsStale ?? 0), 0),
-    localPackageCopyExportReceipts: rows.reduce((sum, row) => sum + (row.exportReceiptPosture?.localPackageCopyExportReceipts ?? 0), 0),
-    ffmpegDeliveryReceipts: rows.reduce((sum, row) => sum + (row.exportReceiptPosture?.ffmpegDeliveryReceipts ?? 0), 0),
-    localDeliveryEvidencePresent: rows.filter((row) => row.exportReceiptPosture?.localDeliveryEvidencePresent).length,
-    localDeliveryEvidenceIntact: rows.filter((row) => row.exportReceiptPosture?.localDeliveryEvidenceIntact).length,
-    outputIntegrityBlockingIssues: rows.reduce((sum, row) => sum + (row.outputIntegrityBlockingIssues ?? 0), 0),
-    outputIntegrityAttentionIssues: rows.reduce((sum, row) => sum + (row.outputIntegrityAttentionIssues ?? 0), 0),
+    exportReceipts: exportReceiptCount,
+    exportReceiptsFresh,
+    exportReceiptsStale,
+    localPackageCopyExportReceipts,
+    ffmpegDeliveryReceipts,
+    localDeliveryEvidencePresent,
+    localDeliveryEvidenceIntact,
+    outputIntegrityBlockingIssues,
+    outputIntegrityAttentionIssues,
     deliveryCreated: rows.filter((row) => row.exportReceiptPosture?.deliveryCreated).length,
     exportPerformed: rows.filter((row) => row.exportReceiptPosture?.exportPerformed).length,
     renderAuthorizationMissing: rows.length,
     exportAuthorizationMissing: rows.length,
-    pendingAuthority: rows.filter((row) => row.authorityState === 'authority-missing').length,
+    localPackageReviews: packageAuthoritySummary.localPackageReviews,
+    localPackageReviewsFresh: packageAuthoritySummary.freshReviews,
+    localPackageReviewsStale: packageAuthoritySummary.staleReviews,
+    publicationAuthorityRequests: packageAuthoritySummary.publicationAuthorityRequests,
+    publicationAuthorityRequestsFresh: packageAuthoritySummary.freshRequests,
+    publicationAuthorityRequestsStale: packageAuthoritySummary.staleRequests,
+    packageAuthoritySummary,
+    pendingAuthority,
     productionReady: 0,
     rows,
     outputIntegritySummary: {
@@ -331,6 +377,69 @@ function summarizeCandidateAuthorityPrerequisites(asset, records, outputIntegrit
   }
 }
 
+function summarizePackageAuthorityForPrereqs(records, report) {
+  const packageReviewRows = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaOperatorDecision)
+    .filter((entry) => entry.record.decisionType === 'review_local_package')
+    .map((entry) => {
+      const freshness = evaluateLocalPackageReviewFreshness({
+        decision: entry.record,
+        records,
+        prerequisiteReport: report
+      })
+      return {
+        kind: 'local-package-review',
+        ref: refForEntry('media-operator-decision', entry),
+        freshnessState: freshness.state,
+        issueCodes: freshness.issueCodes,
+        nextAction: freshness.nextAction,
+        publicationAuthorization: false,
+        productionReady: false,
+        localOnly: true,
+        operatorGuidanceOnly: true
+      }
+    })
+  const publicationRequestRows = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaPublicationAuthorityRequestCandidateLocal)
+    .map((entry) => {
+      const freshness = evaluatePublicationAuthorityRequestFreshness({
+        candidate: entry.record,
+        records,
+        prerequisiteReport: report
+      })
+      return {
+        kind: 'publication-authority-request',
+        ref: refForEntry('media-publication-authority-request-candidate', entry),
+        freshnessState: freshness.state,
+        issueCodes: freshness.issueCodes,
+        nextAction: freshness.nextAction,
+        publicationAuthorization: false,
+        productionReady: false,
+        localOnly: true,
+        operatorGuidanceOnly: true
+      }
+    })
+  const rows = [...packageReviewRows, ...publicationRequestRows]
+
+  return {
+    localPackageReviews: packageReviewRows.length,
+    freshReviews: packageReviewRows.filter((row) => row.freshnessState === 'fresh').length,
+    staleReviews: packageReviewRows.filter((row) => row.freshnessState === 'stale').length,
+    publicationAuthorityRequests: publicationRequestRows.length,
+    freshRequests: publicationRequestRows.filter((row) => row.freshnessState === 'fresh').length,
+    staleRequests: publicationRequestRows.filter((row) => row.freshnessState === 'stale').length,
+    rows,
+    attentionRows: rows.filter((row) => row.issueCodes.length > 0),
+    publicationAuthorization: false,
+    productionReady: false,
+    localOnly: true,
+    operatorGuidanceOnly: true,
+    approvalAuthority: false,
+    ratifierAuthority: false,
+    meshTruth: false
+  }
+}
+
 function printProductionAuthorityPrerequisiteReport(report, output = defaultOutput) {
   console.log([
     `production authority prerequisites: project=${report.projectId}`,
@@ -351,6 +460,9 @@ function printProductionAuthorityPrerequisiteReport(report, output = defaultOutp
     `outputIntegrityAttentionIssues=${report.outputIntegrityAttentionIssues ?? 0}`,
     `deliveryCreated=${report.deliveryCreated ?? 0}`,
     `exportPerformed=${report.exportPerformed ?? 0}`,
+    `localPackageReviews=${report.localPackageReviews ?? 0}`,
+    `publicationAuthorityRequests=${report.publicationAuthorityRequests ?? 0}`,
+    `staleAuthorityRequests=${report.publicationAuthorityRequestsStale ?? 0}`,
     `renderAuthorizationMissing=${report.renderAuthorizationMissing ?? 0}`,
     `exportAuthorizationMissing=${report.exportAuthorizationMissing ?? 0}`,
     `pendingAuthority=${report.pendingAuthority}`,
