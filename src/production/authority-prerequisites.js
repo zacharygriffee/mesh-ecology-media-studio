@@ -10,6 +10,7 @@ import { readProjectRecords } from '../seams/project-status.js'
 import { evaluateRenderExportCandidateFreshness } from './render-export-candidate.js'
 import { summarizeRenderReceipts } from './render-receipts.js'
 import { summarizeExportReceipts } from './export-receipts.js'
+import { evaluateLocalOutputIntegrity } from './output-integrity.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/venice-smoke'
@@ -66,7 +67,8 @@ export async function createProductionAuthorityPrerequisiteReport({
       asset.source?.sourceType === 'provider-result' &&
       isProductionAsset(asset)
     )
-  const rows = candidates.map((asset) => summarizeCandidateAuthorityPrerequisites(asset, records))
+  const outputIntegrity = await evaluateLocalOutputIntegrity({ projectDir, records })
+  const rows = candidates.map((asset) => summarizeCandidateAuthorityPrerequisites(asset, records, outputIntegrity))
   const projectId = rows[0]?.projectId ??
     records.find((entry) => typeof entry.record.projectId === 'string')?.record.projectId ??
     path.basename(root)
@@ -106,6 +108,9 @@ export async function createProductionAuthorityPrerequisiteReport({
     localPackageCopyExportReceipts: rows.reduce((sum, row) => sum + (row.exportReceiptPosture?.localPackageCopyExportReceipts ?? 0), 0),
     ffmpegDeliveryReceipts: rows.reduce((sum, row) => sum + (row.exportReceiptPosture?.ffmpegDeliveryReceipts ?? 0), 0),
     localDeliveryEvidencePresent: rows.filter((row) => row.exportReceiptPosture?.localDeliveryEvidencePresent).length,
+    localDeliveryEvidenceIntact: rows.filter((row) => row.exportReceiptPosture?.localDeliveryEvidenceIntact).length,
+    outputIntegrityBlockingIssues: rows.reduce((sum, row) => sum + (row.outputIntegrityBlockingIssues ?? 0), 0),
+    outputIntegrityAttentionIssues: rows.reduce((sum, row) => sum + (row.outputIntegrityAttentionIssues ?? 0), 0),
     deliveryCreated: rows.filter((row) => row.exportReceiptPosture?.deliveryCreated).length,
     exportPerformed: rows.filter((row) => row.exportReceiptPosture?.exportPerformed).length,
     renderAuthorizationMissing: rows.length,
@@ -113,6 +118,17 @@ export async function createProductionAuthorityPrerequisiteReport({
     pendingAuthority: rows.filter((row) => row.authorityState === 'authority-missing').length,
     productionReady: 0,
     rows,
+    outputIntegritySummary: {
+      renderReceipts: outputIntegrity.renderReceipts,
+      exportReceipts: outputIntegrity.exportReceipts,
+      localDeliveryEvidenceIntact: outputIntegrity.localDeliveryEvidenceIntact,
+      outputIntegrityBlockingIssues: outputIntegrity.outputIntegrityBlockingIssues,
+      outputIntegrityAttentionIssues: outputIntegrity.outputIntegrityAttentionIssues,
+      localOnly: true,
+      operatorGuidanceOnly: true,
+      productionReady: false,
+      publicationAuthorization: false
+    },
     futureAuthorityRequirements: [
       'authority-bearing approval or ratification artifact',
       'explicit publication or production authorization scope',
@@ -170,7 +186,7 @@ export async function writeProductionAuthorityPrerequisiteReport(options = {}) {
   return report
 }
 
-function summarizeCandidateAuthorityPrerequisites(asset, records) {
+function summarizeCandidateAuthorityPrerequisites(asset, records, outputIntegrity) {
   const localDecision = latestRecord(records, artifactKinds.mediaOperatorDecision, (record) =>
     record.subjectRef?.id === asset.assetId
   )
@@ -203,8 +219,8 @@ function summarizeCandidateAuthorityPrerequisites(asset, records) {
     .map((entry) => entry.record)
   const roughCutReviewPosture = summarizeRoughCutReviewPosture(asset, records)
   const renderExportCandidatePosture = summarizeRenderExportCandidatePosture(roughCutReviewPosture, records)
-  const renderReceiptPosture = summarizeRenderReceiptPosture(roughCutReviewPosture, records)
-  const exportReceiptPosture = summarizeExportReceiptPosture(roughCutReviewPosture, records)
+  const renderReceiptPosture = summarizeRenderReceiptPosture(roughCutReviewPosture, records, outputIntegrity)
+  const exportReceiptPosture = summarizeExportReceiptPosture(roughCutReviewPosture, records, outputIntegrity)
   const missingLocalPrerequisites = [
     localDecision ? null : 'local_decision_missing',
     approvalProposal ? null : 'approval_proposal_missing',
@@ -224,6 +240,8 @@ function summarizeCandidateAuthorityPrerequisites(asset, records) {
     renderReceiptPosture?.renderPerformed === true &&
     exportReceiptPosture?.present === true &&
     exportReceiptPosture?.freshnessState === 'fresh' &&
+    exportReceiptPosture?.localDeliveryEvidenceIntact === true &&
+    exportReceiptPosture?.outputIntegrityBlockingIssues === 0 &&
     exportReceiptPosture?.deliveryCreated === true &&
     exportReceiptPosture?.exportPerformed === true
   const localProductionPackageState = localProductionPackageComplete
@@ -258,6 +276,10 @@ function summarizeCandidateAuthorityPrerequisites(asset, records) {
     renderExportCandidatePosture,
     renderReceiptPosture,
     exportReceiptPosture,
+    outputIntegrityBlockingIssues: exportReceiptPosture.outputIntegrityBlockingIssues ?? 0,
+    outputIntegrityAttentionIssues: renderReceiptPosture.outputIntegrityAttentionIssues ?? 0,
+    outputIntegrityBlockingIssueCodes: exportReceiptPosture.outputIntegrityBlockingIssueCodes ?? [],
+    outputIntegrityAttentionIssueCodes: renderReceiptPosture.outputIntegrityAttentionIssueCodes ?? [],
     missingLocalPrerequisites,
     localPackageState: localPackageComplete
       ? 'local-package-complete-authority-missing'
@@ -268,6 +290,9 @@ function summarizeCandidateAuthorityPrerequisites(asset, records) {
       state: localProductionPackageState,
       localPackageComplete,
       localProductionPackageComplete,
+      localDeliveryEvidenceIntact: exportReceiptPosture.localDeliveryEvidenceIntact === true,
+      outputIntegrityBlockingIssues: exportReceiptPosture.outputIntegrityBlockingIssues ?? 0,
+      outputIntegrityAttentionIssues: renderReceiptPosture.outputIntegrityAttentionIssues ?? 0,
       authorityMissing: true,
       productionReady: false,
       publicationAuthorization: false,
@@ -321,6 +346,9 @@ function printProductionAuthorityPrerequisiteReport(report, output = defaultOutp
     `exportReceipts=${report.exportReceipts ?? 0}`,
     `ffmpegDeliveryReceipts=${report.ffmpegDeliveryReceipts ?? 0}`,
     `localDeliveryEvidencePresent=${report.localDeliveryEvidencePresent ?? 0}`,
+    `localDeliveryEvidenceIntact=${report.localDeliveryEvidenceIntact ?? 0}`,
+    `outputIntegrityBlockingIssues=${report.outputIntegrityBlockingIssues ?? 0}`,
+    `outputIntegrityAttentionIssues=${report.outputIntegrityAttentionIssues ?? 0}`,
     `deliveryCreated=${report.deliveryCreated ?? 0}`,
     `exportPerformed=${report.exportPerformed ?? 0}`,
     `renderAuthorizationMissing=${report.renderAuthorizationMissing ?? 0}`,
@@ -342,6 +370,9 @@ function printProductionAuthorityPrerequisiteReport(report, output = defaultOutp
       `renderReceipt=${row.renderReceiptPosture?.state ?? 'unknown'}`,
       `exportReceipt=${row.exportReceiptPosture?.state ?? 'unknown'}`,
       `localDeliveryEvidence=${row.exportReceiptPosture?.localDeliveryEvidencePresent === true}`,
+      `localDeliveryEvidenceIntact=${row.exportReceiptPosture?.localDeliveryEvidenceIntact === true}`,
+      `outputIntegrityBlocking=${row.outputIntegrityBlockingIssueCodes.join(',') || 'none'}`,
+      `outputIntegrityAttention=${row.outputIntegrityAttentionIssueCodes.join(',') || 'none'}`,
       `proposalSituatedRefs=${row.approvalProposalIdentity?.situatedRefsPresent === true}`,
       `derivatives=${row.derivativeKinds.join(',') || 'none'}`,
       `nextAction=${row.safeNextAction}`
@@ -351,13 +382,15 @@ function printProductionAuthorityPrerequisiteReport(report, output = defaultOutp
   console.log('nonClaims: local-only; no mesh truth; no approval authority; no publication authorization; no byte/materialization proof; no resource admission')
 }
 
-function summarizeExportReceiptPosture(roughCutReviewPosture, records) {
+function summarizeExportReceiptPosture(roughCutReviewPosture, records, outputIntegrity) {
   const roughCutId = roughCutReviewPosture?.roughCutRef?.id
   if (!roughCutId) {
     return missingExportReceiptPosture()
   }
 
   const receiptRows = summarizeExportReceipts(records).rows
+    .filter((row) => row.sourceRoughCutRef?.id === roughCutId)
+  const integrityRows = (outputIntegrity?.exportRows ?? [])
     .filter((row) => row.sourceRoughCutRef?.id === roughCutId)
 
   if (receiptRows.length === 0) {
@@ -366,13 +399,21 @@ function summarizeExportReceiptPosture(roughCutReviewPosture, records) {
 
   const freshRows = receiptRows.filter((row) => row.freshnessState === 'fresh')
   const freshDeliveryRows = freshRows.filter((row) => row.deliveryCreated && row.exportPerformed)
+  const intactDeliveryRows = integrityRows.filter((row) => row.localDeliveryEvidenceIntact)
   const localPackageCopyExportReceipts = receiptRows.filter((row) => row.exportKind === 'local-review-package-copy').length
   const ffmpegDeliveryReceipts = receiptRows.filter((row) => row.exportKind === 'local-ffmpeg-review-delivery').length
   const localDeliveryEvidencePresent = freshDeliveryRows.length > 0
+  const outputIntegrityBlockingIssueCodes = [...new Set(integrityRows.flatMap((row) => row.blockingIssueCodes ?? []))]
+  const outputIntegrityBlockingIssues = outputIntegrityBlockingIssueCodes.length
+  const localDeliveryEvidenceIntact = localDeliveryEvidencePresent &&
+    intactDeliveryRows.length > 0 &&
+    outputIntegrityBlockingIssues === 0
   const primary = freshDeliveryRows[0] ?? receiptRows[0]
   return {
-    state: localDeliveryEvidencePresent
+    state: localDeliveryEvidencePresent && localDeliveryEvidenceIntact
       ? 'export-receipt-present-delivery-only'
+      : localDeliveryEvidencePresent
+        ? 'export-receipt-output-integrity-blocked'
       : 'export-receipt-stale',
     present: true,
     receiptRef: primary.receiptRef,
@@ -390,13 +431,18 @@ function summarizeExportReceiptPosture(roughCutReviewPosture, records) {
     localPackageCopyExportReceipts,
     ffmpegDeliveryReceipts,
     localDeliveryEvidencePresent,
+    localDeliveryEvidenceIntact,
+    outputIntegrityBlockingIssues,
+    outputIntegrityBlockingIssueCodes,
     exportPerformed: localDeliveryEvidencePresent,
     deliveryCreated: localDeliveryEvidencePresent,
     productionReady: false,
     renderAuthorization: false,
     exportAuthorization: false,
     publicationAuthorization: false,
-    nextAction: primary.nextAction,
+    nextAction: outputIntegrityBlockingIssues > 0
+      ? 'Regenerate local delivery/export artifacts; receipt refs are present but referenced bytes are missing or invalid.'
+      : primary.nextAction,
     localOnly: true,
     operatorGuidanceOnly: true
   }
@@ -415,6 +461,9 @@ function missingExportReceiptPosture() {
     localPackageCopyExportReceipts: 0,
     ffmpegDeliveryReceipts: 0,
     localDeliveryEvidencePresent: false,
+    localDeliveryEvidenceIntact: false,
+    outputIntegrityBlockingIssues: 0,
+    outputIntegrityBlockingIssueCodes: [],
     exportPerformed: false,
     deliveryCreated: false,
     productionReady: false,
@@ -426,7 +475,7 @@ function missingExportReceiptPosture() {
   }
 }
 
-function summarizeRenderReceiptPosture(roughCutReviewPosture, records) {
+function summarizeRenderReceiptPosture(roughCutReviewPosture, records, outputIntegrity) {
   const roughCutId = roughCutReviewPosture?.roughCutRef?.id
   if (!roughCutId) {
     return missingRenderReceiptPosture()
@@ -434,12 +483,15 @@ function summarizeRenderReceiptPosture(roughCutReviewPosture, records) {
 
   const receiptRows = summarizeRenderReceipts(records).rows
     .filter((row) => row.sourceRoughCutRef?.id === roughCutId)
+  const integrityRows = (outputIntegrity?.renderRows ?? [])
+    .filter((row) => row.sourceRoughCutRef?.id === roughCutId)
 
   if (receiptRows.length === 0) {
     return missingRenderReceiptPosture()
   }
 
   const latest = receiptRows[0]
+  const outputIntegrityAttentionIssueCodes = [...new Set(integrityRows.flatMap((row) => row.attentionIssueCodes ?? []))]
   return {
     state: latest.freshnessState === 'fresh'
       ? 'render-receipt-present-preview-only'
@@ -450,6 +502,8 @@ function summarizeRenderReceiptPosture(roughCutReviewPosture, records) {
     outputLocalRef: latest.outputLocalRef,
     freshnessState: latest.freshnessState,
     issueCodes: latest.issueCodes,
+    outputIntegrityAttentionIssues: outputIntegrityAttentionIssueCodes.length,
+    outputIntegrityAttentionIssueCodes,
     renderPerformed: latest.renderPerformed,
     exportPerformed: false,
     productionReady: false,
@@ -468,6 +522,8 @@ function missingRenderReceiptPosture() {
     present: false,
     receiptRef: null,
     freshnessState: 'missing',
+    outputIntegrityAttentionIssues: 0,
+    outputIntegrityAttentionIssueCodes: [],
     renderPerformed: false,
     exportPerformed: false,
     productionReady: false,
@@ -707,6 +763,9 @@ function safeNextActionForRow(
   }
   if (exportReceiptPosture?.present !== true) {
     return 'Run npm run production:export-plan and a local export command to create a local delivery candidate before future authority review.'
+  }
+  if ((exportReceiptPosture?.outputIntegrityBlockingIssues ?? 0) > 0) {
+    return 'Regenerate local delivery/export artifacts; receipt refs are present but referenced bytes are missing or invalid.'
   }
   if (exportReceiptPosture?.freshnessState === 'stale') {
     return 'Regenerate local export delivery evidence from the latest reviewed rough cut before future authority review.'

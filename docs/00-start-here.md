@@ -213,6 +213,9 @@ commands for operator convenience. It does not create a new authority path, call
 Edge, publish, or make production ready.
 Use `--disable-ffmpeg` when the local runner should avoid MP4 render/export
 execution and keep only contact-sheet plus local package-copy evidence.
+`production:authority-prereqs` checks the referenced local delivery/export
+bytes for presence, size, and hash before reporting local production package
+completeness.
 
 Write a local Packs-aligned control-surface projection without adding UI:
 

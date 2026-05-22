@@ -337,6 +337,8 @@ The runner uses the current production bundle, so ordered multi-item rough cuts
 stay part of the same local review/output lane.
 Pass `--disable-ffmpeg` to keep the orchestrated path on contact-sheet render
 and local package-copy delivery evidence only.
+Authority-prereq checks verify that local delivery/export bytes still exist and
+match their receipts before reporting local production package completeness.
 
 The first real local render commands consume the dry-run render plan:
 

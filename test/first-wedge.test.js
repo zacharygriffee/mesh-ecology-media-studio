@@ -125,6 +125,7 @@ import { writeFfmpegExport } from '../src/production/export-ffmpeg.js'
 import { runLocalProductionOutput } from '../src/production/local-output-runner.js'
 import { evaluateRenderReceiptFreshness, summarizeRenderReceipts } from '../src/production/render-receipts.js'
 import { evaluateExportReceiptFreshness } from '../src/production/export-receipts.js'
+import { evaluateLocalOutputIntegrity } from '../src/production/output-integrity.js'
 
 const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 
@@ -256,6 +257,36 @@ async function addSecondAcceptedProductionItemFixture(projectDir) {
     secondAsset,
     secondAssetRecord
   }
+}
+
+async function readProductionReceipt(projectDir, relativePath) {
+  return JSON.parse(await readFile(path.join(projectDir, relativePath), 'utf8'))
+}
+
+async function removeExportDeliveryFiles(projectDir) {
+  const receipts = await readExportDeliveryReceipts(projectDir)
+  for (const receipt of receipts) {
+    await rm(path.join(projectDir, receipt.deliveryLocalRef.path), { force: true })
+  }
+  return receipts
+}
+
+async function mutateExportDeliveryFilesSameSize(projectDir) {
+  const receipts = await readExportDeliveryReceipts(projectDir)
+  for (const receipt of receipts) {
+    const deliveryPath = path.join(projectDir, receipt.deliveryLocalRef.path)
+    const current = await readFile(deliveryPath)
+    assert.ok(current.length > 0)
+    await writeFile(deliveryPath, Buffer.alloc(current.length, 1))
+  }
+  return receipts
+}
+
+async function readExportDeliveryReceipts(projectDir) {
+  return [
+    await readProductionReceipt(projectDir, 'records/production/media-export-receipt.local.json'),
+    await readProductionReceipt(projectDir, 'records/production/media-ffmpeg-export-receipt.local.json')
+  ]
 }
 
 function createTestOperationCandidate(overrides = {}) {
@@ -2649,6 +2680,9 @@ test('production authority prerequisite report separates local package from auth
   assert.equal(report.roughCutDeferred, 0)
   assert.equal(report.renderExportCandidates, 0)
   assert.equal(report.renderReceipts, 0)
+  assert.equal(report.localDeliveryEvidenceIntact, 0)
+  assert.equal(report.outputIntegrityBlockingIssues, 0)
+  assert.equal(report.outputIntegrityAttentionIssues, 0)
   assert.equal(report.renderAuthorizationMissing, 1)
   assert.equal(report.exportAuthorizationMissing, 1)
   assert.equal(report.pendingAuthority, 1)
@@ -2682,7 +2716,7 @@ test('production authority prerequisite report separates local package from auth
   assert.equal(row.productionReady, false)
   assert.equal(row.approvalAuthority, false)
   assert.equal(row.publicationAuthorization, false)
-  assert.ok(output.lines.some((line) => line === 'production authority prerequisites: project=venice-smoke-project | candidates=1 | localPackageComplete=1 | localProductionPackageComplete=0 | missingLocalPrerequisites=0 | roughCutReviewed=0 | roughCutChangesRequested=0 | roughCutDeferred=0 | renderExportCandidates=0 | renderReceipts=0 | exportReceipts=0 | ffmpegDeliveryReceipts=0 | localDeliveryEvidencePresent=0 | deliveryCreated=0 | exportPerformed=0 | renderAuthorizationMissing=1 | exportAuthorizationMissing=1 | pendingAuthority=1 | productionReady=0 | output=records/production/media-production-authority-prerequisites.local.json'))
+  assert.ok(output.lines.some((line) => line === 'production authority prerequisites: project=venice-smoke-project | candidates=1 | localPackageComplete=1 | localProductionPackageComplete=0 | missingLocalPrerequisites=0 | roughCutReviewed=0 | roughCutChangesRequested=0 | roughCutDeferred=0 | renderExportCandidates=0 | renderReceipts=0 | exportReceipts=0 | ffmpegDeliveryReceipts=0 | localDeliveryEvidencePresent=0 | localDeliveryEvidenceIntact=0 | outputIntegrityBlockingIssues=0 | outputIntegrityAttentionIssues=0 | deliveryCreated=0 | exportPerformed=0 | renderAuthorizationMissing=1 | exportAuthorizationMissing=1 | pendingAuthority=1 | productionReady=0 | output=records/production/media-production-authority-prerequisites.local.json'))
   assert.ok(output.lines.some((line) => line.includes('authority-prereq: media/accepted/venice-live-smoke-0.png | localPackage=local-package-complete-authority-missing | productionPackage=local-production-package-incomplete | authority=authority-missing')))
   const written = JSON.parse(
     await readFile(path.join(dir, 'records', 'production', 'media-production-authority-prerequisites.local.json'), 'utf8')
@@ -3834,6 +3868,9 @@ test('local production output runner creates reviewable delivery without authori
   assert.equal(summary.exportReceipts.localDeliveryEvidencePresent, 2)
   const prereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
   assert.equal(prereqs.localProductionPackageComplete, 1)
+  assert.equal(prereqs.localDeliveryEvidenceIntact, 1)
+  assert.equal(prereqs.outputIntegrityBlockingIssues, 0)
+  assert.equal(prereqs.outputIntegrityAttentionIssues, 0)
   assert.equal(prereqs.pendingAuthority, 1)
   assert.equal(prereqs.productionReady, 0)
 })
@@ -3887,6 +3924,8 @@ test('local production output runner can keep ffmpeg disabled without blocking l
   assert.equal(summary.exportReceipts.localDeliveryEvidencePresent, 1)
   const prereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
   assert.equal(prereqs.localProductionPackageComplete, 1)
+  assert.equal(prereqs.localDeliveryEvidenceIntact, 1)
+  assert.equal(prereqs.outputIntegrityBlockingIssues, 0)
   assert.equal(prereqs.pendingAuthority, 1)
   assert.equal(prereqs.productionReady, 0)
 })
@@ -3943,7 +3982,76 @@ test('local production output runner carries two accepted production items throu
   const prereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
   assert.equal(prereqs.candidates, 2)
   assert.equal(prereqs.localProductionPackageComplete, 2)
+  assert.equal(prereqs.localDeliveryEvidenceIntact, 2)
+  assert.equal(prereqs.outputIntegrityBlockingIssues, 0)
   assert.equal(prereqs.pendingAuthority, 2)
+  assert.equal(prereqs.productionReady, 0)
+})
+
+test('local output integrity blocks production package when export delivery bytes are missing', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-missing-export-delivery-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+  await runLocalProductionOutput({ projectDir: dir, quiet: true })
+  await removeExportDeliveryFiles(dir)
+
+  const prereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
+  assert.equal(prereqs.localDeliveryEvidencePresent, 1)
+  assert.equal(prereqs.localDeliveryEvidenceIntact, 0)
+  assert.equal(prereqs.localProductionPackageComplete, 0)
+  assert.equal(prereqs.outputIntegrityBlockingIssues > 0, true)
+  assert.equal(prereqs.pendingAuthority, 1)
+  assert.equal(prereqs.productionReady, 0)
+  assert.ok(prereqs.rows[0].outputIntegrityBlockingIssueCodes.includes('missing_export_delivery_bytes'))
+  assert.equal(prereqs.rows[0].exportReceiptPosture.state, 'export-receipt-output-integrity-blocked')
+})
+
+test('local output integrity blocks production package when export delivery bytes drift', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-drifted-export-delivery-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+  await runLocalProductionOutput({ projectDir: dir, quiet: true })
+  await mutateExportDeliveryFilesSameSize(dir)
+
+  const prereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
+  assert.equal(prereqs.localDeliveryEvidencePresent, 1)
+  assert.equal(prereqs.localDeliveryEvidenceIntact, 0)
+  assert.equal(prereqs.localProductionPackageComplete, 0)
+  assert.equal(prereqs.outputIntegrityBlockingIssues > 0, true)
+  assert.ok(prereqs.rows[0].outputIntegrityBlockingIssueCodes.includes('export_delivery_hash_mismatch'))
+  assert.equal(prereqs.productionReady, 0)
+})
+
+test('render preview integrity is attention only until an export depends on it', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-render-preview-attention-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+  await writeRoughCutCapsule({ projectDir: dir, quiet: true })
+  await writeRoughCutReviewDecision({ projectDir: dir, quiet: true })
+  await writeRenderExportCandidate({ projectDir: dir, quiet: true })
+  await writeRenderAdapterContract({ projectDir: dir, quiet: true })
+  await writeRenderPlanCandidate({ projectDir: dir, quiet: true })
+  const render = await writeContactSheetRender({ projectDir: dir, quiet: true })
+  await rm(path.join(dir, render.receipt.outputLocalRef.path), { force: true })
+
+  const records = await readProjectRecords(dir)
+  const integrity = await evaluateLocalOutputIntegrity({ projectDir: dir, records })
+  assert.equal(integrity.outputIntegrityAttentionIssues, 1)
+  assert.equal(integrity.outputIntegrityBlockingIssues, 0)
+  assert.equal(integrity.attentionRows[0].attentionIssueCodes.includes('missing_render_preview_bytes'), true)
+})
+
+test('export depending on invalid render receipt blocks local production package completeness', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-export-invalid-render-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+  await runLocalProductionOutput({ projectDir: dir, quiet: true })
+  const localExport = await readProductionReceipt(dir, 'records/production/media-export-receipt.local.json')
+  const renderReceipt = await readProductionReceipt(dir, localExport.sourceRenderReceiptRef.path)
+  await rm(path.join(dir, renderReceipt.outputLocalRef.path), { force: true })
+
+  const prereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
+  assert.equal(prereqs.localDeliveryEvidencePresent, 1)
+  assert.equal(prereqs.localDeliveryEvidenceIntact, 0)
+  assert.equal(prereqs.localProductionPackageComplete, 0)
+  assert.ok(prereqs.rows[0].outputIntegrityBlockingIssueCodes.includes('export_depends_on_invalid_render_receipt'))
+  assert.ok(prereqs.rows[0].outputIntegrityAttentionIssueCodes.includes('missing_render_preview_bytes'))
   assert.equal(prereqs.productionReady, 0)
 })
 
