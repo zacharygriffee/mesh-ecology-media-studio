@@ -4187,6 +4187,79 @@ test('local package rework runner regenerates output after needs rework', async 
   assert.equal(prereqs.productionReady, 0)
 })
 
+test('local package rework runner preserves two-item output posture', async () => {
+  for (const mode of [
+    { name: 'ffmpeg', disableFfmpeg: false, completedSteps: '17/17', renderReceipts: 2, exportReceipts: 2, ffmpegDeliveryReceipts: 1, localDeliveryEvidencePresent: 2 },
+    { name: 'no-ffmpeg', disableFfmpeg: true, completedSteps: '15/17', renderReceipts: 1, exportReceipts: 1, ffmpegDeliveryReceipts: 0, localDeliveryEvidencePresent: 1 }
+  ]) {
+    const dir = await mkdtemp(path.join(os.tmpdir(), `media-studio-local-package-rework-two-items-${mode.name}-`))
+    await runVeniceProductionRehearsal({ projectDir: dir })
+    await addSecondAcceptedProductionItemFixture(dir)
+    await runLocalProductionOutput({
+      projectDir: dir,
+      disableFfmpeg: mode.disableFfmpeg,
+      quiet: true,
+      createdAt: '2026-05-19T00:00:00.000Z'
+    })
+
+    await writeLocalPackageReviewDecision({
+      projectDir: dir,
+      decision: 'request_changes',
+      output: 'records/decisions/media-local-package-review-request-changes.local.json',
+      quiet: true
+    })
+
+    const output = await captureConsole(() => runLocalPackageRework({
+      projectDir: dir,
+      disableFfmpeg: mode.disableFfmpeg,
+      createdAt: '3000-01-01T00:00:00.000Z'
+    }))
+    const result = output.result
+
+    assert.equal(result.summary.steps, Number(mode.completedSteps.split('/')[0]))
+    assert.equal(result.summary.totalSteps, 17)
+    assert.equal(result.output.summary.roughCutItems, 2)
+    assert.equal(result.output.summary.renderReceipts, mode.renderReceipts)
+    assert.equal(result.output.summary.exportReceipts, mode.exportReceipts)
+    assert.equal(result.output.summary.ffmpegDeliveryReceipts, mode.ffmpegDeliveryReceipts)
+    assert.equal(result.output.summary.localDeliveryEvidencePresent, mode.localDeliveryEvidencePresent)
+    assert.equal(result.summary.localPackageReviewed, 1)
+    assert.equal(result.summary.publicationAuthorityRequests, 1)
+    assert.equal(result.summary.localProductionPackageComplete, 2)
+    assert.equal(result.summary.pendingAuthority, 2)
+    assert.equal(result.summary.productionReady, 0)
+    assert.equal(result.nonClaims.publicationAuthorization, false)
+    assert.equal(result.nonClaims.productionReady, false)
+    assert.equal(result.nonClaims.edgeCalled, false)
+    assert.equal(result.nonClaims.meshPublished, false)
+    assert.ok(output.lines.some((line) =>
+      line === `local package rework: project=venice-smoke-project | sourceReview=decision-local-package-venice-smoke-project-request_changes | steps=${mode.completedSteps} | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=2 | pendingAuthority=2 | productionReady=0`
+    ))
+
+    const roughCut = JSON.parse(await readFile(path.join(dir, 'records/production/media-rough-cut-capsule.local.json'), 'utf8'))
+    assert.equal(roughCut.orderedItems.length, 2)
+    assert.deepEqual(roughCut.orderedItems.map((item) => item.order), [1, 2])
+
+    const prereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
+    assert.equal(prereqs.candidates, 2)
+    assert.equal(prereqs.localProductionPackageComplete, 2)
+    assert.equal(prereqs.localDeliveryEvidenceIntact, 2)
+    assert.equal(prereqs.localPackageReviews, 1)
+    assert.equal(prereqs.localPackageReworkRequests, 0)
+    assert.equal(prereqs.publicationAuthorityRequestsFresh, 1)
+    assert.equal(prereqs.outputIntegrityBlockingIssues, 0)
+    assert.equal(prereqs.pendingAuthority, 2)
+    assert.equal(prereqs.productionReady, 0)
+
+    const mediaSummary = await createMediaSummary({ projectDir: dir })
+    assert.equal(mediaSummary.productionRoughCuts.itemRefs, 2)
+    assert.equal(mediaSummary.packageAuthority.localPackageReviews, 1)
+    assert.equal(mediaSummary.packageAuthority.packageReworkRequests, 0)
+    assert.equal(mediaSummary.packageAuthority.freshRequests, 1)
+    assert.equal(mediaSummary.packageAuthority.productionReady, 0)
+  }
+})
+
 test('local production output runner carries two accepted production items through reviewable delivery', async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-local-output-two-items-'))
   await runVeniceProductionRehearsal({ projectDir: dir })
