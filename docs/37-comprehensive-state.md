@@ -521,6 +521,11 @@ export receipt delivery posture. Fresh export receipts can show local delivery
 bytes were created, but the report still treats render authorization, export
 authorization, publication authorization, and production readiness as missing.
 It writes local guidance only, not an authority artifact.
+`npm run record-io:stress` creates a bounded temp-project overlap of local
+output writers and summary/index/prereq readers. It proves the current local
+JSON record posture does not expose partial writes to operator/status surfaces;
+any malformed final records remain local retry-safe diagnostics, not truth or
+authority.
 `npm run production:rough-cut` writes `media.rough_cut_capsule.local.v1`, an
 order-only local review package over accepted production item refs. It does not
 render, export, publish, or grant production authority.

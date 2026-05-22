@@ -239,6 +239,10 @@ that output-integrity posture without granting authority or publication.
 `production:local-package-review` is a local decision over intact delivery
 evidence. `production:publication-authority-request` is only a future authority
 request candidate.
+Use `npm run record-io:stress` when testing concurrent local output/status
+activity. It creates a temp project by default, overlaps local output writers
+with summary/index/prereq readers, and keeps ffmpeg disabled unless
+`--enable-ffmpeg` is passed.
 
 Write a local Packs-aligned control-surface projection without adding UI:
 

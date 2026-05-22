@@ -371,6 +371,17 @@ the same output-integrity posture compactly for operator inspection.
 passes. `production:publication-authority-request` packages that reviewed local
 output evidence for a future authority lane, but still grants no publication or
 export authority.
+`record-io:stress` runs a bounded temp-project overlap of local output writers
+and status readers to verify that summary/index/prereq surfaces do not crash on
+partial local JSON records:
+
+```bash
+npm run record-io:stress -- --iterations 3 --reader-rounds 3
+```
+
+The stress command disables ffmpeg by default so it tests local record IO rather
+than encoder contention. Pass `--enable-ffmpeg` only when intentionally testing
+the full media output path.
 
 The first real local render commands consume the dry-run render plan:
 

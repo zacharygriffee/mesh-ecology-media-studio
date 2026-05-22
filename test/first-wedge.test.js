@@ -95,6 +95,7 @@ import {
   writeLocalLayerResourceRefCandidates
 } from '../src/local/resource-ref-candidates.js'
 import { repairLocalPosture } from '../src/local/repair-local-posture.js'
+import { stressLocalJsonRecordIO } from '../src/local/stress-local-json-io.js'
 import {
   createMediaOperationCandidate
 } from '../src/contracts/operation-candidates.js'
@@ -407,6 +408,27 @@ test('status surfaces skip temporary JSON files and report malformed final recor
   const operatorIndex = await writeOperatorPacketIndex({ projectDir: dir, quiet: true })
   assert.equal(operatorIndex.index.recordReadDiagnostics.diagnostics, 1)
   assert.equal(operatorIndex.index.summary.recordIODiagnostics, 1)
+})
+
+test('local JSON IO stress keeps production status readers from crashing during output overlap', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-json-io-stress-test-'))
+  const result = await stressLocalJsonRecordIO({
+    projectDir: dir,
+    iterations: 2,
+    readerRounds: 2,
+    disableFfmpeg: true,
+    quiet: true
+  })
+
+  assert.equal(result.writerRuns, 2)
+  assert.equal(result.readerRuns, 2)
+  assert.equal(result.nonClaims.localOnly, true)
+  assert.equal(result.nonClaims.edgeCalled, false)
+  assert.equal(result.nonClaims.meshPublished, false)
+  assert.equal(result.nonClaims.productionReady, false)
+  assert.equal(result.finalState.productionReady, 0)
+  assert.equal(result.finalState.localDeliveryEvidenceIntact, 1)
+  assert.equal(result.finalState.localProductionPackageComplete, 1)
 })
 
 test('required strict JSON input still fails clearly on malformed records', async () => {
