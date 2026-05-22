@@ -4040,7 +4040,7 @@ test('local production output runner creates reviewable delivery without authori
   assert.equal(result.steps.every((step) => step.authorityGranted === false), true)
   assert.equal(result.steps.every((step) => step.productionReady === false), true)
   assert.ok(output.lines.some((line) =>
-    line === 'production local output: project=venice-smoke-project | steps=17/17 | roughCutItems=1 | roughCutReviewed=1 | renderReceipts=2 | exportReceipts=2 | ffmpegDeliveryReceipts=1 | localDeliveryEvidencePresent=2 | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=1 | pendingAuthority=1 | productionReady=0'
+    line === 'production local output: project=venice-smoke-project | steps=17/17 | roughCutItems=1 | roughCutReviewed=1 | renderReceipts=2 | exportReceipts=2 | ffmpegDeliveryReceipts=1 | localDeliveryEvidencePresent=2 | activeDeliveryReceipts=2 | currentExportReceiptAttention=0 | historicalExportReceiptAttention=0 | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=1 | pendingAuthority=1 | productionReady=0'
   ))
   assert.ok(output.lines.some((line) => line.includes('no approval authority')))
 
@@ -4119,7 +4119,7 @@ test('local production output runner can keep ffmpeg disabled without blocking l
     step.productionReady === false
   ))
   assert.ok(output.lines.some((line) =>
-    line === 'production local output: project=venice-smoke-project | steps=15/17 | roughCutItems=1 | roughCutReviewed=1 | renderReceipts=1 | exportReceipts=1 | ffmpegDeliveryReceipts=0 | localDeliveryEvidencePresent=1 | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=1 | pendingAuthority=1 | productionReady=0'
+    line === 'production local output: project=venice-smoke-project | steps=15/17 | roughCutItems=1 | roughCutReviewed=1 | renderReceipts=1 | exportReceipts=1 | ffmpegDeliveryReceipts=0 | localDeliveryEvidencePresent=1 | activeDeliveryReceipts=1 | currentExportReceiptAttention=0 | historicalExportReceiptAttention=0 | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=1 | pendingAuthority=1 | productionReady=0'
   ))
 
   const summary = await createMediaSummary({ projectDir: dir })
@@ -4532,7 +4532,7 @@ test('local production output runner carries two accepted production items throu
   assert.equal(result.nonClaims.publicationAuthorization, false)
   assert.equal(result.nonClaims.productionReady, false)
   assert.ok(output.lines.some((line) =>
-    line === 'production local output: project=venice-smoke-project | steps=17/17 | roughCutItems=2 | roughCutReviewed=1 | renderReceipts=2 | exportReceipts=2 | ffmpegDeliveryReceipts=1 | localDeliveryEvidencePresent=2 | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=2 | pendingAuthority=2 | productionReady=0'
+    line === 'production local output: project=venice-smoke-project | steps=17/17 | roughCutItems=2 | roughCutReviewed=1 | renderReceipts=2 | exportReceipts=2 | ffmpegDeliveryReceipts=1 | localDeliveryEvidencePresent=2 | activeDeliveryReceipts=2 | currentExportReceiptAttention=0 | historicalExportReceiptAttention=0 | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=2 | pendingAuthority=2 | productionReady=0'
   ))
 
   const roughCut = JSON.parse(await readFile(path.join(dir, 'records/production/media-rough-cut-capsule.local.json'), 'utf8'))
@@ -4634,7 +4634,7 @@ test('local production output runner carries two accepted production items witho
   assert.ok(result.refs.localPackageReviewDecisionId)
   assert.ok(result.refs.publicationAuthorityRequestCandidateId)
   assert.ok(output.lines.some((line) =>
-    line === 'production local output: project=venice-smoke-project | steps=15/17 | roughCutItems=2 | roughCutReviewed=1 | renderReceipts=1 | exportReceipts=1 | ffmpegDeliveryReceipts=0 | localDeliveryEvidencePresent=1 | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=2 | pendingAuthority=2 | productionReady=0'
+    line === 'production local output: project=venice-smoke-project | steps=15/17 | roughCutItems=2 | roughCutReviewed=1 | renderReceipts=1 | exportReceipts=1 | ffmpegDeliveryReceipts=0 | localDeliveryEvidencePresent=1 | activeDeliveryReceipts=1 | currentExportReceiptAttention=0 | historicalExportReceiptAttention=0 | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=2 | pendingAuthority=2 | productionReady=0'
   ))
 
   const localExport = JSON.parse(await readFile(path.join(dir, 'records/production/media-export-receipt.local.json'), 'utf8'))
