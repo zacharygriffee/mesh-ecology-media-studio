@@ -470,8 +470,11 @@ readability over existing local refs only; it does not add approval authority or
 production readiness.
 `npm run production:authority-prereqs` now separates the older local package
 check from `localProductionPackageComplete`, which only becomes true after the
-reviewed rough cut has fresh local render/export delivery evidence. Even then,
-`authorityMissing=true` and `productionReady=false` remain explicit.
+reviewed rough cut has fresh local render and export delivery evidence. The
+summary distinguishes render receipts from export receipts, counts ffmpeg MP4
+delivery receipts separately, and reports `localDeliveryEvidencePresent` without
+claiming publication. Even then, `authorityMissing=true` and
+`productionReady=false` remain explicit.
 The authority prerequisite and handoff commands can carry optional
 `mesh-ecology-layer` import refs (`layerRef`, `layerProfileRef`,
 `continuityRef`, `desyncPostureRef`, and RBC profile refs) so Studio packages

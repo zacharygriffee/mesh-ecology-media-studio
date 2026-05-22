@@ -351,9 +351,10 @@ delivery evidence, not publication authorization or production readiness.
 export plan using `ffmpeg-static` by default. It also supports
 `--disable-ffmpeg` and remains local-only delivery evidence.
 `production:authority-prereqs` now distinguishes local export delivery evidence
-from authority: fresh export receipts can show `deliveryCreated=true` and
-`exportPerformed=true`, while publication authorization and production readiness
-remain false.
+from authority: fresh export receipts can show `localDeliveryEvidencePresent`,
+`deliveryCreated=true`, and `exportPerformed=true`; ffmpeg MP4 delivery
+receipts are counted distinctly from package-copy receipts. Publication
+authorization and production readiness remain false.
 
 ## Inspection And Edge-Compatible Artifacts
 

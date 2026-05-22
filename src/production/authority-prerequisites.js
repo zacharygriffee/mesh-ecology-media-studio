@@ -97,9 +97,12 @@ export async function createProductionAuthorityPrerequisiteReport({
     renderReceipts: rows.filter((row) => row.renderReceiptPosture?.present).length,
     renderReceiptsFresh: rows.filter((row) => row.renderReceiptPosture?.freshnessState === 'fresh').length,
     renderReceiptsStale: rows.filter((row) => row.renderReceiptPosture?.freshnessState === 'stale').length,
-    exportReceipts: rows.filter((row) => row.exportReceiptPosture?.present).length,
-    exportReceiptsFresh: rows.filter((row) => row.exportReceiptPosture?.freshnessState === 'fresh').length,
-    exportReceiptsStale: rows.filter((row) => row.exportReceiptPosture?.freshnessState === 'stale').length,
+    exportReceipts: rows.reduce((sum, row) => sum + (row.exportReceiptPosture?.exportReceipts ?? 0), 0),
+    exportReceiptsFresh: rows.reduce((sum, row) => sum + (row.exportReceiptPosture?.exportReceiptsFresh ?? 0), 0),
+    exportReceiptsStale: rows.reduce((sum, row) => sum + (row.exportReceiptPosture?.exportReceiptsStale ?? 0), 0),
+    localPackageCopyExportReceipts: rows.reduce((sum, row) => sum + (row.exportReceiptPosture?.localPackageCopyExportReceipts ?? 0), 0),
+    ffmpegDeliveryReceipts: rows.reduce((sum, row) => sum + (row.exportReceiptPosture?.ffmpegDeliveryReceipts ?? 0), 0),
+    localDeliveryEvidencePresent: rows.filter((row) => row.exportReceiptPosture?.localDeliveryEvidencePresent).length,
     deliveryCreated: rows.filter((row) => row.exportReceiptPosture?.deliveryCreated).length,
     exportPerformed: rows.filter((row) => row.exportReceiptPosture?.exportPerformed).length,
     renderAuthorizationMissing: rows.length,
@@ -313,6 +316,8 @@ function printProductionAuthorityPrerequisiteReport(report, output = defaultOutp
     `renderExportCandidates=${report.renderExportCandidates ?? 0}`,
     `renderReceipts=${report.renderReceipts ?? 0}`,
     `exportReceipts=${report.exportReceipts ?? 0}`,
+    `ffmpegDeliveryReceipts=${report.ffmpegDeliveryReceipts ?? 0}`,
+    `localDeliveryEvidencePresent=${report.localDeliveryEvidencePresent ?? 0}`,
     `deliveryCreated=${report.deliveryCreated ?? 0}`,
     `exportPerformed=${report.exportPerformed ?? 0}`,
     `renderAuthorizationMissing=${report.renderAuthorizationMissing ?? 0}`,
@@ -333,6 +338,7 @@ function printProductionAuthorityPrerequisiteReport(report, output = defaultOutp
       `renderExport=${row.renderExportCandidatePosture?.state ?? 'unknown'}`,
       `renderReceipt=${row.renderReceiptPosture?.state ?? 'unknown'}`,
       `exportReceipt=${row.exportReceiptPosture?.state ?? 'unknown'}`,
+      `localDeliveryEvidence=${row.exportReceiptPosture?.localDeliveryEvidencePresent === true}`,
       `proposalSituatedRefs=${row.approvalProposalIdentity?.situatedRefsPresent === true}`,
       `derivatives=${row.derivativeKinds.join(',') || 'none'}`,
       `nextAction=${row.safeNextAction}`
@@ -355,24 +361,39 @@ function summarizeExportReceiptPosture(roughCutReviewPosture, records) {
     return missingExportReceiptPosture()
   }
 
-  const latest = receiptRows[0]
+  const freshRows = receiptRows.filter((row) => row.freshnessState === 'fresh')
+  const freshDeliveryRows = freshRows.filter((row) => row.deliveryCreated && row.exportPerformed)
+  const localPackageCopyExportReceipts = receiptRows.filter((row) => row.exportKind === 'local-review-package-copy').length
+  const ffmpegDeliveryReceipts = receiptRows.filter((row) => row.exportKind === 'local-ffmpeg-review-delivery').length
+  const localDeliveryEvidencePresent = freshDeliveryRows.length > 0
+  const primary = freshDeliveryRows[0] ?? receiptRows[0]
   return {
-    state: latest.freshnessState === 'fresh'
+    state: localDeliveryEvidencePresent
       ? 'export-receipt-present-delivery-only'
       : 'export-receipt-stale',
     present: true,
-    receiptRef: latest.receiptRef,
-    exportKind: latest.exportKind,
-    deliveryLocalRef: latest.deliveryLocalRef,
-    freshnessState: latest.freshnessState,
-    issueCodes: latest.issueCodes,
-    exportPerformed: latest.exportPerformed,
-    deliveryCreated: latest.deliveryCreated,
+    receiptRef: primary.receiptRef,
+    receiptRefs: receiptRows.map((row) => row.receiptRef),
+    exportKind: primary.exportKind,
+    deliveryLocalRef: primary.deliveryLocalRef,
+    deliveryLocalRefs: receiptRows
+      .map((row) => row.deliveryLocalRef)
+      .filter((ref) => ref?.path),
+    freshnessState: localDeliveryEvidencePresent ? 'fresh' : primary.freshnessState,
+    issueCodes: [...new Set(receiptRows.flatMap((row) => row.issueCodes ?? []))],
+    exportReceipts: receiptRows.length,
+    exportReceiptsFresh: freshRows.length,
+    exportReceiptsStale: receiptRows.filter((row) => row.freshnessState === 'stale').length,
+    localPackageCopyExportReceipts,
+    ffmpegDeliveryReceipts,
+    localDeliveryEvidencePresent,
+    exportPerformed: localDeliveryEvidencePresent,
+    deliveryCreated: localDeliveryEvidencePresent,
     productionReady: false,
     renderAuthorization: false,
     exportAuthorization: false,
     publicationAuthorization: false,
-    nextAction: latest.nextAction,
+    nextAction: primary.nextAction,
     localOnly: true,
     operatorGuidanceOnly: true
   }
@@ -383,7 +404,14 @@ function missingExportReceiptPosture() {
     state: 'export-receipt-missing',
     present: false,
     receiptRef: null,
+    receiptRefs: [],
     freshnessState: 'missing',
+    exportReceipts: 0,
+    exportReceiptsFresh: 0,
+    exportReceiptsStale: 0,
+    localPackageCopyExportReceipts: 0,
+    ffmpegDeliveryReceipts: 0,
+    localDeliveryEvidencePresent: false,
     exportPerformed: false,
     deliveryCreated: false,
     productionReady: false,
