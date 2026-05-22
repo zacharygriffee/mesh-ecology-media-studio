@@ -90,6 +90,9 @@ export async function writeOperatorPacketIndex({
   const productionBundleRefs = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProductionBundleLocal)
     .map(toInspectionRef)
+  const publicationAuthorityRequestRefs = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaPublicationAuthorityRequestCandidateLocal)
+    .map(toInspectionRef)
   const roughCutCapsuleRefs = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaRoughCutCapsuleLocal)
     .map(toInspectionRef)
@@ -181,6 +184,7 @@ export async function writeOperatorPacketIndex({
     providerLoopStatusRefs,
     productionCapsuleRefs,
     productionBundleRefs,
+    publicationAuthorityRequestRefs,
     roughCutCapsuleRefs,
     renderExportCandidateRefs,
     renderReceiptRefs,
@@ -216,6 +220,7 @@ export async function writeOperatorPacketIndex({
       productionCapsules: productionCapsuleRefs.length,
       productionCapsulesNeedingAttention: productionCapsules.filter((capsule) => capsule.needsOperatorAttention).length,
       productionBundles: productionBundleRefs.length,
+      publicationAuthorityRequests: publicationAuthorityRequestRefs.length,
       productionBundlesNeedingAttention: productionBundles.filter((bundle) => bundle.needsOperatorAttention).length,
       roughCutCapsules: roughCutCapsuleRefs.length,
       roughCutCapsulesNeedingAttention: roughCutCapsules.filter((roughCut) => roughCut.needsOperatorAttention).length,
@@ -357,6 +362,7 @@ function formatOperatorPacketIndexSummary(index, output) {
     `roughCutDecisions=${summary.roughCutReviewDecisions ?? 0}`,
     `productionCapsules=${summary.productionCapsules ?? 0}`,
     `productionBundles=${summary.productionBundles ?? 0}`,
+    `publicationAuthorityRequests=${summary.publicationAuthorityRequests ?? 0}`,
     `roughCuts=${summary.roughCutCapsules ?? 0}`,
     `renderExportCandidates=${summary.renderExportCandidates ?? 0}`,
     `renderReceipts=${summary.renderReceipts ?? 0}`,
@@ -599,6 +605,7 @@ const indexableSchemas = new Set([
   artifactKinds.mediaProductionBundleLocal,
   artifactKinds.mediaProductionAuthorityPrerequisitesLocal,
   artifactKinds.mediaAuthorityHandoffCandidateLocal,
+  artifactKinds.mediaPublicationAuthorityRequestCandidateLocal,
   artifactKinds.mediaRoughCutCapsuleLocal,
   artifactKinds.mediaRenderExportCandidateLocal,
   artifactKinds.mediaRenderAdapterContractLocal,
@@ -936,6 +943,7 @@ function kindForSchema(schema) {
     [artifactKinds.mediaProviderLoopStatusLocal]: 'media-provider-loop-status',
     [artifactKinds.mediaProductionAssetCapsuleLocal]: 'media-production-asset-capsule',
     [artifactKinds.mediaProductionBundleLocal]: 'media-production-bundle',
+    [artifactKinds.mediaPublicationAuthorityRequestCandidateLocal]: 'media-publication-authority-request-candidate',
     [artifactKinds.mediaRoughCutCapsuleLocal]: 'media-rough-cut-capsule',
     [artifactKinds.mediaRenderExportCandidateLocal]: 'media-render-export-candidate',
     [artifactKinds.mediaRenderAdapterContractLocal]: 'media-render-adapter-contract',
@@ -954,6 +962,7 @@ function idForRecord(record) {
     record.compatibilityBundleId ??
     record.healthId ??
     record.handoffCandidateId ??
+    record.requestCandidateId ??
     record.decisionId ??
     record.requestId ??
     record.statusId ??

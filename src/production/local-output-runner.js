@@ -10,6 +10,8 @@ import { writeExportCandidate } from './export-candidate.js'
 import { writeFfmpegExport } from './export-ffmpeg.js'
 import { writeLocalExportPackage } from './export-local-package.js'
 import { writeExportPlanCandidate } from './export-plan-candidate.js'
+import { writeLocalPackageReviewDecision } from './local-package-review-decision.js'
+import { writePublicationAuthorityRequestCandidate } from './publication-authority-request-candidate.js'
 import { writeRenderAdapterContract } from './render-adapter-contract.js'
 import { writeContactSheetRender } from './render-contact-sheet.js'
 import { writeRenderExportCandidate } from './render-export-candidate.js'
@@ -106,9 +108,19 @@ export async function runLocalProductionOutput({
   const prerequisiteReport = await recordStep(steps, 'authority-prereqs', () =>
     writeProductionAuthorityPrerequisiteReport({ projectDir, quiet: true, createdAt: stepTime() })
   )
+  const packageReview = canReviewLocalPackage(prerequisiteReport.result)
+    ? await recordStep(steps, 'local-package-review', () =>
+      writeLocalPackageReviewDecision({ projectDir, quiet: true, createdAt: stepTime() })
+    )
+    : await skipStep(steps, 'local-package-review', 'local production package incomplete or output integrity blocked')
   const authorityHandoff = await recordStep(steps, 'authority-handoff', () =>
     writeAuthorityHandoffCandidate({ projectDir, quiet: true, createdAt: stepTime() })
   )
+  const publicationAuthorityRequest = packageReview.result?.decision
+    ? await recordStep(steps, 'publication-authority-request', () =>
+      writePublicationAuthorityRequestCandidate({ projectDir, quiet: true, createdAt: stepTime() })
+    )
+    : await skipStep(steps, 'publication-authority-request', 'local package review missing')
   const operatorIndex = await recordStep(steps, 'operator-index', () =>
     writeOperatorPacketIndex({ projectDir, quiet: true })
   )
@@ -134,7 +146,9 @@ export async function runLocalProductionOutput({
       exportPlanId: exportPlan.result.plan?.planId ?? null,
       localExportReceiptId: localExport.result?.receipt?.exportReceiptId ?? null,
       ffmpegExportReceiptId: ffmpegExport.result?.receipt?.exportReceiptId ?? null,
+      localPackageReviewDecisionId: packageReview.result?.decision?.decisionId ?? null,
       authorityHandoffCandidateId: authorityHandoff.result.candidate?.handoffCandidateId ?? null,
+      publicationAuthorityRequestCandidateId: publicationAuthorityRequest.result?.candidate?.requestCandidateId ?? null,
       operatorPacketIndexId: operatorIndex.result.index?.indexId ?? null,
       edgeCompatibilityBundleId: edgeCompatibility.result.bundle?.compatibilityBundleId ?? null
     },
@@ -145,6 +159,8 @@ export async function runLocalProductionOutput({
       exportReceipts: mediaSummary.exportReceipts.total,
       ffmpegDeliveryReceipts: mediaSummary.exportReceipts.ffmpegDeliveryReceipts,
       localDeliveryEvidencePresent: mediaSummary.exportReceipts.localDeliveryEvidencePresent,
+      localPackageReviewed: packageReview.result?.decision ? 1 : 0,
+      publicationAuthorityRequests: publicationAuthorityRequest.result?.candidate ? 1 : 0,
       localProductionPackageComplete: finalPrereqs.localProductionPackageComplete ?? 0,
       pendingAuthority: finalPrereqs.pendingAuthority ?? 0,
       productionReady: finalPrereqs.productionReady ?? 0
@@ -186,10 +202,19 @@ export function formatLocalProductionOutputSummary(result) {
     `exportReceipts=${result.summary.exportReceipts}`,
     `ffmpegDeliveryReceipts=${result.summary.ffmpegDeliveryReceipts}`,
     `localDeliveryEvidencePresent=${result.summary.localDeliveryEvidencePresent}`,
+    `localPackageReviewed=${result.summary.localPackageReviewed}`,
+    `publicationAuthorityRequests=${result.summary.publicationAuthorityRequests}`,
     `localProductionPackageComplete=${result.summary.localProductionPackageComplete}`,
     `pendingAuthority=${result.summary.pendingAuthority}`,
     `productionReady=${result.summary.productionReady}`
   ].join(' | ')
+}
+
+function canReviewLocalPackage(report) {
+  return (report?.candidates ?? 0) > 0 &&
+    (report.localProductionPackageComplete ?? 0) === report.candidates &&
+    (report.localDeliveryEvidenceIntact ?? 0) === report.candidates &&
+    (report.outputIntegrityBlockingIssues ?? 0) === 0
 }
 
 async function recordStep(steps, step, fn) {

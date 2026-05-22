@@ -84,6 +84,7 @@ export const schemaFiles = {
   'media.production_bundle.local.v1': 'schemas/media-production-bundle-local.schema.json',
   'media.production_authority_prerequisites.summary.local.v1': 'schemas/media-production-authority-prerequisites-local.schema.json',
   'media.authority_handoff_candidate.local.v1': 'schemas/media-authority-handoff-candidate-local.schema.json',
+  'media.publication_authority_request_candidate.local.v1': 'schemas/media-publication-authority-request-candidate-local.schema.json',
   'media.rough_cut_capsule.local.v1': 'schemas/media-rough-cut-capsule-local.schema.json',
   'media.render_export_candidate.local.v1': 'schemas/media-render-export-candidate-local.schema.json',
   'media.render_adapter_contract.local.v1': 'schemas/media-render-adapter-contract-local.schema.json',
@@ -206,6 +207,40 @@ export const requiredFields = {
     'nextActions',
     'createdAt',
     'operatorGuidanceOnly',
+    'productionReady',
+    'approvalAuthority',
+    'ratifierAuthority',
+    'publicationAuthorization',
+    'providerTruth',
+    'byteAvailabilityProof',
+    'materializationProof',
+    'resourceAdmission',
+    'causalTruth',
+    'edgeCalled',
+    'meshPublished',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'localTruthLabel',
+    'truthStatus'
+  ],
+  'media.publication_authority_request_candidate.local.v1': [
+    'schema',
+    'requestCandidateId',
+    'projectId',
+    'requestKind',
+    'mode',
+    'targetAuthorityLane',
+    'prerequisiteSummary',
+    'localPackageReviewDecisionRefs',
+    'authorityReviewInputs',
+    'sourceRefs',
+    'authorityGaps',
+    'nextActions',
+    'createdAt',
+    'operatorGuidanceOnly',
+    'requestOnly',
     'productionReady',
     'approvalAuthority',
     'ratifierAuthority',
@@ -1407,6 +1442,7 @@ const idFields = {
   [artifactKinds.mediaProductionBundleLocal]: 'bundleId',
   [artifactKinds.mediaProductionAuthorityPrerequisitesLocal]: 'reportId',
   [artifactKinds.mediaAuthorityHandoffCandidateLocal]: 'handoffCandidateId',
+  [artifactKinds.mediaPublicationAuthorityRequestCandidateLocal]: 'requestCandidateId',
   [artifactKinds.mediaRoughCutCapsuleLocal]: 'roughCutId',
   [artifactKinds.mediaRenderExportCandidateLocal]: 'candidateId',
   [artifactKinds.mediaRenderAdapterContractLocal]: 'contractId',
@@ -1454,6 +1490,7 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaProductionBundleLocal,
   artifactKinds.mediaProductionAuthorityPrerequisitesLocal,
   artifactKinds.mediaAuthorityHandoffCandidateLocal,
+  artifactKinds.mediaPublicationAuthorityRequestCandidateLocal,
   artifactKinds.mediaRoughCutCapsuleLocal,
   artifactKinds.mediaRenderExportCandidateLocal,
   artifactKinds.mediaRenderAdapterContractLocal,
@@ -1506,6 +1543,7 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaProductionBundleLocal,
   artifactKinds.mediaProductionAuthorityPrerequisitesLocal,
   artifactKinds.mediaAuthorityHandoffCandidateLocal,
+  artifactKinds.mediaPublicationAuthorityRequestCandidateLocal,
   artifactKinds.mediaRoughCutCapsuleLocal,
   artifactKinds.mediaRenderExportCandidateLocal,
   artifactKinds.mediaRenderAdapterContractLocal,
@@ -1522,7 +1560,7 @@ const localGeneratedSchemas = new Set([
 ])
 
 const readinessStates = new Set(['draft', 'blocked', 'ready', 'caution', 'complete'])
-const decisionTypes = new Set(['accept', 'reject', 'request_changes', 'review_provider_loop', 'retry_provider_loop', 'review_rough_cut', 'defer'])
+const decisionTypes = new Set(['accept', 'reject', 'request_changes', 'review_provider_loop', 'retry_provider_loop', 'review_rough_cut', 'review_local_package', 'defer'])
 const productionUnitKinds = new Set([
   'project',
   'episode',
@@ -2557,6 +2595,44 @@ export function validateRecordShape(record, schemaId = record.schema) {
 
     if (record.operatorGuidanceOnly !== true || record.productionReady !== false) {
       throw new Error(`Record ${schemaId} must remain handoff-only and productionReady=false`)
+    }
+
+    for (const flag of ['approvalAuthority', 'ratifierAuthority', 'publicationAuthorization', 'providerTruth', 'byteAvailabilityProof', 'materializationProof', 'resourceAdmission', 'causalTruth', 'edgeCalled', 'meshPublished']) {
+      if (record[flag] !== false) {
+        throw new Error(`Record ${schemaId} must set ${flag}=false`)
+      }
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaPublicationAuthorityRequestCandidateLocal) {
+    if (record.requestKind !== 'publication-export-authority-review-candidate') {
+      throw new Error(`Record ${schemaId} has invalid request kind: ${record.requestKind}`)
+    }
+
+    if (record.mode !== 'standalone-local') {
+      throw new Error(`Record ${schemaId} has invalid mode: ${record.mode}`)
+    }
+
+    if (record.targetAuthorityLane !== 'future-publication-export-authority-lane') {
+      throw new Error(`Record ${schemaId} must target future-publication-export-authority-lane`)
+    }
+
+    for (const collection of ['localPackageReviewDecisionRefs', 'authorityReviewInputs', 'sourceRefs', 'authorityGaps', 'nextActions']) {
+      if (!Array.isArray(record[collection])) {
+        throw new Error(`Record ${schemaId}.${collection} must be an array`)
+      }
+    }
+
+    record.sourceRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.sourceRefs[${index}]`))
+
+    if (!record.prerequisiteSummary || typeof record.prerequisiteSummary !== 'object') {
+      throw new Error(`Record ${schemaId}.prerequisiteSummary must be an object`)
+    }
+
+    if (record.operatorGuidanceOnly !== true || record.requestOnly !== true || record.productionReady !== false) {
+      throw new Error(`Record ${schemaId} must remain request-only and productionReady=false`)
     }
 
     for (const flag of ['approvalAuthority', 'ratifierAuthority', 'publicationAuthorization', 'providerTruth', 'byteAvailabilityProof', 'materializationProof', 'resourceAdmission', 'causalTruth', 'edgeCalled', 'meshPublished']) {

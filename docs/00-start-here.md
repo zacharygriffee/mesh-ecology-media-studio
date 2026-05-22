@@ -179,6 +179,8 @@ npm run production:export-candidate -- --project-dir examples/venice-smoke
 npm run production:export-plan -- --project-dir examples/venice-smoke
 npm run production:export-local-package -- --project-dir examples/venice-smoke
 npm run production:export-ffmpeg -- --project-dir examples/venice-smoke
+npm run production:local-package-review -- --project-dir examples/venice-smoke
+npm run production:publication-authority-request -- --project-dir examples/venice-smoke
 npm run production:local-output -- --project-dir examples/venice-smoke
 npm run provider:venice:rehearse-production -- --project-dir examples/venice-smoke
 npm run approval:proposal -- --project-dir examples/card-to-candidate
@@ -208,9 +210,10 @@ themselves. Render plans and render receipts can produce local preview evidence,
 but those receipts are still not export delivery, publication authorization, or
 production readiness.
 `npm run production:local-output` chains the existing local rough-cut, render,
-export, authority-prereq, handoff, operator-index, and Edge-compatible bundle
-commands for operator convenience. It does not create a new authority path, call
-Edge, publish, or make production ready.
+export, authority-prereq, local package review, publication/export authority
+request, handoff, operator-index, and Edge-compatible bundle commands for
+operator convenience. It does not grant authority, call Edge, publish, or make
+production ready.
 Use `--disable-ffmpeg` when the local runner should avoid MP4 render/export
 execution and keep only contact-sheet plus local package-copy evidence.
 `production:authority-prereqs` checks the referenced local delivery/export
@@ -218,6 +221,9 @@ bytes for presence, size, and hash before reporting local production package
 completeness.
 `media:summary`, `health:summary`, `operator:index`, and `edge:compat` expose
 that output-integrity posture without granting authority or publication.
+`production:local-package-review` is a local decision over intact delivery
+evidence. `production:publication-authority-request` is only a future authority
+request candidate.
 
 Write a local Packs-aligned control-surface projection without adding UI:
 

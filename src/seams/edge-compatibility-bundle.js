@@ -65,6 +65,7 @@ const productionSourceSchemas = new Set([
   artifactKinds.mediaProductionBundleLocal,
   artifactKinds.mediaProductionAuthorityPrerequisitesLocal,
   artifactKinds.mediaAuthorityHandoffCandidateLocal,
+  artifactKinds.mediaPublicationAuthorityRequestCandidateLocal,
   artifactKinds.mediaRoughCutCapsuleLocal,
   artifactKinds.mediaRenderExportCandidateLocal,
   artifactKinds.mediaRenderAdapterContractLocal,
@@ -226,6 +227,8 @@ export async function writeEdgeCompatibilityBundle({
     console.log([
       `edge source refs: authorityPrereqs=${bundle.exportDeliverySummary.authorityPrerequisiteRefs}`,
       `authorityHandoffs=${bundle.exportDeliverySummary.authorityHandoffRefs}`,
+      `localPackageReviews=${bundle.exportDeliverySummary.localPackageReviewDecisionRefs}`,
+      `publicationAuthorityRequests=${bundle.exportDeliverySummary.publicationAuthorityRequestRefs}`,
       `localDeliveryEvidenceIntact=${bundle.exportDeliverySummary.localDeliveryEvidenceIntact}`,
       `outputIntegrityBlocking=${bundle.exportDeliverySummary.outputIntegrityBlockingIssues}`,
       `outputIntegrityAttention=${bundle.exportDeliverySummary.outputIntegrityAttentionIssues}`
@@ -511,6 +514,11 @@ function createExportDeliverySummary({ sources }) {
     .filter((source) => source.record.schema === artifactKinds.mediaProductionAuthorityPrerequisitesLocal)
   const authorityHandoffEntries = Object.values(sources)
     .filter((source) => source.record.schema === artifactKinds.mediaAuthorityHandoffCandidateLocal)
+  const localPackageReviewDecisionEntries = Object.values(sources)
+    .filter((source) => source.record.schema === artifactKinds.mediaOperatorDecision)
+    .filter((source) => source.record.decisionType === 'review_local_package')
+  const publicationAuthorityRequestEntries = Object.values(sources)
+    .filter((source) => source.record.schema === artifactKinds.mediaPublicationAuthorityRequestCandidateLocal)
   const authorityPrereqSummary = authorityPrereqEntries[0]?.record
 
   return {
@@ -518,6 +526,8 @@ function createExportDeliverySummary({ sources }) {
     exportReceipts: refs.length,
     authorityPrerequisiteRefs: authorityPrereqEntries.length,
     authorityHandoffRefs: authorityHandoffEntries.length,
+    localPackageReviewDecisionRefs: localPackageReviewDecisionEntries.length,
+    publicationAuthorityRequestRefs: publicationAuthorityRequestEntries.length,
     localPackageCopyExportReceipts: exportReceiptSummary.localPackageCopyExportReceipts,
     ffmpegDeliveryReceipts: exportReceiptSummary.ffmpegDeliveryReceipts,
     localDeliveryEvidencePresent: exportReceiptSummary.localDeliveryEvidencePresent,
@@ -739,6 +749,7 @@ function kindForSchema(schema) {
     [artifactKinds.mediaProductionBundleLocal]: 'media-production-bundle',
     [artifactKinds.mediaProductionAuthorityPrerequisitesLocal]: 'media-production-authority-prerequisites',
     [artifactKinds.mediaAuthorityHandoffCandidateLocal]: 'media-authority-handoff-candidate',
+    [artifactKinds.mediaPublicationAuthorityRequestCandidateLocal]: 'media-publication-authority-request-candidate',
     [artifactKinds.mediaRoughCutCapsuleLocal]: 'media-rough-cut-capsule',
     [artifactKinds.mediaRenderExportCandidateLocal]: 'media-render-export-candidate',
     [artifactKinds.mediaRenderAdapterContractLocal]: 'media-render-adapter-contract',
@@ -765,6 +776,7 @@ function idForRecord(record) {
     record.healthId ??
     record.indexId ??
     record.handoffCandidateId ??
+    record.requestCandidateId ??
     record.decisionId ??
     record.requestId ??
     record.readinessId ??

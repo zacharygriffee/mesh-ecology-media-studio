@@ -122,6 +122,8 @@ import { writeExportCandidate } from '../src/production/export-candidate.js'
 import { writeExportPlanCandidate } from '../src/production/export-plan-candidate.js'
 import { writeLocalExportPackage } from '../src/production/export-local-package.js'
 import { writeFfmpegExport } from '../src/production/export-ffmpeg.js'
+import { writeLocalPackageReviewDecision } from '../src/production/local-package-review-decision.js'
+import { writePublicationAuthorityRequestCandidate } from '../src/production/publication-authority-request-candidate.js'
 import { runLocalProductionOutput } from '../src/production/local-output-runner.js'
 import { evaluateRenderReceiptFreshness, summarizeRenderReceipts } from '../src/production/render-receipts.js'
 import { evaluateExportReceiptFreshness } from '../src/production/export-receipts.js'
@@ -3723,6 +3725,36 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.ok(exportReceiptInput.sourceRenderReceiptRefs.some((ref) => ref.id === ffmpegReceipt.renderReceiptId))
   assert.ok(exportReceiptInput.sourceRoughCutRefs.some((ref) => ref.id === candidate.sourceRoughCutRef.id))
 
+  const packageReviewOutput = await captureConsole(() => writeLocalPackageReviewDecision({ projectDir: dir }))
+  const packageReview = packageReviewOutput.result.decision
+  assert.equal(packageReview.schema, 'media.operator_decision.v1')
+  assert.equal(packageReview.decisionType, 'review_local_package')
+  assert.equal(packageReview.localPackageReview.localPackageReviewed, true)
+  assert.equal(packageReview.localPackageReview.localProductionPackageComplete, 1)
+  assert.equal(packageReview.localPackageReview.localDeliveryEvidenceIntact, 1)
+  assert.equal(packageReview.localPackageReview.outputIntegrityBlockingIssues, 0)
+  assert.equal(packageReview.publicationAuthorization, false)
+  assert.equal(packageReview.authorityGranted, false)
+  assert.equal(packageReview.productionReady ?? packageReview.localPackageReview.productionReady, false)
+  assert.equal(validateRequiredRecord(packageReview), true)
+  assert.ok(packageReviewOutput.lines.some((line) => line.includes('local package review decision: review_local_package')))
+
+  const publicationRequestOutput = await captureConsole(() => writePublicationAuthorityRequestCandidate({ projectDir: dir }))
+  const publicationRequest = publicationRequestOutput.result.candidate
+  assert.equal(publicationRequest.schema, 'media.publication_authority_request_candidate.local.v1')
+  assert.equal(publicationRequest.requestKind, 'publication-export-authority-review-candidate')
+  assert.equal(publicationRequest.prerequisiteSummary.localProductionPackageComplete, 1)
+  assert.equal(publicationRequest.prerequisiteSummary.localDeliveryEvidenceIntact, 1)
+  assert.equal(publicationRequest.localPackageReviewDecisionRefs.length, 1)
+  assert.ok(publicationRequest.authorityReviewInputs.some((input) => input.inputKind === 'export-receipt' && input.present === true))
+  assert.ok(publicationRequest.authorityGaps.includes('publication_authorization_missing'))
+  assert.equal(publicationRequest.requestOnly, true)
+  assert.equal(publicationRequest.publicationAuthorization, false)
+  assert.equal(publicationRequest.productionReady, false)
+  assert.equal(publicationRequest.meshPublished, false)
+  assert.equal(validateRequiredRecord(publicationRequest), true)
+  assert.ok(publicationRequestOutput.lines.some((line) => line.includes('publication authority request candidate:')))
+
   await writeRoughCutReviewDecision({
     projectDir: dir,
     decision: 'request_changes',
@@ -3787,7 +3819,10 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.export_candidate.local.v1'))
   assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.export_plan_candidate.local.v1'))
   assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.export_receipt.local.v1'))
+  assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.publication_authority_request_candidate.local.v1'))
   assert.equal(compatibility.bundle.exportDeliverySummary.exportReceipts, 2)
+  assert.equal(compatibility.bundle.exportDeliverySummary.localPackageReviewDecisionRefs, 1)
+  assert.equal(compatibility.bundle.exportDeliverySummary.publicationAuthorityRequestRefs, 1)
   assert.equal(compatibility.bundle.exportDeliverySummary.localPackageCopyExportReceipts, 1)
   assert.equal(compatibility.bundle.exportDeliverySummary.ffmpegDeliveryReceipts, 1)
   assert.equal(compatibility.bundle.exportDeliverySummary.localDeliveryEvidencePresent, 0)
@@ -3834,6 +3869,8 @@ test('local production output runner creates reviewable delivery without authori
   assert.equal(result.summary.exportReceipts, 2)
   assert.equal(result.summary.ffmpegDeliveryReceipts, 1)
   assert.equal(result.summary.localDeliveryEvidencePresent, 2)
+  assert.equal(result.summary.localPackageReviewed, 1)
+  assert.equal(result.summary.publicationAuthorityRequests, 1)
   assert.equal(result.summary.localProductionPackageComplete, 1)
   assert.equal(result.summary.pendingAuthority, 1)
   assert.equal(result.summary.productionReady, 0)
@@ -3853,13 +3890,15 @@ test('local production output runner creates reviewable delivery without authori
   assert.ok(result.refs.exportPlanId)
   assert.ok(result.refs.localExportReceiptId)
   assert.ok(result.refs.ffmpegExportReceiptId)
+  assert.ok(result.refs.localPackageReviewDecisionId)
   assert.ok(result.refs.authorityHandoffCandidateId)
+  assert.ok(result.refs.publicationAuthorityRequestCandidateId)
   assert.ok(result.refs.operatorPacketIndexId)
   assert.ok(result.refs.edgeCompatibilityBundleId)
   assert.equal(result.steps.every((step) => step.authorityGranted === false), true)
   assert.equal(result.steps.every((step) => step.productionReady === false), true)
   assert.ok(output.lines.some((line) =>
-    line === 'production local output: project=venice-smoke-project | steps=15/15 | roughCutItems=1 | roughCutReviewed=1 | renderReceipts=2 | exportReceipts=2 | ffmpegDeliveryReceipts=1 | localDeliveryEvidencePresent=2 | localProductionPackageComplete=1 | pendingAuthority=1 | productionReady=0'
+    line === 'production local output: project=venice-smoke-project | steps=17/17 | roughCutItems=1 | roughCutReviewed=1 | renderReceipts=2 | exportReceipts=2 | ffmpegDeliveryReceipts=1 | localDeliveryEvidencePresent=2 | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=1 | pendingAuthority=1 | productionReady=0'
   ))
   assert.ok(output.lines.some((line) => line.includes('no approval authority')))
 
@@ -3893,6 +3932,8 @@ test('local production output runner can keep ffmpeg disabled without blocking l
   assert.equal(result.summary.exportReceipts, 1)
   assert.equal(result.summary.ffmpegDeliveryReceipts, 0)
   assert.equal(result.summary.localDeliveryEvidencePresent, 1)
+  assert.equal(result.summary.localPackageReviewed, 1)
+  assert.equal(result.summary.publicationAuthorityRequests, 1)
   assert.equal(result.summary.localProductionPackageComplete, 1)
   assert.equal(result.summary.pendingAuthority, 1)
   assert.equal(result.summary.productionReady, 0)
@@ -3900,6 +3941,8 @@ test('local production output runner can keep ffmpeg disabled without blocking l
   assert.equal(result.refs.ffmpegRenderReceiptId, null)
   assert.ok(result.refs.localExportReceiptId)
   assert.equal(result.refs.ffmpegExportReceiptId, null)
+  assert.ok(result.refs.localPackageReviewDecisionId)
+  assert.ok(result.refs.publicationAuthorityRequestCandidateId)
   assert.ok(result.steps.some((step) =>
     step.step === 'render-ffmpeg' &&
     step.state === 'skipped' &&
@@ -3915,7 +3958,7 @@ test('local production output runner can keep ffmpeg disabled without blocking l
     step.productionReady === false
   ))
   assert.ok(output.lines.some((line) =>
-    line === 'production local output: project=venice-smoke-project | steps=13/15 | roughCutItems=1 | roughCutReviewed=1 | renderReceipts=1 | exportReceipts=1 | ffmpegDeliveryReceipts=0 | localDeliveryEvidencePresent=1 | localProductionPackageComplete=1 | pendingAuthority=1 | productionReady=0'
+    line === 'production local output: project=venice-smoke-project | steps=15/17 | roughCutItems=1 | roughCutReviewed=1 | renderReceipts=1 | exportReceipts=1 | ffmpegDeliveryReceipts=0 | localDeliveryEvidencePresent=1 | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=1 | pendingAuthority=1 | productionReady=0'
   ))
 
   const summary = await createMediaSummary({ projectDir: dir })
@@ -3947,13 +3990,15 @@ test('local production output runner carries two accepted production items throu
   assert.equal(result.summary.exportReceipts, 2)
   assert.equal(result.summary.ffmpegDeliveryReceipts, 1)
   assert.equal(result.summary.localDeliveryEvidencePresent, 2)
+  assert.equal(result.summary.localPackageReviewed, 1)
+  assert.equal(result.summary.publicationAuthorityRequests, 1)
   assert.equal(result.summary.localProductionPackageComplete, 2)
   assert.equal(result.summary.pendingAuthority, 2)
   assert.equal(result.summary.productionReady, 0)
   assert.equal(result.nonClaims.publicationAuthorization, false)
   assert.equal(result.nonClaims.productionReady, false)
   assert.ok(output.lines.some((line) =>
-    line === 'production local output: project=venice-smoke-project | steps=15/15 | roughCutItems=2 | roughCutReviewed=1 | renderReceipts=2 | exportReceipts=2 | ffmpegDeliveryReceipts=1 | localDeliveryEvidencePresent=2 | localProductionPackageComplete=2 | pendingAuthority=2 | productionReady=0'
+    line === 'production local output: project=venice-smoke-project | steps=17/17 | roughCutItems=2 | roughCutReviewed=1 | renderReceipts=2 | exportReceipts=2 | ffmpegDeliveryReceipts=1 | localDeliveryEvidencePresent=2 | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=2 | pendingAuthority=2 | productionReady=0'
   ))
 
   const roughCut = JSON.parse(await readFile(path.join(dir, 'records/production/media-rough-cut-capsule.local.json'), 'utf8'))
@@ -3988,6 +4033,63 @@ test('local production output runner carries two accepted production items throu
   assert.equal(prereqs.productionReady, 0)
 })
 
+test('local production output runner carries two accepted production items without ffmpeg', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-local-output-two-items-no-ffmpeg-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+  await addSecondAcceptedProductionItemFixture(dir)
+
+  const output = await captureConsole(() => runLocalProductionOutput({
+    projectDir: dir,
+    disableFfmpeg: true,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const result = output.result
+
+  assert.equal(result.summary.roughCutItems, 2)
+  assert.equal(result.summary.roughCutReviewed, 1)
+  assert.equal(result.summary.renderReceipts, 1)
+  assert.equal(result.summary.exportReceipts, 1)
+  assert.equal(result.summary.ffmpegDeliveryReceipts, 0)
+  assert.equal(result.summary.localDeliveryEvidencePresent, 1)
+  assert.equal(result.summary.localPackageReviewed, 1)
+  assert.equal(result.summary.publicationAuthorityRequests, 1)
+  assert.equal(result.summary.localProductionPackageComplete, 2)
+  assert.equal(result.summary.pendingAuthority, 2)
+  assert.equal(result.summary.productionReady, 0)
+  assert.equal(result.refs.ffmpegRenderReceiptId, null)
+  assert.equal(result.refs.ffmpegExportReceiptId, null)
+  assert.ok(result.refs.localPackageReviewDecisionId)
+  assert.ok(result.refs.publicationAuthorityRequestCandidateId)
+  assert.ok(output.lines.some((line) =>
+    line === 'production local output: project=venice-smoke-project | steps=15/17 | roughCutItems=2 | roughCutReviewed=1 | renderReceipts=1 | exportReceipts=1 | ffmpegDeliveryReceipts=0 | localDeliveryEvidencePresent=1 | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=2 | pendingAuthority=2 | productionReady=0'
+  ))
+
+  const localExport = JSON.parse(await readFile(path.join(dir, 'records/production/media-export-receipt.local.json'), 'utf8'))
+  assert.equal(localExport.orderedItems.length, 2)
+  assert.equal(localExport.deliveryCreated, true)
+  assert.equal(localExport.exportPerformed, true)
+  assert.equal(localExport.publicationAuthorization, false)
+
+  const packageReview = JSON.parse(await readFile(path.join(dir, 'records/decisions/media-local-package-review-decision.local.json'), 'utf8'))
+  assert.equal(packageReview.decisionType, 'review_local_package')
+  assert.equal(packageReview.localPackageReview.localProductionPackageComplete, 2)
+  assert.equal(packageReview.localPackageReview.localDeliveryEvidenceIntact, 2)
+  assert.equal(packageReview.publicationAuthorization, false)
+
+  const publicationRequest = JSON.parse(await readFile(path.join(dir, 'records/production/media-publication-authority-request-candidate.local.json'), 'utf8'))
+  assert.equal(publicationRequest.requestKind, 'publication-export-authority-review-candidate')
+  assert.equal(publicationRequest.prerequisiteSummary.localProductionPackageComplete, 2)
+  assert.equal(publicationRequest.prerequisiteSummary.localDeliveryEvidenceIntact, 2)
+  assert.equal(publicationRequest.publicationAuthorization, false)
+  assert.equal(publicationRequest.productionReady, false)
+  assert.equal(validateRequiredRecord(publicationRequest), true)
+
+  const records = await readProjectRecords(dir)
+  const integrity = await evaluateLocalOutputIntegrity({ projectDir: dir, records })
+  assert.equal(integrity.outputIntegrityBlockingIssues, 0)
+  assert.equal(integrity.localDeliveryEvidenceIntact, 1)
+})
+
 test('local output integrity blocks production package when export delivery bytes are missing', async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-missing-export-delivery-'))
   await runVeniceProductionRehearsal({ projectDir: dir })
@@ -4003,6 +4105,10 @@ test('local output integrity blocks production package when export delivery byte
   assert.equal(prereqs.productionReady, 0)
   assert.ok(prereqs.rows[0].outputIntegrityBlockingIssueCodes.includes('missing_export_delivery_bytes'))
   assert.equal(prereqs.rows[0].exportReceiptPosture.state, 'export-receipt-output-integrity-blocked')
+  await assert.rejects(
+    () => writeLocalPackageReviewDecision({ projectDir: dir, quiet: true }),
+    /complete local production package|output integrity/
+  )
 
   const mediaSummary = await captureConsole(() => writeMediaSummary({ projectDir: dir }))
   assert.equal(mediaSummary.result.outputIntegrity.localDeliveryEvidenceIntact, 0)

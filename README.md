@@ -320,6 +320,8 @@ npm run production:export-candidate -- --project-dir examples/venice-smoke
 npm run production:export-plan -- --project-dir examples/venice-smoke
 npm run production:export-local-package -- --project-dir examples/venice-smoke
 npm run production:export-ffmpeg -- --project-dir examples/venice-smoke
+npm run production:local-package-review -- --project-dir examples/venice-smoke
+npm run production:publication-authority-request -- --project-dir examples/venice-smoke
 ```
 
 For the common local output path, the same existing steps can be run as one
@@ -329,10 +331,11 @@ bounded orchestration:
 npm run production:local-output -- --project-dir examples/venice-smoke
 ```
 
-This writes the same rough-cut, review, render, export, authority-prereq, and
-authority-handoff records, then refreshes the existing operator index and
-Edge-compatible bundle. It is an operator convenience command only; it does not
-add authority, publish, call Edge, or make the package production-ready.
+This writes the same rough-cut, review, render, export, authority-prereq, local
+package review, publication/export authority request, and authority-handoff
+records, then refreshes the existing operator index and Edge-compatible bundle.
+It is an operator convenience command only; it does not add authority, publish,
+call Edge, or make the package production-ready.
 The runner uses the current production bundle, so ordered multi-item rough cuts
 stay part of the same local review/output lane.
 Pass `--disable-ffmpeg` to keep the orchestrated path on contact-sheet render
@@ -341,6 +344,10 @@ Authority-prereq checks verify that local delivery/export bytes still exist and
 match their receipts before reporting local production package completeness.
 `media:summary`, `health:summary`, `operator:index`, and `edge:compat` surface
 the same output-integrity posture compactly for operator inspection.
+`production:local-package-review` records local operator review after integrity
+passes. `production:publication-authority-request` packages that reviewed local
+output evidence for a future authority lane, but still grants no publication or
+export authority.
 
 The first real local render commands consume the dry-run render plan:
 

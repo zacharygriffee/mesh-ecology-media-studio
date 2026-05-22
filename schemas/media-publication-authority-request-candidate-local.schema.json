@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-publication-authority-request-candidate-local.schema.json",
+  "title": "media.publication_authority_request_candidate.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "requestCandidateId",
+    "projectId",
+    "requestKind",
+    "mode",
+    "targetAuthorityLane",
+    "prerequisiteSummary",
+    "localPackageReviewDecisionRefs",
+    "authorityReviewInputs",
+    "sourceRefs",
+    "authorityGaps",
+    "nextActions",
+    "createdAt",
+    "operatorGuidanceOnly",
+    "requestOnly",
+    "productionReady",
+    "approvalAuthority",
+    "ratifierAuthority",
+    "publicationAuthorization",
+    "providerTruth",
+    "byteAvailabilityProof",
+    "materializationProof",
+    "resourceAdmission",
+    "causalTruth",
+    "edgeCalled",
+    "meshPublished",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "localTruthLabel",
+    "truthStatus"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.publication_authority_request_candidate.local.v1"
+    },
+    "requestCandidateId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requestKind": {
+      "const": "publication-export-authority-review-candidate"
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "targetAuthorityLane": {
+      "const": "future-publication-export-authority-lane"
+    },
+    "operatorGuidanceOnly": {
+      "const": true
+    },
+    "requestOnly": {
+      "const": true
+    },
+    "productionReady": {
+      "const": false
+    },
+    "approvalAuthority": {
+      "const": false
+    },
+    "ratifierAuthority": {
+      "const": false
+    },
+    "publicationAuthorization": {
+      "const": false
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    }
+  }
+}

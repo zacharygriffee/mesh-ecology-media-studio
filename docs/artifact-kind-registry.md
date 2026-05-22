@@ -52,6 +52,7 @@ Known Studio artifact kinds:
 - `media.production_bundle.local.v1`
 - `media.production_authority_prerequisites.summary.local.v1`
 - `media.authority_handoff_candidate.local.v1`
+- `media.publication_authority_request_candidate.local.v1`
 - `media.rough_cut_capsule.local.v1`
 - `media.render_export_candidate.local.v1`
 - `media.render_adapter_contract.local.v1`
@@ -75,6 +76,11 @@ or grant authority.
 approval proposal, capsule, situated identity, and prerequisite refs for a
 future authority lane. It is candidate-only and does not grant approval,
 ratification, publication authorization, or production readiness.
+
+`media.publication_authority_request_candidate.local.v1` packages a locally
+reviewed, integrity-checked output package for future publication/export
+authority review. It is request-only and does not grant export authorization,
+publication authorization, ratifier authority, or production readiness.
 
 `media.rough_cut_capsule.local.v1` orders accepted production item refs into a
 local review cut. It does not render a timeline, export media, grant authority,
