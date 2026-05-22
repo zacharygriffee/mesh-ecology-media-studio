@@ -11,7 +11,8 @@ import { readProjectRecords } from '../seams/project-status.js'
 import { createProductionAuthorityPrerequisiteReport } from './authority-prerequisites.js'
 import {
   createPublicationAuthorityRequestFreshnessBasis,
-  evaluatePublicationAuthorityRequestFreshness
+  evaluatePublicationAuthorityRequestFreshness,
+  latestLocalPackageReviewEntry
 } from './package-authority-freshness.js'
 
 const modulePath = fileURLToPath(import.meta.url)
@@ -90,14 +91,17 @@ export function createPublicationAuthorityRequestCandidateFromRecords({
 }) {
   assertRequestable(prerequisiteReport)
   const projectId = prerequisiteReport.projectId
-  const localPackageReviewDecisionRefs = refsForRecordPredicate(
-    records,
-    artifactKinds.mediaOperatorDecision,
-    'media-operator-decision',
-    isLocalPackageReviewDecision
-  )
+  const activeLocalPackageReviewEntry = latestLocalPackageReviewEntry(records)
+  const localPackageReviewDecisionRefs = isLocalPackageReviewDecision(activeLocalPackageReviewEntry?.record)
+    ? [localRecordRef(
+      'media-operator-decision',
+      idForRecord(activeLocalPackageReviewEntry.record),
+      activeLocalPackageReviewEntry.record.schema,
+      activeLocalPackageReviewEntry.path
+    )]
+    : []
   if (localPackageReviewDecisionRefs.length === 0) {
-    throw new Error('Publication/export authority request candidate requires local package review decision')
+    throw new Error('Publication/export authority request candidate requires local package review decision as the latest active package review')
   }
 
   const authorityHandoffRefs = refsForSchema(records, artifactKinds.mediaAuthorityHandoffCandidateLocal, 'media-authority-handoff-candidate')

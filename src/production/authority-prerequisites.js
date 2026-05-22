@@ -394,6 +394,7 @@ function summarizePackageAuthorityForPrereqs(records, report) {
       return {
         kind: 'local-package-review',
         ref: refForEntry('media-operator-decision', entry),
+        createdAt: entry.record.createdAt,
         freshnessState: freshness.state,
         issueCodes: [...new Set([
           ...(entry.record.localPackageReview?.issueCodes ?? []),
@@ -413,6 +414,8 @@ function summarizePackageAuthorityForPrereqs(records, report) {
         operatorGuidanceOnly: true
       }
     })
+    .sort(comparePackageAuthorityRowsDescending)
+  const activePackageReviewRow = packageReviewRows[0] ?? null
   const publicationRequestRows = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaPublicationAuthorityRequestCandidateLocal)
     .map((entry) => {
@@ -437,20 +440,23 @@ function summarizePackageAuthorityForPrereqs(records, report) {
         operatorGuidanceOnly: true
       }
     })
-  const rows = [...packageReviewRows, ...publicationRequestRows]
+  const activeRows = [
+    ...(activePackageReviewRow ? [activePackageReviewRow] : []),
+    ...publicationRequestRows
+  ]
 
   return {
-    localPackageReviews: packageReviewRows.filter((row) => row.localPackageReviewed).length,
-    packageReworkRequests: packageReviewRows.filter((row) => row.needsRework).length,
-    freshReviews: packageReviewRows.filter((row) => row.localPackageReviewed && row.freshnessState === 'fresh').length,
-    staleReviews: packageReviewRows.filter((row) => row.freshnessState === 'stale').length,
+    localPackageReviews: activePackageReviewRow?.localPackageReviewed ? 1 : 0,
+    packageReworkRequests: activePackageReviewRow?.needsRework ? 1 : 0,
+    freshReviews: activePackageReviewRow?.localPackageReviewed && activePackageReviewRow.freshnessState === 'fresh' ? 1 : 0,
+    staleReviews: activePackageReviewRow?.freshnessState === 'stale' ? 1 : 0,
     publicationAuthorityRequests: publicationRequestRows.length,
     freshRequests: publicationRequestRows.filter((row) => row.freshnessState === 'fresh').length,
     staleRequests: publicationRequestRows.filter((row) => row.freshnessState === 'stale').length,
     blockingRequests: publicationRequestRows.filter((row) => row.requestReviewBlocked).length,
     integrityBlockingRequests: publicationRequestRows.filter((row) => row.integrityBlocking).length,
-    rows,
-    attentionRows: rows.filter((row) => row.issueCodes.length > 0),
+    rows: activeRows,
+    attentionRows: activeRows.filter((row) => row.issueCodes.length > 0),
     publicationAuthorization: false,
     productionReady: false,
     localOnly: true,
@@ -459,6 +465,13 @@ function summarizePackageAuthorityForPrereqs(records, report) {
     ratifierAuthority: false,
     meshTruth: false
   }
+}
+
+function comparePackageAuthorityRowsDescending(left, right) {
+  const rightTime = Date.parse(right.createdAt ?? '') || 0
+  const leftTime = Date.parse(left.createdAt ?? '') || 0
+  if (rightTime !== leftTime) return rightTime - leftTime
+  return (right.ref?.path ?? '').localeCompare(left.ref?.path ?? '')
 }
 
 function printProductionAuthorityPrerequisiteReport(report, output = defaultOutput) {

@@ -337,6 +337,10 @@ records, then refreshes the existing operator index and Edge-compatible bundle.
 The authority handoff is refreshed after the publication/export request so the
 handoff can carry both local package review and request-candidate refs for a
 future authority lane.
+If multiple local package review decisions exist, the latest one is the active
+operator posture; a later `request_changes` decision blocks new
+publication/export authority request candidates until the package is reviewed
+again.
 It is an operator convenience command only; it does not add authority, publish,
 call Edge, or make the package production-ready.
 The runner uses the current production bundle, so ordered multi-item rough cuts

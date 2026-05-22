@@ -4084,6 +4084,46 @@ test('local package review can request changes without publication authority', a
   ))
 })
 
+test('latest local package review decision controls publication request posture', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-local-package-latest-review-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+  await runLocalProductionOutput({ projectDir: dir, quiet: true })
+
+  await writeLocalPackageReviewDecision({
+    projectDir: dir,
+    decision: 'request_changes',
+    output: 'records/decisions/media-local-package-review-request-changes.local.json',
+    createdAt: '2999-01-01T00:00:00.000Z',
+    quiet: true
+  })
+
+  await assert.rejects(
+    () => writePublicationAuthorityRequestCandidate({ projectDir: dir, quiet: true }),
+    /requires local package review decision/
+  )
+
+  const prereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
+  assert.equal(prereqs.localPackageReviews, 0)
+  assert.equal(prereqs.localPackageReworkRequests, 1)
+  assert.equal(prereqs.localPackageReviewsFresh, 0)
+  assert.equal(prereqs.publicationAuthorityRequests, 1)
+  assert.equal(prereqs.publicationAuthorityRequestsStale, 1)
+  assert.equal(prereqs.productionReady, 0)
+
+  const mediaSummary = await createMediaSummary({ projectDir: dir })
+  assert.equal(mediaSummary.packageAuthority.localPackageReviews, 0)
+  assert.equal(mediaSummary.packageAuthority.packageReworkRequests, 1)
+  assert.equal(mediaSummary.packageAuthority.freshReviews, 0)
+  assert.equal(mediaSummary.packageAuthority.publicationAuthorityRequests, 1)
+  assert.equal(mediaSummary.packageAuthority.staleRequests, 1)
+  assert.ok(mediaSummary.packageAuthority.rows.some((row) =>
+    row.kind === 'local-package-review' &&
+    row.needsRework === true &&
+    row.ref.path === 'records/decisions/media-local-package-review-request-changes.local.json'
+  ))
+  assert.equal(mediaSummary.packageAuthority.rows.filter((row) => row.kind === 'local-package-review').length, 1)
+})
+
 test('local production output runner carries two accepted production items through reviewable delivery', async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-local-output-two-items-'))
   await runVeniceProductionRehearsal({ projectDir: dir })

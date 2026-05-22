@@ -217,6 +217,9 @@ production ready.
 The authority handoff is refreshed after the publication/export request so the
 future authority lane can inspect local package review and request-candidate
 refs together.
+When several local package review decisions exist, Studio treats the latest
+decision as active. A later `request_changes` decision is local rework posture,
+not publication/export authorization.
 Use `--disable-ffmpeg` when the local runner should avoid MP4 render/export
 execution and keep only contact-sheet plus local package-copy evidence.
 `production:authority-prereqs` checks the referenced local delivery/export

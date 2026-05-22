@@ -130,9 +130,21 @@ export function currentPublicationRequestSourceRefs(records = []) {
 }
 
 export function currentLocalPackageReviewDecisionRefs(records = []) {
-  return refsForRecords(records
+  const latestReviewEntry = latestLocalPackageReviewEntry(records)
+  if (
+    latestReviewEntry?.record.decisionType !== 'review_local_package' ||
+    latestReviewEntry.record.localPackageReview?.localPackageReviewed !== true
+  ) {
+    return []
+  }
+  return refsForRecords([latestReviewEntry])
+}
+
+export function latestLocalPackageReviewEntry(records = []) {
+  return records
     .filter((entry) => entry.record.schema === artifactKinds.mediaOperatorDecision)
-    .filter((entry) => entry.record.decisionType === 'review_local_package' && entry.record.localPackageReview?.localPackageReviewed === true))
+    .filter((entry) => entry.record.localPackageReview)
+    .sort(compareRecordEntriesDescending)[0] ?? null
 }
 
 function collectPrerequisiteIssues(issueCodes, prerequisiteReport = {}) {
@@ -197,6 +209,13 @@ function refsForRecords(entries = []) {
     .map((entry) => localRecordRef(kindForSchema(entry.record.schema), idForRecord(entry.record), entry.record.schema, entry.path))
     .filter((ref) => ref.id)
     .sort(compareRefs)
+}
+
+function compareRecordEntriesDescending(left, right) {
+  const rightTime = Date.parse(right.record.createdAt ?? '') || 0
+  const leftTime = Date.parse(left.record.createdAt ?? '') || 0
+  if (rightTime !== leftTime) return rightTime - leftTime
+  return (right.path ?? '').localeCompare(left.path ?? '')
 }
 
 function freshnessPosture({ state, issueCodes, checkedRefs, nextAction }) {
