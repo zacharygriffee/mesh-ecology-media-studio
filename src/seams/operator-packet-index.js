@@ -147,10 +147,8 @@ export async function writeOperatorPacketIndex({
   const renderReceipts = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaRenderReceiptLocal)
     .map((entry) => summarizeRenderReceipt(entry.record, entry.relativePath, normalizeRecordPaths(records)))
-  const exportReceipts = records
-    .filter((entry) => entry.record.schema === artifactKinds.mediaExportReceiptLocal)
-    .map((entry) => summarizeExportReceipt(entry.record, entry.relativePath, normalizeRecordPaths(records)))
   const exportReceiptSummary = summarizeExportReceipts(normalizeRecordPaths(records))
+  const exportReceipts = exportReceiptSummary.rows
   const outputIntegritySummary = await evaluateLocalOutputIntegrity({
     projectDir,
     records: normalizeRecordPaths(records)
@@ -239,11 +237,13 @@ export async function writeOperatorPacketIndex({
       localPackageCopyExportReceipts: exportReceiptSummary.localPackageCopyExportReceipts,
       ffmpegDeliveryReceipts: exportReceiptSummary.ffmpegDeliveryReceipts,
       localDeliveryEvidencePresent: exportReceiptSummary.localDeliveryEvidencePresent,
+      activeDeliveryReceipts: exportReceiptSummary.activeDeliveryReceipts,
       localDeliveryEvidenceIntact: outputIntegritySummary.localDeliveryEvidenceIntact,
       outputIntegrityBlockingIssues: outputIntegritySummary.outputIntegrityBlockingIssues,
       outputIntegrityAttentionIssues: outputIntegritySummary.outputIntegrityAttentionIssues,
       recordIODiagnostics: recordReadDiagnostics.diagnostics,
-      exportReceiptsNeedingAttention: exportReceipts.filter((receipt) => receipt.issueCodes.length > 0).length,
+      exportReceiptsNeedingAttention: exportReceiptSummary.currentAttentionRows.length,
+      historicalExportReceiptAttention: exportReceiptSummary.historicalAttentionRows.length,
       layerInteropState: layerInterop.state,
       layerInteropHandoffs: layerInterop.authorityHandoffRecords,
       layerInteropLayerRefs: layerInterop.layerRefs.length,
@@ -265,7 +265,7 @@ export async function writeOperatorPacketIndex({
         roughCutCapsules.filter((roughCut) => roughCut.needsOperatorAttention).length +
         renderExportCandidates.filter((candidate) => candidate.needsOperatorAttention).length +
         renderReceipts.filter((receipt) => receipt.issueCodes.length > 0).length +
-        exportReceipts.filter((receipt) => receipt.issueCodes.length > 0).length +
+        exportReceiptSummary.currentAttentionRows.length +
         outputIntegritySummary.outputIntegrityBlockingIssues +
         outputIntegritySummary.outputIntegrityAttentionIssues +
         recordReadDiagnostics.diagnostics +
@@ -380,9 +380,11 @@ function formatOperatorPacketIndexSummary(index, output) {
     `exportReceipts=${summary.exportReceipts ?? 0}`,
     `ffmpegDeliveryReceipts=${summary.ffmpegDeliveryReceipts ?? 0}`,
     `localDeliveryEvidencePresent=${summary.localDeliveryEvidencePresent ?? 0}`,
+    `activeDelivery=${summary.activeDeliveryReceipts ?? 0}`,
     `localDeliveryEvidenceIntact=${summary.localDeliveryEvidenceIntact ?? 0}`,
     `outputIntegrityBlocking=${summary.outputIntegrityBlockingIssues ?? 0}`,
     `outputIntegrityAttention=${summary.outputIntegrityAttentionIssues ?? 0}`,
+    `historicalExportReceiptAttention=${summary.historicalExportReceiptAttention ?? 0}`,
     `layerInterop=${summary.layerInteropState ?? 'layer-refs-not-attached'}`,
     `layerAttention=${summary.layerInteropAttention ?? 0}`,
     `productionApprovalPending=${summary.productionApprovalPendingAuthority ?? 0}`,
@@ -508,6 +510,7 @@ function formatExportReceipt(receipt) {
     `publicationAuthorization=${receipt.publicationAuthorization}`,
     `productionReady=${receipt.productionReady}`,
     `freshness=${receipt.freshnessState}`,
+    `attentionState=${receipt.deliveryAttentionState}`,
     `roughCut=${receipt.sourceRoughCutId ?? 'unknown'}`,
     `renderReceipt=${receipt.sourceRenderReceiptId ?? 'unknown'}`,
     `issues=${receipt.issueCodes.join(',') || 'none'}`,

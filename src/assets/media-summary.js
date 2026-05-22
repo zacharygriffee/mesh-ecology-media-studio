@@ -287,11 +287,13 @@ function printMediaSummary(summary) {
     `localPackageCopy=${summary.exportReceipts.localPackageCopyExportReceipts}`,
     `ffmpegDelivery=${summary.exportReceipts.ffmpegDeliveryReceipts}`,
     `localDeliveryEvidence=${summary.exportReceipts.localDeliveryEvidencePresent}`,
+    `activeDelivery=${summary.exportReceipts.activeDeliveryReceipts}`,
     `deliveryCreated=${summary.exportReceipts.deliveryCreated}`,
     `exportPerformed=${summary.exportReceipts.exportPerformed}`,
     `publicationAuthorization=${summary.exportReceipts.publicationAuthorization}`,
     `productionReady=${summary.exportReceipts.productionReady}`,
-    `attention=${summary.exportReceipts.attentionRows.length}`
+    `attention=${summary.exportReceipts.currentAttentionRows.length}`,
+    `historicalAttention=${summary.exportReceipts.historicalAttentionRows.length}`
   ].join(' | '))
   console.log([
     `output integrity: deliveryIntact=${summary.outputIntegrity.localDeliveryEvidenceIntact}`,
@@ -407,6 +409,7 @@ function printMediaSummary(summary) {
       `publicationAuthorization=${row.publicationAuthorization}`,
       `productionReady=${row.productionReady}`,
       `freshness=${row.freshnessState}`,
+      `attentionState=${row.deliveryAttentionState}`,
       `roughCut=${row.sourceRoughCutId ?? 'unknown'}`,
       `renderReceipt=${row.sourceRenderReceiptId ?? 'unknown'}`,
       `issues=${row.issueCodes.join(',') || 'none'}`,
@@ -538,8 +541,8 @@ function summarizeSafeNextAction({
     (packageAuthority.localDeliveryEvidenceIntact ?? 0) > 0 &&
     (outputIntegrity?.outputIntegrityBlockingIssues ?? 0) === 0
 
-  if (exportReceipts.attentionRows.length > 0 && !hasIntactReviewedLocalPackage) {
-    return exportReceipts.attentionRows[0].nextAction
+  if (exportReceipts.currentAttentionRows.length > 0 && !hasIntactReviewedLocalPackage) {
+    return exportReceipts.currentAttentionRows[0].nextAction
   }
 
   if (packageAuthority.attentionRows.length > 0) {

@@ -4154,10 +4154,24 @@ test('media summary safe next action ignores stale inactive export receipts when
   assert.equal(summary.exportReceipts.ffmpegDeliveryReceipts, 1)
   assert.equal(summary.exportReceipts.localDeliveryEvidencePresent, 1)
   assert.equal(summary.exportReceipts.attentionRows.length, 1)
+  assert.equal(summary.exportReceipts.currentAttentionRows.length, 0)
+  assert.equal(summary.exportReceipts.historicalAttentionRows.length, 1)
+  assert.equal(summary.exportReceipts.activeDeliveryReceipts, 1)
   assert.ok(summary.exportReceipts.attentionRows[0].issueCodes.includes('target_output_path_changed'))
+  assert.equal(summary.exportReceipts.attentionRows[0].deliveryAttentionState, 'historical-stale-receipt')
   assert.equal(summary.packageAuthority.localProductionPackageComplete, 1)
   assert.equal(summary.packageAuthority.localDeliveryEvidenceIntact, 1)
   assert.equal(summary.safeNextAction, 'Route pending approval proposals through the proper authority lane; local proposals and bundles are not approval.')
+
+  const operatorIndex = await writeOperatorPacketIndex({ projectDir: dir, quiet: true })
+  assert.equal(operatorIndex.index.summary.exportReceiptsNeedingAttention, 0)
+  assert.equal(operatorIndex.index.summary.historicalExportReceiptAttention, 1)
+  assert.equal(operatorIndex.index.summary.activeDeliveryReceipts, 1)
+
+  const compatibility = await writeEdgeCompatibilityBundle({ projectDir: dir, quiet: true })
+  assert.equal(compatibility.bundle.exportDeliverySummary.currentAttentionRows.length, 0)
+  assert.equal(compatibility.bundle.exportDeliverySummary.historicalAttentionRows.length, 1)
+  assert.equal(compatibility.bundle.exportDeliverySummary.activeDeliveryReceipts, 1)
 })
 
 test('local package review can request changes without publication authority', async () => {
