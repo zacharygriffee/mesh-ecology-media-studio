@@ -570,7 +570,10 @@ The receipt remains local delivery evidence only, not publication
 authorization, approval authority, or production readiness.
 Authority handoff candidates and Edge-compatible bundles now expose export
 receipt refs, delivery local refs, source render refs, and source rough-cut refs
-as review-only inputs.
+as review-only inputs. The local output runner refreshes authority handoff
+records after the publication/export authority request candidate exists, so the
+handoff can also carry local package review and request-candidate refs without
+granting authority.
 
 The first production assembly boundary is now explicit: capsules package one
 accepted production asset, bundles group capsules, rough cuts order accepted

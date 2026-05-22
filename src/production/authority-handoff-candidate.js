@@ -122,6 +122,17 @@ export function createAuthorityHandoffCandidateFromRecords({
   const exportReceiptInput = createExportReceiptInput(records, prerequisiteReport)
   const approvalProposalRefs = refsForSchema(records, artifactKinds.mediaApprovalProposalLocal, 'media-approval-proposal')
   const localDecisionRefs = refsForSchema(records, artifactKinds.mediaOperatorDecision, 'media-operator-decision')
+  const localPackageReviewDecisionRefs = refsForRecordPredicate(
+    records,
+    artifactKinds.mediaOperatorDecision,
+    'media-operator-decision',
+    (record) => record.localPackageReview
+  )
+  const publicationAuthorityRequestRefs = refsForSchema(
+    records,
+    artifactKinds.mediaPublicationAuthorityRequestCandidateLocal,
+    'media-publication-authority-request-candidate'
+  )
   const roughCutReviewDecisionRefs = refsForRecordPredicate(
     records,
     artifactKinds.mediaOperatorDecision,
@@ -173,6 +184,8 @@ export function createAuthorityHandoffCandidateFromRecords({
     ...renderReceiptRefs,
     ...exportReceiptRefs,
     ...approvalProposalRefs,
+    ...localPackageReviewDecisionRefs,
+    ...publicationAuthorityRequestRefs,
     ...roughCutReviewDecisionRefs,
     ...localDecisionRefs,
     ...acceptedAssetRefs,
@@ -211,6 +224,11 @@ export function createAuthorityHandoffCandidateFromRecords({
     outputIntegrityAttentionIssues: prerequisiteReport.outputIntegrityAttentionIssues ?? 0,
     deliveryCreated: prerequisiteReport.deliveryCreated ?? 0,
     exportPerformed: prerequisiteReport.exportPerformed ?? 0,
+    localPackageReviews: prerequisiteReport.localPackageReviews ?? 0,
+    localPackageReworkRequests: prerequisiteReport.localPackageReworkRequests ?? 0,
+    publicationAuthorityRequests: prerequisiteReport.publicationAuthorityRequests ?? 0,
+    publicationAuthorityRequestsStale: prerequisiteReport.publicationAuthorityRequestsStale ?? 0,
+    publicationAuthorityRequestsBlocked: prerequisiteReport.publicationAuthorityRequestsBlocked ?? 0,
     layerInteropState: layerInteropPosture.interopState,
     renderAuthorizationMissing: prerequisiteReport.renderAuthorizationMissing ?? 0,
     exportAuthorizationMissing: prerequisiteReport.exportAuthorizationMissing ?? 0,
@@ -310,6 +328,35 @@ export function createAuthorityHandoffCandidateFromRecords({
         localOnly: true
       },
       exportReceiptInput,
+      {
+        inputKind: 'local-package-review-decision',
+        refs: localPackageReviewDecisionRefs,
+        required: false,
+        present: localPackageReviewDecisionRefs.length > 0,
+        reviewed: prerequisiteReport.localPackageReviews ?? 0,
+        reworkRequested: prerequisiteReport.localPackageReworkRequests ?? 0,
+        localDecisionOnly: true,
+        publicationAuthorization: false,
+        productionReady: false,
+        localOnly: true,
+        operatorGuidanceOnly: true
+      },
+      {
+        inputKind: 'publication-authority-request-candidate',
+        refs: publicationAuthorityRequestRefs,
+        required: false,
+        present: publicationAuthorityRequestRefs.length > 0,
+        fresh: prerequisiteReport.publicationAuthorityRequestsFresh ?? 0,
+        stale: prerequisiteReport.publicationAuthorityRequestsStale ?? 0,
+        blocked: prerequisiteReport.publicationAuthorityRequestsBlocked ?? 0,
+        requestOnly: true,
+        approvalAuthority: false,
+        ratifierAuthority: false,
+        publicationAuthorization: false,
+        productionReady: false,
+        localOnly: true,
+        operatorGuidanceOnly: true
+      },
       {
         inputKind: 'layer-posture-ref',
         refs: compactLayerRefs([
@@ -422,6 +469,8 @@ export function formatAuthorityHandoffCandidateSummary(candidate, output = defau
     `localDeliveryEvidencePresent=${candidate.prerequisiteSummary.localDeliveryEvidencePresent ?? 0}`,
     `deliveryCreated=${candidate.prerequisiteSummary.deliveryCreated ?? 0}`,
     `exportPerformed=${candidate.prerequisiteSummary.exportPerformed ?? 0}`,
+    `localPackageReviews=${candidate.prerequisiteSummary.localPackageReviews ?? 0}`,
+    `publicationAuthorityRequests=${candidate.prerequisiteSummary.publicationAuthorityRequests ?? 0}`,
     `layerInterop=${candidate.prerequisiteSummary.layerInteropState ?? 'layer-refs-not-attached'}`,
     `renderAuthorizationMissing=${candidate.prerequisiteSummary.renderAuthorizationMissing ?? 0}`,
     `exportAuthorizationMissing=${candidate.prerequisiteSummary.exportAuthorizationMissing ?? 0}`,

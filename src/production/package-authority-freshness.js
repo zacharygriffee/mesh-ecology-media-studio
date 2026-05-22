@@ -10,7 +10,6 @@ const packageReviewSchemas = new Set([
 
 const publicationRequestSchemas = new Set([
   artifactKinds.mediaOperatorDecision,
-  artifactKinds.mediaAuthorityHandoffCandidateLocal,
   artifactKinds.mediaProductionAuthorityPrerequisitesLocal,
   artifactKinds.mediaRoughCutCapsuleLocal,
   artifactKinds.mediaRenderReceiptLocal,

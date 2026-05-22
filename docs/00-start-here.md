@@ -214,6 +214,9 @@ export, authority-prereq, local package review, publication/export authority
 request, handoff, operator-index, and Edge-compatible bundle commands for
 operator convenience. It does not grant authority, call Edge, publish, or make
 production ready.
+The authority handoff is refreshed after the publication/export request so the
+future authority lane can inspect local package review and request-candidate
+refs together.
 Use `--disable-ffmpeg` when the local runner should avoid MP4 render/export
 execution and keep only contact-sheet plus local package-copy evidence.
 `production:authority-prereqs` checks the referenced local delivery/export

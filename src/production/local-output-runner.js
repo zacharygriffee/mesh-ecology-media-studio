@@ -113,14 +113,14 @@ export async function runLocalProductionOutput({
       writeLocalPackageReviewDecision({ projectDir, quiet: true, createdAt: stepTime() })
     )
     : await skipStep(steps, 'local-package-review', 'local production package incomplete or output integrity blocked')
-  const authorityHandoff = await recordStep(steps, 'authority-handoff', () =>
-    writeAuthorityHandoffCandidate({ projectDir, quiet: true, createdAt: stepTime() })
-  )
   const publicationAuthorityRequest = packageReview.result?.decision
     ? await recordStep(steps, 'publication-authority-request', () =>
       writePublicationAuthorityRequestCandidate({ projectDir, quiet: true, createdAt: stepTime() })
     )
     : await skipStep(steps, 'publication-authority-request', 'local package review missing')
+  const authorityHandoff = await recordStep(steps, 'authority-handoff', () =>
+    writeAuthorityHandoffCandidate({ projectDir, quiet: true, createdAt: stepTime() })
+  )
   const operatorIndex = await recordStep(steps, 'operator-index', () =>
     writeOperatorPacketIndex({ projectDir, quiet: true })
   )

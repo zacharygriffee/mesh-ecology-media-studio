@@ -183,10 +183,11 @@ authority handoff candidate: project=venice-smoke-project | candidates=1 | local
 
 The handoff candidate packages the production bundle, approval proposal,
 production asset capsule, situated identity refs, export receipt refs, delivery
-local refs, source render refs, source rough-cut refs, and embedded prerequisite
-summary so a future authority lane can inspect what it would need to review. It
-does not implement that lane and does not grant approval, ratification,
-publication authorization, or production readiness.
+local refs, source render refs, source rough-cut refs, local package review
+decisions, publication/export authority request candidates, and embedded
+prerequisite summary so a future authority lane can inspect what it would need
+to review. It does not implement that lane and does not grant approval,
+ratification, publication authorization, or production readiness.
 
 Both authority commands can carry optional `mesh-ecology-layer` refs:
 
