@@ -70,6 +70,19 @@
       "healthState": "needs-local-attention",
       "handoffState": "needs-local-attention",
       "requestKind": "resolve-local-attention",
+      "outputDeliverySummary": {
+        "exportReceipts": 0,
+        "activeDeliveryReceipts": 0,
+        "currentExportReceiptAttention": 0,
+        "historicalExportReceiptAttention": 0,
+        "localDeliveryEvidenceIntact": 0,
+        "outputIntegrityBlockingIssues": 0,
+        "outputIntegrityAttentionIssues": 0,
+        "publicationAuthorization": false,
+        "productionReady": false,
+        "localOnly": true,
+        "operatorGuidanceOnly": true
+      },
       "blockingIssues": [
         "asset-resource-consistency-not-ready",
         "edge-readiness-caution"
@@ -126,6 +139,19 @@
       "healthState": "needs-local-attention",
       "handoffState": "needs-local-attention",
       "requestKind": "resolve-local-attention",
+      "outputDeliverySummary": {
+        "exportReceipts": 0,
+        "activeDeliveryReceipts": 0,
+        "currentExportReceiptAttention": 0,
+        "historicalExportReceiptAttention": 0,
+        "localDeliveryEvidenceIntact": 0,
+        "outputIntegrityBlockingIssues": 0,
+        "outputIntegrityAttentionIssues": 0,
+        "publicationAuthorization": false,
+        "productionReady": false,
+        "localOnly": true,
+        "operatorGuidanceOnly": true
+      },
       "blockingIssues": [
         "asset-resource-consistency-not-ready",
         "edge-readiness-caution"
@@ -182,6 +208,19 @@
       "healthState": "needs-local-attention",
       "handoffState": "needs-local-attention",
       "requestKind": "resolve-local-attention",
+      "outputDeliverySummary": {
+        "exportReceipts": 0,
+        "activeDeliveryReceipts": 0,
+        "currentExportReceiptAttention": 0,
+        "historicalExportReceiptAttention": 0,
+        "localDeliveryEvidenceIntact": 0,
+        "outputIntegrityBlockingIssues": 0,
+        "outputIntegrityAttentionIssues": 0,
+        "publicationAuthorization": false,
+        "productionReady": false,
+        "localOnly": true,
+        "operatorGuidanceOnly": true
+      },
       "blockingIssues": [
         "production-freshness-stale"
       ],
@@ -213,6 +252,8 @@
     "providerLoopRetryDecisions": 0,
     "approvalProposals": 0,
     "approvalProposalsWithAttention": 0,
+    "activeDeliveryReceipts": 0,
+    "historicalExportReceiptAttention": 0,
     "layerInteropProjects": 0,
     "layerInteropAttention": 0,
     "attentionRows": 3,

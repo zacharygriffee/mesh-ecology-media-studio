@@ -155,6 +155,8 @@ function formatCrossProjectSummary(index, output) {
     `providerProductionBlockers=${summary.providerLoopsWithProductionAttention ?? 0}`,
     `providerLoopDecisions=${summary.providerLoopDecisions ?? 0}`,
     `approvalProposals=${summary.approvalProposals ?? 0}`,
+    `activeDeliveries=${summary.activeDeliveryReceipts ?? 0}`,
+    `historicalExportReceiptAttention=${summary.historicalExportReceiptAttention ?? 0}`,
     `layerInterop=${summary.layerInteropProjects ?? 0}`,
     `layerAttention=${summary.layerInteropAttention ?? 0}`,
     `missingArtifacts=${summary.missingArtifacts}`,
@@ -214,6 +216,7 @@ async function summarizeProject(root, projectInput) {
   const providerLoopStatus = loaded.providerLoopStatus
   const approvalProposal = loaded.approvalProposal
   const layerInterop = summarizeProjectLayerInterop(loaded, refs)
+  const outputDeliverySummary = summarizeProjectOutputDelivery(health)
   const blockingIssues = health?.blockingIssues ?? []
   const operatorHealthExplanations = health?.operatorHealthExplanations ??
     handoff?.readinessDiagnosis?.operatorHealthExplanations ??
@@ -234,6 +237,7 @@ async function summarizeProject(root, projectInput) {
     providerLoopStatus: providerLoopStatus ? summarizeProviderLoopStatus(providerLoopStatus, refs.providerLoopStatus) : undefined,
     providerLoopDecision: providerLoopDecision ? summarizeProviderLoopDecision(providerLoopDecision, refs.providerLoopDecision) : undefined,
     approvalProposal: approvalProposal ? summarizeApprovalProposal(approvalProposal, refs.approvalProposal) : undefined,
+    outputDeliverySummary,
     blockingIssues,
     nextActions,
     warnings,
@@ -265,6 +269,24 @@ async function summarizeProject(root, projectInput) {
   }
 
   return summary
+}
+
+function summarizeProjectOutputDelivery(health) {
+  const exportReceiptSummary = health?.exportReceiptSummary ?? {}
+  const outputIntegritySummary = health?.outputIntegritySummary ?? {}
+  return {
+    exportReceipts: exportReceiptSummary.total ?? 0,
+    activeDeliveryReceipts: exportReceiptSummary.activeDeliveryReceipts ?? 0,
+    currentExportReceiptAttention: exportReceiptSummary.currentAttention ?? 0,
+    historicalExportReceiptAttention: exportReceiptSummary.historicalAttention ?? 0,
+    localDeliveryEvidenceIntact: outputIntegritySummary.localDeliveryEvidenceIntact ?? 0,
+    outputIntegrityBlockingIssues: outputIntegritySummary.outputIntegrityBlockingIssues ?? 0,
+    outputIntegrityAttentionIssues: outputIntegritySummary.outputIntegrityAttentionIssues ?? 0,
+    publicationAuthorization: false,
+    productionReady: false,
+    localOnly: true,
+    operatorGuidanceOnly: true
+  }
 }
 
 function summarizeProjectSafeNextAction({
@@ -486,6 +508,10 @@ function summarizeProjects(projectSummaries) {
   const providerLoopRetryDecisions = projectSummaries.filter((project) => project.providerLoopDecision?.allowsExplicitRetryAttempt).length
   const approvalProposals = projectSummaries.filter((project) => project.approvalProposal).length
   const approvalProposalsWithAttention = projectSummaries.filter((project) => project.approvalProposal?.needsOperatorAttention).length
+  const activeDeliveryReceipts = projectSummaries.reduce((sum, project) =>
+    sum + (project.outputDeliverySummary?.activeDeliveryReceipts ?? 0), 0)
+  const historicalExportReceiptAttention = projectSummaries.reduce((sum, project) =>
+    sum + (project.outputDeliverySummary?.historicalExportReceiptAttention ?? 0), 0)
   const layerInteropProjects = projectSummaries.filter((project) => project.layerInterop?.state === 'layer-refs-attached-review-only').length
   const layerInteropAttention = projectSummaries.filter((project) => project.layerInterop?.needsOperatorAttention).length
   const attentionRows = projectSummaries.filter((project) => (
@@ -510,6 +536,8 @@ function summarizeProjects(projectSummaries) {
     providerLoopRetryDecisions,
     approvalProposals,
     approvalProposalsWithAttention,
+    activeDeliveryReceipts,
+    historicalExportReceiptAttention,
     layerInteropProjects,
     layerInteropAttention,
     attentionRows,

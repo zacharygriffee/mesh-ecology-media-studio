@@ -6296,6 +6296,45 @@ test('cross-project operator index summarizes explicit local project inputs', as
   assert.equal(secondResult.index.createdAt, result.index.createdAt)
 })
 
+test('cross-project operator index surfaces output delivery posture from project health', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-cross-project-output-delivery-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+  await runLocalProductionOutput({
+    projectDir: dir,
+    createdAt: '2026-05-19T00:00:00.000Z',
+    quiet: true
+  })
+  await runLocalProductionOutput({
+    projectDir: dir,
+    disableFfmpeg: true,
+    createdAt: '2026-05-19T00:10:00.000Z',
+    quiet: true
+  })
+  await writeProjectHealth({ projectDir: dir, summary: true })
+
+  const baseDir = '/'
+  const indexRoot = await mkdtemp(path.join(os.tmpdir(), 'media-studio-cross-project-output-index-'))
+  const inputListPath = path.join(indexRoot, 'input-list.local.json')
+  const outputPath = path.join(indexRoot, 'cross-project-index.local.json')
+  const inputList = createCrossProjectInputList([
+    { projectId: 'output-delivery-project', rootPath: slash(path.relative(baseDir, dir)) }
+  ])
+  await writeFile(inputListPath, `${JSON.stringify(inputList, null, 2)}\n`)
+
+  const { result, lines } = await captureConsole(() => writeCrossProjectOperatorIndex({
+    baseDir,
+    inputList: slash(path.relative(baseDir, inputListPath)),
+    output: slash(path.relative(baseDir, outputPath))
+  }))
+
+  assert.equal(result.index.summary.activeDeliveryReceipts, 1)
+  assert.equal(result.index.summary.historicalExportReceiptAttention, 1)
+  assert.equal(result.index.projectSummaries[0].outputDeliverySummary.activeDeliveryReceipts, 1)
+  assert.equal(result.index.projectSummaries[0].outputDeliverySummary.historicalExportReceiptAttention, 1)
+  assert.ok(lines.some((line) => line.includes('activeDeliveries=1') &&
+    line.includes('historicalExportReceiptAttention=1')))
+})
+
 test('cross-project operator index reports missing artifact refs without failing scan', async () => {
   const dir = await createFixtureProject()
   await runFirstWedge({ projectDir: dir })
