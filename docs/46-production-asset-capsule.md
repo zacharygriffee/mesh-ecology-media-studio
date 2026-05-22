@@ -167,6 +167,9 @@ surface the same export delivery posture as local evidence only.
 Row-level export receipt posture includes freshness, source rough-cut/render
 refs, delivery refs, and next action; stale rows remain local evidence only and
 do not satisfy authority.
+The narrow operational proof includes two accepted production items assembled
+into one rough cut and carried through local render/export receipts without
+granting authority.
 
 ## Authority Handoff Candidate
 

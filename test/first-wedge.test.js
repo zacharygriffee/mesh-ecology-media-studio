@@ -3726,6 +3726,30 @@ test('rough cut capsule orders two accepted production items', async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-rough-cut-two-items-'))
   await runVeniceProductionRehearsal({ projectDir: dir })
   const secondAssetRecord = await addSecondAcceptedProductionAssetFixture(dir)
+  const secondAsset = JSON.parse(await readFile(path.join(dir, secondAssetRecord), 'utf8'))
+  const firstApproval = JSON.parse(await readFile(path.join(dir, 'records/approvals/promoted-candidate-accepted-approval-proposal.local.json'), 'utf8'))
+  const firstDecision = JSON.parse(await readFile(path.join(dir, firstApproval.localDecisionRef.path), 'utf8'))
+  const secondDecisionRecord = 'records/decisions/media-operator-decision-second.local.json'
+  const secondDecision = {
+    ...firstDecision,
+    decisionId: `${firstDecision.decisionId}-second`,
+    subjectRef: {
+      ...(firstDecision.subjectRef ?? {}),
+      id: secondAsset.assetId,
+      path: secondAssetRecord
+    },
+    selectedAssetId: secondAsset.assetId,
+    createdAt: '2026-05-19T00:00:02.000Z'
+  }
+  await writeFile(path.join(dir, secondDecisionRecord), `${JSON.stringify(secondDecision, null, 2)}\n`)
+  await writeApprovalProposal({
+    projectDir: dir,
+    decision: secondDecisionRecord,
+    asset: secondAssetRecord,
+    output: 'records/approvals/media-approval-proposal-second.local.json'
+  })
+  await writeByteDescriptorProposals({ projectDir: dir })
+  await writeLocalLayerResourceRefCandidates({ projectDir: dir })
 
   await writeProductionAssetCapsule({
     projectDir: dir,
@@ -3758,6 +3782,118 @@ test('rough cut capsule orders two accepted production items', async () => {
   assert.equal(roughCut.productionReady, false)
   assert.equal(roughCut.approvalAuthority, false)
   assert.equal(validateRequiredRecord(roughCut), true)
+
+  const review = await writeRoughCutReviewDecision({ projectDir: dir, quiet: true })
+  assert.equal(review.decision.roughCutReview.itemCount, 2)
+
+  const renderExport = await writeRenderExportCandidate({ projectDir: dir, quiet: true })
+  assert.equal(renderExport.candidate.orderedItemRefs.length, 2)
+  assert.deepEqual(renderExport.candidate.orderedItemRefs.map((item) => item.order), [1, 2])
+  assert.equal(renderExport.candidate.renderPosture.renderPerformed, false)
+  assert.equal(renderExport.candidate.exportPosture.exportPerformed, false)
+  assert.equal(renderExport.candidate.productionReady, false)
+
+  const adapter = await writeRenderAdapterContract({ projectDir: dir, quiet: true })
+  assert.equal(adapter.contract.orderedItems.length, 2)
+  const renderPlan = await writeRenderPlanCandidate({ projectDir: dir, quiet: true })
+  assert.equal(renderPlan.plan.orderedItems.length, 2)
+  assert.deepEqual(renderPlan.plan.orderedItems.map((item) => item.itemRef.order), [1, 2])
+
+  const contactSheet = await writeContactSheetRender({ projectDir: dir, tileSize: 64, quiet: true })
+  assert.equal(contactSheet.receipt.orderedItems.length, 2)
+  assert.equal(contactSheet.receipt.renderPerformed, true)
+  assert.equal(contactSheet.receipt.exportPerformed, false)
+  assert.equal(contactSheet.receipt.productionReady, false)
+
+  const ffmpegRender = await writeFfmpegRender({
+    projectDir: dir,
+    secondsPerItem: 1,
+    width: 320,
+    height: 180,
+    fps: 12,
+    quiet: true
+  })
+  assert.equal(ffmpegRender.receipt.orderedItems.length, 2)
+  assert.equal(ffmpegRender.receipt.output.durationSeconds, 2)
+  assert.equal(ffmpegRender.receipt.renderPerformed, true)
+  assert.equal(ffmpegRender.receipt.exportPerformed, false)
+
+  const exportCandidate = await writeExportCandidate({ projectDir: dir, quiet: true })
+  assert.equal(exportCandidate.candidate.orderedItemRefs.length, 2)
+  assert.equal(exportCandidate.candidate.sourceRenderReceiptRef.id, ffmpegRender.receipt.renderReceiptId)
+  assert.equal(exportCandidate.candidate.exportPosture.exportPerformed, false)
+  assert.equal(exportCandidate.candidate.productionReady, false)
+
+  const exportPlan = await writeExportPlanCandidate({ projectDir: dir, quiet: true })
+  assert.equal(exportPlan.plan.orderedItems.length, 2)
+  assert.deepEqual(exportPlan.plan.orderedItems.map((item) => item.order), [1, 2])
+
+  const localExport = await writeLocalExportPackage({ projectDir: dir, quiet: true })
+  assert.equal(localExport.receipt.orderedItems.length, 2)
+  assert.equal(localExport.receipt.deliveryCreated, true)
+  assert.equal(localExport.receipt.exportPerformed, true)
+  assert.equal(localExport.receipt.publicationAuthorization, false)
+  assert.equal(localExport.receipt.productionReady, false)
+
+  const ffmpegExport = await writeFfmpegExport({
+    projectDir: dir,
+    secondsPerItem: 1,
+    width: 320,
+    height: 180,
+    fps: 12,
+    quiet: true
+  })
+  assert.equal(ffmpegExport.receipt.orderedItems.length, 2)
+  assert.equal(ffmpegExport.receipt.output.durationSeconds, 2)
+  assert.equal(ffmpegExport.receipt.deliveryCreated, true)
+  assert.equal(ffmpegExport.receipt.exportPerformed, true)
+  assert.equal(ffmpegExport.receipt.publicationAuthorization, false)
+  assert.equal(ffmpegExport.receipt.productionReady, false)
+
+  const summary = await createMediaSummary({ projectDir: dir })
+  assert.equal(summary.productionRoughCuts.itemRefs, 2)
+  assert.equal(summary.renderReceipts.total, 2)
+  assert.equal(summary.renderReceipts.renderPerformed, 2)
+  assert.equal(summary.exportReceipts.total, 2)
+  assert.equal(summary.exportReceipts.localPackageCopyExportReceipts, 1)
+  assert.equal(summary.exportReceipts.ffmpegDeliveryReceipts, 1)
+  assert.equal(summary.exportReceipts.localDeliveryEvidencePresent, 2)
+  assert.equal(summary.exportReceipts.rows.filter((row) => row.localDeliveryEvidencePresent).length, 2)
+  assert.ok(summary.exportReceipts.rows.every((row) => row.sourceRoughCutId === roughCut.roughCutId))
+  assert.ok(summary.exportReceipts.rows.every((row) => row.sourceRenderReceiptId === ffmpegRender.receipt.renderReceiptId))
+
+  const prereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
+  assert.equal(prereqs.candidates, 2)
+  assert.equal(prereqs.localProductionPackageComplete, 2)
+  assert.equal(prereqs.exportReceipts, 4)
+  assert.equal(prereqs.ffmpegDeliveryReceipts, 2)
+  assert.equal(prereqs.localDeliveryEvidencePresent, 2)
+  assert.equal(prereqs.pendingAuthority, 2)
+  assert.equal(prereqs.productionReady, 0)
+
+  const indexOutput = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
+  assert.equal(indexOutput.result.index.summary.roughCutCapsules, 1)
+  assert.equal(indexOutput.result.index.summary.renderReceipts, 2)
+  assert.equal(indexOutput.result.index.summary.exportReceipts, 2)
+  assert.equal(indexOutput.result.index.summary.ffmpegDeliveryReceipts, 1)
+  assert.equal(indexOutput.result.index.summary.localDeliveryEvidencePresent, 2)
+  assert.ok(indexOutput.lines.some((line) => line.includes('roughCuts=1')))
+  assert.ok(indexOutput.lines.some((line) => line.includes('exportReceipts=2')))
+  assert.ok(indexOutput.lines.some((line) =>
+    line.includes('export receipt:') &&
+    line.includes('kind=local-ffmpeg-review-delivery') &&
+    line.includes('localDeliveryEvidence=true') &&
+    line.includes(`roughCut=${roughCut.roughCutId}`) &&
+    line.includes(`renderReceipt=${ffmpegRender.receipt.renderReceiptId}`)
+  ))
+
+  const compatibility = await writeEdgeCompatibilityBundle({ projectDir: dir })
+  assert.equal(compatibility.bundle.exportDeliverySummary.exportReceipts, 2)
+  assert.equal(compatibility.bundle.exportDeliverySummary.ffmpegDeliveryReceipts, 1)
+  assert.equal(compatibility.bundle.exportDeliverySummary.localDeliveryEvidencePresent, 2)
+  assert.equal(compatibility.bundle.exportDeliverySummary.rows.length, 2)
+  assert.equal(compatibility.bundle.exportDeliverySummary.productionReady, false)
+  assert.equal(compatibility.bundle.exportDeliverySummary.publicationAuthorization, false)
 })
 
 test('rough cut summaries detect stale production bundle changes', async () => {

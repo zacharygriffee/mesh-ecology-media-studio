@@ -480,6 +480,9 @@ bundles expose the same local delivery-evidence counts without turning them
 into export authorization or production readiness.
 Their export receipt rows carry freshness, source refs, delivery refs, and next
 actions for operator inspection.
+The current production proof covers a two-item rough cut through local review,
+render receipts, export receipts, authority prerequisites, operator index, and
+Edge-compatible export posture.
 The authority prerequisite and handoff commands can carry optional
 `mesh-ecology-layer` import refs (`layerRef`, `layerProfileRef`,
 `continuityRef`, `desyncPostureRef`, and RBC profile refs) so Studio packages

@@ -360,6 +360,9 @@ The same delivery-evidence distinction appears in `media:summary`,
 Export receipt rows also show freshness, source rough cut/render refs, delivery
 paths, and next action so stale delivery evidence is inspectable without opening
 raw JSON.
+The test suite now exercises a two-item rough-cut path through local review,
+contact-sheet/ffmpeg render receipts, local/ffmpeg export receipts, authority
+prereqs, operator index, and Edge-compatible export rows.
 
 ## Inspection And Edge-Compatible Artifacts
 
