@@ -10,6 +10,7 @@ import { summarizeProductionApprovalLane } from '../production/approval-lane.js'
 import { evaluateRenderExportCandidateFreshness } from '../production/render-export-candidate.js'
 import { summarizeRenderReceipt } from '../production/render-receipts.js'
 import { summarizeExportReceipt, summarizeExportReceipts } from '../production/export-receipts.js'
+import { evaluateLocalOutputIntegrity } from '../production/output-integrity.js'
 import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
 
 const modulePath = fileURLToPath(import.meta.url)
@@ -140,6 +141,10 @@ export async function writeOperatorPacketIndex({
     .filter((entry) => entry.record.schema === artifactKinds.mediaExportReceiptLocal)
     .map((entry) => summarizeExportReceipt(entry.record, entry.relativePath, normalizeRecordPaths(records)))
   const exportReceiptSummary = summarizeExportReceipts(normalizeRecordPaths(records))
+  const outputIntegritySummary = await evaluateLocalOutputIntegrity({
+    projectDir,
+    records: normalizeRecordPaths(records)
+  })
   const layerInterop = summarizeLayerInteropFromRecords(records)
   const productionApprovalLane = summarizeProductionApprovalLane({
     assetRecords: records
@@ -190,6 +195,7 @@ export async function writeOperatorPacketIndex({
     renderExportCandidates,
     renderReceipts,
     exportReceipts,
+    outputIntegritySummary,
     layerInterop,
     productionApprovalLane,
     operatorHealthExplanations,
@@ -221,6 +227,9 @@ export async function writeOperatorPacketIndex({
       localPackageCopyExportReceipts: exportReceiptSummary.localPackageCopyExportReceipts,
       ffmpegDeliveryReceipts: exportReceiptSummary.ffmpegDeliveryReceipts,
       localDeliveryEvidencePresent: exportReceiptSummary.localDeliveryEvidencePresent,
+      localDeliveryEvidenceIntact: outputIntegritySummary.localDeliveryEvidenceIntact,
+      outputIntegrityBlockingIssues: outputIntegritySummary.outputIntegrityBlockingIssues,
+      outputIntegrityAttentionIssues: outputIntegritySummary.outputIntegrityAttentionIssues,
       exportReceiptsNeedingAttention: exportReceipts.filter((receipt) => receipt.issueCodes.length > 0).length,
       layerInteropState: layerInterop.state,
       layerInteropHandoffs: layerInterop.authorityHandoffRecords,
@@ -244,6 +253,8 @@ export async function writeOperatorPacketIndex({
         renderExportCandidates.filter((candidate) => candidate.needsOperatorAttention).length +
         renderReceipts.filter((receipt) => receipt.issueCodes.length > 0).length +
         exportReceipts.filter((receipt) => receipt.issueCodes.length > 0).length +
+        outputIntegritySummary.outputIntegrityBlockingIssues +
+        outputIntegritySummary.outputIntegrityAttentionIssues +
         layerInterop.attentionRows.length +
         productionApprovalLane.attentionRows.length,
       newestRecordPath: newestPath(records),
@@ -309,6 +320,12 @@ export async function writeOperatorPacketIndex({
     for (const receipt of index.exportReceipts) {
       console.log(formatExportReceipt(receipt))
     }
+    for (const row of index.outputIntegritySummary.blockingRows ?? []) {
+      console.log(formatOutputIntegrityRow('output-integrity blocking', row, row.blockingIssueCodes))
+    }
+    for (const row of index.outputIntegritySummary.attentionRows ?? []) {
+      console.log(formatOutputIntegrityRow('output-integrity attention', row, row.attentionIssueCodes))
+    }
     for (const row of index.layerInterop.attentionRows) {
       console.log(formatLayerInteropAttention(row))
     }
@@ -346,6 +363,9 @@ function formatOperatorPacketIndexSummary(index, output) {
     `exportReceipts=${summary.exportReceipts ?? 0}`,
     `ffmpegDeliveryReceipts=${summary.ffmpegDeliveryReceipts ?? 0}`,
     `localDeliveryEvidencePresent=${summary.localDeliveryEvidencePresent ?? 0}`,
+    `localDeliveryEvidenceIntact=${summary.localDeliveryEvidenceIntact ?? 0}`,
+    `outputIntegrityBlocking=${summary.outputIntegrityBlockingIssues ?? 0}`,
+    `outputIntegrityAttention=${summary.outputIntegrityAttentionIssues ?? 0}`,
     `layerInterop=${summary.layerInteropState ?? 'layer-refs-not-attached'}`,
     `layerAttention=${summary.layerInteropAttention ?? 0}`,
     `productionApprovalPending=${summary.productionApprovalPendingAuthority ?? 0}`,
@@ -477,6 +497,16 @@ function formatExportReceipt(receipt) {
     `delivery=${receipt.deliveryLocalRef?.path ?? 'none'}`,
     `nextAction=${receipt.nextAction}`,
     `path=${receipt.receiptRef.path}`
+  ].join(' | ')
+}
+
+function formatOutputIntegrityRow(label, row, issueCodes) {
+  return [
+    `${label}: ${row.receiptRef?.path ?? row.receiptRef?.id ?? 'unknown'}`,
+    `receipt=${row.receiptRef?.id ?? 'unknown'}`,
+    `issues=${(issueCodes ?? []).join(',') || 'none'}`,
+    `delivery=${row.deliveryLocalRef?.path ?? row.outputLocalRef?.path ?? 'none'}`,
+    `productionReady=false`
   ].join(' | ')
 }
 

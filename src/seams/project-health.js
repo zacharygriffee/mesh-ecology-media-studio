@@ -11,6 +11,7 @@ import { readProjectRecords, writeProjectStatus } from './project-status.js'
 import { validateProductionRecordsInProject } from '../production/validate-production-records.js'
 import { evaluateRenderExportCandidateFreshness } from '../production/render-export-candidate.js'
 import { summarizeRenderReceipts } from '../production/render-receipts.js'
+import { evaluateLocalOutputIntegrity } from '../production/output-integrity.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
@@ -68,6 +69,7 @@ export async function writeProjectHealth({
   const productionRoughCutHealthExplanations = buildProductionRoughCutHealthExplanations(records)
   const renderExportCandidateSummary = summarizeRenderExportCandidates(records)
   const renderReceiptSummary = summarizeRenderReceipts(records)
+  const outputIntegritySummary = await evaluateLocalOutputIntegrity({ projectDir, records })
   const renderExportCandidateHealthExplanations = renderExportCandidateSummary.attentionRows.map((row) => ({
     subjectRef: {
       kind: 'media-render-export-candidate',
@@ -85,8 +87,9 @@ export async function writeProjectHealth({
     localOnly: true,
     operatorGuidanceOnly: true,
     meshTruth: false,
-    publicationAuthorization: false
-  }))
+      publicationAuthorization: false
+    }))
+  const outputIntegrityHealthExplanations = buildOutputIntegrityHealthExplanations(outputIntegritySummary)
 
   if (statusResult.status.assetResourceConsistency.readyForEdgeInspection !== true) {
     blockingIssues.push('asset-resource-consistency-not-ready')
@@ -118,6 +121,10 @@ export async function writeProjectHealth({
 
   if (renderReceiptSummary.attentionRows.length > 0) {
     blockingIssues.push('render-receipt-attention')
+  }
+
+  if (outputIntegritySummary.outputIntegrityBlockingIssues > 0) {
+    blockingIssues.push('output-integrity-blocking')
   }
 
   const health = {
@@ -159,6 +166,8 @@ export async function writeProjectHealth({
     renderExportCandidateSummary,
     renderExportCandidateHealthExplanations,
     renderReceiptSummary,
+    outputIntegritySummary,
+    outputIntegrityHealthExplanations,
     renderReceiptHealthExplanations: renderReceiptSummary.attentionRows.map((row) => ({
       subjectRef: row.receiptRef,
       subjectKind: 'media-render-receipt',
@@ -179,6 +188,7 @@ export async function writeProjectHealth({
       ...productionCapsuleHealthExplanations,
       ...productionRoughCutHealthExplanations,
       ...renderExportCandidateHealthExplanations,
+      ...outputIntegrityHealthExplanations,
       ...renderReceiptSummary.attentionRows.map((row) => ({
         subjectRef: row.receiptRef,
         subjectKind: 'media-render-receipt',
@@ -258,6 +268,13 @@ function printHealthSummary(health, output) {
     `exportPerformed=${health.renderReceiptSummary?.exportPerformed ?? 0}`,
     `productionReady=${health.renderReceiptSummary?.productionReady ?? 0}`,
     `stale=${health.renderReceiptSummary?.stale ?? 0}`
+  ].join(' | '))
+  console.log([
+    `outputIntegrity: deliveryIntact=${health.outputIntegritySummary?.localDeliveryEvidenceIntact ?? 0}`,
+    `blocking=${health.outputIntegritySummary?.outputIntegrityBlockingIssues ?? 0}`,
+    `attention=${health.outputIntegritySummary?.outputIntegrityAttentionIssues ?? 0}`,
+    `renderReceipts=${health.outputIntegritySummary?.renderReceipts ?? 0}`,
+    `exportReceipts=${health.outputIntegritySummary?.exportReceipts ?? 0}`
   ].join(' | '))
   for (const explanation of health.operatorHealthExplanations ?? []) {
     console.log(formatHealthExplanation(explanation))
@@ -449,6 +466,64 @@ function buildProductionRoughCutHealthExplanations(records) {
   return [
     ...roughCutAttention
   ]
+}
+
+function buildOutputIntegrityHealthExplanations(outputIntegritySummary) {
+  const blockingRows = (outputIntegritySummary.blockingRows ?? []).map((row) => outputIntegrityExplanation({
+    row,
+    healthState: 'needs-local-attention',
+    issueCodes: row.blockingIssueCodes,
+    summary: 'Local export/delivery receipt refs are present, but referenced delivery bytes or dependent render bytes are missing or invalid.',
+    nextAction: 'Regenerate local delivery/export artifacts before treating the local production package as complete.'
+  }))
+  const attentionRows = (outputIntegritySummary.attentionRows ?? []).map((row) => outputIntegrityExplanation({
+    row,
+    healthState: 'needs-local-attention',
+    issueCodes: row.attentionIssueCodes,
+    summary: 'Local render preview receipt refs are present, but referenced preview bytes are missing or invalid.',
+    nextAction: 'Regenerate local render preview artifacts when the operator needs preview inspection; this is blocking only when an export depends on the invalid render.'
+  }))
+
+  return [
+    ...blockingRows,
+    ...attentionRows
+  ]
+}
+
+function outputIntegrityExplanation({
+  row,
+  healthState,
+  issueCodes,
+  summary,
+  nextAction
+}) {
+  return {
+    subjectKind: row.receiptRef?.kind ?? 'media-output-receipt',
+    subjectRef: row.receiptRef,
+    path: row.receiptRef?.path,
+    healthState,
+    issueCodes,
+    summary,
+    nextAction,
+    sourceRefs: [
+      row.receiptRef,
+      row.sourceRoughCutRef,
+      row.sourceRenderReceiptRef,
+      ...(row.checkedRefs ?? [])
+    ].filter(Boolean),
+    nonClaims: healthNonClaims(),
+    localOnly: true,
+    operatorGuidanceOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    byteAvailabilityProof: false,
+    materializationProof: false,
+    providerTruth: false,
+    resourceAdmission: false,
+    approvalAuthority: false,
+    publicationAuthorization: false
+  }
 }
 
 function summarizeRenderExportCandidates(records) {

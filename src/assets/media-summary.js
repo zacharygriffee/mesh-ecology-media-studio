@@ -6,6 +6,7 @@ import { summarizeProductionApprovalLane } from '../production/approval-lane.js'
 import { evaluateRenderExportCandidateFreshness } from '../production/render-export-candidate.js'
 import { summarizeRenderReceipts } from '../production/render-receipts.js'
 import { summarizeExportReceipts } from '../production/export-receipts.js'
+import { evaluateLocalOutputIntegrity } from '../production/output-integrity.js'
 import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
 import { writeProjectStatus, readProjectRecords } from '../seams/project-status.js'
 
@@ -57,6 +58,7 @@ export async function createMediaSummary({
   const renderExportCandidates = summarizeRenderExportCandidates(records)
   const renderReceipts = summarizeRenderReceipts(records)
   const exportReceipts = summarizeExportReceipts(records)
+  const outputIntegrity = await evaluateLocalOutputIntegrity({ projectDir, records })
   const layerInterop = summarizeLayerInteropFromRecords(records)
   const productionApprovalLane = summarizeProductionApprovalLane({
     assetRecords,
@@ -88,6 +90,7 @@ export async function createMediaSummary({
     renderExportCandidates,
     renderReceipts,
     exportReceipts,
+    outputIntegrity,
     layerInterop,
     productionApprovalLane,
     bytePosture: status.assetResourceConsistency.bytePosture,
@@ -140,6 +143,7 @@ export async function createMediaSummary({
     renderExportCandidates,
     renderReceipts,
     exportReceipts,
+    outputIntegrity,
     layerInterop,
     productionApprovalLane,
     safeNextAction,
@@ -277,6 +281,13 @@ function printMediaSummary(summary) {
     `attention=${summary.exportReceipts.attentionRows.length}`
   ].join(' | '))
   console.log([
+    `output integrity: deliveryIntact=${summary.outputIntegrity.localDeliveryEvidenceIntact}`,
+    `blocking=${summary.outputIntegrity.outputIntegrityBlockingIssues}`,
+    `attention=${summary.outputIntegrity.outputIntegrityAttentionIssues}`,
+    `renderReceipts=${summary.outputIntegrity.renderReceipts}`,
+    `exportReceipts=${summary.outputIntegrity.exportReceipts}`
+  ].join(' | '))
+  console.log([
     `production approval: candidates=${summary.productionApprovalLane.candidates}`,
     `decisions=${summary.productionApprovalLane.localDecisions}`,
     `proposals=${summary.productionApprovalLane.approvalProposals}`,
@@ -373,6 +384,12 @@ function printMediaSummary(summary) {
       `path=${row.receiptRef.path}`
     ].join(' | '))
   }
+  for (const row of summary.outputIntegrity.blockingRows) {
+    console.log(formatOutputIntegrityRow('output-integrity blocking', row, row.blockingIssueCodes))
+  }
+  for (const row of summary.outputIntegrity.attentionRows) {
+    console.log(formatOutputIntegrityRow('output-integrity attention', row, row.attentionIssueCodes))
+  }
   for (const row of summary.productionApprovalLane.attentionRows) {
     console.log([
       `production-approval: ${row.path}`,
@@ -404,6 +421,7 @@ function summarizeSafeNextAction({
   renderExportCandidates,
   renderReceipts,
   exportReceipts,
+  outputIntegrity,
   layerInterop,
   productionApprovalLane,
   bytePosture,
@@ -456,6 +474,14 @@ function summarizeSafeNextAction({
     return renderReceipts.attentionRows[0].nextAction
   }
 
+  if ((outputIntegrity?.outputIntegrityBlockingIssues ?? 0) > 0) {
+    return 'Regenerate local delivery/export artifacts; receipt refs are present but referenced bytes are missing or invalid.'
+  }
+
+  if ((outputIntegrity?.outputIntegrityAttentionIssues ?? 0) > 0) {
+    return 'Inspect local render preview integrity attention; delivery evidence may still be intact unless an export depends on the invalid render.'
+  }
+
   if (exportReceipts.attentionRows.length > 0) {
     return exportReceipts.attentionRows[0].nextAction
   }
@@ -475,6 +501,16 @@ function summarizeSafeNextAction({
   if (derivativeAttentionRows.length > 0) return derivativeAttentionRows[0].nextAction
 
   return 'No local media summary attention is blocking inspection; continue with the next operator-selected work.'
+}
+
+function formatOutputIntegrityRow(label, row, issueCodes) {
+  return [
+    `${label}: ${row.receiptRef?.path ?? row.receiptRef?.id ?? 'unknown'}`,
+    `receipt=${row.receiptRef?.id ?? 'unknown'}`,
+    `issues=${(issueCodes ?? []).join(',') || 'none'}`,
+    `delivery=${row.deliveryLocalRef?.path ?? row.outputLocalRef?.path ?? 'none'}`,
+    `productionReady=false`
+  ].join(' | ')
 }
 
 function summarizeProductionCapsules(assetRecords, records) {

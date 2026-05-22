@@ -223,6 +223,13 @@ export async function writeEdgeCompatibilityBundle({
   } else if (!quiet) {
     console.log(`edge compatibility bundle: ${output}`)
     console.log(`edge targets: ${bundle.edgeShapeTargets.map((target) => target.edgeArtifactKind).join(', ')}`)
+    console.log([
+      `edge source refs: authorityPrereqs=${bundle.exportDeliverySummary.authorityPrerequisiteRefs}`,
+      `authorityHandoffs=${bundle.exportDeliverySummary.authorityHandoffRefs}`,
+      `localDeliveryEvidenceIntact=${bundle.exportDeliverySummary.localDeliveryEvidenceIntact}`,
+      `outputIntegrityBlocking=${bundle.exportDeliverySummary.outputIntegrityBlockingIssues}`,
+      `outputIntegrityAttention=${bundle.exportDeliverySummary.outputIntegrityAttentionIssues}`
+    ].join(' | '))
   }
 
   return {
@@ -500,13 +507,23 @@ function createExportDeliverySummary({ sources }) {
     relativePath
   }))
   const exportReceiptSummary = summarizeExportReceipts(Object.values(sources))
+  const authorityPrereqEntries = Object.values(sources)
+    .filter((source) => source.record.schema === artifactKinds.mediaProductionAuthorityPrerequisitesLocal)
+  const authorityHandoffEntries = Object.values(sources)
+    .filter((source) => source.record.schema === artifactKinds.mediaAuthorityHandoffCandidateLocal)
+  const authorityPrereqSummary = authorityPrereqEntries[0]?.record
 
   return {
     summaryKind: 'studio-export-delivery-summary',
     exportReceipts: refs.length,
+    authorityPrerequisiteRefs: authorityPrereqEntries.length,
+    authorityHandoffRefs: authorityHandoffEntries.length,
     localPackageCopyExportReceipts: exportReceiptSummary.localPackageCopyExportReceipts,
     ffmpegDeliveryReceipts: exportReceiptSummary.ffmpegDeliveryReceipts,
     localDeliveryEvidencePresent: exportReceiptSummary.localDeliveryEvidencePresent,
+    localDeliveryEvidenceIntact: authorityPrereqSummary?.localDeliveryEvidenceIntact ?? 0,
+    outputIntegrityBlockingIssues: authorityPrereqSummary?.outputIntegrityBlockingIssues ?? 0,
+    outputIntegrityAttentionIssues: authorityPrereqSummary?.outputIntegrityAttentionIssues ?? 0,
     fresh: exportReceiptSummary.fresh,
     stale: exportReceiptSummary.stale,
     rows: exportReceiptSummary.rows.map(edgeExportReceiptRow),

@@ -216,6 +216,8 @@ execution and keep only contact-sheet plus local package-copy evidence.
 `production:authority-prereqs` checks the referenced local delivery/export
 bytes for presence, size, and hash before reporting local production package
 completeness.
+`media:summary`, `health:summary`, `operator:index`, and `edge:compat` expose
+that output-integrity posture without granting authority or publication.
 
 Write a local Packs-aligned control-surface projection without adding UI:
 

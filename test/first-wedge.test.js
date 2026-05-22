@@ -4003,6 +4003,34 @@ test('local output integrity blocks production package when export delivery byte
   assert.equal(prereqs.productionReady, 0)
   assert.ok(prereqs.rows[0].outputIntegrityBlockingIssueCodes.includes('missing_export_delivery_bytes'))
   assert.equal(prereqs.rows[0].exportReceiptPosture.state, 'export-receipt-output-integrity-blocked')
+
+  const mediaSummary = await captureConsole(() => writeMediaSummary({ projectDir: dir }))
+  assert.equal(mediaSummary.result.outputIntegrity.localDeliveryEvidenceIntact, 0)
+  assert.equal(mediaSummary.result.outputIntegrity.outputIntegrityBlockingIssues > 0, true)
+  assert.ok(mediaSummary.lines.some((line) => line.startsWith('output integrity: deliveryIntact=0 | blocking=')))
+  assert.ok(mediaSummary.lines.some((line) => line.includes('output-integrity blocking:') && line.includes('missing_export_delivery_bytes')))
+
+  const healthSummary = await captureConsole(() => writeProjectHealth({ projectDir: dir, summary: true }))
+  assert.equal(healthSummary.result.health.outputIntegritySummary.localDeliveryEvidenceIntact, 0)
+  assert.equal(healthSummary.result.health.outputIntegritySummary.outputIntegrityBlockingIssues > 0, true)
+  assert.ok(healthSummary.result.health.blockingIssues.includes('output-integrity-blocking'))
+  assert.ok(healthSummary.lines.some((line) => line.startsWith('outputIntegrity: deliveryIntact=0 | blocking=')))
+  assert.ok(healthSummary.lines.some((line) => line.includes('media-export-receipt:') && line.includes('missing_export_delivery_bytes')))
+
+  await writeProductionAuthorityPrerequisiteReport({ projectDir: dir, quiet: true })
+  await writeAuthorityHandoffCandidate({ projectDir: dir, quiet: true })
+  const operatorIndex = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
+  assert.equal(operatorIndex.result.index.summary.localDeliveryEvidenceIntact, 0)
+  assert.equal(operatorIndex.result.index.summary.outputIntegrityBlockingIssues > 0, true)
+  assert.ok(operatorIndex.lines.some((line) => line.includes('localDeliveryEvidenceIntact=0') && line.includes('outputIntegrityBlocking=')))
+  assert.ok(operatorIndex.lines.some((line) => line.includes('output-integrity blocking:') && line.includes('missing_export_delivery_bytes')))
+
+  const edgeBundle = await captureConsole(() => writeEdgeCompatibilityBundle({ projectDir: dir }))
+  assert.equal(edgeBundle.result.bundle.exportDeliverySummary.authorityPrerequisiteRefs >= 1, true)
+  assert.equal(edgeBundle.result.bundle.exportDeliverySummary.authorityHandoffRefs >= 1, true)
+  assert.equal(edgeBundle.result.bundle.exportDeliverySummary.localDeliveryEvidenceIntact, 0)
+  assert.equal(edgeBundle.result.bundle.exportDeliverySummary.outputIntegrityBlockingIssues > 0, true)
+  assert.ok(edgeBundle.lines.some((line) => line.includes('edge source refs: authorityPrereqs=') && line.includes('outputIntegrityBlocking=')))
 })
 
 test('local output integrity blocks production package when export delivery bytes drift', async () => {
