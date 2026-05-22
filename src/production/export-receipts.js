@@ -89,9 +89,18 @@ export function evaluateExportReceiptFreshness({
     path: receipt.sourceRenderReceiptRef?.path,
     idField: 'renderReceiptId'
   })
+  const sourceExportCandidate = findRecordEntry(records, artifactKinds.mediaExportCandidateLocal, {
+    id: receipt.sourceExportCandidateRef?.id,
+    path: receipt.sourceExportCandidateRef?.path,
+    idField: 'exportCandidateId'
+  })
 
   if (!sourcePlan) {
     issueCodes.push('source_export_plan_missing')
+  }
+
+  if (!sourceExportCandidate) {
+    issueCodes.push('source_export_candidate_missing')
   }
 
   if (!sourceRenderReceipt) {
@@ -105,6 +114,14 @@ export function evaluateExportReceiptFreshness({
   }
 
   if (sourcePlan) {
+    if (
+      receipt.sourceExportCandidateRef?.id &&
+      sourcePlan.record.sourceExportCandidateRef?.id &&
+      sourcePlan.record.sourceExportCandidateRef.id !== receipt.sourceExportCandidateRef.id
+    ) {
+      issueCodes.push('source_export_candidate_changed')
+    }
+
     const latestPlan = latestRecordEntry(records, artifactKinds.mediaExportPlanCandidateLocal, (record) =>
       record.sourceExportCandidateRef?.id === receipt.sourceExportCandidateRef?.id
     )
@@ -121,6 +138,14 @@ export function evaluateExportReceiptFreshness({
     const targetPath = sourcePlan.record.targetOutputRef?.path
     if (targetPath && !receipt.deliveryLocalRef?.path?.startsWith(`${targetPath}/`)) {
       issueCodes.push('target_output_path_changed')
+    }
+  }
+
+  if (sourceExportCandidate) {
+    const candidateSignature = orderedItemSignatureFromExportCandidate(sourceExportCandidate.record)
+    const receiptSignature = orderedItemSignatureFromReceipt(receipt)
+    if (candidateSignature !== receiptSignature) {
+      issueCodes.push('source_export_candidate_ordered_items_changed')
     }
   }
 
@@ -147,6 +172,7 @@ export function evaluateExportReceiptFreshness({
       receipt.sourceRoughCutRef,
       reviewDecisionRef,
       sourcePlan ? localRecordRef('media-export-plan-candidate', sourcePlan.record.planId, sourcePlan.record.schema, sourcePlan.path) : null,
+      sourceExportCandidate ? localRecordRef('media-export-candidate', sourceExportCandidate.record.exportCandidateId, sourceExportCandidate.record.schema, sourceExportCandidate.path) : null,
       sourceRenderReceipt ? localRecordRef('media-render-receipt', sourceRenderReceipt.record.renderReceiptId, sourceRenderReceipt.record.schema, sourceRenderReceipt.path) : null,
       latestDecision ? localRecordRef('media-operator-decision', latestDecision.record.decisionId, latestDecision.record.schema, latestDecision.path) : null
     ]),
@@ -195,6 +221,12 @@ function orderedItemSignatureFromPlan(plan) {
 function orderedItemSignatureFromReceipt(receipt) {
   return (receipt.orderedItems ?? [])
     .map((item) => `${item.order}:${item.itemRef?.id ?? item.itemId ?? item.id}`)
+    .join('|')
+}
+
+function orderedItemSignatureFromExportCandidate(candidate) {
+  return (candidate.orderedItemRefs ?? [])
+    .map((item) => `${item.order}:${item.id ?? item.itemId ?? item.itemRef?.id}`)
     .join('|')
 }
 

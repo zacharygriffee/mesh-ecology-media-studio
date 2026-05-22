@@ -3495,6 +3495,68 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.equal(ffmpegExportedMediaSummary.exportReceipts.productionReady, 0)
   assert.equal(ffmpegExportedMediaSummary.exportReceipts.fresh, 2)
   assert.equal(ffmpegExportedMediaSummary.exportReceipts.stale, 0)
+
+  const freshProjectRecords = await readProjectRecords(dir)
+  const missingExportCandidateFreshness = evaluateExportReceiptFreshness({
+    receipt: ffmpegExport,
+    records: freshProjectRecords.filter((entry) =>
+      !(entry.record.schema === 'media.export_candidate.local.v1' &&
+        entry.record.exportCandidateId === exportCandidate.exportCandidateId)
+    )
+  })
+  assert.equal(missingExportCandidateFreshness.state, 'stale')
+  assert.ok(missingExportCandidateFreshness.issueCodes.includes('source_export_candidate_missing'))
+
+  const changedExportCandidateFreshness = evaluateExportReceiptFreshness({
+    receipt: ffmpegExport,
+    records: freshProjectRecords.map((entry) => {
+      if (entry.record.schema !== 'media.export_candidate.local.v1' ||
+        entry.record.exportCandidateId !== exportCandidate.exportCandidateId) {
+        return entry
+      }
+      return {
+        ...entry,
+        record: {
+          ...entry.record,
+          orderedItemRefs: [
+            ...(entry.record.orderedItemRefs ?? []),
+            {
+              kind: 'media-rough-cut-item',
+              id: 'changed-after-export',
+              schema: 'media.rough_cut_item.local.v1',
+              order: 99,
+              localOnly: true
+            }
+          ]
+        }
+      }
+    })
+  })
+  assert.equal(changedExportCandidateFreshness.state, 'stale')
+  assert.ok(changedExportCandidateFreshness.issueCodes.includes('source_export_candidate_ordered_items_changed'))
+
+  const changedExportPlanFreshness = evaluateExportReceiptFreshness({
+    receipt: ffmpegExport,
+    records: freshProjectRecords.map((entry) => {
+      if (entry.record.schema !== 'media.export_plan_candidate.local.v1' ||
+        entry.record.planId !== exportPlan.planId) {
+        return entry
+      }
+      return {
+        ...entry,
+        record: {
+          ...entry.record,
+          targetOutputRef: {
+            ...entry.record.targetOutputRef,
+            path: 'media/exports/delivery-candidates/changed-after-export'
+          }
+        }
+      }
+    })
+  })
+  assert.equal(changedExportPlanFreshness.state, 'stale')
+  assert.ok(changedExportPlanFreshness.issueCodes.includes('target_output_path_changed'))
+
   const exportedIndexOutput = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
   assert.equal(exportedIndexOutput.result.index.summary.exportReceipts, 2)
   assert.equal(exportedIndexOutput.result.index.summary.localPackageCopyExportReceipts, 1)
