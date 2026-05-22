@@ -90,6 +90,7 @@ export async function createProductionAuthorityPrerequisiteReport({
   const localPackageCopyExportReceipts = exportReceiptSummary.localPackageCopyExportReceipts
   const ffmpegDeliveryReceipts = exportReceiptSummary.ffmpegDeliveryReceipts
   const activeDeliveryReceipts = exportReceiptSummary.activeDeliveryReceipts
+  const historicalExportReceipts = exportReceiptSummary.historicalExportReceipts
   const currentExportReceiptAttention = exportReceiptSummary.currentAttention
   const historicalExportReceiptAttention = exportReceiptSummary.historicalAttention
   const localDeliveryEvidencePresent = rows.filter((row) => row.exportReceiptPosture?.localDeliveryEvidencePresent).length
@@ -116,6 +117,7 @@ export async function createProductionAuthorityPrerequisiteReport({
     localPackageCopyExportReceipts,
     ffmpegDeliveryReceipts,
     activeDeliveryReceipts,
+    historicalExportReceipts,
     currentExportReceiptAttention,
     historicalExportReceiptAttention,
     pendingAuthority,
@@ -155,6 +157,7 @@ export async function createProductionAuthorityPrerequisiteReport({
     localPackageCopyExportReceipts,
     ffmpegDeliveryReceipts,
     activeDeliveryReceipts,
+    historicalExportReceipts,
     currentExportReceiptAttention,
     historicalExportReceiptAttention,
     localDeliveryEvidencePresent,
@@ -499,6 +502,7 @@ function printProductionAuthorityPrerequisiteReport(report, output = defaultOutp
     `exportReceipts=${report.exportReceipts ?? 0}`,
     `ffmpegDeliveryReceipts=${report.ffmpegDeliveryReceipts ?? 0}`,
     `activeDeliveryReceipts=${report.activeDeliveryReceipts ?? 0}`,
+    `historicalExportReceipts=${report.historicalExportReceipts ?? 0}`,
     `currentExportReceiptAttention=${report.currentExportReceiptAttention ?? 0}`,
     `historicalExportReceiptAttention=${report.historicalExportReceiptAttention ?? 0}`,
     `localDeliveryEvidencePresent=${report.localDeliveryEvidencePresent ?? 0}`,
@@ -532,6 +536,7 @@ function printProductionAuthorityPrerequisiteReport(report, output = defaultOutp
       `renderReceipt=${row.renderReceiptPosture?.state ?? 'unknown'}`,
       `exportReceipt=${row.exportReceiptPosture?.state ?? 'unknown'}`,
       `activeDelivery=${row.exportReceiptPosture?.activeDeliveryReceipts ?? 0}`,
+      `historicalExportReceipts=${row.exportReceiptPosture?.historicalExportReceipts ?? 0}`,
       `currentExportAttention=${row.exportReceiptPosture?.currentExportReceiptAttention ?? 0}`,
       `historicalExportAttention=${row.exportReceiptPosture?.historicalExportReceiptAttention ?? 0}`,
       `localDeliveryEvidence=${row.exportReceiptPosture?.localDeliveryEvidencePresent === true}`,
@@ -564,16 +569,18 @@ function summarizeExportReceiptPosture(roughCutReviewPosture, records, outputInt
 
   const freshRows = receiptRows.filter((row) => row.freshnessState === 'fresh')
   const freshDeliveryRows = freshRows.filter((row) => row.deliveryCreated && row.exportPerformed)
-  const intactDeliveryRows = integrityRows.filter((row) => row.localDeliveryEvidenceIntact)
+  const currentIntegrityRows = integrityRows.filter((row) => !row.historicalAuditOnly)
+  const intactDeliveryRows = currentIntegrityRows.filter((row) => row.localDeliveryEvidenceIntact)
   const localPackageCopyExportReceipts = receiptRows.filter((row) => row.exportKind === 'local-review-package-copy').length
   const ffmpegDeliveryReceipts = receiptRows.filter((row) => row.exportKind === 'local-ffmpeg-review-delivery').length
   const activeDeliveryReceipts = receiptRows.filter((row) => row.activeLocalDelivery).length
+  const historicalExportReceipts = receiptRows.filter((row) => row.historicalAuditOnly).length
   const currentExportReceiptAttention = receiptRows
     .filter((row) => row.deliveryAttentionState === 'needs-local-attention').length
   const historicalExportReceiptAttention = receiptRows
     .filter((row) => row.deliveryAttentionState === 'historical-stale-receipt').length
   const localDeliveryEvidencePresent = freshDeliveryRows.length > 0
-  const outputIntegrityBlockingIssueCodes = [...new Set(integrityRows.flatMap((row) => row.blockingIssueCodes ?? []))]
+  const outputIntegrityBlockingIssueCodes = [...new Set(currentIntegrityRows.flatMap((row) => row.blockingIssueCodes ?? []))]
   const outputIntegrityBlockingIssues = outputIntegrityBlockingIssueCodes.length
   const localDeliveryEvidenceIntact = localDeliveryEvidencePresent &&
     intactDeliveryRows.length > 0 &&
@@ -601,6 +608,7 @@ function summarizeExportReceiptPosture(roughCutReviewPosture, records, outputInt
     localPackageCopyExportReceipts,
     ffmpegDeliveryReceipts,
     activeDeliveryReceipts,
+    historicalExportReceipts,
     currentExportReceiptAttention,
     historicalExportReceiptAttention,
     localDeliveryEvidencePresent,
@@ -634,6 +642,7 @@ function missingExportReceiptPosture() {
     localPackageCopyExportReceipts: 0,
     ffmpegDeliveryReceipts: 0,
     activeDeliveryReceipts: 0,
+    historicalExportReceipts: 0,
     currentExportReceiptAttention: 0,
     historicalExportReceiptAttention: 0,
     localDeliveryEvidencePresent: false,

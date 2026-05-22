@@ -288,15 +288,17 @@ function printMediaSummary(summary) {
     `ffmpegDelivery=${summary.exportReceipts.ffmpegDeliveryReceipts}`,
     `localDeliveryEvidence=${summary.exportReceipts.localDeliveryEvidencePresent}`,
     `activeDelivery=${summary.exportReceipts.activeDeliveryReceipts}`,
+    `historicalExportReceipts=${summary.exportReceipts.historicalExportReceipts}`,
     `deliveryCreated=${summary.exportReceipts.deliveryCreated}`,
     `exportPerformed=${summary.exportReceipts.exportPerformed}`,
     `publicationAuthorization=${summary.exportReceipts.publicationAuthorization}`,
     `productionReady=${summary.exportReceipts.productionReady}`,
-    `attention=${summary.exportReceipts.currentAttentionRows.length}`,
+    `currentAttention=${summary.exportReceipts.currentAttentionRows.length}`,
     `historicalAttention=${summary.exportReceipts.historicalAttentionRows.length}`
   ].join(' | '))
   console.log([
     `output integrity: deliveryIntact=${summary.outputIntegrity.localDeliveryEvidenceIntact}`,
+    `activeDeliveryIntact=${summary.outputIntegrity.activeDeliveryEvidenceIntact}`,
     `blocking=${summary.outputIntegrity.outputIntegrityBlockingIssues}`,
     `attention=${summary.outputIntegrity.outputIntegrityAttentionIssues}`,
     `renderReceipts=${summary.outputIntegrity.renderReceipts}`,
@@ -409,7 +411,9 @@ function printMediaSummary(summary) {
       `publicationAuthorization=${row.publicationAuthorization}`,
       `productionReady=${row.productionReady}`,
       `freshness=${row.freshnessState}`,
+      `visibility=${row.visibilityPosture}`,
       `attentionState=${row.deliveryAttentionState}`,
+      `historicalAuditOnly=${row.historicalAuditOnly}`,
       `roughCut=${row.sourceRoughCutId ?? 'unknown'}`,
       `renderReceipt=${row.sourceRenderReceiptId ?? 'unknown'}`,
       `issues=${row.issueCodes.join(',') || 'none'}`,

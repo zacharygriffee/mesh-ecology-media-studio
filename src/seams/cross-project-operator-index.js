@@ -156,6 +156,8 @@ function formatCrossProjectSummary(index, output) {
     `providerLoopDecisions=${summary.providerLoopDecisions ?? 0}`,
     `approvalProposals=${summary.approvalProposals ?? 0}`,
     `activeDeliveries=${summary.activeDeliveryReceipts ?? 0}`,
+    `historicalExportReceipts=${summary.historicalExportReceipts ?? 0}`,
+    `currentExportReceiptAttention=${summary.currentExportReceiptAttention ?? 0}`,
     `historicalExportReceiptAttention=${summary.historicalExportReceiptAttention ?? 0}`,
     `layerInterop=${summary.layerInteropProjects ?? 0}`,
     `layerAttention=${summary.layerInteropAttention ?? 0}`,
@@ -277,9 +279,11 @@ function summarizeProjectOutputDelivery(health) {
   return {
     exportReceipts: exportReceiptSummary.total ?? 0,
     activeDeliveryReceipts: exportReceiptSummary.activeDeliveryReceipts ?? 0,
+    historicalExportReceipts: exportReceiptSummary.historicalExportReceipts ?? 0,
     currentExportReceiptAttention: exportReceiptSummary.currentAttention ?? 0,
     historicalExportReceiptAttention: exportReceiptSummary.historicalAttention ?? 0,
     localDeliveryEvidenceIntact: outputIntegritySummary.localDeliveryEvidenceIntact ?? 0,
+    activeDeliveryEvidenceIntact: outputIntegritySummary.activeDeliveryEvidenceIntact ?? 0,
     outputIntegrityBlockingIssues: outputIntegritySummary.outputIntegrityBlockingIssues ?? 0,
     outputIntegrityAttentionIssues: outputIntegritySummary.outputIntegrityAttentionIssues ?? 0,
     publicationAuthorization: false,
@@ -510,6 +514,10 @@ function summarizeProjects(projectSummaries) {
   const approvalProposalsWithAttention = projectSummaries.filter((project) => project.approvalProposal?.needsOperatorAttention).length
   const activeDeliveryReceipts = projectSummaries.reduce((sum, project) =>
     sum + (project.outputDeliverySummary?.activeDeliveryReceipts ?? 0), 0)
+  const historicalExportReceipts = projectSummaries.reduce((sum, project) =>
+    sum + (project.outputDeliverySummary?.historicalExportReceipts ?? 0), 0)
+  const currentExportReceiptAttention = projectSummaries.reduce((sum, project) =>
+    sum + (project.outputDeliverySummary?.currentExportReceiptAttention ?? 0), 0)
   const historicalExportReceiptAttention = projectSummaries.reduce((sum, project) =>
     sum + (project.outputDeliverySummary?.historicalExportReceiptAttention ?? 0), 0)
   const layerInteropProjects = projectSummaries.filter((project) => project.layerInterop?.state === 'layer-refs-attached-review-only').length
@@ -537,6 +545,8 @@ function summarizeProjects(projectSummaries) {
     approvalProposals,
     approvalProposalsWithAttention,
     activeDeliveryReceipts,
+    historicalExportReceipts,
+    currentExportReceiptAttention,
     historicalExportReceiptAttention,
     layerInteropProjects,
     layerInteropAttention,

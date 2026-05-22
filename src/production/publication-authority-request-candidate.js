@@ -143,6 +143,7 @@ export function createPublicationAuthorityRequestCandidateFromRecords({
       exportReceipts: prerequisiteReport.exportReceipts ?? 0,
       ffmpegDeliveryReceipts: prerequisiteReport.ffmpegDeliveryReceipts ?? 0,
       activeDeliveryReceipts: prerequisiteReport.activeDeliveryReceipts ?? 0,
+      historicalExportReceipts: prerequisiteReport.historicalExportReceipts ?? 0,
       currentExportReceiptAttention: prerequisiteReport.currentExportReceiptAttention ?? 0,
       historicalExportReceiptAttention: prerequisiteReport.historicalExportReceiptAttention ?? 0,
       exportAuthorizationMissing: prerequisiteReport.exportAuthorizationMissing ?? 0,
@@ -171,6 +172,7 @@ export function createPublicationAuthorityRequestCandidateFromRecords({
         localProductionPackageComplete: prerequisiteReport.localProductionPackageComplete ?? 0,
         localDeliveryEvidenceIntact: prerequisiteReport.localDeliveryEvidenceIntact ?? 0,
         activeDeliveryReceipts: prerequisiteReport.activeDeliveryReceipts ?? 0,
+        historicalExportReceipts: prerequisiteReport.historicalExportReceipts ?? 0,
         currentExportReceiptAttention: prerequisiteReport.currentExportReceiptAttention ?? 0,
         historicalExportReceiptAttention: prerequisiteReport.historicalExportReceiptAttention ?? 0,
         localOnly: true

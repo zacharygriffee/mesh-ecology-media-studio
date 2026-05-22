@@ -8,14 +8,12 @@ export function summarizeExportReceipts(records = []) {
     .map((entry) => summarizeExportReceipt(entry.record, entry.path ?? entry.relativePath, records))
     .sort((left, right) => (right.createdAt ?? '').localeCompare(left.createdAt ?? ''))
   const hasFreshDelivery = baseRows.some((row) => row.localDeliveryEvidencePresent)
-  const rows = baseRows.map((row) => ({
-    ...row,
-    activeLocalDelivery: row.localDeliveryEvidencePresent,
-    deliveryAttentionState: deliveryAttentionState(row, hasFreshDelivery)
-  }))
+  const rows = baseRows.map((row) => classifyExportReceiptVisibility(row, hasFreshDelivery))
   const attentionRows = rows.filter((row) => row.issueCodes.length > 0)
   const currentAttentionRows = attentionRows.filter((row) => row.deliveryAttentionState === 'needs-local-attention')
   const historicalAttentionRows = attentionRows.filter((row) => row.deliveryAttentionState === 'historical-stale-receipt')
+  const activeDeliveryRows = rows.filter((row) => row.activeLocalDelivery)
+  const historicalRows = rows.filter((row) => row.historicalAuditOnly)
 
   return {
     total: rows.length,
@@ -30,18 +28,43 @@ export function summarizeExportReceipts(records = []) {
     publicationAuthorization: rows.filter((row) => row.publicationAuthorization).length,
     fresh: rows.filter((row) => row.freshnessState === 'fresh').length,
     stale: rows.filter((row) => row.freshnessState === 'stale').length,
-    activeDeliveryReceipts: rows.filter((row) => row.activeLocalDelivery).length,
+    activeDeliveryReceipts: activeDeliveryRows.length,
+    activeDeliveryEvidencePresent: activeDeliveryRows.length,
+    historicalExportReceipts: historicalRows.length,
     rows,
+    activeDeliveryRows,
+    historicalRows,
     attentionRows,
     currentAttentionRows,
     historicalAttentionRows,
     currentAttention: currentAttentionRows.length,
+    currentExportReceiptAttention: currentAttentionRows.length,
     historicalAttention: historicalAttentionRows.length,
+    historicalExportReceiptAttention: historicalAttentionRows.length,
     localOnly: true,
     operatorGuidanceOnly: true,
     meshTruth: false,
     publicationAuthorizationClaimed: rows.some((row) => row.publicationAuthorization),
     productionReadyClaimed: rows.some((row) => row.productionReady)
+  }
+}
+
+function classifyExportReceiptVisibility(row, hasFreshDelivery) {
+  const deliveryAttention = deliveryAttentionState(row, hasFreshDelivery)
+  const activeLocalDelivery = row.localDeliveryEvidencePresent
+  const historicalAuditOnly = hasFreshDelivery && !activeLocalDelivery
+  return {
+    ...row,
+    activeLocalDelivery,
+    historicalAuditOnly,
+    visibilityPosture: activeLocalDelivery
+      ? 'active-delivery-receipt'
+      : historicalAuditOnly
+        ? 'historical-export-receipt'
+        : deliveryAttention === 'needs-local-attention'
+          ? 'current-export-receipt-attention'
+          : 'review-only-export-receipt',
+    deliveryAttentionState: deliveryAttention
   }
 }
 

@@ -4,6 +4,7 @@ import path from 'node:path'
 import { sha256File } from '../assets/media-metadata.js'
 import { artifactKinds } from '../contracts/artifact-kinds.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
+import { summarizeExportReceipts } from './export-receipts.js'
 
 const renderIssueCodes = Object.freeze({
   missing: 'missing_render_preview_bytes',
@@ -40,22 +41,44 @@ export async function evaluateLocalOutputIntegrity({
       renderRowsById
     }))
   }
+  const exportReceiptSummary = summarizeExportReceipts(records)
+  const exportVisibilityByReceiptId = new Map(
+    exportReceiptSummary.rows.map((row) => [row.exportReceiptId, {
+      activeLocalDelivery: row.activeLocalDelivery,
+      historicalAuditOnly: row.historicalAuditOnly,
+      visibilityPosture: row.visibilityPosture
+    }])
+  )
+  const activeDeliveryReceiptIds = new Set(exportReceiptSummary.activeDeliveryRows.map((row) => row.exportReceiptId))
+  const visibleExportRows = exportRows.map((row) => ({
+    ...row,
+    ...(exportVisibilityByReceiptId.get(row.exportReceiptId) ?? {
+      activeLocalDelivery: false,
+      historicalAuditOnly: false,
+      visibilityPosture: 'review-only-export-receipt'
+    })
+  }))
 
-  const blockingIssueRows = exportRows.filter((row) => row.blockingIssueCodes.length > 0)
+  const blockingIssueRows = visibleExportRows
+    .filter((row) => !row.historicalAuditOnly)
+    .filter((row) => row.blockingIssueCodes.length > 0)
   const attentionRows = renderRows.filter((row) => row.attentionIssueCodes.length > 0)
-  const localDeliveryEvidenceIntact = exportRows
+  const activeDeliveryEvidenceIntact = visibleExportRows
+    .filter((row) => activeDeliveryReceiptIds.has(row.exportReceiptId))
     .filter((row) => row.exportPerformed && row.deliveryCreated)
     .filter((row) => row.blockingIssueCodes.length === 0).length
 
   return {
     schema: 'media.output_integrity.summary.local.v1',
     renderReceipts: renderRows.length,
-    exportReceipts: exportRows.length,
-    localDeliveryEvidenceIntact,
+    exportReceipts: visibleExportRows.length,
+    localDeliveryEvidenceIntact: activeDeliveryEvidenceIntact,
+    activeDeliveryEvidenceIntact,
+    historicalExportReceipts: exportReceiptSummary.historicalExportReceipts,
     outputIntegrityBlockingIssues: blockingIssueRows.reduce((sum, row) => sum + row.blockingIssueCodes.length, 0),
     outputIntegrityAttentionIssues: attentionRows.reduce((sum, row) => sum + row.attentionIssueCodes.length, 0),
     renderRows,
-    exportRows,
+    exportRows: visibleExportRows,
     blockingRows: blockingIssueRows,
     attentionRows,
     localOnly: true,

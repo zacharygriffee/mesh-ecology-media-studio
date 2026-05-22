@@ -282,12 +282,14 @@ function printHealthSummary(health, output) {
     `localPackageCopy=${health.exportReceiptSummary?.localPackageCopyExportReceipts ?? 0}`,
     `ffmpegDelivery=${health.exportReceiptSummary?.ffmpegDeliveryReceipts ?? 0}`,
     `activeDelivery=${health.exportReceiptSummary?.activeDeliveryReceipts ?? 0}`,
+    `historicalExportReceipts=${health.exportReceiptSummary?.historicalExportReceipts ?? 0}`,
     `currentAttention=${health.exportReceiptSummary?.currentAttention ?? 0}`,
     `historicalAttention=${health.exportReceiptSummary?.historicalAttention ?? 0}`,
     `productionReady=${health.exportReceiptSummary?.productionReady ?? 0}`
   ].join(' | '))
   console.log([
     `outputIntegrity: deliveryIntact=${health.outputIntegritySummary?.localDeliveryEvidenceIntact ?? 0}`,
+    `activeDeliveryIntact=${health.outputIntegritySummary?.activeDeliveryEvidenceIntact ?? 0}`,
     `blocking=${health.outputIntegritySummary?.outputIntegrityBlockingIssues ?? 0}`,
     `attention=${health.outputIntegritySummary?.outputIntegrityAttentionIssues ?? 0}`,
     `renderReceipts=${health.outputIntegritySummary?.renderReceipts ?? 0}`,

@@ -4040,7 +4040,7 @@ test('local production output runner creates reviewable delivery without authori
   assert.equal(result.steps.every((step) => step.authorityGranted === false), true)
   assert.equal(result.steps.every((step) => step.productionReady === false), true)
   assert.ok(output.lines.some((line) =>
-    line === 'production local output: project=venice-smoke-project | steps=17/17 | roughCutItems=1 | roughCutReviewed=1 | renderReceipts=2 | exportReceipts=2 | ffmpegDeliveryReceipts=1 | localDeliveryEvidencePresent=2 | activeDeliveryReceipts=2 | currentExportReceiptAttention=0 | historicalExportReceiptAttention=0 | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=1 | pendingAuthority=1 | productionReady=0'
+    line === 'production local output: project=venice-smoke-project | steps=17/17 | roughCutItems=1 | roughCutReviewed=1 | renderReceipts=2 | exportReceipts=2 | ffmpegDeliveryReceipts=1 | localDeliveryEvidencePresent=2 | activeDeliveryReceipts=2 | historicalExportReceipts=0 | currentExportReceiptAttention=0 | historicalExportReceiptAttention=0 | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=1 | pendingAuthority=1 | productionReady=0'
   ))
   assert.ok(output.lines.some((line) => line.includes('no approval authority')))
 
@@ -4119,7 +4119,7 @@ test('local production output runner can keep ffmpeg disabled without blocking l
     step.productionReady === false
   ))
   assert.ok(output.lines.some((line) =>
-    line === 'production local output: project=venice-smoke-project | steps=15/17 | roughCutItems=1 | roughCutReviewed=1 | renderReceipts=1 | exportReceipts=1 | ffmpegDeliveryReceipts=0 | localDeliveryEvidencePresent=1 | activeDeliveryReceipts=1 | currentExportReceiptAttention=0 | historicalExportReceiptAttention=0 | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=1 | pendingAuthority=1 | productionReady=0'
+    line === 'production local output: project=venice-smoke-project | steps=15/17 | roughCutItems=1 | roughCutReviewed=1 | renderReceipts=1 | exportReceipts=1 | ffmpegDeliveryReceipts=0 | localDeliveryEvidencePresent=1 | activeDeliveryReceipts=1 | historicalExportReceipts=0 | currentExportReceiptAttention=0 | historicalExportReceiptAttention=0 | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=1 | pendingAuthority=1 | productionReady=0'
   ))
 
   const summary = await createMediaSummary({ projectDir: dir })
@@ -4157,20 +4157,29 @@ test('media summary safe next action ignores stale inactive export receipts when
   assert.equal(summary.exportReceipts.currentAttentionRows.length, 0)
   assert.equal(summary.exportReceipts.historicalAttentionRows.length, 1)
   assert.equal(summary.exportReceipts.activeDeliveryReceipts, 1)
+  assert.equal(summary.exportReceipts.historicalExportReceipts, 1)
+  assert.equal(summary.exportReceipts.activeDeliveryRows.length, 1)
+  assert.equal(summary.exportReceipts.historicalRows.length, 1)
   assert.ok(summary.exportReceipts.attentionRows[0].issueCodes.includes('target_output_path_changed'))
   assert.equal(summary.exportReceipts.attentionRows[0].deliveryAttentionState, 'historical-stale-receipt')
+  assert.equal(summary.exportReceipts.attentionRows[0].visibilityPosture, 'historical-export-receipt')
+  assert.equal(summary.exportReceipts.attentionRows[0].historicalAuditOnly, true)
+  assert.equal(summary.outputIntegrity.activeDeliveryEvidenceIntact, 1)
   assert.equal(summary.packageAuthority.localProductionPackageComplete, 1)
   assert.equal(summary.packageAuthority.localDeliveryEvidenceIntact, 1)
   assert.equal(summary.safeNextAction, 'Route pending approval proposals through the proper authority lane; local proposals and bundles are not approval.')
 
   const prereqOutput = await captureConsole(() => writeProductionAuthorityPrerequisiteReport({ projectDir: dir }))
   assert.equal(prereqOutput.result.activeDeliveryReceipts, 1)
+  assert.equal(prereqOutput.result.historicalExportReceipts, 1)
   assert.equal(prereqOutput.result.currentExportReceiptAttention, 0)
   assert.equal(prereqOutput.result.historicalExportReceiptAttention, 1)
   assert.equal(prereqOutput.result.rows[0].exportReceiptPosture.activeDeliveryReceipts, 1)
+  assert.equal(prereqOutput.result.rows[0].exportReceiptPosture.historicalExportReceipts, 1)
   assert.equal(prereqOutput.result.rows[0].exportReceiptPosture.currentExportReceiptAttention, 0)
   assert.equal(prereqOutput.result.rows[0].exportReceiptPosture.historicalExportReceiptAttention, 1)
   assert.ok(prereqOutput.lines.some((line) => line.includes('activeDeliveryReceipts=1') &&
+    line.includes('historicalExportReceipts=1') &&
     line.includes('currentExportReceiptAttention=0') &&
     line.includes('historicalExportReceiptAttention=1')))
 
@@ -4178,18 +4187,25 @@ test('media summary safe next action ignores stale inactive export receipts when
   assert.equal(operatorIndex.index.summary.exportReceiptsNeedingAttention, 0)
   assert.equal(operatorIndex.index.summary.historicalExportReceiptAttention, 1)
   assert.equal(operatorIndex.index.summary.activeDeliveryReceipts, 1)
+  assert.equal(operatorIndex.index.summary.historicalExportReceipts, 1)
+  assert.equal(operatorIndex.index.summary.activeDeliveryEvidenceIntact, 1)
 
   const handoffOutput = await captureConsole(() => writeAuthorityHandoffCandidate({ projectDir: dir }))
   assert.equal(handoffOutput.result.candidate.prerequisiteSummary.activeDeliveryReceipts, 1)
+  assert.equal(handoffOutput.result.candidate.prerequisiteSummary.historicalExportReceipts, 1)
   assert.equal(handoffOutput.result.candidate.prerequisiteSummary.currentExportReceiptAttention, 0)
   assert.equal(handoffOutput.result.candidate.prerequisiteSummary.historicalExportReceiptAttention, 1)
   const exportInput = handoffOutput.result.candidate.authorityReviewInputs.find((input) => input.inputKind === 'export-receipt')
   assert.equal(exportInput.activeDeliveryReceipts, 1)
+  assert.equal(exportInput.historicalExportReceipts, 1)
   assert.equal(exportInput.currentAttentionRows.length, 0)
   assert.equal(exportInput.historicalAttentionRows.length, 1)
+  assert.equal(exportInput.historicalAttentionRows[0].historicalAuditOnly, true)
+  assert.equal(exportInput.historicalAttentionRows[0].visibilityPosture, 'historical-export-receipt')
 
   const publicationRequestOutput = await captureConsole(() => writePublicationAuthorityRequestCandidate({ projectDir: dir }))
   assert.equal(publicationRequestOutput.result.candidate.prerequisiteSummary.activeDeliveryReceipts, 1)
+  assert.equal(publicationRequestOutput.result.candidate.prerequisiteSummary.historicalExportReceipts, 1)
   assert.equal(publicationRequestOutput.result.candidate.prerequisiteSummary.currentExportReceiptAttention, 0)
   assert.equal(publicationRequestOutput.result.candidate.prerequisiteSummary.historicalExportReceiptAttention, 1)
 
@@ -4197,8 +4213,11 @@ test('media summary safe next action ignores stale inactive export receipts when
   assert.equal(healthOutput.result.health.exportReceiptSummary.currentAttentionRows.length, 0)
   assert.equal(healthOutput.result.health.exportReceiptSummary.historicalAttentionRows.length, 1)
   assert.equal(healthOutput.result.health.exportReceiptSummary.activeDeliveryReceipts, 1)
+  assert.equal(healthOutput.result.health.exportReceiptSummary.historicalExportReceipts, 1)
+  assert.equal(healthOutput.result.health.outputIntegritySummary.activeDeliveryEvidenceIntact, 1)
   assert.ok(healthOutput.lines.some((line) => line.includes('exportReceipts: total=2') &&
     line.includes('activeDelivery=1') &&
+    line.includes('historicalExportReceipts=1') &&
     line.includes('currentAttention=0') &&
     line.includes('historicalAttention=1')))
 
@@ -4206,6 +4225,20 @@ test('media summary safe next action ignores stale inactive export receipts when
   assert.equal(compatibility.bundle.exportDeliverySummary.currentAttentionRows.length, 0)
   assert.equal(compatibility.bundle.exportDeliverySummary.historicalAttentionRows.length, 1)
   assert.equal(compatibility.bundle.exportDeliverySummary.activeDeliveryReceipts, 1)
+  assert.equal(compatibility.bundle.exportDeliverySummary.historicalExportReceipts, 1)
+  assert.equal(compatibility.bundle.exportDeliverySummary.historicalAttentionRows[0].historicalAuditOnly, true)
+
+  await rm(path.join(dir, summary.exportReceipts.activeDeliveryRows[0].deliveryLocalRef.path), { force: true })
+  const missingActivePrereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
+  assert.equal(missingActivePrereqs.localDeliveryEvidencePresent, 1)
+  assert.equal(missingActivePrereqs.localDeliveryEvidenceIntact, 0)
+  assert.equal(missingActivePrereqs.localProductionPackageComplete, 0)
+  assert.equal(missingActivePrereqs.outputIntegrityBlockingIssues > 0, true)
+  assert.equal(missingActivePrereqs.rows[0].exportReceiptPosture.activeDeliveryReceipts, 1)
+  assert.equal(missingActivePrereqs.rows[0].exportReceiptPosture.historicalExportReceipts, 1)
+  assert.equal(missingActivePrereqs.rows[0].exportReceiptPosture.localDeliveryEvidenceIntact, false)
+  assert.ok(missingActivePrereqs.rows[0].outputIntegrityBlockingIssueCodes.includes('missing_export_delivery_bytes'))
+  assert.equal(missingActivePrereqs.productionReady, 0)
 })
 
 test('local package review can request changes without publication authority', async () => {
@@ -4532,7 +4565,7 @@ test('local production output runner carries two accepted production items throu
   assert.equal(result.nonClaims.publicationAuthorization, false)
   assert.equal(result.nonClaims.productionReady, false)
   assert.ok(output.lines.some((line) =>
-    line === 'production local output: project=venice-smoke-project | steps=17/17 | roughCutItems=2 | roughCutReviewed=1 | renderReceipts=2 | exportReceipts=2 | ffmpegDeliveryReceipts=1 | localDeliveryEvidencePresent=2 | activeDeliveryReceipts=2 | currentExportReceiptAttention=0 | historicalExportReceiptAttention=0 | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=2 | pendingAuthority=2 | productionReady=0'
+    line === 'production local output: project=venice-smoke-project | steps=17/17 | roughCutItems=2 | roughCutReviewed=1 | renderReceipts=2 | exportReceipts=2 | ffmpegDeliveryReceipts=1 | localDeliveryEvidencePresent=2 | activeDeliveryReceipts=2 | historicalExportReceipts=0 | currentExportReceiptAttention=0 | historicalExportReceiptAttention=0 | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=2 | pendingAuthority=2 | productionReady=0'
   ))
 
   const roughCut = JSON.parse(await readFile(path.join(dir, 'records/production/media-rough-cut-capsule.local.json'), 'utf8'))
@@ -4634,7 +4667,7 @@ test('local production output runner carries two accepted production items witho
   assert.ok(result.refs.localPackageReviewDecisionId)
   assert.ok(result.refs.publicationAuthorityRequestCandidateId)
   assert.ok(output.lines.some((line) =>
-    line === 'production local output: project=venice-smoke-project | steps=15/17 | roughCutItems=2 | roughCutReviewed=1 | renderReceipts=1 | exportReceipts=1 | ffmpegDeliveryReceipts=0 | localDeliveryEvidencePresent=1 | activeDeliveryReceipts=1 | currentExportReceiptAttention=0 | historicalExportReceiptAttention=0 | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=2 | pendingAuthority=2 | productionReady=0'
+    line === 'production local output: project=venice-smoke-project | steps=15/17 | roughCutItems=2 | roughCutReviewed=1 | renderReceipts=1 | exportReceipts=1 | ffmpegDeliveryReceipts=0 | localDeliveryEvidencePresent=1 | activeDeliveryReceipts=1 | historicalExportReceipts=0 | currentExportReceiptAttention=0 | historicalExportReceiptAttention=0 | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=2 | pendingAuthority=2 | productionReady=0'
   ))
 
   const localExport = JSON.parse(await readFile(path.join(dir, 'records/production/media-export-receipt.local.json'), 'utf8'))
@@ -4737,7 +4770,11 @@ test('local output integrity blocks production package when export delivery byte
   assert.equal(mediaSummary.result.packageAuthority.staleRequests, 1)
   assert.equal(mediaSummary.result.packageAuthority.blockingRequests, 1)
   assert.equal(mediaSummary.result.packageAuthority.integrityBlockingRequests, 1)
-  assert.ok(mediaSummary.lines.some((line) => line.startsWith('output integrity: deliveryIntact=0 | blocking=')))
+  assert.ok(mediaSummary.lines.some((line) =>
+    line.includes('output integrity: deliveryIntact=0') &&
+    line.includes('activeDeliveryIntact=0') &&
+    line.includes('blocking=')
+  ))
   assert.ok(mediaSummary.lines.some((line) => line.startsWith('package authority: localPackageReviews=1 | needsRework=0 | staleReviews=1 | publicationAuthorityRequests=1 | staleRequests=1 | blockingRequests=1')))
   assert.ok(mediaSummary.lines.some((line) => line.includes('package-authority:') && line.includes('current_output_integrity_blocking')))
   assert.ok(mediaSummary.lines.some((line) => line.includes('output-integrity blocking:') && line.includes('missing_export_delivery_bytes')))
@@ -4746,7 +4783,11 @@ test('local output integrity blocks production package when export delivery byte
   assert.equal(healthSummary.result.health.outputIntegritySummary.localDeliveryEvidenceIntact, 0)
   assert.equal(healthSummary.result.health.outputIntegritySummary.outputIntegrityBlockingIssues > 0, true)
   assert.ok(healthSummary.result.health.blockingIssues.includes('output-integrity-blocking'))
-  assert.ok(healthSummary.lines.some((line) => line.startsWith('outputIntegrity: deliveryIntact=0 | blocking=')))
+  assert.ok(healthSummary.lines.some((line) =>
+    line.includes('outputIntegrity: deliveryIntact=0') &&
+    line.includes('activeDeliveryIntact=0') &&
+    line.includes('blocking=')
+  ))
   assert.ok(healthSummary.lines.some((line) => line.includes('media-export-receipt:') && line.includes('missing_export_delivery_bytes')))
 
   await writeProductionAuthorityPrerequisiteReport({ projectDir: dir, quiet: true })
@@ -6328,10 +6369,16 @@ test('cross-project operator index surfaces output delivery posture from project
   }))
 
   assert.equal(result.index.summary.activeDeliveryReceipts, 1)
+  assert.equal(result.index.summary.historicalExportReceipts, 1)
+  assert.equal(result.index.summary.currentExportReceiptAttention, 0)
   assert.equal(result.index.summary.historicalExportReceiptAttention, 1)
   assert.equal(result.index.projectSummaries[0].outputDeliverySummary.activeDeliveryReceipts, 1)
+  assert.equal(result.index.projectSummaries[0].outputDeliverySummary.historicalExportReceipts, 1)
+  assert.equal(result.index.projectSummaries[0].outputDeliverySummary.activeDeliveryEvidenceIntact, 1)
   assert.equal(result.index.projectSummaries[0].outputDeliverySummary.historicalExportReceiptAttention, 1)
   assert.ok(lines.some((line) => line.includes('activeDeliveries=1') &&
+    line.includes('historicalExportReceipts=1') &&
+    line.includes('currentExportReceiptAttention=0') &&
     line.includes('historicalExportReceiptAttention=1')))
 })
 
