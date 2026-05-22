@@ -9,6 +9,10 @@ import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
 import { readProjectRecords } from '../seams/project-status.js'
 import { createProductionAuthorityPrerequisiteReport } from './authority-prerequisites.js'
+import {
+  createPublicationAuthorityRequestFreshnessBasis,
+  evaluatePublicationAuthorityRequestFreshness
+} from './package-authority-freshness.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/venice-smoke'
@@ -238,6 +242,8 @@ export function createPublicationAuthorityRequestCandidateFromRecords({
     localTruthLabel: 'local publication authority request candidate',
     truthStatus
   }
+  candidate.freshnessBasis = createPublicationAuthorityRequestFreshnessBasis({ records, prerequisiteReport })
+  candidate.freshnessPosture = evaluatePublicationAuthorityRequestFreshness({ candidate, records, prerequisiteReport })
 
   validateRequiredRecord(candidate)
   return candidate

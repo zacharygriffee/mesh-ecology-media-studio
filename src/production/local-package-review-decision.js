@@ -8,6 +8,10 @@ import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
 import { readProjectRecords } from '../seams/project-status.js'
 import { createProductionAuthorityPrerequisiteReport } from './authority-prerequisites.js'
+import {
+  createLocalPackageReviewFreshnessBasis,
+  evaluateLocalPackageReviewFreshness
+} from './package-authority-freshness.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/venice-smoke'
@@ -148,6 +152,8 @@ export function createLocalPackageReviewDecision({
     truthStatus,
     createdAt
   }
+  decision.freshnessBasis = createLocalPackageReviewFreshnessBasis({ records, prerequisiteReport })
+  decision.freshnessPosture = evaluateLocalPackageReviewFreshness({ decision, records, prerequisiteReport })
 
   validateRequiredRecord(decision)
   return decision

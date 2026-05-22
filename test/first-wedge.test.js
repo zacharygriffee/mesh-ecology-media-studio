@@ -124,6 +124,10 @@ import { writeLocalExportPackage } from '../src/production/export-local-package.
 import { writeFfmpegExport } from '../src/production/export-ffmpeg.js'
 import { writeLocalPackageReviewDecision } from '../src/production/local-package-review-decision.js'
 import { writePublicationAuthorityRequestCandidate } from '../src/production/publication-authority-request-candidate.js'
+import {
+  evaluateLocalPackageReviewFreshness,
+  evaluatePublicationAuthorityRequestFreshness
+} from '../src/production/package-authority-freshness.js'
 import { runLocalProductionOutput } from '../src/production/local-output-runner.js'
 import { evaluateRenderReceiptFreshness, summarizeRenderReceipts } from '../src/production/render-receipts.js'
 import { evaluateExportReceiptFreshness } from '../src/production/export-receipts.js'
@@ -3733,6 +3737,8 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.equal(packageReview.localPackageReview.localProductionPackageComplete, 1)
   assert.equal(packageReview.localPackageReview.localDeliveryEvidenceIntact, 1)
   assert.equal(packageReview.localPackageReview.outputIntegrityBlockingIssues, 0)
+  assert.equal(packageReview.freshnessPosture.state, 'fresh')
+  assert.deepEqual(packageReview.freshnessPosture.issueCodes, [])
   assert.equal(packageReview.publicationAuthorization, false)
   assert.equal(packageReview.authorityGranted, false)
   assert.equal(packageReview.productionReady ?? packageReview.localPackageReview.productionReady, false)
@@ -3746,6 +3752,8 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.equal(publicationRequest.prerequisiteSummary.localProductionPackageComplete, 1)
   assert.equal(publicationRequest.prerequisiteSummary.localDeliveryEvidenceIntact, 1)
   assert.equal(publicationRequest.localPackageReviewDecisionRefs.length, 1)
+  assert.equal(publicationRequest.freshnessPosture.state, 'fresh')
+  assert.deepEqual(publicationRequest.freshnessPosture.issueCodes, [])
   assert.ok(publicationRequest.authorityReviewInputs.some((input) => input.inputKind === 'export-receipt' && input.present === true))
   assert.ok(publicationRequest.authorityGaps.includes('publication_authorization_missing'))
   assert.equal(publicationRequest.requestOnly, true)
@@ -3795,6 +3803,23 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.equal(stalePrereqs.ffmpegDeliveryReceipts, 1)
   assert.equal(stalePrereqs.localDeliveryEvidencePresent, 0)
   assert.equal(stalePrereqs.rows[0].exportReceiptPosture.state, 'export-receipt-stale')
+  const staleProjectRecords = await readProjectRecords(dir)
+  const stalePackageReviewFreshness = evaluateLocalPackageReviewFreshness({
+    decision: packageReview,
+    records: staleProjectRecords,
+    prerequisiteReport: stalePrereqs
+  })
+  assert.equal(stalePackageReviewFreshness.state, 'stale')
+  assert.ok(stalePackageReviewFreshness.issueCodes.includes('current_local_production_package_incomplete'))
+  assert.ok(stalePackageReviewFreshness.issueCodes.includes('local_package_review_prerequisites_changed'))
+  const stalePublicationRequestFreshness = evaluatePublicationAuthorityRequestFreshness({
+    candidate: publicationRequest,
+    records: staleProjectRecords,
+    prerequisiteReport: stalePrereqs
+  })
+  assert.equal(stalePublicationRequestFreshness.state, 'stale')
+  assert.ok(stalePublicationRequestFreshness.issueCodes.includes('current_local_production_package_incomplete'))
+  assert.ok(stalePublicationRequestFreshness.issueCodes.includes('publication_authority_request_prerequisites_changed'))
   const staleHealthOutput = await captureConsole(() => writeProjectHealth({ projectDir: dir, summary: true }))
   assert.ok(staleHealthOutput.result.health.blockingIssues.includes('render-export-candidate-attention'))
   assert.ok(staleHealthOutput.result.health.blockingIssues.includes('render-receipt-attention'))
@@ -4094,6 +4119,8 @@ test('local output integrity blocks production package when export delivery byte
   const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-missing-export-delivery-'))
   await runVeniceProductionRehearsal({ projectDir: dir })
   await runLocalProductionOutput({ projectDir: dir, quiet: true })
+  const packageReview = JSON.parse(await readFile(path.join(dir, 'records/decisions/media-local-package-review-decision.local.json'), 'utf8'))
+  const publicationRequest = JSON.parse(await readFile(path.join(dir, 'records/production/media-publication-authority-request-candidate.local.json'), 'utf8'))
   await removeExportDeliveryFiles(dir)
 
   const prereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
@@ -4105,6 +4132,23 @@ test('local output integrity blocks production package when export delivery byte
   assert.equal(prereqs.productionReady, 0)
   assert.ok(prereqs.rows[0].outputIntegrityBlockingIssueCodes.includes('missing_export_delivery_bytes'))
   assert.equal(prereqs.rows[0].exportReceiptPosture.state, 'export-receipt-output-integrity-blocked')
+  const recordsAfterRemoval = await readProjectRecords(dir)
+  const packageFreshness = evaluateLocalPackageReviewFreshness({
+    decision: packageReview,
+    records: recordsAfterRemoval,
+    prerequisiteReport: prereqs
+  })
+  assert.equal(packageFreshness.state, 'stale')
+  assert.ok(packageFreshness.issueCodes.includes('current_local_delivery_evidence_not_intact'))
+  assert.ok(packageFreshness.issueCodes.includes('current_output_integrity_blocking'))
+  const requestFreshness = evaluatePublicationAuthorityRequestFreshness({
+    candidate: publicationRequest,
+    records: recordsAfterRemoval,
+    prerequisiteReport: prereqs
+  })
+  assert.equal(requestFreshness.state, 'stale')
+  assert.ok(requestFreshness.issueCodes.includes('current_local_delivery_evidence_not_intact'))
+  assert.ok(requestFreshness.issueCodes.includes('current_output_integrity_blocking'))
   await assert.rejects(
     () => writeLocalPackageReviewDecision({ projectDir: dir, quiet: true }),
     /complete local production package|output integrity/
@@ -4143,6 +4187,8 @@ test('local output integrity blocks production package when export delivery byte
   const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-drifted-export-delivery-'))
   await runVeniceProductionRehearsal({ projectDir: dir })
   await runLocalProductionOutput({ projectDir: dir, quiet: true })
+  const packageReview = JSON.parse(await readFile(path.join(dir, 'records/decisions/media-local-package-review-decision.local.json'), 'utf8'))
+  const publicationRequest = JSON.parse(await readFile(path.join(dir, 'records/production/media-publication-authority-request-candidate.local.json'), 'utf8'))
   await mutateExportDeliveryFilesSameSize(dir)
 
   const prereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
@@ -4152,6 +4198,17 @@ test('local output integrity blocks production package when export delivery byte
   assert.equal(prereqs.outputIntegrityBlockingIssues > 0, true)
   assert.ok(prereqs.rows[0].outputIntegrityBlockingIssueCodes.includes('export_delivery_hash_mismatch'))
   assert.equal(prereqs.productionReady, 0)
+  const recordsAfterDrift = await readProjectRecords(dir)
+  assert.equal(evaluateLocalPackageReviewFreshness({
+    decision: packageReview,
+    records: recordsAfterDrift,
+    prerequisiteReport: prereqs
+  }).state, 'stale')
+  assert.equal(evaluatePublicationAuthorityRequestFreshness({
+    candidate: publicationRequest,
+    records: recordsAfterDrift,
+    prerequisiteReport: prereqs
+  }).state, 'stale')
 })
 
 test('render preview integrity is attention only until an export depends on it', async () => {
