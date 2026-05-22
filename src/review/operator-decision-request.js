@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -6,6 +6,7 @@ import { artifactKinds } from '../contracts/artifact-kinds.js'
 import { makeRef, nowIso } from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
+import { writeJsonAtomic } from '../local/atomic-json.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const truthStatus = 'not mesh truth; not distributed proof; not ratified shared state'
@@ -96,9 +97,7 @@ export async function writeOperatorDecisionRequest({
     ? await createProviderLoopDecisionRequestFromProject({ root, providerLoopStatus })
     : await createHandoffDecisionRequestFromProject({ root, handoff })
 
-  const outputPath = path.join(root, output)
-  await mkdir(path.dirname(outputPath), { recursive: true })
-  await writeFile(outputPath, `${JSON.stringify(request, null, 2)}\n`)
+  await writeJsonAtomic(root, output, request)
 
   if (print) {
     console.log(JSON.stringify(request, null, 2))
@@ -139,9 +138,7 @@ export async function writeProviderLoopOperatorDecision({
     reason
   })
 
-  const outputPath = path.join(root, output)
-  await mkdir(path.dirname(outputPath), { recursive: true })
-  await writeFile(outputPath, `${JSON.stringify(operatorDecision, null, 2)}\n`)
+  await writeJsonAtomic(root, output, operatorDecision)
 
   if (print) {
     console.log(JSON.stringify(operatorDecision, null, 2))

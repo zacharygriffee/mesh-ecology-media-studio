@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -6,6 +6,7 @@ import { artifactKinds } from '../contracts/artifact-kinds.js'
 import { makeRef } from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
+import { writeJsonAtomic } from '../local/atomic-json.js'
 import {
   createClipDescriptor,
   createContinuityBand,
@@ -67,12 +68,10 @@ export async function writeProductionRecordsFromCard({
   const records = createProductionRecordsFromCard({ card: cardRecord })
   const outputs = []
 
-  await mkdir(path.join(root, outputDir), { recursive: true })
-
   for (const [name, record] of Object.entries(records)) {
     const output = path.posix.join(outputDir, `${name}.local.json`)
     assertSafeLocalPath(output)
-    await writeFile(path.join(root, output), `${JSON.stringify(record, null, 2)}\n`)
+    await writeJsonAtomic(root, output, record)
     outputs.push({ name, output, record })
   }
 

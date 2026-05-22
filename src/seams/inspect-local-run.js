@@ -1,4 +1,4 @@
-import { access, mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
+import { access, readFile, readdir } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -10,6 +10,7 @@ import {
 import { artifactKinds } from '../contracts/artifact-kinds.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
+import { writeJsonAtomic } from '../local/atomic-json.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 
@@ -165,9 +166,7 @@ export async function inspectLocalRun({
 
   validateRequiredRecord(packet)
 
-  const outputPath = path.join(root, output)
-  await mkdir(path.dirname(outputPath), { recursive: true })
-  await writeFile(outputPath, `${JSON.stringify(packet, null, 2)}\n`)
+  await writeJsonAtomic(root, output, packet)
 
   if (print) {
     console.log(JSON.stringify(packet, null, 2))

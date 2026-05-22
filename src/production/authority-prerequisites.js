@@ -1,5 +1,4 @@
 import path from 'node:path'
-import { mkdir, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
 import { artifactKinds } from '../contracts/artifact-kinds.js'
@@ -7,6 +6,7 @@ import { nowIso } from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { collectLayerInteropOptions, createLayerInteropPosture } from '../layer/layer-interop.js'
 import { readProjectRecords } from '../seams/project-status.js'
+import { summarizeRecordReadDiagnostics, writeJsonAtomic } from '../local/atomic-json.js'
 import { evaluateRenderExportCandidateFreshness } from './render-export-candidate.js'
 import { summarizeRenderReceipts } from './render-receipts.js'
 import { summarizeExportReceipts } from './export-receipts.js'
@@ -62,6 +62,7 @@ export async function createProductionAuthorityPrerequisiteReport({
 } = {}) {
   const root = path.resolve(projectDir)
   const records = await readProjectRecords(root)
+  const recordReadDiagnostics = summarizeRecordReadDiagnostics(records)
   const assetRecords = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaAssetDescriptor)
     .map((entry) => entry.record)
@@ -165,6 +166,7 @@ export async function createProductionAuthorityPrerequisiteReport({
     publicationAuthorityRequestsBlocked: packageAuthoritySummary.blockingRequests,
     publicationAuthorityRequestsIntegrityBlocked: packageAuthoritySummary.integrityBlockingRequests,
     packageAuthoritySummary,
+    recordReadDiagnostics,
     pendingAuthority,
     productionReady: 0,
     rows,
@@ -223,9 +225,8 @@ export async function writeProductionAuthorityPrerequisiteReport(options = {}) {
   const report = await createProductionAuthorityPrerequisiteReport(options)
   const output = options.output ?? defaultOutput
   const root = path.resolve(options.projectDir ?? defaultProjectDir)
-  await mkdir(path.dirname(path.join(root, output)), { recursive: true })
   validateRequiredRecord(report)
-  await writeFile(path.join(root, output), `${JSON.stringify(report, null, 2)}\n`)
+  await writeJsonAtomic(root, output, report)
 
   if (options.print) {
     console.log(JSON.stringify(report, null, 2))
@@ -492,6 +493,7 @@ function printProductionAuthorityPrerequisiteReport(report, output = defaultOutp
     `localDeliveryEvidenceIntact=${report.localDeliveryEvidenceIntact ?? 0}`,
     `outputIntegrityBlockingIssues=${report.outputIntegrityBlockingIssues ?? 0}`,
     `outputIntegrityAttentionIssues=${report.outputIntegrityAttentionIssues ?? 0}`,
+    `recordIODiagnostics=${report.recordReadDiagnostics?.diagnostics ?? 0}`,
     `deliveryCreated=${report.deliveryCreated ?? 0}`,
     `exportPerformed=${report.exportPerformed ?? 0}`,
     `localPackageReviews=${report.localPackageReviews ?? 0}`,

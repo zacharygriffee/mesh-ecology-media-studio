@@ -41,6 +41,11 @@ import {
   placementClasses
 } from '../src/local/project-layout.js'
 import {
+  readJsonFile,
+  readJsonFileTolerant,
+  writeJsonAtomic
+} from '../src/local/atomic-json.js'
+import {
   assertAsyncPattern,
   assertOutputDelivery,
   createProviderEndpointShape,
@@ -338,6 +343,82 @@ async function createFixtureProject(projectDir) {
 
   return dir
 }
+
+test('atomic JSON writer preserves last complete record until rename', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-atomic-json-'))
+  await writeJsonAtomic(dir, 'records/test.local.json', {
+    id: 'old',
+    value: 'old'
+  })
+
+  await writeFile(
+    path.join(dir, 'records', '.test.local.json.partial-writer.tmp'),
+    '{"schema":"test.record.local.v1","id":"new"'
+  )
+
+  const beforeRename = await readJsonFile(dir, 'records/test.local.json')
+  assert.equal(beforeRename.id, 'old')
+
+  await writeJsonAtomic(dir, 'records/test.local.json', {
+    id: 'new',
+    value: 'new'
+  })
+
+  const afterRename = await readJsonFile(dir, 'records/test.local.json')
+  assert.equal(afterRename.id, 'new')
+
+  const scannedRecords = await readProjectRecords(dir)
+  assert.equal(scannedRecords.some((entry) => entry.path.includes('.tmp')), false)
+})
+
+test('tolerant JSON reader surfaces malformed local records without crashing summaries', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({ projectDir: dir, decision: 'accepted', quiet: true })
+  await writeFile(path.join(dir, 'records', 'assets', 'truncated.local.json'), '')
+
+  const readResult = await readJsonFileTolerant(dir, 'records/assets/truncated.local.json')
+  assert.equal(readResult.ok, false)
+  assert.equal(readResult.diagnostic.issueCode, 'record_read_incomplete')
+  assert.equal(readResult.diagnostic.retrySafe, true)
+
+  const records = await readProjectRecords(dir)
+  const diagnostic = records.find((entry) => entry.record.schema === 'media.local_record_read_diagnostic.local.v1')
+  assert.equal(diagnostic.record.issueCode, 'record_read_incomplete')
+
+  const summary = await createMediaSummary({ projectDir: dir })
+  assert.equal(summary.recordIO.diagnostics, 1)
+  assert.equal(summary.recordIO.byIssueCode.record_read_incomplete, 1)
+  assert.equal(summary.localOnly, true)
+})
+
+test('status surfaces skip temporary JSON files and report malformed final records', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({ projectDir: dir, decision: 'accepted', quiet: true })
+  await mkdir(path.join(dir, 'records', 'production'), { recursive: true })
+  await writeFile(path.join(dir, 'records', 'production', '.writer-output.local.json.tmp'), '{"partial":')
+  await writeFile(path.join(dir, 'records', 'production', 'malformed-output.local.json'), '{"schema":')
+
+  const mediaSummary = await createMediaSummary({ projectDir: dir })
+  assert.equal(mediaSummary.recordIO.diagnostics, 1)
+
+  const authorityReport = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
+  assert.equal(authorityReport.recordReadDiagnostics.diagnostics, 1)
+
+  const operatorIndex = await writeOperatorPacketIndex({ projectDir: dir, quiet: true })
+  assert.equal(operatorIndex.index.recordReadDiagnostics.diagnostics, 1)
+  assert.equal(operatorIndex.index.summary.recordIODiagnostics, 1)
+})
+
+test('required strict JSON input still fails clearly on malformed records', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-strict-json-'))
+  await mkdir(path.join(dir, 'records'), { recursive: true })
+  await writeFile(path.join(dir, 'records', 'required.local.json'), '{"schema":')
+
+  await assert.rejects(
+    () => readJsonFile(dir, 'records/required.local.json'),
+    /Failed to parse JSON record records\/required\.local\.json/
+  )
+})
 
 function slash(value) {
   return value.split(path.sep).join('/')

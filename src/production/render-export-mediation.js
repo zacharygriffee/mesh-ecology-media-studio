@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -9,6 +9,7 @@ import { createMediaOperationCandidate } from '../contracts/operation-candidates
 import { resolveMediaOperationCandidate } from '../contracts/rule-resolution.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
+import { writeJsonAtomic } from '../local/atomic-json.js'
 import { readProjectRecords } from '../seams/project-status.js'
 import { evaluateRenderExportCandidateFreshness } from './render-export-candidate.js'
 
@@ -72,12 +73,10 @@ export async function writeRenderExportMediation({
   })
   const trace = resolveMediaOperationCandidate(operationCandidate, { createdAt })
 
-  const outputRoot = path.join(root, outputDir)
-  await mkdir(outputRoot, { recursive: true })
   const operationOutput = path.join(outputDir, `${operationCandidate.operationId}.local.json`)
   const traceOutput = path.join(outputDir, `${trace.traceId}.local.json`)
-  await writeFile(path.join(root, operationOutput), `${JSON.stringify(operationCandidate, null, 2)}\n`)
-  await writeFile(path.join(root, traceOutput), `${JSON.stringify(trace, null, 2)}\n`)
+  await writeJsonAtomic(root, operationOutput, operationCandidate)
+  await writeJsonAtomic(root, traceOutput, trace)
 
   if (print) {
     console.log(JSON.stringify({ operationCandidate, trace }, null, 2))

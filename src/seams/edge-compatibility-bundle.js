@@ -1,4 +1,4 @@
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
+import { readdir } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -9,6 +9,7 @@ import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
 import { summarizeExportReceipts } from '../production/export-receipts.js'
 import { latestLocalPackageReviewEntry } from '../production/package-authority-freshness.js'
+import { isDiscoverableJsonPath, readJsonFileTolerant, writeJsonAtomic } from '../local/atomic-json.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
@@ -216,9 +217,7 @@ export async function writeEdgeCompatibilityBundle({
 
   validateRequiredRecord(bundle)
 
-  const outputPath = path.join(root, output)
-  await mkdir(path.dirname(outputPath), { recursive: true })
-  await writeFile(outputPath, `${JSON.stringify(bundle, null, 2)}\n`)
+  await writeJsonAtomic(root, output, bundle)
 
   if (print) {
     console.log(JSON.stringify(bundle, null, 2))
@@ -705,12 +704,8 @@ function edgeShapeTarget(edgeArtifactKind, edgeSchemaVersion) {
 async function readOptionalJson(root, relativePath) {
   assertSafeLocalPath(relativePath)
 
-  try {
-    return JSON.parse(await readFile(path.join(root, relativePath), 'utf8'))
-  } catch (error) {
-    if (error.code === 'ENOENT') return undefined
-    throw error
-  }
+  const readResult = await readJsonFileTolerant(root, relativePath)
+  return readResult.ok ? readResult.value : undefined
 }
 
 function localRecordRef({ kind, id, schema, relativePath }) {
@@ -818,7 +813,9 @@ async function readProductionSources(root) {
 
   for (const file of files) {
     const relativePath = path.relative(root, file).split(path.sep).join('/')
-    const record = JSON.parse(await readFile(file, 'utf8'))
+    const readResult = await readJsonFileTolerant(root, relativePath)
+    if (!readResult.ok) continue
+    const record = readResult.value
     if (!productionSourceSchemas.has(record.schema)) continue
     validateRequiredRecord(record)
     sources.push({ record, relativePath })
@@ -836,7 +833,9 @@ async function readOptionalSourceRecords(root) {
   const sources = []
   for (const file of files) {
     const relativePath = path.relative(root, file).split(path.sep).join('/')
-    const record = JSON.parse(await readFile(file, 'utf8'))
+    const readResult = await readJsonFileTolerant(root, relativePath)
+    if (!readResult.ok) continue
+    const record = readResult.value
     if (!optionalSourceSchemas.has(record.schema)) continue
     validateRequiredRecord(record)
     sources.push({ record, relativePath })
@@ -859,8 +858,11 @@ async function listJsonFiles(root) {
     const fullPath = path.join(root, dirent.name)
     if (dirent.isDirectory()) {
       files.push(...await listJsonFiles(fullPath))
-    } else if (dirent.isFile() && dirent.name.endsWith('.json')) {
-      files.push(fullPath)
+    } else if (dirent.isFile()) {
+      const relativePath = path.relative(root, fullPath).split(path.sep).join('/')
+      if (isDiscoverableJsonPath(relativePath)) {
+        files.push(fullPath)
+      }
     }
   }
 

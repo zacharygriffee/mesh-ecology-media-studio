@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -7,6 +7,7 @@ import { makeRef, nowIso } from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
+import { readJsonFileTolerant, writeJsonAtomic } from '../local/atomic-json.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultInputList = 'examples/inspection-fixtures/cross-project/input-list.local.json'
@@ -97,9 +98,7 @@ export async function writeCrossProjectOperatorIndex({
 
   validateRequiredRecord(index)
 
-  const outputPath = path.join(root, output)
-  await mkdir(path.dirname(outputPath), { recursive: true })
-  await writeFile(outputPath, `${JSON.stringify(index, null, 2)}\n`)
+  await writeJsonAtomic(root, output, index)
 
   if (print) {
     console.log(JSON.stringify(index, null, 2))
@@ -314,12 +313,8 @@ function summarizeProjectLayerInterop(loaded, refs) {
 async function readOptionalRecord(projectRoot, relativePath) {
   assertSafeLocalPath(relativePath)
 
-  try {
-    return JSON.parse(await readFile(path.join(projectRoot, relativePath), 'utf8'))
-  } catch (error) {
-    if (error.code !== 'ENOENT') throw error
-    return null
-  }
+  const readResult = await readJsonFileTolerant(projectRoot, relativePath)
+  return readResult.ok ? readResult.value : null
 }
 
 function nextActionForMissingArtifact(name) {

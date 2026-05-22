@@ -1,4 +1,4 @@
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
+import { readdir } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -6,6 +6,12 @@ import { artifactKinds } from '../contracts/artifact-kinds.js'
 import { makeRef, nowIso } from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
+import {
+  isDiscoverableJsonPath,
+  readJsonFileTolerant,
+  summarizeRecordReadDiagnostics,
+  writeJsonAtomic
+} from '../local/atomic-json.js'
 import {
   createDerivativeSubjectRefForAsset,
   createDerivativeSubjectRefForRecord,
@@ -55,6 +61,7 @@ export async function writeProjectStatus({
     await readOptionalCard(root)
   const projectId = card?.projectId ?? path.basename(root)
   const counts = countRecords(records)
+  const recordReadDiagnostics = summarizeRecordReadDiagnostics(records)
   const latestRefs = latestRecordRefs(records)
   const assetResourceConsistency = summarizeAssetResourceConsistency(records)
   const mediaDerivativeReadiness = summarizeMediaDerivativeReadiness(records)
@@ -69,6 +76,9 @@ export async function writeProjectStatus({
   for (const warning of assetResourceConsistency.duplicateAssetIdSituationWarnings) {
     warnings.push(warning.summary)
   }
+  if (recordReadDiagnostics.diagnostics > 0) {
+    warnings.push('Some local JSON records were incomplete or malformed during scanning; retry is safe after writers finish.')
+  }
 
   const status = {
     schema: artifactKinds.mediaProjectStatusLocal,
@@ -77,6 +87,7 @@ export async function writeProjectStatus({
     createdAt: nowIso(),
     mode: 'standalone-local',
     counts,
+    recordReadDiagnostics,
     latestRefs,
     assetResourceConsistency,
     mediaDerivativeReadiness,
@@ -94,9 +105,7 @@ export async function writeProjectStatus({
 
   validateRequiredRecord(status)
 
-  const outputPath = path.join(root, output)
-  await mkdir(path.dirname(outputPath), { recursive: true })
-  await writeFile(outputPath, `${JSON.stringify(status, null, 2)}\n`)
+  await writeJsonAtomic(root, output, status)
 
   if (print) {
     console.log(JSON.stringify(status, null, 2))
@@ -110,6 +119,9 @@ export async function writeProjectStatus({
     }
     for (const asset of mediaDerivativeReadiness.assetExplanations.filter((entry) => entry.state === 'ready-for-local-inspection' && entry.derivativeRefs.length > 0)) {
       console.log(`derivative ready: ${asset.path} | derivatives=${asset.satisfiedDerivativeKinds.join(',')} | refs=${asset.derivativeRefs.map((ref) => ref.path).join(',')}`)
+    }
+    for (const diagnostic of recordReadDiagnostics.attentionRows) {
+      console.log(`record io attention: ${diagnostic.path} | issue=${diagnostic.issueCode} | nextAction=${diagnostic.nextAction}`)
     }
   }
 
@@ -782,7 +794,17 @@ export async function readProjectRecords(root) {
   for (const file of files) {
     const relativePath = path.relative(root, file).split(path.sep).join('/')
     if (relativePath.startsWith('records/exports/bundles/')) continue
-    const raw = JSON.parse(await readFile(file, 'utf8'))
+    const readResult = await readJsonFileTolerant(root, relativePath)
+    if (!readResult.ok) {
+      if (!readResult.missing) {
+        records.push({
+          path: relativePath,
+          record: readResult.diagnostic
+        })
+      }
+      continue
+    }
+    const raw = readResult.value
     const record = raw.providerResult?.schema === artifactKinds.mediaProviderResult ? raw.providerResult : raw
     if (!record.schema) continue
     try {
@@ -802,12 +824,8 @@ export async function readProjectRecords(root) {
 }
 
 async function readOptionalCard(root) {
-  try {
-    return JSON.parse(await readFile(path.join(root, 'cards', 'card.json'), 'utf8'))
-  } catch (error) {
-    if (error.code === 'ENOENT') return undefined
-    throw error
-  }
+  const readResult = await readJsonFileTolerant(root, 'cards/card.json')
+  return readResult.ok ? readResult.value : undefined
 }
 
 function countRecords(records) {
@@ -878,8 +896,11 @@ async function listJsonFiles(root) {
     const fullPath = path.join(root, dirent.name)
     if (dirent.isDirectory()) {
       files.push(...await listJsonFiles(fullPath))
-    } else if (dirent.isFile() && dirent.name.endsWith('.json')) {
-      files.push(fullPath)
+    } else if (dirent.isFile()) {
+      const relativePath = path.relative(root, fullPath).split(path.sep).join('/')
+      if (isDiscoverableJsonPath(relativePath)) {
+        files.push(fullPath)
+      }
     }
   }
 

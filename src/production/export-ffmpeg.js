@@ -16,6 +16,7 @@ import {
   placementClasses
 } from '../local/project-layout.js'
 import { sha256File } from '../assets/media-metadata.js'
+import { writeJsonAtomic } from '../local/atomic-json.js'
 
 const execFileAsync = promisify(execFile)
 const modulePath = fileURLToPath(import.meta.url)
@@ -130,9 +131,7 @@ export async function writeFfmpegExport({
     createdAt
   })
 
-  const outputPath = path.join(root, output)
-  await mkdir(path.dirname(outputPath), { recursive: true })
-  await writeFile(outputPath, `${JSON.stringify(receipt, null, 2)}\n`)
+  await writeJsonAtomic(root, output, receipt)
 
   if (print) {
     console.log(JSON.stringify(receipt, null, 2))
@@ -376,7 +375,7 @@ async function writeFfmpegExportManifest({
     productionReady: false
   }
 
-  await writeFile(path.join(root, manifestRelativePath), `${JSON.stringify(manifest, null, 2)}\n`)
+  await writeJsonAtomic(root, manifestRelativePath, manifest)
 }
 
 function validateAndResolveImageItems({ root, orderedItems }) {

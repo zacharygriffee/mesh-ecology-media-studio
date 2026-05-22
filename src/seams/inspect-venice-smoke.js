@@ -1,4 +1,4 @@
-import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { access, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -16,6 +16,7 @@ import { summarizeRenderReceipts } from '../production/render-receipts.js'
 import { summarizeExportReceipts } from '../production/export-receipts.js'
 import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
 import { readProjectRecords } from './project-status.js'
+import { readJsonFileTolerant, writeJsonAtomic } from '../local/atomic-json.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 
@@ -245,9 +246,7 @@ export async function inspectVeniceSmoke({
 
   validateRequiredRecord(packet)
 
-  const outputPath = path.join(root, output)
-  await mkdir(path.dirname(outputPath), { recursive: true })
-  await writeFile(outputPath, `${JSON.stringify(packet, null, 2)}\n`)
+  await writeJsonAtomic(root, output, packet)
 
   if (print) {
     console.log(JSON.stringify(packet, null, 2))
@@ -275,12 +274,8 @@ async function readRequiredJson(root, relativePath) {
 }
 
 async function readOptionalJson(root, relativePath) {
-  try {
-    return JSON.parse(await readFile(path.join(root, relativePath), 'utf8'))
-  } catch (error) {
-    if (error.code === 'ENOENT') return undefined
-    throw error
-  }
+  const readResult = await readJsonFileTolerant(root, relativePath)
+  return readResult.ok ? readResult.value : undefined
 }
 
 async function optionalPromotedArtifactRefs({ root, promotedAssets, warnings }) {

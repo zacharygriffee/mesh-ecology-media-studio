@@ -14,6 +14,7 @@ import {
 } from '../production/package-authority-freshness.js'
 import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
 import { writeProjectStatus, readProjectRecords } from '../seams/project-status.js'
+import { summarizeRecordReadDiagnostics } from '../local/atomic-json.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 
@@ -64,6 +65,7 @@ export async function createMediaSummary({
   const renderReceipts = summarizeRenderReceipts(records)
   const exportReceipts = summarizeExportReceipts(records)
   const outputIntegrity = await evaluateLocalOutputIntegrity({ projectDir, records })
+  const recordIO = summarizeRecordReadDiagnostics(records)
   const authorityPrerequisites = await createProductionAuthorityPrerequisiteReport({ projectDir })
   const packageAuthority = summarizePackageAuthority(records, authorityPrerequisites)
   const layerInterop = summarizeLayerInteropFromRecords(records)
@@ -100,6 +102,7 @@ export async function createMediaSummary({
     outputIntegrity,
     packageAuthority,
     layerInterop,
+    recordIO,
     productionApprovalLane,
     bytePosture: status.assetResourceConsistency.bytePosture,
     resourcePosture: status.assetResourceConsistency.resourcePosture
@@ -154,6 +157,7 @@ export async function createMediaSummary({
     outputIntegrity,
     packageAuthority,
     layerInterop,
+    recordIO,
     productionApprovalLane,
     safeNextAction,
     identity: {
@@ -330,6 +334,13 @@ function printMediaSummary(summary) {
     `identity: byteContent=${summary.identity.byteContent.coveredContentIds}/${summary.identity.byteContent.expectedContentIds}`,
     `resourceSituations=${summary.identity.resourceSituations.coveredSituationPlacements}/${summary.identity.resourceSituations.expectedSituationPlacements}`
   ].join(' | '))
+  if (summary.recordIO.diagnostics > 0) {
+    console.log([
+      `record io: diagnostics=${summary.recordIO.diagnostics}`,
+      `incomplete=${summary.recordIO.byIssueCode.record_read_incomplete ?? 0}`,
+      `parseFailed=${summary.recordIO.byIssueCode.record_parse_failed ?? 0}`
+    ].join(' | '))
+  }
   console.log(`safeNextAction: ${summary.safeNextAction}`)
 
   for (const row of summary.derivativeReadiness.attentionRows) {
@@ -437,6 +448,9 @@ function printMediaSummary(summary) {
   for (const row of summary.layerInterop.attentionRows) {
     console.log(`layer-interop: state=${row.healthState} | issues=${row.issueCodes.join(',')} | nextAction=${row.nextAction}`)
   }
+  for (const row of summary.recordIO.attentionRows) {
+    console.log(`record-io: ${row.path} | issue=${row.issueCode} | nextAction=${row.nextAction}`)
+  }
 
   console.log('nonClaims: local-only; no mesh truth; no approval authority; no publication authorization; no byte/materialization proof; no resource admission')
 }
@@ -455,10 +469,15 @@ function summarizeSafeNextAction({
   outputIntegrity,
   packageAuthority,
   layerInterop,
+  recordIO,
   productionApprovalLane,
   bytePosture,
   resourcePosture
 }) {
+  if ((recordIO?.diagnostics ?? 0) > 0) {
+    return 'Retry after local record writers finish; if record IO diagnostics remain, regenerate the malformed local records.'
+  }
+
   if (providerLoops.needsRetryDecision > 0) {
     return 'Create a provider-loop retry/defer request and decision before any retry; no retry is automatic.'
   }

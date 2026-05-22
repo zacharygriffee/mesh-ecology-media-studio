@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto'
-import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -7,6 +6,7 @@ import { artifactKinds } from '../contracts/artifact-kinds.js'
 import { makeRef, nowIso } from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
+import { writeJsonAtomic } from '../local/atomic-json.js'
 import { readProjectRecords } from '../seams/project-status.js'
 import { createProductionAuthorityPrerequisiteReport } from './authority-prerequisites.js'
 import { createRoughCutCapsuleFromRecords } from './rough-cut-capsule.js'
@@ -79,9 +79,7 @@ export async function writeRoughCutRevision({
     createdAt
   })
 
-  const outputPath = path.join(root, output)
-  await mkdir(path.dirname(outputPath), { recursive: true })
-  await writeFile(outputPath, `${JSON.stringify(roughCut, null, 2)}\n`)
+  await writeJsonAtomic(root, output, roughCut)
 
   if (print) {
     console.log(JSON.stringify(roughCut, null, 2))

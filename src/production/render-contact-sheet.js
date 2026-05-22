@@ -14,6 +14,7 @@ import {
   placementClasses
 } from '../local/project-layout.js'
 import { sha256File } from '../assets/media-metadata.js'
+import { writeJsonAtomic } from '../local/atomic-json.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/venice-smoke'
@@ -87,9 +88,7 @@ export async function writeContactSheetRender({
     createdAt
   })
 
-  const outputPath = path.join(root, output)
-  await mkdir(path.dirname(outputPath), { recursive: true })
-  await writeFile(outputPath, `${JSON.stringify(receipt, null, 2)}\n`)
+  await writeJsonAtomic(root, output, receipt)
 
   if (print) {
     console.log(JSON.stringify(receipt, null, 2))

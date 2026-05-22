@@ -102,6 +102,11 @@ Most runtime commands intentionally write fresh local records. Those outputs are
 local cache, receipt, draft, or guidance records and are normally ignored by
 git.
 
+Critical production/status record writers use atomic same-directory temp writes
+followed by rename. JSON discovery skips temporary files. Operator/status
+surfaces report malformed final records as local retry-safe record IO attention
+instead of treating partial JSON as a command crash.
+
 Committed fixture commands normalize timestamps and UUIDs. The cross-project
 operator index preserves `createdAt` for the same output/index id so repeated
 default scans do not produce timestamp-only diffs.

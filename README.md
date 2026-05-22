@@ -57,6 +57,12 @@ proposals, inspection packets, render plans, render receipts, and bundles remain
 local/operator guidance until a future authority or mesh-facing lane explicitly
 promotes them.
 
+Studio JSON records are local emitted artifacts and receipts. They are not
+durable Spine truth. Local record writes use atomic temp-file replacement on
+critical production/status paths so operator/status readers do not observe
+partial records; malformed final records are surfaced as local retry-safe
+operator attention instead of crashing summary surfaces.
+
 ## Operating Modes
 
 - **Mode 0: standalone-local**. Local project folder, local media files, local

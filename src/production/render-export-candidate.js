@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -7,6 +7,7 @@ import { artifactKinds } from '../contracts/artifact-kinds.js'
 import { makeRef, nowIso } from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
+import { writeJsonAtomic } from '../local/atomic-json.js'
 import { readProjectRecords } from '../seams/project-status.js'
 
 const modulePath = fileURLToPath(import.meta.url)
@@ -70,9 +71,7 @@ export async function writeRenderExportCandidate({
     createdAt
   })
 
-  const outputPath = path.join(root, output)
-  await mkdir(path.dirname(outputPath), { recursive: true })
-  await writeFile(outputPath, `${JSON.stringify(candidate, null, 2)}\n`)
+  await writeJsonAtomic(root, output, candidate)
 
   if (print) {
     console.log(JSON.stringify(candidate, null, 2))

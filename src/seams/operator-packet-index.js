@@ -1,4 +1,4 @@
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
+import { readdir } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -12,6 +12,12 @@ import { summarizeRenderReceipt } from '../production/render-receipts.js'
 import { summarizeExportReceipt, summarizeExportReceipts } from '../production/export-receipts.js'
 import { evaluateLocalOutputIntegrity } from '../production/output-integrity.js'
 import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
+import {
+  isDiscoverableJsonPath,
+  readJsonFileTolerant,
+  summarizeRecordReadDiagnostics,
+  writeJsonAtomic
+} from '../local/atomic-json.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
@@ -56,6 +62,7 @@ export async function writeOperatorPacketIndex({
 
   const root = path.resolve(projectDir)
   const records = await readIndexableRecords(root)
+  const recordReadDiagnostics = summarizeRecordReadDiagnostics(records)
   const projectId = inferProjectId(records, path.basename(root))
   const packetRefs = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaEdgeInspectionPacketLocal)
@@ -235,6 +242,7 @@ export async function writeOperatorPacketIndex({
       localDeliveryEvidenceIntact: outputIntegritySummary.localDeliveryEvidenceIntact,
       outputIntegrityBlockingIssues: outputIntegritySummary.outputIntegrityBlockingIssues,
       outputIntegrityAttentionIssues: outputIntegritySummary.outputIntegrityAttentionIssues,
+      recordIODiagnostics: recordReadDiagnostics.diagnostics,
       exportReceiptsNeedingAttention: exportReceipts.filter((receipt) => receipt.issueCodes.length > 0).length,
       layerInteropState: layerInterop.state,
       layerInteropHandoffs: layerInterop.authorityHandoffRecords,
@@ -260,11 +268,13 @@ export async function writeOperatorPacketIndex({
         exportReceipts.filter((receipt) => receipt.issueCodes.length > 0).length +
         outputIntegritySummary.outputIntegrityBlockingIssues +
         outputIntegritySummary.outputIntegrityAttentionIssues +
+        recordReadDiagnostics.diagnostics +
         layerInterop.attentionRows.length +
         productionApprovalLane.attentionRows.length,
       newestRecordPath: newestPath(records),
       operatorGuidanceOnly: true
     },
+    recordReadDiagnostics,
     warnings: [
       'Operator packet index is a local scanning aid, not a UI contract.',
       'Indexed records are local-only artifacts and not mesh truth.',
@@ -287,9 +297,7 @@ export async function writeOperatorPacketIndex({
 
   validateRequiredRecord(index)
 
-  const outputPath = path.join(root, output)
-  await mkdir(path.dirname(outputPath), { recursive: true })
-  await writeFile(outputPath, `${JSON.stringify(index, null, 2)}\n`)
+  await writeJsonAtomic(root, output, index)
 
   if (print) {
     console.log(JSON.stringify(index, null, 2))
@@ -330,6 +338,9 @@ export async function writeOperatorPacketIndex({
     }
     for (const row of index.outputIntegritySummary.attentionRows ?? []) {
       console.log(formatOutputIntegrityRow('output-integrity attention', row, row.attentionIssueCodes))
+    }
+    for (const row of index.recordReadDiagnostics.attentionRows ?? []) {
+      console.log(`record-io: ${row.path} | issue=${row.issueCode} | nextAction=${row.nextAction}`)
     }
     for (const row of index.layerInterop.attentionRows) {
       console.log(formatLayerInteropAttention(row))
@@ -582,7 +593,12 @@ async function readIndexableRecords(root) {
 
   for (const relativePath of candidates.sort()) {
     const record = await readOptionalRecord(root, relativePath)
-    if (!record?.schema || !indexableSchemas.has(record.schema)) continue
+    if (!record?.schema) continue
+    if (record.schema === 'media.local_record_read_diagnostic.local.v1') {
+      entries.push({ record, relativePath })
+      continue
+    }
+    if (!indexableSchemas.has(record.schema)) continue
     validateRequiredRecord(record)
     entries.push({ record, relativePath })
   }
@@ -892,7 +908,7 @@ async function collectJsonFiles(absoluteDir, relativeDir, files) {
     const relativePath = path.posix.join(relativeDir, entry.name)
     if (entry.isDirectory()) {
       await collectJsonFiles(path.join(absoluteDir, entry.name), relativePath, files)
-    } else if (entry.isFile() && entry.name.endsWith('.json')) {
+    } else if (entry.isFile() && isDiscoverableJsonPath(relativePath)) {
       assertSafeLocalPath(relativePath)
       files.push(relativePath)
     }
@@ -905,11 +921,9 @@ function isIndexableRecordPath(relativePath) {
 }
 
 async function readOptionalRecord(root, relativePath) {
-  try {
-    return JSON.parse(await readFile(path.join(root, relativePath), 'utf8'))
-  } catch {
-    return null
-  }
+  const readResult = await readJsonFileTolerant(root, relativePath)
+  if (readResult.ok) return readResult.value
+  return readResult.missing ? null : readResult.diagnostic
 }
 
 function toInspectionRef({ record, relativePath }) {

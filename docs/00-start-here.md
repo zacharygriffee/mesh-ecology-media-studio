@@ -66,6 +66,11 @@ Run tests with:
 npm test
 ```
 
+Studio JSON records are local emitted artifacts and receipts, not durable Spine
+truth. Critical production/status writers use atomic local file replacement, and
+operator/status readers surface incomplete or malformed final records as
+retry-safe local attention instead of crashing.
+
 Export an existing Venice smoke run for local Edge-readable inspection with:
 
 ```bash

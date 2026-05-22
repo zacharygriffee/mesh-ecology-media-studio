@@ -1,4 +1,3 @@
-import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -12,6 +11,7 @@ import { validateProductionRecordsInProject } from '../production/validate-produ
 import { evaluateRenderExportCandidateFreshness } from '../production/render-export-candidate.js'
 import { summarizeRenderReceipts } from '../production/render-receipts.js'
 import { evaluateLocalOutputIntegrity } from '../production/output-integrity.js'
+import { writeJsonAtomic } from '../local/atomic-json.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
@@ -219,9 +219,7 @@ export async function writeProjectHealth({
   validateProjectHealth(health)
   validateRequiredRecord(health, artifactKinds.mediaProjectHealthLocal)
 
-  const outputPath = path.join(root, output)
-  await mkdir(path.dirname(outputPath), { recursive: true })
-  await writeFile(outputPath, `${JSON.stringify(health, null, 2)}\n`)
+  await writeJsonAtomic(root, output, health)
 
   if (print) {
     console.log(JSON.stringify(health, null, 2))

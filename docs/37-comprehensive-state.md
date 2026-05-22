@@ -249,6 +249,12 @@ device_dependent_scaffold
 
 Current records stop at candidate posture.
 
+Studio JSON records remain local emitted artifacts and receipts, not durable
+Spine truth. Critical production/status writers use atomic temp-file replacement
+so readers see either the previous complete record or the next complete record.
+Operator/status readers skip temporary files and report malformed final records
+as retry-safe local attention.
+
 `media.byte_descriptor_proposal.local.v1` previews future byte descriptors but
 does not prove byte availability or materialization.
 
