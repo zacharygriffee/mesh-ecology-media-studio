@@ -10,6 +10,7 @@ import { collectLayerInteropOptions, createLayerInteropPosture } from '../layer/
 import { assertSafeLocalPath } from '../local/project-layout.js'
 import { readProjectRecords } from '../seams/project-status.js'
 import { createProductionAuthorityPrerequisiteReport } from './authority-prerequisites.js'
+import { summarizeExportReceipts } from './export-receipts.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/venice-smoke'
@@ -434,6 +435,7 @@ function createExportReceiptInput(records, prerequisiteReport) {
   const refs = exportEntries.map((entry) =>
     localRecordRef('media-export-receipt', entry.record.exportReceiptId, entry.record.schema, entry.path)
   )
+  const receiptRows = summarizeExportReceipts(records).rows
 
   return {
     inputKind: 'export-receipt',
@@ -447,6 +449,10 @@ function createExportReceiptInput(records, prerequisiteReport) {
     localDeliveryEvidencePresent: prerequisiteReport.localDeliveryEvidencePresent ?? 0,
     deliveryCreated: prerequisiteReport.deliveryCreated ?? 0,
     exportPerformed: prerequisiteReport.exportPerformed ?? 0,
+    rows: receiptRows.map(authorityExportReceiptRow),
+    attentionRows: receiptRows
+      .filter((row) => row.issueCodes.length > 0)
+      .map(authorityExportReceiptRow),
     deliveryLocalRefs: exportEntries
       .map((entry) => entry.record.deliveryLocalRef)
       .filter((ref) => ref?.path)
@@ -460,6 +466,28 @@ function createExportReceiptInput(records, prerequisiteReport) {
     publicationAuthorization: false,
     productionReady: false,
     localDeliveryEvidenceOnly: true,
+    localOnly: true,
+    operatorGuidanceOnly: true
+  }
+}
+
+function authorityExportReceiptRow(row) {
+  return {
+    receiptRef: row.receiptRef,
+    exportKind: row.exportKind,
+    freshnessState: row.freshnessState,
+    issueCodes: row.issueCodes,
+    nextAction: row.nextAction,
+    localDeliveryEvidencePresent: row.localDeliveryEvidencePresent,
+    deliveryCreated: row.deliveryCreated,
+    exportPerformed: row.exportPerformed,
+    deliveryLocalRef: row.deliveryLocalRef,
+    sourceRoughCutRef: row.sourceRoughCutRef,
+    sourceRenderReceiptRef: row.sourceRenderReceiptRef,
+    sourceExportPlanRef: row.sourceExportPlanRef,
+    exportAuthorization: false,
+    publicationAuthorization: false,
+    productionReady: false,
     localOnly: true,
     operatorGuidanceOnly: true
   }

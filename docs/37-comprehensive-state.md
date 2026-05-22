@@ -478,6 +478,8 @@ claiming publication. Even then, `authorityMissing=true` and
 `media:summary`, `operator:index`, Venice inspection, and Edge-compatible
 bundles expose the same local delivery-evidence counts without turning them
 into export authorization or production readiness.
+Their export receipt rows carry freshness, source refs, delivery refs, and next
+actions for operator inspection.
 The authority prerequisite and handoff commands can carry optional
 `mesh-ecology-layer` import refs (`layerRef`, `layerProfileRef`,
 `continuityRef`, `desyncPostureRef`, and RBC profile refs) so Studio packages

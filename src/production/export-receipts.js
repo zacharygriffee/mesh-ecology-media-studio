@@ -51,6 +51,12 @@ export function summarizeExportReceipt(receipt, relativePath, records = []) {
     deliveryManifestRef: receipt.deliveryManifestRef,
     exportPerformed: receipt.exportPerformed === true,
     deliveryCreated: receipt.deliveryCreated === true,
+    localDeliveryEvidencePresent: freshness.state === 'fresh' &&
+      receipt.exportPerformed === true &&
+      receipt.deliveryCreated === true,
+    sourceRoughCutId: receipt.sourceRoughCutRef?.id ?? null,
+    sourceRenderReceiptId: receipt.sourceRenderReceiptRef?.id ?? null,
+    sourceExportPlanId: receipt.sourceExportPlanRef?.id ?? null,
     publicationAuthorization: receipt.publicationAuthorization === true,
     productionReady: receipt.productionReady === true,
     freshnessState: freshness.state,
@@ -63,7 +69,8 @@ export function summarizeExportReceipt(receipt, relativePath, records = []) {
     localOnly: true,
     operatorGuidanceOnly: true,
     meshTruth: false,
-    approvalAuthority: false
+    approvalAuthority: false,
+    exportAuthorization: false
   }
 }
 

@@ -3430,6 +3430,9 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.equal(exportedMediaSummary.exportReceipts.localPackageCopyExportReceipts, 1)
   assert.equal(exportedMediaSummary.exportReceipts.ffmpegDeliveryReceipts, 0)
   assert.equal(exportedMediaSummary.exportReceipts.localDeliveryEvidencePresent, 1)
+  assert.equal(exportedMediaSummary.exportReceipts.rows[0].localDeliveryEvidencePresent, true)
+  assert.equal(exportedMediaSummary.exportReceipts.rows[0].sourceRoughCutId, renderPlan.sourceRoughCutRef.id)
+  assert.equal(exportedMediaSummary.exportReceipts.rows[0].sourceRenderReceiptId, ffmpegReceipt.renderReceiptId)
   assert.equal(exportedMediaSummary.exportReceipts.exportPerformed, 1)
   assert.equal(exportedMediaSummary.exportReceipts.deliveryCreated, 1)
   assert.equal(exportedMediaSummary.exportReceipts.publicationAuthorization, 0)
@@ -3479,6 +3482,13 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.equal(ffmpegExportedMediaSummary.exportReceipts.localPackageCopyExportReceipts, 1)
   assert.equal(ffmpegExportedMediaSummary.exportReceipts.ffmpegDeliveryReceipts, 1)
   assert.equal(ffmpegExportedMediaSummary.exportReceipts.localDeliveryEvidencePresent, 2)
+  assert.equal(ffmpegExportedMediaSummary.exportReceipts.rows.filter((row) => row.localDeliveryEvidencePresent).length, 2)
+  assert.ok(ffmpegExportedMediaSummary.exportReceipts.rows.some((row) =>
+    row.exportKind === 'local-ffmpeg-review-delivery' &&
+    row.sourceRoughCutId === renderPlan.sourceRoughCutRef.id &&
+    row.sourceRenderReceiptId === ffmpegReceipt.renderReceiptId &&
+    row.deliveryLocalRef.path === ffmpegExport.deliveryLocalRef.path
+  ))
   assert.equal(ffmpegExportedMediaSummary.exportReceipts.exportPerformed, 2)
   assert.equal(ffmpegExportedMediaSummary.exportReceipts.deliveryCreated, 2)
   assert.equal(ffmpegExportedMediaSummary.exportReceipts.publicationAuthorization, 0)
@@ -3493,6 +3503,14 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.ok(exportedIndexOutput.lines.some((line) => line.includes('exportReceipts=2')))
   assert.ok(exportedIndexOutput.lines.some((line) => line.includes('ffmpegDeliveryReceipts=1')))
   assert.ok(exportedIndexOutput.lines.some((line) => line.includes('localDeliveryEvidencePresent=2')))
+  assert.ok(exportedIndexOutput.lines.some((line) =>
+    line.includes('export receipt:') &&
+    line.includes('kind=local-ffmpeg-review-delivery') &&
+    line.includes('localDeliveryEvidence=true') &&
+    line.includes(`roughCut=${renderPlan.sourceRoughCutRef.id}`) &&
+    line.includes(`renderReceipt=${ffmpegReceipt.renderReceiptId}`) &&
+    line.includes(`delivery=${ffmpegExport.deliveryLocalRef.path}`)
+  ))
 
   const exportedPrereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
   assert.equal(exportedPrereqs.localProductionPackageComplete, 1)
@@ -3546,6 +3564,17 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.equal(exportReceiptInput.localDeliveryEvidencePresent, 1)
   assert.equal(exportReceiptInput.deliveryCreated, 1)
   assert.equal(exportReceiptInput.exportPerformed, 1)
+  assert.equal(exportReceiptInput.rows.length, 2)
+  assert.equal(exportReceiptInput.attentionRows.length, 0)
+  assert.ok(exportReceiptInput.rows.some((row) =>
+    row.exportKind === 'local-ffmpeg-review-delivery' &&
+    row.localDeliveryEvidencePresent === true &&
+    row.sourceRoughCutRef.id === renderPlan.sourceRoughCutRef.id &&
+    row.sourceRenderReceiptRef.id === ffmpegReceipt.renderReceiptId &&
+    row.deliveryLocalRef.path === ffmpegExport.deliveryLocalRef.path &&
+    row.publicationAuthorization === false &&
+    row.productionReady === false
+  ))
   assert.equal(exportReceiptInput.publicationAuthorization, false)
   assert.equal(exportReceiptInput.productionReady, false)
   const localPrereqInput = exportedHandoff.candidate.authorityReviewInputs.find((input) => input.inputKind === 'local-prerequisite-state')
@@ -3587,6 +3616,7 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.equal(staleSummary.exportReceipts.localPackageCopyExportReceipts, 1)
   assert.equal(staleSummary.exportReceipts.ffmpegDeliveryReceipts, 1)
   assert.equal(staleSummary.exportReceipts.localDeliveryEvidencePresent, 0)
+  assert.equal(staleSummary.exportReceipts.rows.filter((row) => row.localDeliveryEvidencePresent).length, 0)
   assert.ok(staleSummary.exportReceipts.attentionRows[0].issueCodes.includes('latest_rough_cut_review_changed'))
   const stalePrereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
   assert.equal(stalePrereqs.localProductionPackageComplete, 0)
@@ -3607,6 +3637,13 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.equal(staleIndexOutput.result.index.summary.renderReceiptsNeedingAttention, 2)
   assert.equal(staleIndexOutput.result.index.summary.ffmpegDeliveryReceipts, 1)
   assert.equal(staleIndexOutput.result.index.summary.localDeliveryEvidencePresent, 0)
+  assert.ok(staleIndexOutput.lines.some((line) =>
+    line.includes('export receipt:') &&
+    line.includes('localDeliveryEvidence=false') &&
+    line.includes('freshness=stale') &&
+    line.includes('latest_rough_cut_review_changed') &&
+    line.includes('Regenerate the local export package')
+  ))
 
   const compatibility = await writeEdgeCompatibilityBundle({ projectDir: dir })
   assert.ok(compatibility.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.render_export_candidate.local.v1'))
@@ -3618,6 +3655,20 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.equal(compatibility.bundle.exportDeliverySummary.localPackageCopyExportReceipts, 1)
   assert.equal(compatibility.bundle.exportDeliverySummary.ffmpegDeliveryReceipts, 1)
   assert.equal(compatibility.bundle.exportDeliverySummary.localDeliveryEvidencePresent, 0)
+  assert.equal(compatibility.bundle.exportDeliverySummary.fresh, 0)
+  assert.equal(compatibility.bundle.exportDeliverySummary.stale, 2)
+  assert.equal(compatibility.bundle.exportDeliverySummary.rows.length, 2)
+  assert.equal(compatibility.bundle.exportDeliverySummary.attentionRows.length, 2)
+  assert.ok(compatibility.bundle.exportDeliverySummary.rows.some((row) =>
+    row.exportKind === 'local-ffmpeg-review-delivery' &&
+    row.localDeliveryEvidencePresent === false &&
+    row.freshnessState === 'stale' &&
+    row.sourceRoughCutRef.id === renderPlan.sourceRoughCutRef.id &&
+    row.sourceRenderReceiptRef.id === ffmpegReceipt.renderReceiptId &&
+    row.deliveryLocalRef.path === ffmpegExport.deliveryLocalRef.path &&
+    row.publicationAuthorization === false &&
+    row.productionReady === false
+  ))
   assert.equal(compatibility.bundle.exportDeliverySummary.deliveryCreated, 2)
   assert.equal(compatibility.bundle.exportDeliverySummary.exportPerformed, 2)
   assert.equal(compatibility.bundle.exportDeliverySummary.publicationAuthorization, false)

@@ -361,10 +361,15 @@ function printMediaSummary(summary) {
       `kind=${row.exportKind}`,
       `deliveryCreated=${row.deliveryCreated}`,
       `exportPerformed=${row.exportPerformed}`,
+      `localDeliveryEvidence=${row.localDeliveryEvidencePresent}`,
       `publicationAuthorization=${row.publicationAuthorization}`,
       `productionReady=${row.productionReady}`,
+      `freshness=${row.freshnessState}`,
+      `roughCut=${row.sourceRoughCutId ?? 'unknown'}`,
+      `renderReceipt=${row.sourceRenderReceiptId ?? 'unknown'}`,
       `issues=${row.issueCodes.join(',') || 'none'}`,
       `delivery=${row.deliveryLocalRef?.path ?? 'none'}`,
+      `nextAction=${row.nextAction}`,
       `path=${row.receiptRef.path}`
     ].join(' | '))
   }

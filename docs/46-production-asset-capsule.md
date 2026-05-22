@@ -164,6 +164,9 @@ package is complete enough to route onward for review; it still reports missing
 render/export/publication authority and does not make the bundle production-ready.
 Media summary, operator index, Venice inspection, and Edge-compatible bundles
 surface the same export delivery posture as local evidence only.
+Row-level export receipt posture includes freshness, source rough-cut/render
+refs, delivery refs, and next action; stale rows remain local evidence only and
+do not satisfy authority.
 
 ## Authority Handoff Candidate
 

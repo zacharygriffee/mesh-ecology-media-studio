@@ -357,6 +357,9 @@ receipts are counted distinctly from package-copy receipts. Publication
 authorization and production readiness remain false.
 The same delivery-evidence distinction appears in `media:summary`,
 `operator:index`, Venice smoke inspection, and Edge-compatible bundles.
+Export receipt rows also show freshness, source rough cut/render refs, delivery
+paths, and next action so stale delivery evidence is inspectable without opening
+raw JSON.
 
 ## Inspection And Edge-Compatible Artifacts
 

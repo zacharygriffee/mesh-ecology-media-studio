@@ -463,9 +463,15 @@ function formatExportReceipt(receipt) {
     `kind=${receipt.exportKind}`,
     `deliveryCreated=${receipt.deliveryCreated}`,
     `exportPerformed=${receipt.exportPerformed}`,
+    `localDeliveryEvidence=${receipt.localDeliveryEvidencePresent}`,
     `publicationAuthorization=${receipt.publicationAuthorization}`,
     `productionReady=${receipt.productionReady}`,
+    `freshness=${receipt.freshnessState}`,
+    `roughCut=${receipt.sourceRoughCutId ?? 'unknown'}`,
+    `renderReceipt=${receipt.sourceRenderReceiptId ?? 'unknown'}`,
     `issues=${receipt.issueCodes.join(',') || 'none'}`,
+    `delivery=${receipt.deliveryLocalRef?.path ?? 'none'}`,
+    `nextAction=${receipt.nextAction}`,
     `path=${receipt.receiptRef.path}`
   ].join(' | ')
 }

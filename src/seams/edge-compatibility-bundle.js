@@ -503,6 +503,10 @@ function createExportDeliverySummary({ sources }) {
     localPackageCopyExportReceipts: exportReceiptSummary.localPackageCopyExportReceipts,
     ffmpegDeliveryReceipts: exportReceiptSummary.ffmpegDeliveryReceipts,
     localDeliveryEvidencePresent: exportReceiptSummary.localDeliveryEvidencePresent,
+    fresh: exportReceiptSummary.fresh,
+    stale: exportReceiptSummary.stale,
+    rows: exportReceiptSummary.rows.map(edgeExportReceiptRow),
+    attentionRows: exportReceiptSummary.attentionRows.map(edgeExportReceiptRow),
     deliveryCreated: exportEntries.filter((entry) => entry.record.deliveryCreated === true).length,
     exportPerformed: exportEntries.filter((entry) => entry.record.exportPerformed === true).length,
     publicationAuthorization: false,
@@ -529,6 +533,27 @@ function createExportDeliverySummary({ sources }) {
     publicationAuthorizationClaimed: false,
     productionReadyClaimed: false,
     edgeRuntimeVerified: false
+  }
+}
+
+function edgeExportReceiptRow(row) {
+  return {
+    receiptRef: row.receiptRef,
+    exportKind: row.exportKind,
+    freshnessState: row.freshnessState,
+    issueCodes: row.issueCodes,
+    nextAction: row.nextAction,
+    localDeliveryEvidencePresent: row.localDeliveryEvidencePresent,
+    deliveryCreated: row.deliveryCreated,
+    exportPerformed: row.exportPerformed,
+    deliveryLocalRef: row.deliveryLocalRef ? { ...row.deliveryLocalRef, localOnly: true } : null,
+    sourceRoughCutRef: row.sourceRoughCutRef,
+    sourceRenderReceiptRef: row.sourceRenderReceiptRef,
+    sourceExportPlanRef: row.sourceExportPlanRef,
+    publicationAuthorization: false,
+    productionReady: false,
+    localOnly: true,
+    operatorGuidanceOnly: true
   }
 }
 
