@@ -216,6 +216,9 @@ export function createAuthorityHandoffCandidateFromRecords({
     exportReceiptsStale: prerequisiteReport.exportReceiptsStale ?? 0,
     localPackageCopyExportReceipts: prerequisiteReport.localPackageCopyExportReceipts ?? 0,
     ffmpegDeliveryReceipts: prerequisiteReport.ffmpegDeliveryReceipts ?? 0,
+    activeDeliveryReceipts: prerequisiteReport.activeDeliveryReceipts ?? 0,
+    currentExportReceiptAttention: prerequisiteReport.currentExportReceiptAttention ?? 0,
+    historicalExportReceiptAttention: prerequisiteReport.historicalExportReceiptAttention ?? 0,
     localDeliveryEvidencePresent: prerequisiteReport.localDeliveryEvidencePresent ?? 0,
     localDeliveryEvidenceIntact: prerequisiteReport.localDeliveryEvidenceIntact ?? 0,
     outputIntegrityBlockingIssues: prerequisiteReport.outputIntegrityBlockingIssues ?? 0,
@@ -464,6 +467,9 @@ export function formatAuthorityHandoffCandidateSummary(candidate, output = defau
     `renderReceipts=${candidate.prerequisiteSummary.renderReceipts ?? 0}`,
     `exportReceipts=${candidate.prerequisiteSummary.exportReceipts ?? 0}`,
     `ffmpegDeliveryReceipts=${candidate.prerequisiteSummary.ffmpegDeliveryReceipts ?? 0}`,
+    `activeDeliveryReceipts=${candidate.prerequisiteSummary.activeDeliveryReceipts ?? 0}`,
+    `currentExportReceiptAttention=${candidate.prerequisiteSummary.currentExportReceiptAttention ?? 0}`,
+    `historicalExportReceiptAttention=${candidate.prerequisiteSummary.historicalExportReceiptAttention ?? 0}`,
     `localDeliveryEvidencePresent=${candidate.prerequisiteSummary.localDeliveryEvidencePresent ?? 0}`,
     `deliveryCreated=${candidate.prerequisiteSummary.deliveryCreated ?? 0}`,
     `exportPerformed=${candidate.prerequisiteSummary.exportPerformed ?? 0}`,
@@ -496,12 +502,21 @@ function createExportReceiptInput(records, prerequisiteReport) {
     stale: prerequisiteReport.exportReceiptsStale ?? 0,
     localPackageCopyExportReceipts: prerequisiteReport.localPackageCopyExportReceipts ?? 0,
     ffmpegDeliveryReceipts: prerequisiteReport.ffmpegDeliveryReceipts ?? 0,
+    activeDeliveryReceipts: prerequisiteReport.activeDeliveryReceipts ?? 0,
+    currentExportReceiptAttention: prerequisiteReport.currentExportReceiptAttention ?? 0,
+    historicalExportReceiptAttention: prerequisiteReport.historicalExportReceiptAttention ?? 0,
     localDeliveryEvidencePresent: prerequisiteReport.localDeliveryEvidencePresent ?? 0,
     deliveryCreated: prerequisiteReport.deliveryCreated ?? 0,
     exportPerformed: prerequisiteReport.exportPerformed ?? 0,
     rows: receiptRows.map(authorityExportReceiptRow),
     attentionRows: receiptRows
       .filter((row) => row.issueCodes.length > 0)
+      .map(authorityExportReceiptRow),
+    currentAttentionRows: receiptRows
+      .filter((row) => row.deliveryAttentionState === 'needs-local-attention')
+      .map(authorityExportReceiptRow),
+    historicalAttentionRows: receiptRows
+      .filter((row) => row.deliveryAttentionState === 'historical-stale-receipt')
       .map(authorityExportReceiptRow),
     deliveryLocalRefs: exportEntries
       .map((entry) => entry.record.deliveryLocalRef)
@@ -526,6 +541,8 @@ function authorityExportReceiptRow(row) {
     receiptRef: row.receiptRef,
     exportKind: row.exportKind,
     freshnessState: row.freshnessState,
+    activeLocalDelivery: row.activeLocalDelivery,
+    deliveryAttentionState: row.deliveryAttentionState,
     issueCodes: row.issueCodes,
     nextAction: row.nextAction,
     localDeliveryEvidencePresent: row.localDeliveryEvidencePresent,

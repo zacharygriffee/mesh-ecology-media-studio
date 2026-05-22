@@ -188,6 +188,9 @@ function prerequisiteSignature(report = {}) {
     exportReceiptsStale: report.exportReceiptsStale ?? 0,
     localPackageCopyExportReceipts: report.localPackageCopyExportReceipts ?? 0,
     ffmpegDeliveryReceipts: report.ffmpegDeliveryReceipts ?? 0,
+    activeDeliveryReceipts: report.activeDeliveryReceipts ?? 0,
+    currentExportReceiptAttention: report.currentExportReceiptAttention ?? 0,
+    historicalExportReceiptAttention: report.historicalExportReceiptAttention ?? 0,
     pendingAuthority: report.pendingAuthority ?? 0,
     productionReady: report.productionReady ?? false
   })

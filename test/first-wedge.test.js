@@ -4163,10 +4163,35 @@ test('media summary safe next action ignores stale inactive export receipts when
   assert.equal(summary.packageAuthority.localDeliveryEvidenceIntact, 1)
   assert.equal(summary.safeNextAction, 'Route pending approval proposals through the proper authority lane; local proposals and bundles are not approval.')
 
+  const prereqOutput = await captureConsole(() => writeProductionAuthorityPrerequisiteReport({ projectDir: dir }))
+  assert.equal(prereqOutput.result.activeDeliveryReceipts, 1)
+  assert.equal(prereqOutput.result.currentExportReceiptAttention, 0)
+  assert.equal(prereqOutput.result.historicalExportReceiptAttention, 1)
+  assert.equal(prereqOutput.result.rows[0].exportReceiptPosture.activeDeliveryReceipts, 1)
+  assert.equal(prereqOutput.result.rows[0].exportReceiptPosture.currentExportReceiptAttention, 0)
+  assert.equal(prereqOutput.result.rows[0].exportReceiptPosture.historicalExportReceiptAttention, 1)
+  assert.ok(prereqOutput.lines.some((line) => line.includes('activeDeliveryReceipts=1') &&
+    line.includes('currentExportReceiptAttention=0') &&
+    line.includes('historicalExportReceiptAttention=1')))
+
   const operatorIndex = await writeOperatorPacketIndex({ projectDir: dir, quiet: true })
   assert.equal(operatorIndex.index.summary.exportReceiptsNeedingAttention, 0)
   assert.equal(operatorIndex.index.summary.historicalExportReceiptAttention, 1)
   assert.equal(operatorIndex.index.summary.activeDeliveryReceipts, 1)
+
+  const handoffOutput = await captureConsole(() => writeAuthorityHandoffCandidate({ projectDir: dir }))
+  assert.equal(handoffOutput.result.candidate.prerequisiteSummary.activeDeliveryReceipts, 1)
+  assert.equal(handoffOutput.result.candidate.prerequisiteSummary.currentExportReceiptAttention, 0)
+  assert.equal(handoffOutput.result.candidate.prerequisiteSummary.historicalExportReceiptAttention, 1)
+  const exportInput = handoffOutput.result.candidate.authorityReviewInputs.find((input) => input.inputKind === 'export-receipt')
+  assert.equal(exportInput.activeDeliveryReceipts, 1)
+  assert.equal(exportInput.currentAttentionRows.length, 0)
+  assert.equal(exportInput.historicalAttentionRows.length, 1)
+
+  const publicationRequestOutput = await captureConsole(() => writePublicationAuthorityRequestCandidate({ projectDir: dir }))
+  assert.equal(publicationRequestOutput.result.candidate.prerequisiteSummary.activeDeliveryReceipts, 1)
+  assert.equal(publicationRequestOutput.result.candidate.prerequisiteSummary.currentExportReceiptAttention, 0)
+  assert.equal(publicationRequestOutput.result.candidate.prerequisiteSummary.historicalExportReceiptAttention, 1)
 
   const healthOutput = await captureConsole(() => writeProjectHealth({ projectDir: dir, summary: true }))
   assert.equal(healthOutput.result.health.exportReceiptSummary.currentAttentionRows.length, 0)
