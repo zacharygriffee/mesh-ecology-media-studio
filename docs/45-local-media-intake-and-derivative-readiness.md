@@ -162,8 +162,9 @@ npm run --silent media:summary -- --project-dir examples/card-to-candidate --pri
 The compact output shows asset counts by media kind, derivative readiness,
 thumbnail/proxy/waveform counts, metadata probe attention, byte content posture,
 resource situation posture, provider-generated candidate review/promotion
-posture, and attention rows only when attention is needed. `--print` emits
-machine-readable JSON for agents and future control surfaces. Use
+posture, local package review/publication request freshness, and attention rows
+only when attention is needed. `--print` emits machine-readable JSON for agents
+and future control surfaces. Use
 `npm run --silent` when redirecting JSON stdout so npm's script banner is not
 included.
 

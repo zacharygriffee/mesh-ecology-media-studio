@@ -7,6 +7,11 @@ import { evaluateRenderExportCandidateFreshness } from '../production/render-exp
 import { summarizeRenderReceipts } from '../production/render-receipts.js'
 import { summarizeExportReceipts } from '../production/export-receipts.js'
 import { evaluateLocalOutputIntegrity } from '../production/output-integrity.js'
+import { createProductionAuthorityPrerequisiteReport } from '../production/authority-prerequisites.js'
+import {
+  evaluateLocalPackageReviewFreshness,
+  evaluatePublicationAuthorityRequestFreshness
+} from '../production/package-authority-freshness.js'
 import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
 import { writeProjectStatus, readProjectRecords } from '../seams/project-status.js'
 
@@ -59,6 +64,8 @@ export async function createMediaSummary({
   const renderReceipts = summarizeRenderReceipts(records)
   const exportReceipts = summarizeExportReceipts(records)
   const outputIntegrity = await evaluateLocalOutputIntegrity({ projectDir, records })
+  const authorityPrerequisites = await createProductionAuthorityPrerequisiteReport({ projectDir })
+  const packageAuthority = summarizePackageAuthority(records, authorityPrerequisites)
   const layerInterop = summarizeLayerInteropFromRecords(records)
   const productionApprovalLane = summarizeProductionApprovalLane({
     assetRecords,
@@ -91,6 +98,7 @@ export async function createMediaSummary({
     renderReceipts,
     exportReceipts,
     outputIntegrity,
+    packageAuthority,
     layerInterop,
     productionApprovalLane,
     bytePosture: status.assetResourceConsistency.bytePosture,
@@ -144,6 +152,7 @@ export async function createMediaSummary({
     renderReceipts,
     exportReceipts,
     outputIntegrity,
+    packageAuthority,
     layerInterop,
     productionApprovalLane,
     safeNextAction,
@@ -288,6 +297,15 @@ function printMediaSummary(summary) {
     `exportReceipts=${summary.outputIntegrity.exportReceipts}`
   ].join(' | '))
   console.log([
+    `package authority: localPackageReviews=${summary.packageAuthority.localPackageReviews}`,
+    `staleReviews=${summary.packageAuthority.staleReviews}`,
+    `publicationAuthorityRequests=${summary.packageAuthority.publicationAuthorityRequests}`,
+    `staleRequests=${summary.packageAuthority.staleRequests}`,
+    `publicationAuthorization=${summary.packageAuthority.publicationAuthorization}`,
+    `productionReady=${summary.packageAuthority.productionReady}`,
+    `attention=${summary.packageAuthority.attentionRows.length}`
+  ].join(' | '))
+  console.log([
     `production approval: candidates=${summary.productionApprovalLane.candidates}`,
     `decisions=${summary.productionApprovalLane.localDecisions}`,
     `proposals=${summary.productionApprovalLane.approvalProposals}`,
@@ -390,6 +408,17 @@ function printMediaSummary(summary) {
   for (const row of summary.outputIntegrity.attentionRows) {
     console.log(formatOutputIntegrityRow('output-integrity attention', row, row.attentionIssueCodes))
   }
+  for (const row of summary.packageAuthority.attentionRows) {
+    console.log([
+      `package-authority: ${row.ref.path ?? row.ref.id}`,
+      `kind=${row.kind}`,
+      `freshness=${row.freshnessState}`,
+      `issues=${row.issueCodes.join(',') || 'none'}`,
+      `nextAction=${row.nextAction}`,
+      'publicationAuthorization=false',
+      'productionReady=false'
+    ].join(' | '))
+  }
   for (const row of summary.productionApprovalLane.attentionRows) {
     console.log([
       `production-approval: ${row.path}`,
@@ -422,6 +451,7 @@ function summarizeSafeNextAction({
   renderReceipts,
   exportReceipts,
   outputIntegrity,
+  packageAuthority,
   layerInterop,
   productionApprovalLane,
   bytePosture,
@@ -486,6 +516,24 @@ function summarizeSafeNextAction({
     return exportReceipts.attentionRows[0].nextAction
   }
 
+  if (packageAuthority.attentionRows.length > 0) {
+    return packageAuthority.attentionRows[0].nextAction
+  }
+
+  if (
+    (packageAuthority.localProductionPackageComplete ?? 0) > 0 &&
+    packageAuthority.localPackageReviews === 0
+  ) {
+    return 'Run npm run production:local-package-review after verifying local output integrity; this still does not authorize publication.'
+  }
+
+  if (
+    packageAuthority.localPackageReviews > 0 &&
+    packageAuthority.publicationAuthorityRequests === 0
+  ) {
+    return 'Run npm run production:publication-authority-request to package local output evidence for future authority review.'
+  }
+
   if (layerInterop.attentionRows.length > 0) {
     return layerInterop.attentionRows[0].nextAction
   }
@@ -511,6 +559,99 @@ function formatOutputIntegrityRow(label, row, issueCodes) {
     `delivery=${row.deliveryLocalRef?.path ?? row.outputLocalRef?.path ?? 'none'}`,
     `productionReady=false`
   ].join(' | ')
+}
+
+function summarizePackageAuthority(records, authorityPrerequisites) {
+  const packageReviewRows = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaOperatorDecision)
+    .filter((entry) => entry.record.decisionType === 'review_local_package')
+    .map((entry) => summarizeLocalPackageReview(entry, records, authorityPrerequisites))
+    .sort(compareRecordCreatedAtDescending)
+  const publicationRequestRows = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaPublicationAuthorityRequestCandidateLocal)
+    .map((entry) => summarizePublicationAuthorityRequest(entry, records, authorityPrerequisites))
+    .sort(compareRecordCreatedAtDescending)
+  const attentionRows = [
+    ...packageReviewRows.filter((row) => row.issueCodes.length > 0),
+    ...publicationRequestRows.filter((row) => row.issueCodes.length > 0)
+  ]
+
+  return {
+    localProductionPackageComplete: authorityPrerequisites.localProductionPackageComplete ?? 0,
+    localDeliveryEvidenceIntact: authorityPrerequisites.localDeliveryEvidenceIntact ?? 0,
+    outputIntegrityBlockingIssues: authorityPrerequisites.outputIntegrityBlockingIssues ?? 0,
+    localPackageReviews: packageReviewRows.length,
+    freshReviews: packageReviewRows.filter((row) => row.freshnessState === 'fresh').length,
+    staleReviews: packageReviewRows.filter((row) => row.freshnessState === 'stale').length,
+    publicationAuthorityRequests: publicationRequestRows.length,
+    freshRequests: publicationRequestRows.filter((row) => row.freshnessState === 'fresh').length,
+    staleRequests: publicationRequestRows.filter((row) => row.freshnessState === 'stale').length,
+    publicationAuthorization: 0,
+    productionReady: 0,
+    rows: [...packageReviewRows, ...publicationRequestRows],
+    packageReviewRows,
+    publicationRequestRows,
+    attentionRows,
+    localOnly: true,
+    operatorGuidanceOnly: true,
+    approvalAuthority: false,
+    ratifierAuthority: false,
+    publicationAuthorizationClaimed: false,
+    productionReadyClaimed: false,
+    meshTruth: false
+  }
+}
+
+function summarizeLocalPackageReview(entry, records, authorityPrerequisites) {
+  const freshness = evaluateLocalPackageReviewFreshness({
+    decision: entry.record,
+    records,
+    prerequisiteReport: authorityPrerequisites
+  })
+  return {
+    kind: 'local-package-review',
+    ref: {
+      kind: 'media-operator-decision',
+      id: entry.record.decisionId,
+      schema: entry.record.schema,
+      path: entry.path,
+      localOnly: true
+    },
+    createdAt: entry.record.createdAt,
+    freshnessState: freshness.state,
+    issueCodes: freshness.issueCodes,
+    nextAction: freshness.nextAction,
+    publicationAuthorization: false,
+    productionReady: false,
+    localOnly: true,
+    operatorGuidanceOnly: true
+  }
+}
+
+function summarizePublicationAuthorityRequest(entry, records, authorityPrerequisites) {
+  const freshness = evaluatePublicationAuthorityRequestFreshness({
+    candidate: entry.record,
+    records,
+    prerequisiteReport: authorityPrerequisites
+  })
+  return {
+    kind: 'publication-authority-request',
+    ref: {
+      kind: 'media-publication-authority-request-candidate',
+      id: entry.record.requestCandidateId,
+      schema: entry.record.schema,
+      path: entry.path,
+      localOnly: true
+    },
+    createdAt: entry.record.createdAt,
+    freshnessState: freshness.state,
+    issueCodes: freshness.issueCodes,
+    nextAction: freshness.nextAction,
+    publicationAuthorization: false,
+    productionReady: false,
+    localOnly: true,
+    operatorGuidanceOnly: true
+  }
 }
 
 function summarizeProductionCapsules(assetRecords, records) {
