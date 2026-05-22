@@ -219,6 +219,45 @@ async function addSecondAcceptedProductionAssetFixture(projectDir) {
   return secondAssetRecord
 }
 
+async function addSecondAcceptedProductionItemFixture(projectDir) {
+  const secondAssetRecord = await addSecondAcceptedProductionAssetFixture(projectDir)
+  const secondAsset = JSON.parse(await readFile(path.join(projectDir, secondAssetRecord), 'utf8'))
+  const firstApproval = JSON.parse(await readFile(path.join(projectDir, 'records/approvals/promoted-candidate-accepted-approval-proposal.local.json'), 'utf8'))
+  const firstDecision = JSON.parse(await readFile(path.join(projectDir, firstApproval.localDecisionRef.path), 'utf8'))
+  const secondDecisionRecord = 'records/decisions/media-operator-decision-second.local.json'
+  const secondDecision = {
+    ...firstDecision,
+    decisionId: `${firstDecision.decisionId}-second`,
+    subjectRef: {
+      ...(firstDecision.subjectRef ?? {}),
+      id: secondAsset.assetId,
+      path: secondAssetRecord
+    },
+    selectedAssetId: secondAsset.assetId,
+    createdAt: '2026-05-19T00:00:02.000Z'
+  }
+  await writeFile(path.join(projectDir, secondDecisionRecord), `${JSON.stringify(secondDecision, null, 2)}\n`)
+  await writeApprovalProposal({
+    projectDir,
+    decision: secondDecisionRecord,
+    asset: secondAssetRecord,
+    output: 'records/approvals/media-approval-proposal-second.local.json'
+  })
+  await writeByteDescriptorProposals({ projectDir })
+  await writeLocalLayerResourceRefCandidates({ projectDir })
+  await writeProductionAssetCapsule({
+    projectDir,
+    assetRecord: secondAssetRecord,
+    output: 'records/production/media-production-asset-capsule-second.local.json',
+    quiet: true
+  })
+  await writeProductionBundle({ projectDir, quiet: true })
+  return {
+    secondAsset,
+    secondAssetRecord
+  }
+}
+
 function createTestOperationCandidate(overrides = {}) {
   return createMediaOperationCandidate({
     operationId: 'operation-test',
@@ -3847,6 +3886,62 @@ test('local production output runner can keep ffmpeg disabled without blocking l
   const prereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
   assert.equal(prereqs.localProductionPackageComplete, 1)
   assert.equal(prereqs.pendingAuthority, 1)
+  assert.equal(prereqs.productionReady, 0)
+})
+
+test('local production output runner carries two accepted production items through reviewable delivery', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-local-output-two-items-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+  await addSecondAcceptedProductionItemFixture(dir)
+
+  const output = await captureConsole(() => runLocalProductionOutput({
+    projectDir: dir,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const result = output.result
+
+  assert.equal(result.summary.roughCutItems, 2)
+  assert.equal(result.summary.roughCutReviewed, 1)
+  assert.equal(result.summary.renderReceipts, 2)
+  assert.equal(result.summary.exportReceipts, 2)
+  assert.equal(result.summary.ffmpegDeliveryReceipts, 1)
+  assert.equal(result.summary.localDeliveryEvidencePresent, 2)
+  assert.equal(result.summary.localProductionPackageComplete, 2)
+  assert.equal(result.summary.pendingAuthority, 2)
+  assert.equal(result.summary.productionReady, 0)
+  assert.equal(result.nonClaims.publicationAuthorization, false)
+  assert.equal(result.nonClaims.productionReady, false)
+  assert.ok(output.lines.some((line) =>
+    line === 'production local output: project=venice-smoke-project | steps=13/13 | roughCutItems=2 | roughCutReviewed=1 | renderReceipts=2 | exportReceipts=2 | ffmpegDeliveryReceipts=1 | localDeliveryEvidencePresent=2 | localProductionPackageComplete=2 | pendingAuthority=2 | productionReady=0'
+  ))
+
+  const roughCut = JSON.parse(await readFile(path.join(dir, 'records/production/media-rough-cut-capsule.local.json'), 'utf8'))
+  assert.equal(roughCut.orderedItems.length, 2)
+  assert.deepEqual(roughCut.orderedItems.map((item) => item.order), [1, 2])
+  assert.deepEqual(roughCut.orderedItems.map((item) => item.localRef.path), [
+    'media/accepted/venice-live-smoke-0.png',
+    'media/accepted/venice-live-smoke-1.png'
+  ])
+
+  const ffmpegRender = JSON.parse(await readFile(path.join(dir, 'records/production/media-ffmpeg-render-receipt.local.json'), 'utf8'))
+  assert.equal(ffmpegRender.orderedItems.length, 2)
+  assert.equal(ffmpegRender.output.durationSeconds, 4)
+  assert.equal(ffmpegRender.renderPerformed, true)
+  assert.equal(ffmpegRender.exportPerformed, false)
+  assert.equal(ffmpegRender.productionReady, false)
+
+  const ffmpegExport = JSON.parse(await readFile(path.join(dir, 'records/production/media-ffmpeg-export-receipt.local.json'), 'utf8'))
+  assert.equal(ffmpegExport.orderedItems.length, 2)
+  assert.equal(ffmpegExport.output.durationSeconds, 4)
+  assert.equal(ffmpegExport.deliveryCreated, true)
+  assert.equal(ffmpegExport.exportPerformed, true)
+  assert.equal(ffmpegExport.publicationAuthorization, false)
+  assert.equal(ffmpegExport.productionReady, false)
+
+  const prereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
+  assert.equal(prereqs.candidates, 2)
+  assert.equal(prereqs.localProductionPackageComplete, 2)
+  assert.equal(prereqs.pendingAuthority, 2)
   assert.equal(prereqs.productionReady, 0)
 })
 
