@@ -4134,6 +4134,32 @@ test('local production output runner can keep ffmpeg disabled without blocking l
   assert.equal(prereqs.productionReady, 0)
 })
 
+test('media summary safe next action ignores stale inactive export receipts when local delivery is intact', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-local-output-active-delivery-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+  await runLocalProductionOutput({
+    projectDir: dir,
+    createdAt: '2026-05-19T00:00:00.000Z',
+    quiet: true
+  })
+  await runLocalProductionOutput({
+    projectDir: dir,
+    disableFfmpeg: true,
+    createdAt: '2026-05-19T00:10:00.000Z',
+    quiet: true
+  })
+
+  const summary = await createMediaSummary({ projectDir: dir })
+  assert.equal(summary.exportReceipts.total, 2)
+  assert.equal(summary.exportReceipts.ffmpegDeliveryReceipts, 1)
+  assert.equal(summary.exportReceipts.localDeliveryEvidencePresent, 1)
+  assert.equal(summary.exportReceipts.attentionRows.length, 1)
+  assert.ok(summary.exportReceipts.attentionRows[0].issueCodes.includes('target_output_path_changed'))
+  assert.equal(summary.packageAuthority.localProductionPackageComplete, 1)
+  assert.equal(summary.packageAuthority.localDeliveryEvidenceIntact, 1)
+  assert.equal(summary.safeNextAction, 'Route pending approval proposals through the proper authority lane; local proposals and bundles are not approval.')
+})
+
 test('local package review can request changes without publication authority', async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-local-package-request-changes-'))
   await runVeniceProductionRehearsal({ projectDir: dir })

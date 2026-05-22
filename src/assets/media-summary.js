@@ -533,7 +533,12 @@ function summarizeSafeNextAction({
     return 'Inspect local render preview integrity attention; delivery evidence may still be intact unless an export depends on the invalid render.'
   }
 
-  if (exportReceipts.attentionRows.length > 0) {
+  const hasIntactReviewedLocalPackage =
+    (packageAuthority.localProductionPackageComplete ?? 0) > 0 &&
+    (packageAuthority.localDeliveryEvidenceIntact ?? 0) > 0 &&
+    (outputIntegrity?.outputIntegrityBlockingIssues ?? 0) === 0
+
+  if (exportReceipts.attentionRows.length > 0 && !hasIntactReviewedLocalPackage) {
     return exportReceipts.attentionRows[0].nextAction
   }
 
