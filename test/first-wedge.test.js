@@ -3797,6 +3797,59 @@ test('local production output runner creates reviewable delivery without authori
   assert.equal(prereqs.productionReady, 0)
 })
 
+test('local production output runner can keep ffmpeg disabled without blocking local delivery posture', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-local-output-no-ffmpeg-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+
+  const output = await captureConsole(() => runLocalProductionOutput({
+    projectDir: dir,
+    disableFfmpeg: true,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const result = output.result
+
+  assert.equal(result.mode, 'standalone-local')
+  assert.equal(result.summary.roughCutItems, 1)
+  assert.equal(result.summary.roughCutReviewed, 1)
+  assert.equal(result.summary.renderReceipts, 1)
+  assert.equal(result.summary.exportReceipts, 1)
+  assert.equal(result.summary.ffmpegDeliveryReceipts, 0)
+  assert.equal(result.summary.localDeliveryEvidencePresent, 1)
+  assert.equal(result.summary.localProductionPackageComplete, 1)
+  assert.equal(result.summary.pendingAuthority, 1)
+  assert.equal(result.summary.productionReady, 0)
+  assert.ok(result.refs.contactSheetRenderReceiptId)
+  assert.equal(result.refs.ffmpegRenderReceiptId, null)
+  assert.ok(result.refs.localExportReceiptId)
+  assert.equal(result.refs.ffmpegExportReceiptId, null)
+  assert.ok(result.steps.some((step) =>
+    step.step === 'render-ffmpeg' &&
+    step.state === 'skipped' &&
+    step.reason === 'ffmpeg disabled' &&
+    step.authorityGranted === false &&
+    step.productionReady === false
+  ))
+  assert.ok(result.steps.some((step) =>
+    step.step === 'export-ffmpeg' &&
+    step.state === 'skipped' &&
+    step.reason === 'ffmpeg disabled' &&
+    step.authorityGranted === false &&
+    step.productionReady === false
+  ))
+  assert.ok(output.lines.some((line) =>
+    line === 'production local output: project=venice-smoke-project | steps=11/13 | roughCutItems=1 | roughCutReviewed=1 | renderReceipts=1 | exportReceipts=1 | ffmpegDeliveryReceipts=0 | localDeliveryEvidencePresent=1 | localProductionPackageComplete=1 | pendingAuthority=1 | productionReady=0'
+  ))
+
+  const summary = await createMediaSummary({ projectDir: dir })
+  assert.equal(summary.renderReceipts.ffmpegPreview, 0)
+  assert.equal(summary.exportReceipts.ffmpegDeliveryReceipts, 0)
+  assert.equal(summary.exportReceipts.localDeliveryEvidencePresent, 1)
+  const prereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
+  assert.equal(prereqs.localProductionPackageComplete, 1)
+  assert.equal(prereqs.pendingAuthority, 1)
+  assert.equal(prereqs.productionReady, 0)
+})
+
 test('rough cut revision regenerates local capsule from request changes', async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-rough-cut-revision-'))
   await runVeniceProductionRehearsal({ projectDir: dir })

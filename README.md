@@ -332,6 +332,8 @@ npm run production:local-output -- --project-dir examples/venice-smoke
 This writes the same rough-cut, review, render, export, authority-prereq, and
 authority-handoff records. It is an operator convenience command only; it does
 not add authority, publish, call Edge, or make the package production-ready.
+Pass `--disable-ffmpeg` to keep the orchestrated path on contact-sheet render
+and local package-copy delivery evidence only.
 
 The first real local render commands consume the dry-run render plan:
 
