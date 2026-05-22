@@ -322,6 +322,17 @@ npm run production:export-local-package -- --project-dir examples/venice-smoke
 npm run production:export-ffmpeg -- --project-dir examples/venice-smoke
 ```
 
+For the common local output path, the same existing steps can be run as one
+bounded orchestration:
+
+```bash
+npm run production:local-output -- --project-dir examples/venice-smoke
+```
+
+This writes the same rough-cut, review, render, export, authority-prereq, and
+authority-handoff records. It is an operator convenience command only; it does
+not add authority, publish, call Edge, or make the package production-ready.
+
 The first real local render commands consume the dry-run render plan:
 
 ```bash

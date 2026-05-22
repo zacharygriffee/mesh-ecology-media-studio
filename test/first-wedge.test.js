@@ -122,6 +122,7 @@ import { writeExportCandidate } from '../src/production/export-candidate.js'
 import { writeExportPlanCandidate } from '../src/production/export-plan-candidate.js'
 import { writeLocalExportPackage } from '../src/production/export-local-package.js'
 import { writeFfmpegExport } from '../src/production/export-ffmpeg.js'
+import { runLocalProductionOutput } from '../src/production/local-output-runner.js'
 import { evaluateRenderReceiptFreshness, summarizeRenderReceipts } from '../src/production/render-receipts.js'
 import { evaluateExportReceiptFreshness } from '../src/production/export-receipts.js'
 
@@ -3741,6 +3742,59 @@ test('render export candidate requires reviewed rough cut without rendering or a
   assert.equal(compatibility.bundle.studioReviewEvidence.exportDeliverySummary.exportReceipts, 2)
   assert.equal(compatibility.bundle.studioReviewEvidence.exportDeliverySummary.ffmpegDeliveryReceipts, 1)
   assert.equal(compatibility.bundle.studioReviewEvidence.exportDeliverySummary.localDeliveryEvidencePresent, 0)
+})
+
+test('local production output runner creates reviewable delivery without authority', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-local-output-runner-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+
+  const output = await captureConsole(() => runLocalProductionOutput({
+    projectDir: dir,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const result = output.result
+
+  assert.equal(result.mode, 'standalone-local')
+  assert.equal(result.summary.roughCutItems, 1)
+  assert.equal(result.summary.roughCutReviewed, 1)
+  assert.equal(result.summary.renderReceipts, 2)
+  assert.equal(result.summary.exportReceipts, 2)
+  assert.equal(result.summary.ffmpegDeliveryReceipts, 1)
+  assert.equal(result.summary.localDeliveryEvidencePresent, 2)
+  assert.equal(result.summary.localProductionPackageComplete, 1)
+  assert.equal(result.summary.pendingAuthority, 1)
+  assert.equal(result.summary.productionReady, 0)
+  assert.equal(result.nonClaims.localOnly, true)
+  assert.equal(result.nonClaims.approvalAuthority, false)
+  assert.equal(result.nonClaims.publicationAuthorization, false)
+  assert.equal(result.nonClaims.productionReady, false)
+  assert.equal(result.nonClaims.edgeCalled, false)
+  assert.equal(result.nonClaims.meshPublished, false)
+  assert.ok(result.refs.roughCutId)
+  assert.ok(result.refs.roughCutReviewDecisionId)
+  assert.ok(result.refs.renderExportCandidateId)
+  assert.ok(result.refs.renderPlanId)
+  assert.ok(result.refs.contactSheetRenderReceiptId)
+  assert.ok(result.refs.ffmpegRenderReceiptId)
+  assert.ok(result.refs.exportCandidateId)
+  assert.ok(result.refs.exportPlanId)
+  assert.ok(result.refs.localExportReceiptId)
+  assert.ok(result.refs.ffmpegExportReceiptId)
+  assert.ok(result.refs.authorityHandoffCandidateId)
+  assert.equal(result.steps.every((step) => step.authorityGranted === false), true)
+  assert.equal(result.steps.every((step) => step.productionReady === false), true)
+  assert.ok(output.lines.some((line) =>
+    line === 'production local output: project=venice-smoke-project | steps=13/13 | roughCutItems=1 | roughCutReviewed=1 | renderReceipts=2 | exportReceipts=2 | ffmpegDeliveryReceipts=1 | localDeliveryEvidencePresent=2 | localProductionPackageComplete=1 | pendingAuthority=1 | productionReady=0'
+  ))
+  assert.ok(output.lines.some((line) => line.includes('no approval authority')))
+
+  const summary = await createMediaSummary({ projectDir: dir })
+  assert.equal(summary.exportReceipts.ffmpegDeliveryReceipts, 1)
+  assert.equal(summary.exportReceipts.localDeliveryEvidencePresent, 2)
+  const prereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
+  assert.equal(prereqs.localProductionPackageComplete, 1)
+  assert.equal(prereqs.pendingAuthority, 1)
+  assert.equal(prereqs.productionReady, 0)
 })
 
 test('rough cut revision regenerates local capsule from request changes', async () => {

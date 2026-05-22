@@ -21,7 +21,8 @@ function parseArgs(argv) {
     operatorRef: 'local-operator',
     reason: undefined,
     output: defaultOutput,
-    print: false
+    print: false,
+    quiet: false
   }
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -48,6 +49,8 @@ function parseArgs(argv) {
       i += 1
     } else if (arg === '--print') {
       args.print = true
+    } else if (arg === '--quiet') {
+      args.quiet = true
     }
   }
 
@@ -62,6 +65,7 @@ export async function writeRoughCutReviewDecision({
   reason,
   output = defaultOutput,
   print = false,
+  quiet = false,
   createdAt = nowIso()
 } = {}) {
   assertSafeLocalPath(roughCut)
@@ -86,7 +90,7 @@ export async function writeRoughCutReviewDecision({
 
   if (print) {
     console.log(JSON.stringify(operatorDecision, null, 2))
-  } else {
+  } else if (!quiet) {
     console.log(formatRoughCutReviewDecisionSummary(operatorDecision, output))
     console.log(`nextAction: ${operatorDecision.nextAction}`)
     console.log('nonClaims: local-only; review only; no render/export; no approval authority; no publication authorization; productionReady=false')

@@ -179,6 +179,7 @@ npm run production:export-candidate -- --project-dir examples/venice-smoke
 npm run production:export-plan -- --project-dir examples/venice-smoke
 npm run production:export-local-package -- --project-dir examples/venice-smoke
 npm run production:export-ffmpeg -- --project-dir examples/venice-smoke
+npm run production:local-output -- --project-dir examples/venice-smoke
 npm run provider:venice:rehearse-production -- --project-dir examples/venice-smoke
 npm run approval:proposal -- --project-dir examples/card-to-candidate
 npm run bytes:proposal -- --project-dir examples/card-to-candidate
@@ -206,6 +207,9 @@ local preparation candidates, not rendered media or export artifacts by
 themselves. Render plans and render receipts can produce local preview evidence,
 but those receipts are still not export delivery, publication authorization, or
 production readiness.
+`npm run production:local-output` chains the existing local rough-cut, render,
+export, authority-prereq, and handoff commands for operator convenience. It does
+not create a new authority path, call Edge, publish, or make production ready.
 
 Write a local Packs-aligned control-surface projection without adding UI:
 

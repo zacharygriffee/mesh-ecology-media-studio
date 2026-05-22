@@ -19,7 +19,8 @@ function parseArgs(argv) {
   const args = {
     projectDir: defaultProjectDir,
     output: defaultOutput,
-    print: false
+    print: false,
+    quiet: false
   }
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -34,6 +35,8 @@ function parseArgs(argv) {
       i += 1
     } else if (arg === '--print') {
       args.print = true
+    } else if (arg === '--quiet') {
+      args.quiet = true
     }
   }
 
@@ -160,7 +163,7 @@ export async function writeProductionAuthorityPrerequisiteReport(options = {}) {
 
   if (options.print) {
     console.log(JSON.stringify(report, null, 2))
-  } else {
+  } else if (!options.quiet) {
     printProductionAuthorityPrerequisiteReport(report, output)
   }
 
