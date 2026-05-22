@@ -2,7 +2,11 @@ import { fileURLToPath } from 'node:url'
 
 import { nowIso } from '../contracts/constructors.js'
 import { readProjectRecords } from '../seams/project-status.js'
-import { latestLocalPackageReviewEntry } from './package-authority-freshness.js'
+import { createProductionAuthorityPrerequisiteReport } from './authority-prerequisites.js'
+import {
+  evaluateLocalPackageReviewFreshness,
+  latestLocalPackageReviewEntry
+} from './package-authority-freshness.js'
 import { runLocalProductionOutput } from './local-output-runner.js'
 
 const modulePath = fileURLToPath(import.meta.url)
@@ -52,7 +56,9 @@ export async function runLocalPackageRework({
 } = {}) {
   const records = await readProjectRecords(projectDir)
   const latestReview = latestLocalPackageReviewEntry(records)
-  assertLatestPackageReviewNeedsRework(latestReview)
+  const prerequisiteReport = await createProductionAuthorityPrerequisiteReport({ projectDir })
+  const eligibility = packageReworkEligibility({ latestReview, records, prerequisiteReport })
+  assertCanRunLocalPackageRework(eligibility)
 
   const output = await runLocalProductionOutput({
     projectDir,
@@ -73,6 +79,8 @@ export async function runLocalPackageRework({
       path: latestReview.path,
       localOnly: true
     },
+    reworkTrigger: eligibility.trigger,
+    reworkIssueCodes: eligibility.issueCodes,
     output,
     summary: {
       steps: output.steps.filter((step) => step.state === 'completed').length,
@@ -116,12 +124,61 @@ export async function runLocalPackageRework({
   return result
 }
 
+export function assertLocalPackageReworkEligible(eligibility) {
+  assertCanRunLocalPackageRework(eligibility)
+}
+
 export function assertLatestPackageReviewNeedsRework(latestReview) {
+  assertCanRunLocalPackageRework(packageReworkEligibility({ latestReview }))
+}
+
+export function packageReworkEligibility({ latestReview, records = [], prerequisiteReport } = {}) {
   if (!latestReview) {
-    throw new Error('Local package rework requires a latest local package review decision with needs_rework posture')
+    return {
+      allowed: false,
+      trigger: 'missing-local-package-review',
+      issueCodes: ['local_package_review_missing'],
+      reason: 'Local package rework requires a latest local package review decision.'
+    }
   }
-  if (latestReview.record.localPackageReview?.needsRework !== true) {
-    throw new Error('Local package rework requires the latest local package review decision to request changes')
+
+  const review = latestReview.record.localPackageReview ?? {}
+  if (review.needsRework === true) {
+    return {
+      allowed: true,
+      trigger: 'local-package-review-request-changes',
+      issueCodes: review.issueCodes ?? ['local_package_needs_rework'],
+      reason: 'Latest local package review requested changes.'
+    }
+  }
+
+  if (review.localPackageReviewed === true && prerequisiteReport) {
+    const freshness = evaluateLocalPackageReviewFreshness({
+      decision: latestReview.record,
+      records,
+      prerequisiteReport
+    })
+    if (freshness.state === 'stale') {
+      return {
+        allowed: true,
+        trigger: 'stale-local-package-review',
+        issueCodes: freshness.issueCodes,
+        reason: 'Latest local package review is stale against current rough-cut/output prerequisites.'
+      }
+    }
+  }
+
+  return {
+    allowed: false,
+    trigger: review.localPackageReviewed === true ? 'fresh-local-package-review' : 'unsupported-local-package-review',
+    issueCodes: [],
+    reason: 'Local package rework requires request_changes posture or a stale reviewed local package.'
+  }
+}
+
+function assertCanRunLocalPackageRework(eligibility) {
+  if (!eligibility.allowed) {
+    throw new Error(eligibility.reason)
   }
 }
 
@@ -129,6 +186,7 @@ export function formatLocalPackageReworkSummary(result) {
   return [
     `local package rework: project=${result.projectId}`,
     `sourceReview=${result.sourcePackageReviewDecisionRef.id}`,
+    `trigger=${result.reworkTrigger}`,
     `steps=${result.summary.steps}/${result.summary.totalSteps}`,
     `localPackageReviewed=${result.summary.localPackageReviewed}`,
     `publicationAuthorityRequests=${result.summary.publicationAuthorityRequests}`,

@@ -4157,6 +4157,7 @@ test('local package rework runner regenerates output after needs rework', async 
 
   assert.equal(result.reworkKind, 'local-package-rework-runner')
   assert.equal(result.sourcePackageReviewDecisionRef.id, 'decision-local-package-venice-smoke-project-request_changes')
+  assert.equal(result.reworkTrigger, 'local-package-review-request-changes')
   assert.equal(result.summary.localPackageReviewed, 1)
   assert.equal(result.summary.publicationAuthorityRequests, 1)
   assert.equal(result.summary.localProductionPackageComplete, 1)
@@ -4168,6 +4169,7 @@ test('local package rework runner regenerates output after needs rework', async 
   assert.equal(result.nonClaims.meshPublished, false)
   assert.ok(output.lines.some((line) =>
     line.startsWith('local package rework: project=venice-smoke-project') &&
+    line.includes('trigger=local-package-review-request-changes') &&
     line.includes('localPackageReviewed=1') &&
     line.includes('publicationAuthorityRequests=1') &&
     line.includes('productionReady=0')
@@ -4219,6 +4221,7 @@ test('local package rework runner preserves two-item output posture', async () =
     assert.equal(result.summary.steps, Number(mode.completedSteps.split('/')[0]))
     assert.equal(result.summary.totalSteps, 17)
     assert.equal(result.output.summary.roughCutItems, 2)
+    assert.equal(result.reworkTrigger, 'local-package-review-request-changes')
     assert.equal(result.output.summary.renderReceipts, mode.renderReceipts)
     assert.equal(result.output.summary.exportReceipts, mode.exportReceipts)
     assert.equal(result.output.summary.ffmpegDeliveryReceipts, mode.ffmpegDeliveryReceipts)
@@ -4233,7 +4236,7 @@ test('local package rework runner preserves two-item output posture', async () =
     assert.equal(result.nonClaims.edgeCalled, false)
     assert.equal(result.nonClaims.meshPublished, false)
     assert.ok(output.lines.some((line) =>
-      line === `local package rework: project=venice-smoke-project | sourceReview=decision-local-package-venice-smoke-project-request_changes | steps=${mode.completedSteps} | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=2 | pendingAuthority=2 | productionReady=0`
+      line === `local package rework: project=venice-smoke-project | sourceReview=decision-local-package-venice-smoke-project-request_changes | trigger=local-package-review-request-changes | steps=${mode.completedSteps} | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=2 | pendingAuthority=2 | productionReady=0`
     ))
 
     const roughCut = JSON.parse(await readFile(path.join(dir, 'records/production/media-rough-cut-capsule.local.json'), 'utf8'))
@@ -4258,6 +4261,73 @@ test('local package rework runner preserves two-item output posture', async () =
     assert.equal(mediaSummary.packageAuthority.freshRequests, 1)
     assert.equal(mediaSummary.packageAuthority.productionReady, 0)
   }
+})
+
+test('local package rework runner regenerates stale package after rough cut revision', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-local-package-rework-stale-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+  await runLocalProductionOutput({
+    projectDir: dir,
+    quiet: true,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  })
+  await writeRoughCutReviewDecision({
+    projectDir: dir,
+    decision: 'request_changes',
+    output: 'records/decisions/media-rough-cut-request-changes.local.json',
+    quiet: true,
+    createdAt: '2026-05-20T00:00:00.000Z'
+  })
+  await writeRoughCutRevision({
+    projectDir: dir,
+    quiet: true,
+    createdAt: '2026-05-20T00:00:01.000Z'
+  })
+
+  const stalePrereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
+  assert.equal(stalePrereqs.roughCutReviewed, 0)
+  assert.equal(stalePrereqs.localProductionPackageComplete, 0)
+  assert.equal(stalePrereqs.localPackageReviews, 1)
+  assert.equal(stalePrereqs.localPackageReviewsStale, 1)
+  assert.equal(stalePrereqs.publicationAuthorityRequestsFresh, 0)
+  assert.equal(stalePrereqs.publicationAuthorityRequestsStale, 1)
+  assert.equal(stalePrereqs.productionReady, 0)
+
+  await assert.rejects(
+    () => writePublicationAuthorityRequestCandidate({ projectDir: dir, quiet: true }),
+    /requires complete local production package posture/
+  )
+
+  const output = await captureConsole(() => runLocalPackageRework({
+    projectDir: dir,
+    createdAt: '3000-01-01T00:00:00.000Z'
+  }))
+  const result = output.result
+
+  assert.equal(result.reworkTrigger, 'stale-local-package-review')
+  assert.ok(result.reworkIssueCodes.includes('local_package_review_source_refs_changed'))
+  assert.ok(result.reworkIssueCodes.includes('current_local_production_package_incomplete'))
+  assert.equal(result.output.summary.roughCutItems, 1)
+  assert.equal(result.output.summary.roughCutReviewed, 1)
+  assert.equal(result.summary.localPackageReviewed, 1)
+  assert.equal(result.summary.publicationAuthorityRequests, 1)
+  assert.equal(result.summary.localProductionPackageComplete, 1)
+  assert.equal(result.summary.productionReady, 0)
+  assert.ok(output.lines.some((line) =>
+    line.startsWith('local package rework: project=venice-smoke-project') &&
+    line.includes('trigger=stale-local-package-review') &&
+    line.includes('localPackageReviewed=1') &&
+    line.includes('productionReady=0')
+  ))
+
+  const freshPrereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
+  assert.equal(freshPrereqs.roughCutReviewed, 1)
+  assert.equal(freshPrereqs.localProductionPackageComplete, 1)
+  assert.equal(freshPrereqs.localPackageReviews, 1)
+  assert.equal(freshPrereqs.localPackageReviewsStale, 0)
+  assert.equal(freshPrereqs.publicationAuthorityRequestsFresh, 1)
+  assert.equal(freshPrereqs.pendingAuthority, 1)
+  assert.equal(freshPrereqs.productionReady, 0)
 })
 
 test('local production output runner carries two accepted production items through reviewable delivery', async () => {

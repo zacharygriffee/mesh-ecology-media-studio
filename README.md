@@ -341,7 +341,9 @@ If multiple local package review decisions exist, the latest one is the active
 operator posture; a later `request_changes` decision blocks new
 publication/export authority request candidates until the package is reviewed
 again.
-When the latest package review requests changes, rerun the local rework lane:
+When the latest package review requests changes, or when a previously reviewed
+package becomes stale after rough-cut/output refs change, rerun the local rework
+lane:
 
 ```bash
 npm run production:package-rework -- --project-dir examples/venice-smoke
