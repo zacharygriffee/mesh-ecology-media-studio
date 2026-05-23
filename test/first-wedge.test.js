@@ -83,6 +83,7 @@ import { writeProjectHealth } from '../src/seams/project-health.js'
 import { writeEdgeReadinessGuidance } from '../src/seams/edge-readiness-guidance.js'
 import { writeControlSurfaceProjection } from '../src/seams/control-surface-projection.js'
 import { writeEdgeCompatibilityBundle } from '../src/seams/edge-compatibility-bundle.js'
+import { writeStudioPressureArtifacts } from '../src/seams/studio-pressure-artifacts.js'
 import { writeEdgeHandoffCandidate } from '../src/seams/edge-handoff-candidate.js'
 import { writeOperatorPacketIndex } from '../src/seams/operator-packet-index.js'
 import { writeCrossProjectOperatorIndex } from '../src/seams/cross-project-operator-index.js'
@@ -7052,6 +7053,135 @@ test('Edge inspection includes resource ref candidate records when present', asy
   const { bundle } = await writeEdgeCompatibilityBundle({ projectDir: dir })
   assert.ok(bundle.studioSourceRefs.some((ref) => ref.schema === 'media.local_layer_resource_ref_candidate.local.v1'))
   assert.equal(validateRequiredRecord(bundle), true)
+})
+
+test('Studio pressure artifacts carry Edge and Layer refs with non-claims', async () => {
+  const dir = await createFixtureProject()
+  const layerRefs = {
+    layerRef: 'layer:operator-local:operator-alpha',
+    layerProfileRef: 'layer-profile:operator-local:v0:example',
+    continuityRef: 'layer-continuity-ref:operator-local:decision-family:candidate',
+    desyncPostureRef: 'layer-desync-posture:operator-local:example',
+    rbcProfileRefs: ['rbc-profile:operator-local-default']
+  }
+
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await writeByteDescriptorProposals({ projectDir: dir })
+  await writeLocalLayerResourceRefCandidates({ projectDir: dir })
+  await writeProductionRecordsFromCard({ projectDir: dir })
+  await writeProductionAssetCapsule({ projectDir: dir })
+  await writeProductionBundle({ projectDir: dir })
+  await writeProductionAuthorityPrerequisiteReport({
+    projectDir: dir,
+    ...layerRefs
+  })
+  await writeAuthorityHandoffCandidate({
+    projectDir: dir,
+    ...layerRefs
+  })
+  await inspectLocalRun({ projectDir: dir })
+  await writeProjectStatus({ projectDir: dir })
+  await writeProjectHealth({ projectDir: dir })
+  await writeControlSurfaceProjection({ projectDir: dir })
+  await writeEdgeCompatibilityBundle({ projectDir: dir })
+  await writeOperatorPacketIndex({ projectDir: dir })
+  await writeEdgeHandoffCandidate({ projectDir: dir })
+  await writeOperatorDecisionRequest({ projectDir: dir })
+
+  const { edgePressureArtifact, layerPressureArtifact, outputs } = await writeStudioPressureArtifacts({
+    projectDir: dir,
+    quiet: true
+  })
+
+  assert.equal(edgePressureArtifact.schema, 'media.edge_pressure_artifact.local.v1')
+  assert.equal(edgePressureArtifact.targetRepo, 'mesh-ecology-edge')
+  assert.equal(edgePressureArtifact.targetSurface, 'media-edge-operator-seam')
+  assert.ok(edgePressureArtifact.sourceRefs.some((ref) => ref.schema === 'media.edge_inspection_packet.local.v1'))
+  assert.ok(edgePressureArtifact.sourceRefs.some((ref) => ref.schema === 'media.edge_compatibility_bundle.local.v1'))
+  assert.ok(edgePressureArtifact.sourceRefs.some((ref) => ref.schema === 'media.operator_packet_index.local.v1'))
+  assert.ok(edgePressureArtifact.sourceRefs.some((ref) => ref.schema === 'media.operator_decision_request.local.v1'))
+  assert.equal(edgePressureArtifact.nonClaims.edgeApproval, false)
+  assert.equal(edgePressureArtifact.nonClaims.edgeRuntimeVerified, false)
+  assert.equal(edgePressureArtifact.nonClaims.productionReady, false)
+  assert.equal(edgePressureArtifact.nonClaims.localScaffoldAuthority, false)
+  assert.equal(edgePressureArtifact.edgeRuntimeBuilt, false)
+  assert.equal(edgePressureArtifact.edgeRuntimeVerified, false)
+  assert.equal(validateRequiredRecord(edgePressureArtifact), true)
+
+  assert.equal(layerPressureArtifact.schema, 'media.layer_pressure_artifact.local.v1')
+  assert.equal(layerPressureArtifact.targetRepo, 'mesh-ecology-layer')
+  assert.equal(layerPressureArtifact.targetSurface, 'local-layer-projection-candidate-review')
+  assert.ok(layerPressureArtifact.sourceRefs.some((ref) => ref.schema === 'media.local_layer_resource_ref_candidate.local.v1'))
+  assert.ok(layerPressureArtifact.sourceRefs.some((ref) => ref.schema === 'media.authority_handoff_candidate.local.v1'))
+  assert.ok(layerPressureArtifact.sourceRefs.some((ref) => ref.schema === 'media.production_authority_prerequisites.summary.local.v1'))
+  assert.ok(layerPressureArtifact.layerFacingRefs.layerRefs.some((ref) => ref.id === layerRefs.layerRef))
+  assert.ok(layerPressureArtifact.layerFacingRefs.layerProfileRefs.some((ref) => ref.id === layerRefs.layerProfileRef))
+  assert.ok(layerPressureArtifact.layerFacingRefs.continuityRefs.some((ref) => ref.id === layerRefs.continuityRef))
+  assert.equal(layerPressureArtifact.nonClaims.layerAdmission, false)
+  assert.equal(layerPressureArtifact.nonClaims.durableAppendApproved, false)
+  assert.equal(layerPressureArtifact.nonClaims.continuityClaimed, false)
+  assert.equal(layerPressureArtifact.nonClaims.resourceAdmission, false)
+  assert.equal(layerPressureArtifact.nonClaims.localScaffoldAuthority, false)
+  assert.equal(validateRequiredRecord(layerPressureArtifact), true)
+
+  const writtenEdge = JSON.parse(await readFile(path.join(dir, outputs.edgeOutput), 'utf8'))
+  const writtenLayer = JSON.parse(await readFile(path.join(dir, outputs.layerOutput), 'utf8'))
+  assert.equal(writtenEdge.pressureArtifactId, edgePressureArtifact.pressureArtifactId)
+  assert.equal(writtenLayer.pressureArtifactId, layerPressureArtifact.pressureArtifactId)
+
+  const inspection = await inspectLocalRun({ projectDir: dir })
+  assert.ok(inspection.packet.artifactKinds.includes('media.edge_pressure_artifact.local.v1'))
+  assert.ok(inspection.packet.artifactKinds.includes('media.layer_pressure_artifact.local.v1'))
+
+  const nextBundle = await writeEdgeCompatibilityBundle({ projectDir: dir })
+  assert.ok(nextBundle.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.edge_pressure_artifact.local.v1'))
+  assert.ok(nextBundle.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.layer_pressure_artifact.local.v1'))
+})
+
+test('Studio pressure artifacts fail closed on authority overclaims', async () => {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await writeByteDescriptorProposals({ projectDir: dir })
+  await writeLocalLayerResourceRefCandidates({ projectDir: dir })
+  await inspectLocalRun({ projectDir: dir })
+  await writeProjectStatus({ projectDir: dir })
+  await writeControlSurfaceProjection({ projectDir: dir })
+  await writeEdgeCompatibilityBundle({ projectDir: dir })
+
+  const { edgePressureArtifact, layerPressureArtifact } = await writeStudioPressureArtifacts({
+    projectDir: dir,
+    quiet: true
+  })
+
+  assert.throws(
+    () => validateRequiredRecord({
+      ...edgePressureArtifact,
+      nonClaims: {
+        ...edgePressureArtifact.nonClaims,
+        edgeApproval: true
+      }
+    }),
+    /edgeApproval=false/
+  )
+
+  assert.throws(
+    () => validateRequiredRecord({
+      ...layerPressureArtifact,
+      nonClaims: {
+        ...layerPressureArtifact.nonClaims,
+        layerAdmission: true
+      }
+    }),
+    /layerAdmission=false/
+  )
 })
 
 test('inspection summary surfaces Edge readiness posture rows', async () => {

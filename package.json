@@ -25,6 +25,7 @@
     "readiness:edge": "node src/seams/edge-readiness-guidance.js",
     "control:surface": "node src/seams/control-surface-projection.js",
     "edge:compat": "node src/seams/edge-compatibility-bundle.js",
+    "pressure:studio": "node src/seams/studio-pressure-artifacts.js",
     "continuity:draft": "node src/seams/continuity-evidence.js",
     "export:inspection-bundle": "node src/seams/export-inspection-bundle.js",
     "provider:venice:smoke": "node src/providers/venice-live-smoke.js",

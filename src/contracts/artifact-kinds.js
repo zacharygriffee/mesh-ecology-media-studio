@@ -35,6 +35,8 @@ export const artifactKinds = Object.freeze({
   mediaControlSurfaceProjectionLocal: 'media.control_surface_projection.local.v1',
   mediaEdgeReviewEvidenceLocal: 'media.edge_review_evidence.local.v1',
   mediaEdgeCompatibilityBundleLocal: 'media.edge_compatibility_bundle.local.v1',
+  mediaEdgePressureArtifactLocal: 'media.edge_pressure_artifact.local.v1',
+  mediaLayerPressureArtifactLocal: 'media.layer_pressure_artifact.local.v1',
   mediaOperatorPacketIndexLocal: 'media.operator_packet_index.local.v1',
   mediaEdgeHandoffCandidateLocal: 'media.edge_handoff_candidate.local.v1',
   mediaOperatorDecisionRequestLocal: 'media.operator_decision_request.local.v1',

@@ -70,6 +70,8 @@ export const schemaFiles = {
   'media.control_surface_projection.local.v1': 'schemas/media-control-surface-projection-local.schema.json',
   'media.edge_review_evidence.local.v1': 'schemas/media-edge-review-evidence-local.schema.json',
   'media.edge_compatibility_bundle.local.v1': 'schemas/media-edge-compatibility-bundle-local.schema.json',
+  'media.edge_pressure_artifact.local.v1': 'schemas/media-edge-pressure-artifact-local.schema.json',
+  'media.layer_pressure_artifact.local.v1': 'schemas/media-layer-pressure-artifact-local.schema.json',
   'media.operator_packet_index.local.v1': 'schemas/media-operator-packet-index-local.schema.json',
   'media.edge_handoff_candidate.local.v1': 'schemas/media-edge-handoff-candidate-local.schema.json',
   'media.operator_decision_request.local.v1': 'schemas/media-operator-decision-request-local.schema.json',
@@ -829,6 +831,60 @@ export const requiredFields = {
     'localTruthLabel',
     'truthStatus'
   ],
+  'media.edge_pressure_artifact.local.v1': [
+    'schema',
+    'pressureArtifactId',
+    'projectId',
+    'createdAt',
+    'mode',
+    'pressureKind',
+    'targetRepo',
+    'targetSurface',
+    'sourceRefs',
+    'domainOwnedMeaning',
+    'crossRepoRefs',
+    'requestedOperatorAttention',
+    'readinessBlockers',
+    'blockedClaims',
+    'nextSafeMove',
+    'nonClaims',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'providerTruth',
+    'edgeRuntimeBuilt',
+    'edgeRuntimeVerified',
+    'localTruthLabel',
+    'truthStatus'
+  ],
+  'media.layer_pressure_artifact.local.v1': [
+    'schema',
+    'pressureArtifactId',
+    'projectId',
+    'createdAt',
+    'mode',
+    'pressureKind',
+    'targetRepo',
+    'targetSurface',
+    'sourceRefs',
+    'layerFacingRefs',
+    'domainOwnedMeaning',
+    'crossRepoRefs',
+    'readinessBlockers',
+    'blockedClaims',
+    'nextSafeMove',
+    'nonClaims',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'providerTruth',
+    'edgeRuntimeBuilt',
+    'edgeRuntimeVerified',
+    'localTruthLabel',
+    'truthStatus'
+  ],
   'media.operator_packet_index.local.v1': [
     'schema',
     'indexId',
@@ -1428,6 +1484,8 @@ const idFields = {
   [artifactKinds.mediaControlSurfaceProjectionLocal]: 'projectionId',
   [artifactKinds.mediaEdgeReviewEvidenceLocal]: 'edgeReviewEvidenceId',
   [artifactKinds.mediaEdgeCompatibilityBundleLocal]: 'compatibilityBundleId',
+  [artifactKinds.mediaEdgePressureArtifactLocal]: 'pressureArtifactId',
+  [artifactKinds.mediaLayerPressureArtifactLocal]: 'pressureArtifactId',
   [artifactKinds.mediaOperatorPacketIndexLocal]: 'indexId',
   [artifactKinds.mediaEdgeHandoffCandidateLocal]: 'handoffCandidateId',
   [artifactKinds.mediaOperatorDecisionRequestLocal]: 'requestId',
@@ -1478,6 +1536,8 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaControlSurfaceProjectionLocal,
   artifactKinds.mediaEdgeReviewEvidenceLocal,
   artifactKinds.mediaEdgeCompatibilityBundleLocal,
+  artifactKinds.mediaEdgePressureArtifactLocal,
+  artifactKinds.mediaLayerPressureArtifactLocal,
   artifactKinds.mediaOperatorPacketIndexLocal,
   artifactKinds.mediaEdgeHandoffCandidateLocal,
   artifactKinds.mediaOperatorDecisionRequestLocal,
@@ -1529,6 +1589,8 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaControlSurfaceProjectionLocal,
   artifactKinds.mediaEdgeReviewEvidenceLocal,
   artifactKinds.mediaEdgeCompatibilityBundleLocal,
+  artifactKinds.mediaEdgePressureArtifactLocal,
+  artifactKinds.mediaLayerPressureArtifactLocal,
   artifactKinds.mediaOperatorPacketIndexLocal,
   artifactKinds.mediaEdgeHandoffCandidateLocal,
   artifactKinds.mediaOperatorDecisionRequestLocal,
@@ -2191,6 +2253,50 @@ export function validateRecordShape(record, schemaId = record.schema) {
     validateEdgeCandidate(record.edgeEvidenceImportCandidate, 'edge_cross_project_evidence_import', 'edge_cross_project_evidence_import.v1', schemaId)
     validateEdgeCandidate(record.edgeReadinessViewCandidate, 'edge_cross_project_readiness_view', 'edge_cross_project_readiness_view.v1', schemaId)
     validateEdgeCandidate(record.edgeReturnSurfaceCandidate, 'edge_operator_return_surface', 'edge_operator_return_surface.v1', schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaEdgePressureArtifactLocal) {
+    validateStudioPressureArtifact(record, schemaId, {
+      pressureKind: 'studio-to-edge-operator-pressure',
+      targetRepo: 'mesh-ecology-edge',
+      targetSurface: 'media-edge-operator-seam',
+      requiredNonClaims: [
+        'edgeApproval',
+        'edgeRuntimeVerified',
+        'meshPublished',
+        'publicationAuthorization',
+        'productionReady',
+        'operatorAuthorityGranted',
+        'localScaffoldAuthority'
+      ]
+    })
+  }
+
+  if (schemaId === artifactKinds.mediaLayerPressureArtifactLocal) {
+    validateStudioPressureArtifact(record, schemaId, {
+      pressureKind: 'studio-to-layer-opaque-ref-pressure',
+      targetRepo: 'mesh-ecology-layer',
+      targetSurface: 'local-layer-projection-candidate-review',
+      requiredNonClaims: [
+        'layerAdmission',
+        'durableAppendApproved',
+        'continuityClaimed',
+        'resourceAdmission',
+        'meshTruth',
+        'productionReady',
+        'localScaffoldAuthority'
+      ]
+    })
+
+    if (!record.layerFacingRefs || typeof record.layerFacingRefs !== 'object') {
+      throw new Error(`Record ${schemaId} must include layerFacingRefs`)
+    }
+
+    for (const collection of ['layerRefs', 'layerProfileRefs', 'continuityRefs', 'desyncPostureRefs', 'rbcProfileRefs']) {
+      if (!Array.isArray(record.layerFacingRefs[collection])) {
+        throw new Error(`Record ${schemaId}.layerFacingRefs.${collection} must be an array`)
+      }
+    }
   }
 
   if (schemaId === artifactKinds.mediaOperatorPacketIndexLocal) {
@@ -3057,6 +3163,66 @@ function validateTraceNonClaims(record, schemaId) {
     if (record[flag] !== false || record.nonClaims[flag] !== false) {
       throw new Error(`Record ${schemaId} must set ${flag}=false`)
     }
+  }
+}
+
+function validateStudioPressureArtifact(record, schemaId, {
+  pressureKind,
+  targetRepo,
+  targetSurface,
+  requiredNonClaims
+}) {
+  if (record.mode !== 'standalone-local') {
+    throw new Error(`Record ${schemaId} has invalid mode: ${record.mode}`)
+  }
+
+  if (record.pressureKind !== pressureKind) {
+    throw new Error(`Record ${schemaId} must set pressureKind=${pressureKind}`)
+  }
+
+  if (record.targetRepo !== targetRepo) {
+    throw new Error(`Record ${schemaId} must target ${targetRepo}`)
+  }
+
+  if (record.targetSurface !== targetSurface) {
+    throw new Error(`Record ${schemaId} must target ${targetSurface}`)
+  }
+
+  validateRefArray(record.sourceRefs, `${schemaId}.sourceRefs`)
+
+  for (const collection of ['readinessBlockers', 'blockedClaims']) {
+    if (!Array.isArray(record[collection])) {
+      throw new Error(`Record ${schemaId}.${collection} must be an array`)
+    }
+  }
+
+  if (!isNonEmptyString(record.domainOwnedMeaning)) {
+    throw new Error(`Record ${schemaId} must include domainOwnedMeaning`)
+  }
+
+  if (!record.crossRepoRefs || typeof record.crossRepoRefs !== 'object') {
+    throw new Error(`Record ${schemaId} must include crossRepoRefs`)
+  }
+
+  if (!isNonEmptyString(record.nextSafeMove)) {
+    throw new Error(`Record ${schemaId} must include nextSafeMove`)
+  }
+
+  if (!record.nonClaims || typeof record.nonClaims !== 'object') {
+    throw new Error(`Record ${schemaId} must include nonClaims`)
+  }
+
+  for (const flag of requiredNonClaims) {
+    if (record.nonClaims[flag] !== false) {
+      throw new Error(`Record ${schemaId}.nonClaims must set ${flag}=false`)
+    }
+  }
+
+  validateEdgeRuntimeFlags(record, schemaId)
+  validateLocalFalseFlags(record, schemaId)
+
+  if (record.providerTruth !== false) {
+    throw new Error(`Record ${schemaId} must set providerTruth=false`)
   }
 }
 

@@ -40,7 +40,9 @@ const optionalSourceRecordPaths = Object.freeze({
   approvalProposal: 'records/approvals/media-approval-proposal.local.json',
   operatorPacketIndex: 'records/exports/media-operator-packet-index.local.json',
   edgeHandoffCandidate: 'records/exports/media-edge-handoff-candidate.local.json',
-  operatorDecisionRequest: 'records/requests/media-operator-decision-request.local.json'
+  operatorDecisionRequest: 'records/requests/media-operator-decision-request.local.json',
+  edgePressureArtifact: 'records/exports/media-edge-pressure-artifact.local.json',
+  layerPressureArtifact: 'records/exports/media-layer-pressure-artifact.local.json'
 })
 const optionalSourceRoots = Object.freeze([
   'records/approvals',
@@ -55,7 +57,9 @@ const optionalSourceSchemas = new Set([
   artifactKinds.mediaByteDescriptorProposalLocal,
   artifactKinds.mediaLocalLayerResourceRefCandidateLocal,
   artifactKinds.mediaOperationCandidateLocal,
-  artifactKinds.mediaRuleResolutionTraceLocal
+  artifactKinds.mediaRuleResolutionTraceLocal,
+  artifactKinds.mediaEdgePressureArtifactLocal,
+  artifactKinds.mediaLayerPressureArtifactLocal
 ])
 const productionSourceSchemas = new Set([
   artifactKinds.mediaProductionUnit,

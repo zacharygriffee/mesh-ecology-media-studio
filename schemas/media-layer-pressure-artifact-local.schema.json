@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-layer-pressure-artifact-local.schema.json",
+  "title": "media.layer_pressure_artifact.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "pressureArtifactId",
+    "projectId",
+    "createdAt",
+    "mode",
+    "pressureKind",
+    "targetRepo",
+    "targetSurface",
+    "sourceRefs",
+    "layerFacingRefs",
+    "domainOwnedMeaning",
+    "crossRepoRefs",
+    "readinessBlockers",
+    "blockedClaims",
+    "nextSafeMove",
+    "nonClaims",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "providerTruth",
+    "edgeRuntimeBuilt",
+    "edgeRuntimeVerified",
+    "localTruthLabel",
+    "truthStatus"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.layer_pressure_artifact.local.v1"
+    },
+    "pressureArtifactId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "pressureKind": {
+      "const": "studio-to-layer-opaque-ref-pressure"
+    },
+    "targetRepo": {
+      "const": "mesh-ecology-layer"
+    },
+    "targetSurface": {
+      "const": "local-layer-projection-candidate-review"
+    },
+    "sourceRefs": {
+      "type": "array"
+    },
+    "layerFacingRefs": {
+      "type": "object"
+    },
+    "domainOwnedMeaning": {
+      "type": "string",
+      "minLength": 1
+    },
+    "crossRepoRefs": {
+      "type": "object"
+    },
+    "readinessBlockers": {
+      "type": "array"
+    },
+    "blockedClaims": {
+      "type": "array"
+    },
+    "nextSafeMove": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nonClaims": {
+      "type": "object"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    },
+    "providerTruth": {
+      "const": false
+    },
+    "edgeRuntimeBuilt": {
+      "const": false
+    },
+    "edgeRuntimeVerified": {
+      "const": false
+    }
+  }
+}

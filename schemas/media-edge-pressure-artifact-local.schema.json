@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-edge-pressure-artifact-local.schema.json",
+  "title": "media.edge_pressure_artifact.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "pressureArtifactId",
+    "projectId",
+    "createdAt",
+    "mode",
+    "pressureKind",
+    "targetRepo",
+    "targetSurface",
+    "sourceRefs",
+    "domainOwnedMeaning",
+    "crossRepoRefs",
+    "requestedOperatorAttention",
+    "readinessBlockers",
+    "blockedClaims",
+    "nextSafeMove",
+    "nonClaims",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "providerTruth",
+    "edgeRuntimeBuilt",
+    "edgeRuntimeVerified",
+    "localTruthLabel",
+    "truthStatus"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.edge_pressure_artifact.local.v1"
+    },
+    "pressureArtifactId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "pressureKind": {
+      "const": "studio-to-edge-operator-pressure"
+    },
+    "targetRepo": {
+      "const": "mesh-ecology-edge"
+    },
+    "targetSurface": {
+      "const": "media-edge-operator-seam"
+    },
+    "sourceRefs": {
+      "type": "array"
+    },
+    "domainOwnedMeaning": {
+      "type": "string",
+      "minLength": 1
+    },
+    "crossRepoRefs": {
+      "type": "object"
+    },
+    "requestedOperatorAttention": {
+      "type": "array"
+    },
+    "readinessBlockers": {
+      "type": "array"
+    },
+    "blockedClaims": {
+      "type": "array"
+    },
+    "nextSafeMove": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nonClaims": {
+      "type": "object"
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    },
+    "providerTruth": {
+      "const": false
+    },
+    "edgeRuntimeBuilt": {
+      "const": false
+    },
+    "edgeRuntimeVerified": {
+      "const": false
+    }
+  }
+}

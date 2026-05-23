@@ -38,6 +38,8 @@ Known Studio artifact kinds:
 - `media.control_surface_projection.local.v1`
 - `media.edge_review_evidence.local.v1`
 - `media.edge_compatibility_bundle.local.v1`
+- `media.edge_pressure_artifact.local.v1`
+- `media.layer_pressure_artifact.local.v1`
 - `media.operator_packet_index.local.v1`
 - `media.edge_handoff_candidate.local.v1`
 - `media.operator_decision_request.local.v1`
@@ -71,6 +73,13 @@ Known Studio artifact kinds:
 `media.rule_resolution_trace.local.v1` are local-only mediation artifacts. They
 describe candidate operations and mediation pressure; they do not execute work
 or grant authority.
+
+`media.edge_pressure_artifact.local.v1` and
+`media.layer_pressure_artifact.local.v1` package Studio-owned source pressure
+for Edge and Layer review. They carry local media, operator, production-package,
+authority-handoff, and resource-ref candidate refs with non-claims attached. They
+do not grant Edge approval, Layer admission, production authority, publication
+authorization, mesh publication, accepted continuity, or local-layer authority.
 
 `media.authority_handoff_candidate.local.v1` packages local production bundle,
 approval proposal, capsule, situated identity, and prerequisite refs for a

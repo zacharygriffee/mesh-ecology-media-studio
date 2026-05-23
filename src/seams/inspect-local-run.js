@@ -46,8 +46,10 @@ const extraInspectionSchemas = new Set([
   'media.byte_descriptor_proposal.local.v1',
   'media.local_layer_resource_ref_candidate.local.v1',
   'media.operation_candidate.local.v1',
-  'media.rule_resolution_trace.local.v1',
-  'media.operator_packet_index.local.v1',
+    'media.rule_resolution_trace.local.v1',
+    artifactKinds.mediaEdgePressureArtifactLocal,
+    artifactKinds.mediaLayerPressureArtifactLocal,
+    'media.operator_packet_index.local.v1',
   'media.edge_handoff_candidate.local.v1',
   'media.operator_decision_request.local.v1'
 ])
