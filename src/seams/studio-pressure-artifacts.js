@@ -14,6 +14,10 @@ const defaultProjectDir = 'examples/card-to-candidate'
 const defaultEdgeOutput = 'records/exports/media-edge-pressure-artifact.local.json'
 const defaultLayerOutput = 'records/exports/media-layer-pressure-artifact.local.json'
 const truthStatus = 'not mesh truth; not distributed proof; not ratified shared state'
+const genericLayerEnvelope = 'layer_source_pressure_review.v0'
+const genericLayerEnvelopeSchema = 'layer-source-pressure-review.v0'
+const defaultLayerRef = 'layer:operator-local:operator-alpha'
+const defaultLayerProfileRef = 'layer-profile:operator-local:v0:example'
 
 const edgePressureSchemas = new Set([
   artifactKinds.mediaEdgeInspectionPacketLocal,
@@ -256,6 +260,309 @@ export function createLayerPressureArtifact({
 
   validateRequiredRecord(artifact)
   return artifact
+}
+
+export function createStudioSourcePressureAdapterCandidate({
+  projectId,
+  sourceLayerPressureArtifact,
+  layerRef = defaultLayerRef,
+  layerProfileRef = defaultLayerProfileRef,
+  sourceRefs = sourceLayerPressureArtifact?.sourceRefs ?? [],
+  createdAt = nowIso()
+}) {
+  const sourcePressureRef = sourceLayerPressureArtifact
+    ? localRecordRef({
+      kind: 'media-layer-pressure-artifact',
+      id: sourceLayerPressureArtifact.pressureArtifactId,
+      schema: sourceLayerPressureArtifact.schema,
+      relativePath: 'records/exports/media-layer-pressure-artifact.local.json'
+    })
+    : {
+      kind: 'media-layer-pressure-artifact',
+      id: `media-layer-pressure-${projectId}`,
+      schema: artifactKinds.mediaLayerPressureArtifactLocal,
+      localOnly: true
+    }
+
+  const artifact = {
+    schema: artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal,
+    adapterCandidateId: `studio-source-pressure-adapter-candidate-${projectId}`,
+    projectId,
+    createdAt,
+    mode: 'standalone-local',
+    candidateKind: 'studio_source_pressure_adapter_candidate',
+    sourceRepo: 'mesh-ecology-media-studio',
+    targetRepo: 'mesh-ecology-layer',
+    targetGenericEnvelope: genericLayerEnvelope,
+    sourcePressureKind: 'studio-to-layer-opaque-ref-pressure',
+    sourceLayerPressureArtifactRef: sourcePressureRef,
+    requestedLayerRef: {
+      kind: 'layer',
+      id: layerRef
+    },
+    requestedLayerProfileRef: {
+      kind: 'layer-profile',
+      id: layerProfileRef
+    },
+    sourceRefs,
+    requestedOutput: {
+      artifactKind: 'layer_source_pressure_review',
+      schemaVersion: genericLayerEnvelopeSchema,
+      posture: 'generic_source_pressure_review_only'
+    },
+    blockedClaims: [
+      'studio_specific_layer_api',
+      'layer_admission',
+      'durable_append',
+      'accepted_continuity',
+      'production_storage_selection',
+      'writer_reader_admission_change',
+      'edge_authority',
+      'payload_validity_from_ref_discovery',
+      'auto_execute'
+    ],
+    nonClaims: studioSourcePressureAdapterNonClaims(),
+    studioSpecificLayerApiCreated: false,
+    layerAdmissionApproved: false,
+    durableAppendApproved: false,
+    acceptedContinuityCreated: false,
+    productionStorageSelected: false,
+    writerReaderAdmissionChanged: false,
+    edgeAuthorityCreated: false,
+    payloadValidityFromRefDiscovery: false,
+    autoExecute: false,
+    nextSafeMove: 'operator_decision_required_before_emitting_studio_source_pressure_observation',
+    localOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    providerTruth: false,
+    edgeRuntimeBuilt: false,
+    edgeRuntimeVerified: false,
+    localTruthLabel: 'local Studio source-pressure adapter candidate',
+    truthStatus
+  }
+
+  validateRequiredRecord(artifact)
+  return artifact
+}
+
+export function createStudioSourcePressureAdapterOperatorDecision({
+  projectId,
+  sourceAdapterCandidate,
+  approved = true,
+  createdAt = nowIso()
+}) {
+  const artifact = {
+    schema: artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal,
+    decisionId: `studio-source-pressure-adapter-operator-decision-${projectId}`,
+    projectId,
+    createdAt,
+    mode: 'standalone-local',
+    decisionKind: 'studio_source_pressure_adapter_operator_decision',
+    decisionStatus: approved
+      ? 'approved_bounded_studio_source_pressure_observation'
+      : 'rejected_bounded_studio_source_pressure_observation',
+    sourceAdapterCandidateRef: refForStudioSourcePressureAdapterCandidate(sourceAdapterCandidate),
+    approvedOnly: approved ? ['future_bounded_studio_source_pressure_observation'] : [],
+    blockedClaims: [
+      'studio_source_pressure_not_emitted_by_decision',
+      'studio_specific_layer_api',
+      'layer_admission',
+      'durable_append',
+      'accepted_continuity',
+      'production_storage_selection',
+      'edge_authority',
+      'auto_execute'
+    ],
+    nonClaims: studioSourcePressureAdapterNonClaims(),
+    studioSourcePressureEmitted: false,
+    layerAdmissionApproved: false,
+    durableAppendApproved: false,
+    acceptedContinuityCreated: false,
+    productionStorageSelected: false,
+    writerReaderAdmissionChanged: false,
+    edgeAuthorityCreated: false,
+    autoExecute: false,
+    nextSafeMove: approved ? 'studio_source_pressure_observation_result_or_hold' : 'hold',
+    localOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    providerTruth: false,
+    edgeRuntimeBuilt: false,
+    edgeRuntimeVerified: false,
+    localTruthLabel: 'local Studio source-pressure adapter operator decision',
+    truthStatus
+  }
+
+  validateRequiredRecord(artifact)
+  return artifact
+}
+
+export function createStudioSourcePressureObservationResult({
+  projectId,
+  sourceAdapterCandidate,
+  sourceOperatorDecision,
+  sourceLayerPressureArtifact,
+  genericLayerReviewRef = `layer-source-pressure-review:operator-local:v0:studio:${projectId}`,
+  createdAt = nowIso()
+}) {
+  const sourceRefs = [
+    refForStudioSourcePressureAdapterCandidate(sourceAdapterCandidate),
+    refForStudioSourcePressureAdapterOperatorDecision(sourceOperatorDecision),
+    sourceLayerPressureArtifact
+      ? {
+        kind: 'media-layer-pressure-artifact',
+        id: sourceLayerPressureArtifact.pressureArtifactId,
+        schema: sourceLayerPressureArtifact.schema,
+        localOnly: true
+      }
+      : null,
+    ...(sourceAdapterCandidate?.sourceRefs ?? [])
+  ].filter(Boolean)
+
+  const artifact = {
+    schema: artifactKinds.mediaStudioSourcePressureObservationResultLocal,
+    observationId: `studio-source-pressure-observation-result-${projectId}`,
+    projectId,
+    createdAt,
+    mode: 'standalone-local',
+    observationKind: 'studio_source_pressure_observation_result',
+    observationStatus: 'studio_source_pressure_routed_through_generic_layer_seam',
+    sourceOperatorDecisionRef: refForStudioSourcePressureAdapterOperatorDecision(sourceOperatorDecision),
+    sourceAdapterCandidateRef: refForStudioSourcePressureAdapterCandidate(sourceAdapterCandidate),
+    studioSourcePressureRef: sourceLayerPressureArtifact?.pressureArtifactId ?? sourceAdapterCandidate?.sourceLayerPressureArtifactRef?.id,
+    genericLayerReviewRef,
+    emittedEnvelopeKind: 'layer_source_pressure_review',
+    emittedEnvelopeSchemaVersion: genericLayerEnvelopeSchema,
+    routedThroughGenericLayerSeam: true,
+    sourceRefs,
+    layerProfileRefs: [sourceAdapterCandidate?.requestedLayerProfileRef?.id ?? defaultLayerProfileRef],
+    blockedClaims: [
+      'studio_specific_layer_api',
+      'layer_truth_from_studio_pressure',
+      'layer_admission',
+      'durable_append',
+      'accepted_continuity',
+      'production_storage_selection',
+      'edge_action_queue_creation',
+      'edge_authority',
+      'auto_execute'
+    ],
+    nonClaims: studioSourcePressureAdapterNonClaims(),
+    studioSpecificLayerApiCreated: false,
+    layerTruthClaimed: false,
+    layerAdmissionApproved: false,
+    durableAppendApproved: false,
+    acceptedContinuityCreated: false,
+    productionStorageSelected: false,
+    writerReaderAdmissionChanged: false,
+    edgeActionQueued: false,
+    edgeAuthorityCreated: false,
+    payloadValidityFromRefDiscovery: false,
+    autoExecute: false,
+    nextSafeMove: 'edge_studio_pressure_review_or_hold',
+    localOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    providerTruth: false,
+    edgeRuntimeBuilt: false,
+    edgeRuntimeVerified: false,
+    localTruthLabel: 'local Studio source-pressure observation result',
+    truthStatus
+  }
+
+  validateRequiredRecord(artifact)
+  return artifact
+}
+
+export function buildStudioSourcePressureAdapterFixture({
+  projectId = 'venice-smoke-project',
+  createdAt = '2026-05-26T00:00:00.000Z'
+} = {}) {
+  const layerPressureArtifact = createLayerPressureArtifact({
+    projectId,
+    createdAt,
+    sourceRefs: [
+      localRecordRef({
+        kind: 'media-local-layer-resource-ref-candidate',
+        id: 'resource-ref-candidate-venice',
+        schema: artifactKinds.mediaLocalLayerResourceRefCandidateLocal,
+        relativePath: 'records/layer/media-local-layer-resource-ref-candidate.local.json'
+      }),
+      localRecordRef({
+        kind: 'media-authority-handoff-candidate',
+        id: 'authority-handoff-venice',
+        schema: artifactKinds.mediaAuthorityHandoffCandidateLocal,
+        relativePath: 'records/authority/media-authority-handoff-candidate.local.json'
+      })
+    ],
+    layerInteropSummary: {
+      layerRefs: [defaultLayerRef],
+      layerProfileRefs: [defaultLayerProfileRef],
+      continuityRefs: ['continuity-ref:operator-local:v0:decision-log'],
+      desyncPostureRefs: ['desync-posture:operator-local:v0:policy-history'],
+      rbcProfileRefs: []
+    }
+  })
+  const candidate = createStudioSourcePressureAdapterCandidate({
+    projectId,
+    sourceLayerPressureArtifact: layerPressureArtifact,
+    createdAt
+  })
+  const operatorDecision = createStudioSourcePressureAdapterOperatorDecision({
+    projectId,
+    sourceAdapterCandidate: candidate,
+    createdAt
+  })
+  const observationResult = createStudioSourcePressureObservationResult({
+    projectId,
+    sourceAdapterCandidate: candidate,
+    sourceOperatorDecision: operatorDecision,
+    sourceLayerPressureArtifact: layerPressureArtifact,
+    createdAt
+  })
+
+  return {
+    layerPressureArtifact,
+    candidate,
+    operatorDecision,
+    observationResult
+  }
+}
+
+function studioSourcePressureAdapterNonClaims() {
+  return {
+    studioSpecificLayerApiCreated: false,
+    layerAdmission: false,
+    durableAppendApproved: false,
+    acceptedContinuityCreated: false,
+    productionStorageSelected: false,
+    writerReaderAdmissionChanged: false,
+    edgeAuthority: false,
+    payloadValidityFromRefDiscovery: false,
+    autoExecute: false
+  }
+}
+
+function refForStudioSourcePressureAdapterCandidate(candidate) {
+  return {
+    kind: 'media-studio-source-pressure-adapter-candidate',
+    id: candidate.adapterCandidateId,
+    schema: candidate.schema,
+    localOnly: true
+  }
+}
+
+function refForStudioSourcePressureAdapterOperatorDecision(decision) {
+  return {
+    kind: 'media-studio-source-pressure-adapter-operator-decision',
+    id: decision.decisionId,
+    schema: decision.schema,
+    localOnly: true
+  }
 }
 
 function refsForSchemas(records, schemas) {

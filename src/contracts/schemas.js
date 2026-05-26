@@ -72,6 +72,9 @@ export const schemaFiles = {
   'media.edge_compatibility_bundle.local.v1': 'schemas/media-edge-compatibility-bundle-local.schema.json',
   'media.edge_pressure_artifact.local.v1': 'schemas/media-edge-pressure-artifact-local.schema.json',
   'media.layer_pressure_artifact.local.v1': 'schemas/media-layer-pressure-artifact-local.schema.json',
+  'media.studio_source_pressure_adapter_candidate.local.v1': 'schemas/media-studio-source-pressure-adapter-candidate-local.schema.json',
+  'media.studio_source_pressure_adapter_operator_decision.local.v1': 'schemas/media-studio-source-pressure-adapter-operator-decision-local.schema.json',
+  'media.studio_source_pressure_observation_result.local.v1': 'schemas/media-studio-source-pressure-observation-result-local.schema.json',
   'media.operator_packet_index.local.v1': 'schemas/media-operator-packet-index-local.schema.json',
   'media.edge_handoff_candidate.local.v1': 'schemas/media-edge-handoff-candidate-local.schema.json',
   'media.operator_decision_request.local.v1': 'schemas/media-operator-decision-request-local.schema.json',
@@ -170,6 +173,72 @@ export const requiredFields = {
     'reason',
     'evidenceRefs',
     'createdAt'
+  ],
+  'media.studio_source_pressure_adapter_candidate.local.v1': [
+    'schema',
+    'adapterCandidateId',
+    'projectId',
+    'mode',
+    'candidateKind',
+    'sourceRepo',
+    'targetRepo',
+    'targetGenericEnvelope',
+    'sourceLayerPressureArtifactRef',
+    'requestedLayerProfileRef',
+    'sourceRefs',
+    'blockedClaims',
+    'nonClaims',
+    'createdAt',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'localTruthLabel',
+    'truthStatus'
+  ],
+  'media.studio_source_pressure_adapter_operator_decision.local.v1': [
+    'schema',
+    'decisionId',
+    'projectId',
+    'mode',
+    'decisionKind',
+    'decisionStatus',
+    'sourceAdapterCandidateRef',
+    'approvedOnly',
+    'blockedClaims',
+    'nonClaims',
+    'createdAt',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'localTruthLabel',
+    'truthStatus'
+  ],
+  'media.studio_source_pressure_observation_result.local.v1': [
+    'schema',
+    'observationId',
+    'projectId',
+    'mode',
+    'observationKind',
+    'observationStatus',
+    'sourceOperatorDecisionRef',
+    'sourceAdapterCandidateRef',
+    'studioSourcePressureRef',
+    'genericLayerReviewRef',
+    'emittedEnvelopeKind',
+    'emittedEnvelopeSchemaVersion',
+    'routedThroughGenericLayerSeam',
+    'sourceRefs',
+    'blockedClaims',
+    'nonClaims',
+    'createdAt',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'localTruthLabel',
+    'truthStatus'
   ],
   'media.provider_job_result.local.v1': [
     'schema',
@@ -1486,6 +1555,9 @@ const idFields = {
   [artifactKinds.mediaEdgeCompatibilityBundleLocal]: 'compatibilityBundleId',
   [artifactKinds.mediaEdgePressureArtifactLocal]: 'pressureArtifactId',
   [artifactKinds.mediaLayerPressureArtifactLocal]: 'pressureArtifactId',
+  [artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal]: 'adapterCandidateId',
+  [artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal]: 'decisionId',
+  [artifactKinds.mediaStudioSourcePressureObservationResultLocal]: 'observationId',
   [artifactKinds.mediaOperatorPacketIndexLocal]: 'indexId',
   [artifactKinds.mediaEdgeHandoffCandidateLocal]: 'handoffCandidateId',
   [artifactKinds.mediaOperatorDecisionRequestLocal]: 'requestId',
@@ -1538,6 +1610,9 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaEdgeCompatibilityBundleLocal,
   artifactKinds.mediaEdgePressureArtifactLocal,
   artifactKinds.mediaLayerPressureArtifactLocal,
+  artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal,
+  artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal,
+  artifactKinds.mediaStudioSourcePressureObservationResultLocal,
   artifactKinds.mediaOperatorPacketIndexLocal,
   artifactKinds.mediaEdgeHandoffCandidateLocal,
   artifactKinds.mediaOperatorDecisionRequestLocal,
@@ -1591,6 +1666,9 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaEdgeCompatibilityBundleLocal,
   artifactKinds.mediaEdgePressureArtifactLocal,
   artifactKinds.mediaLayerPressureArtifactLocal,
+  artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal,
+  artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal,
+  artifactKinds.mediaStudioSourcePressureObservationResultLocal,
   artifactKinds.mediaOperatorPacketIndexLocal,
   artifactKinds.mediaEdgeHandoffCandidateLocal,
   artifactKinds.mediaOperatorDecisionRequestLocal,
@@ -2297,6 +2375,18 @@ export function validateRecordShape(record, schemaId = record.schema) {
         throw new Error(`Record ${schemaId}.layerFacingRefs.${collection} must be an array`)
       }
     }
+  }
+
+  if (schemaId === artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal) {
+    validateStudioSourcePressureAdapterCandidate(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal) {
+    validateStudioSourcePressureAdapterOperatorDecision(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaStudioSourcePressureObservationResultLocal) {
+    validateStudioSourcePressureObservationResult(record, schemaId)
   }
 
   if (schemaId === artifactKinds.mediaOperatorPacketIndexLocal) {
@@ -3223,6 +3313,129 @@ function validateStudioPressureArtifact(record, schemaId, {
 
   if (record.providerTruth !== false) {
     throw new Error(`Record ${schemaId} must set providerTruth=false`)
+  }
+}
+
+const studioSourcePressureAdapterFalseNonClaims = [
+  'studioSpecificLayerApiCreated',
+  'layerAdmission',
+  'durableAppendApproved',
+  'acceptedContinuityCreated',
+  'productionStorageSelected',
+  'writerReaderAdmissionChanged',
+  'edgeAuthority',
+  'payloadValidityFromRefDiscovery',
+  'autoExecute'
+]
+
+function validateStudioSourcePressureAdapterBase(record, schemaId) {
+  if (record.mode !== 'standalone-local') {
+    throw new Error(`Record ${schemaId} has invalid mode: ${record.mode}`)
+  }
+
+  if (!record.nonClaims || typeof record.nonClaims !== 'object') {
+    throw new Error(`Record ${schemaId} must include nonClaims`)
+  }
+
+  for (const flag of studioSourcePressureAdapterFalseNonClaims) {
+    if (record.nonClaims[flag] !== false) {
+      throw new Error(`Record ${schemaId}.nonClaims must set ${flag}=false`)
+    }
+  }
+
+  for (const collection of ['blockedClaims']) {
+    if (!Array.isArray(record[collection])) {
+      throw new Error(`Record ${schemaId}.${collection} must be an array`)
+    }
+  }
+
+  validateLocalFalseFlags(record, schemaId)
+}
+
+function validateStudioSourcePressureAdapterCandidate(record, schemaId) {
+  validateStudioSourcePressureAdapterBase(record, schemaId)
+
+  if (record.candidateKind !== 'studio_source_pressure_adapter_candidate') {
+    throw new Error(`Record ${schemaId} must set candidateKind=studio_source_pressure_adapter_candidate`)
+  }
+
+  if (record.sourceRepo !== 'mesh-ecology-media-studio') {
+    throw new Error(`Record ${schemaId} must set sourceRepo=mesh-ecology-media-studio`)
+  }
+
+  if (record.targetRepo !== 'mesh-ecology-layer') {
+    throw new Error(`Record ${schemaId} must target mesh-ecology-layer`)
+  }
+
+  if (record.targetGenericEnvelope !== 'layer_source_pressure_review.v0') {
+    throw new Error(`Record ${schemaId} must target layer_source_pressure_review.v0`)
+  }
+
+  validateRef(record.sourceLayerPressureArtifactRef, `${schemaId}.sourceLayerPressureArtifactRef`)
+  validateRef(record.requestedLayerProfileRef, `${schemaId}.requestedLayerProfileRef`)
+  validateRefArray(record.sourceRefs, `${schemaId}.sourceRefs`)
+
+  if (record.studioSpecificLayerApiCreated !== false) {
+    throw new Error(`Record ${schemaId} must set studioSpecificLayerApiCreated=false`)
+  }
+}
+
+function validateStudioSourcePressureAdapterOperatorDecision(record, schemaId) {
+  validateStudioSourcePressureAdapterBase(record, schemaId)
+
+  if (record.decisionKind !== 'studio_source_pressure_adapter_operator_decision') {
+    throw new Error(`Record ${schemaId} must set decisionKind=studio_source_pressure_adapter_operator_decision`)
+  }
+
+  if (!['approved_bounded_studio_source_pressure_observation', 'rejected_bounded_studio_source_pressure_observation'].includes(record.decisionStatus)) {
+    throw new Error(`Record ${schemaId} has invalid decisionStatus: ${record.decisionStatus}`)
+  }
+
+  validateRef(record.sourceAdapterCandidateRef, `${schemaId}.sourceAdapterCandidateRef`)
+
+  if (!Array.isArray(record.approvedOnly)) {
+    throw new Error(`Record ${schemaId}.approvedOnly must be an array`)
+  }
+
+  if (record.decisionStatus === 'approved_bounded_studio_source_pressure_observation' &&
+      record.approvedOnly.join('|') !== 'future_bounded_studio_source_pressure_observation') {
+    throw new Error(`Record ${schemaId}.approvedOnly must approve only future_bounded_studio_source_pressure_observation`)
+  }
+
+  if (record.studioSourcePressureEmitted !== false) {
+    throw new Error(`Record ${schemaId} must set studioSourcePressureEmitted=false`)
+  }
+}
+
+function validateStudioSourcePressureObservationResult(record, schemaId) {
+  validateStudioSourcePressureAdapterBase(record, schemaId)
+
+  if (record.observationKind !== 'studio_source_pressure_observation_result') {
+    throw new Error(`Record ${schemaId} must set observationKind=studio_source_pressure_observation_result`)
+  }
+
+  if (record.observationStatus !== 'studio_source_pressure_routed_through_generic_layer_seam') {
+    throw new Error(`Record ${schemaId} has invalid observationStatus: ${record.observationStatus}`)
+  }
+
+  validateRef(record.sourceOperatorDecisionRef, `${schemaId}.sourceOperatorDecisionRef`)
+  validateRef(record.sourceAdapterCandidateRef, `${schemaId}.sourceAdapterCandidateRef`)
+  validateRefArray(record.sourceRefs, `${schemaId}.sourceRefs`)
+
+  if (record.emittedEnvelopeKind !== 'layer_source_pressure_review') {
+    throw new Error(`Record ${schemaId} must set emittedEnvelopeKind=layer_source_pressure_review`)
+  }
+
+  if (record.emittedEnvelopeSchemaVersion !== 'layer-source-pressure-review.v0') {
+    throw new Error(`Record ${schemaId} must set emittedEnvelopeSchemaVersion=layer-source-pressure-review.v0`)
+  }
+
+  if (record.routedThroughGenericLayerSeam !== true) {
+    throw new Error(`Record ${schemaId} must set routedThroughGenericLayerSeam=true`)
+  }
+
+  if (record.studioSpecificLayerApiCreated !== false || record.layerTruthClaimed !== false || record.edgeActionQueued !== false) {
+    throw new Error(`Record ${schemaId} must preserve non-authority false posture`)
   }
 }
 

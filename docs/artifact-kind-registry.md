@@ -40,6 +40,9 @@ Known Studio artifact kinds:
 - `media.edge_compatibility_bundle.local.v1`
 - `media.edge_pressure_artifact.local.v1`
 - `media.layer_pressure_artifact.local.v1`
+- `media.studio_source_pressure_adapter_candidate.local.v1`
+- `media.studio_source_pressure_adapter_operator_decision.local.v1`
+- `media.studio_source_pressure_observation_result.local.v1`
 - `media.operator_packet_index.local.v1`
 - `media.edge_handoff_candidate.local.v1`
 - `media.operator_decision_request.local.v1`
@@ -80,6 +83,15 @@ for Edge and Layer review. They carry local media, operator, production-package,
 authority-handoff, and resource-ref candidate refs with non-claims attached. They
 do not grant Edge approval, Layer admission, production authority, publication
 authorization, mesh publication, accepted continuity, or local-layer authority.
+
+`media.studio_source_pressure_adapter_candidate.local.v1`,
+`media.studio_source_pressure_adapter_operator_decision.local.v1`, and
+`media.studio_source_pressure_observation_result.local.v1` let Studio present a
+bounded Studio-shaped pressure artifact to the generic
+`layer_source_pressure_review.v0` seam. They do not create a Studio-specific
+Layer API, grant Layer admission, approve durable append, create accepted
+continuity, select production storage, mutate writer/reader admission, or make
+Edge authority.
 
 `media.authority_handoff_candidate.local.v1` packages local production bundle,
 approval proposal, capsule, situated identity, and prerequisite refs for a
