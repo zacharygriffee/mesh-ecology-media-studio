@@ -84,6 +84,9 @@ storage decisions into Studio.
    - `operator:cross-project-index` aggregates local package completeness,
      swarm-seam readiness, adapter holds, and integrity blocks from explicit
      project refs without claiming swarm activation or public swarm proof.
+   - `proof:local` can rehearse the safe local proof order and write one
+     review-only summary without claiming Edge dispatch, Layer admission,
+     publication authorization, public swarm proof, or activation.
 
 4. **Example And Fixture Discipline**
 
@@ -217,7 +220,8 @@ pressing the family swarm seams. Preferred order:
    aligned with the shared local package and swarm-seam postures;
 4. preserve source-pressure adapter evidence and swarm-seam posture as
    runtime-only review material;
-5. refresh docs/tests whenever an operator-visible command surface changes.
+5. use `proof:local` when a reviewer needs one consolidated local proof summary;
+6. refresh docs/tests whenever an operator-visible command surface changes.
 
 Success means a reviewer can run one local project through production evidence,
 source-pressure evidence, inspection, operator index, and Edge-compatible review

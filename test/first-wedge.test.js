@@ -84,6 +84,7 @@ import { writeEdgeReadinessGuidance } from '../src/seams/edge-readiness-guidance
 import { writeControlSurfaceProjection } from '../src/seams/control-surface-projection.js'
 import { writeEdgeCompatibilityBundle } from '../src/seams/edge-compatibility-bundle.js'
 import { writeStudioPressureArtifacts } from '../src/seams/studio-pressure-artifacts.js'
+import { runLocalProofRehearsal } from '../src/seams/local-proof-rehearsal.js'
 import { writeEdgeHandoffCandidate } from '../src/seams/edge-handoff-candidate.js'
 import { writeOperatorPacketIndex } from '../src/seams/operator-packet-index.js'
 import { writeCrossProjectOperatorIndex } from '../src/seams/cross-project-operator-index.js'
@@ -272,6 +273,17 @@ async function addSecondAcceptedProductionItemFixture(projectDir) {
     secondAsset,
     secondAssetRecord
   }
+}
+
+async function createLocalProofFixtureProject() {
+  const dir = await createFixtureProject()
+  await runFirstWedge({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await captureConsole(() => runVeniceProductionRehearsal({ projectDir: dir }))
+  return dir
 }
 
 async function readProductionReceipt(projectDir, relativePath) {
@@ -4254,6 +4266,120 @@ test('local production output runner creates reviewable delivery without authori
     line.includes('blockedAuthorityRequests=0') &&
     line.includes('productionReady=0')
   ))
+})
+
+test('local proof rehearsal runs safe proof order and writes ready review summary', async () => {
+  const dir = await createLocalProofFixtureProject()
+
+  const output = await captureConsole(() => runLocalProofRehearsal({
+    projectDir: dir,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const proof = output.result.proof
+  const written = JSON.parse(await readFile(path.join(dir, 'records/exports/media-studio-local-proof-rehearsal.local.json'), 'utf8'))
+  const schema = JSON.parse(await readFile(path.join(process.cwd(), 'schemas/media-studio-local-proof-rehearsal-local.schema.json'), 'utf8'))
+
+  assert.equal(proof.schema, 'media.studio_local_proof_rehearsal.local.v1')
+  assert.equal(schema.title, 'media.studio_local_proof_rehearsal.local.v1')
+  assert.equal(schema.properties.schema.const, 'media.studio_local_proof_rehearsal.local.v1')
+  assert.equal(proof.proofState, 'ready')
+  assert.equal(proof.summary.proofState, 'ready')
+  assert.equal(proof.localPackagePosture.packageState, 'complete_review_only_authority_missing')
+  assert.equal(proof.swarmSeamPosture.state, 'ready_for_review_only_swarm_pressure')
+  assert.equal(proof.studioSourcePressureAdapterSummary.latestDecisionStatus, 'approved_bounded_studio_source_pressure_observation')
+  assert.equal(proof.studioSourcePressureAdapterSummary.observationStatus, 'studio_source_pressure_routed_through_generic_layer_seam')
+  assert.equal(proof.studioSourcePressureAdapterSummary.targetGenericEnvelope, 'layer_source_pressure_review.v0')
+  assert.equal(proof.refs.inspectionPacketRef.schema, 'media.edge_inspection_packet.local.v1')
+  assert.equal(proof.refs.operatorPacketIndexRef.schema, 'media.operator_packet_index.local.v1')
+  assert.equal(proof.refs.edgeCompatibilityBundleRef.schema, 'media.edge_compatibility_bundle.local.v1')
+  assert.equal(proof.refs.adapterObservationRef.schema, 'media.studio_source_pressure_observation_result.local.v1')
+  assert.equal(proof.nonClaims.edgeDispatch, false)
+  assert.equal(proof.nonClaims.layerAdmission, false)
+  assert.equal(proof.nonClaims.publicSwarmProof, false)
+  assert.equal(proof.nonClaims.activation, false)
+  assert.equal(proof.summary.productionReady, 0)
+  assert.equal(validateRequiredRecord(proof), true)
+  assert.equal(validateRequiredRecord(written), true)
+  assert.ok(output.lines.some((line) =>
+    line.startsWith('studio local proof:') &&
+    line.includes('proof=ready') &&
+    line.includes('localPackage=complete_review_only_authority_missing') &&
+    line.includes('swarmSeam=ready_for_review_only_swarm_pressure') &&
+    line.includes('swarmProof=false') &&
+    line.includes('activation=false')
+  ))
+})
+
+test('local proof rehearsal preserves rejected adapter hold as attention posture', async () => {
+  const dir = await createLocalProofFixtureProject()
+
+  const output = await captureConsole(() => runLocalProofRehearsal({
+    projectDir: dir,
+    adapterDecision: 'rejected',
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const proof = output.result.proof
+
+  assert.equal(proof.proofState, 'attention')
+  assert.equal(proof.localPackagePosture.packageState, 'complete_review_only_authority_missing')
+  assert.equal(proof.swarmSeamPosture.state, 'adapter_hold')
+  assert.equal(proof.studioSourcePressureAdapterSummary.latestDecisionStatus, 'rejected_bounded_studio_source_pressure_observation')
+  assert.equal(proof.studioSourcePressureAdapterSummary.observationStatus, 'skipped')
+  assert.equal(proof.refs.adapterCandidateRef.schema, 'media.studio_source_pressure_adapter_candidate.local.v1')
+  assert.equal(proof.refs.adapterDecisionRef.schema, 'media.studio_source_pressure_adapter_operator_decision.local.v1')
+  assert.equal(proof.refs.adapterObservationRef, null)
+  assert.equal(proof.safeNextAction, 'Hold Studio source-pressure observation; keep candidate and decision as review-only local evidence.')
+  assert.equal(proof.nonClaims.edgeDispatch, false)
+  assert.equal(proof.nonClaims.activation, false)
+  assert.ok(output.lines.some((line) =>
+    line.includes('proof=attention') &&
+    line.includes('swarmSeam=adapter_hold') &&
+    line.includes('observation=skipped') &&
+    line.includes('activation=false')
+  ))
+  assert.equal(validateRequiredRecord(proof), true)
+})
+
+test('local proof rehearsal can disable ffmpeg without production readiness claims', async () => {
+  const dir = await createLocalProofFixtureProject()
+
+  const output = await captureConsole(() => runLocalProofRehearsal({
+    projectDir: dir,
+    disableFfmpeg: true,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const proof = output.result.proof
+
+  assert.equal(proof.proofState, 'ready')
+  assert.equal(proof.refs.localOutput.summary.ffmpegDeliveryReceipts, 0)
+  assert.equal(proof.refs.localOutput.summary.localProductionPackageComplete, 1)
+  assert.equal(proof.localPackagePosture.packageState, 'complete_review_only_authority_missing')
+  assert.equal(proof.summary.productionReady, 0)
+  assert.equal(proof.nonClaims.productionReady, false)
+  assert.equal(proof.nonClaims.publicSwarmProof, false)
+  assert.equal(proof.nonClaims.swarmRuntimeActivated, false)
+  assert.equal(validateRequiredRecord(proof), true)
+})
+
+test('local proof rehearsal print mode emits parseable JSON with non-claims', async () => {
+  const dir = await createLocalProofFixtureProject()
+
+  const output = await captureConsole(() => runLocalProofRehearsal({
+    projectDir: dir,
+    print: true,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const proof = JSON.parse(output.lines.join('\n'))
+
+  assert.equal(proof.schema, 'media.studio_local_proof_rehearsal.local.v1')
+  assert.equal(proof.proofState, 'ready')
+  assert.equal(proof.nonClaims.edgeQueueAction, false)
+  assert.equal(proof.nonClaims.edgeDispatch, false)
+  assert.equal(proof.nonClaims.layerAdmission, false)
+  assert.equal(proof.nonClaims.publicSwarmProof, false)
+  assert.equal(proof.nonClaims.activation, false)
+  assert.equal(proof.nonClaims.publicationAuthorization, false)
+  assert.equal(validateRequiredRecord(proof), true)
 })
 
 test('local production output runner can keep ffmpeg disabled without blocking local delivery posture', async () => {

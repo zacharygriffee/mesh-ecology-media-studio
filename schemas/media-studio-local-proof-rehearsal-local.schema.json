@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-studio-local-proof-rehearsal-local.schema.json",
+  "title": "media.studio_local_proof_rehearsal.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "proofRehearsalId",
+    "projectId",
+    "createdAt",
+    "mode",
+    "proofState",
+    "steps",
+    "refs",
+    "summary",
+    "localPackagePosture",
+    "swarmSeamPosture",
+    "studioSourcePressureAdapterSummary",
+    "safeNextAction",
+    "warnings",
+    "nonClaims",
+    "operatorGuidanceOnly",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "providerTruth",
+    "edgeRuntimeBuilt",
+    "edgeRuntimeVerified",
+    "localTruthLabel",
+    "truthStatus"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.studio_local_proof_rehearsal.local.v1"
+    },
+    "proofRehearsalId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "proofState": {
+      "enum": ["ready", "attention"]
+    },
+    "steps": {
+      "type": "array"
+    },
+    "refs": {
+      "type": "object"
+    },
+    "summary": {
+      "type": "object"
+    },
+    "localPackagePosture": {
+      "type": "object"
+    },
+    "swarmSeamPosture": {
+      "type": "object"
+    },
+    "studioSourcePressureAdapterSummary": {
+      "type": "object"
+    },
+    "warnings": {
+      "type": "array"
+    },
+    "operatorGuidanceOnly": {
+      "const": true
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    },
+    "providerTruth": {
+      "const": false
+    },
+    "edgeRuntimeBuilt": {
+      "const": false
+    },
+    "edgeRuntimeVerified": {
+      "const": false
+    }
+  }
+}

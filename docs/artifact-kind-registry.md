@@ -43,6 +43,7 @@ Known Studio artifact kinds:
 - `media.studio_source_pressure_adapter_candidate.local.v1`
 - `media.studio_source_pressure_adapter_operator_decision.local.v1`
 - `media.studio_source_pressure_observation_result.local.v1`
+- `media.studio_local_proof_rehearsal.local.v1`
 - `media.operator_packet_index.local.v1`
 - `media.edge_handoff_candidate.local.v1`
 - `media.operator_decision_request.local.v1`

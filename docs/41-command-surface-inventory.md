@@ -50,6 +50,7 @@ text is not the durable contract.
 | `npm run production:local-output` | yes | yes | `--print` | yes | orchestrates existing rough-cut, review, render, export, authority-prereq, local package review, publication/export request candidate, handoff, operator-index, and Edge-compatible bundle commands; `--print` includes shared `localPackagePosture` and compact output shows `localPackage`, `review`, `integrity`, and `nextAction`; `--disable-ffmpeg` keeps execution to contact-sheet and local package-copy evidence; no new authority, publication, Edge call, or production readiness |
 | `npm run record-io:stress` | yes | temp project by default | `--print` | yes | runs a bounded overlap of local output writers and summary/index/prereq readers to verify local JSON atomic-write/tolerant-read posture; ffmpeg is disabled by default; no authority, publication, Edge call, or mesh publication |
 | `npm run pressure:studio` | yes | yes | `--print` | yes | writes Studio-owned Edge and Layer pressure artifacts by default; `--adapter-chain` also writes the bounded Studio source-pressure adapter candidate, operator decision, and approved observation for Layer's generic `layer_source_pressure_review.v0` seam; `--adapter-decision rejected` writes candidate/decision only; emits review-only `swarmSeamPosture`; no Layer admission, durable append, Edge authority, queue action, dispatch, swarm activation, or auto-execute |
+| `npm run proof:local` | yes | yes | `--print` | yes | runs the local proof order over one project: local output, Studio pressure adapter chain, media summary, health summary, local-run inspection, operator index, and Edge-compatible bundle; writes `media.studio_local_proof_rehearsal.local.v1` with `proof`, `localPackage`, `swarmSeam`, adapter/observation posture, `swarmProof=false`, and `activation=false`; no Edge dispatch, Layer admission, publication authorization, production readiness, or swarm activation |
 | `npm run provider:venice:rehearse-production` | yes | yes | `--print` | yes | composes the local Venice loop, approval proposal, capsule, bundle, inspection, operator index, and Edge-compatible bundle; no live provider unless explicitly requested |
 
 ## Byte And Resource Posture
@@ -197,6 +198,11 @@ npm run inspect:local-run -- --project-dir examples/card-to-candidate
 npm run operator:index -- --project-dir examples/card-to-candidate
 npm run edge:compat -- --project-dir examples/card-to-candidate
 ```
+
+For one consolidated local proof rehearsal, run `npm run proof:local -- --project-dir
+examples/card-to-candidate`; it performs the local output, pressure, summary,
+inspection, operator, and Edge-compatible refreshes before writing the
+review-only proof summary.
 
 This posture is review-only source evidence. It does not activate swarm
 runtime, prove public swarm transport, prove a device boundary, dispatch Edge
