@@ -26,6 +26,47 @@ not a Studio-specific Layer API.
 - The observation/result records that one Studio-shaped pressure artifact was
   routed through the generic Layer seam.
 
+## Local Command
+
+By default, Studio emits only the Edge and Layer pressure artifacts:
+
+```bash
+npm run pressure:studio -- --project-dir examples/card-to-candidate
+```
+
+Add `--adapter-chain` to emit the bounded local adapter chain:
+
+```bash
+npm run pressure:studio -- --project-dir examples/card-to-candidate --adapter-chain
+```
+
+This writes:
+
+```text
+records/exports/media-studio-source-pressure-adapter-candidate.local.json
+records/exports/media-studio-source-pressure-adapter-operator-decision.local.json
+records/exports/media-studio-source-pressure-observation-result.local.json
+```
+
+Use `--adapter-decision rejected` to write only the candidate and operator
+decision, with no observation result.
+
+Refresh the read-only operator surfaces after emitting the chain:
+
+```bash
+npm run inspect:local-run -- --project-dir examples/card-to-candidate
+npm run operator:index -- --project-dir examples/card-to-candidate
+npm run edge:compat -- --project-dir examples/card-to-candidate
+```
+
+These surfaces may carry adapter refs and counts for local review. They do not
+call Layer or Edge, create queue actions, dispatch work, accept results, or
+grant authority.
+
+The adapter artifacts are runtime evidence. They are intentionally not checked
+into `examples/card-to-candidate`; regenerate them when an operator needs a
+fresh local review package.
+
 ## Blocked
 
 - no Studio-specific Layer API

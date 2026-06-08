@@ -15,6 +15,10 @@ rows with subject, issue codes, and safe local next action.
 When a provider-loop status is failed or incomplete, it prints a compact
 provider-loop attention row. That row is review guidance only; it does not make
 the provider response true or authorize retry.
+When Studio source-pressure adapter records exist under `records/exports`, the
+packet index includes adapter candidate, operator decision, and observation refs
+plus compact decision and observation status. Rejected adapter decisions surface
+as observation skipped, not as malformed local state.
 
 The handoff candidate gathers the local inspection packet, Edge compatibility
 bundle, project health snapshot, and packet index into one Edge-facing review
@@ -56,6 +60,9 @@ These records are deliberately narrow:
 
 - local-only scanning and handoff descriptors
 - no Edge runtime calls
+- no Edge queue action, dispatch, approval, or reader/writer admission change
+- no Layer admission, durable append, accepted continuity, or production
+  storage selection
 - no UI surface
 - no provider calls
 - no mesh publication

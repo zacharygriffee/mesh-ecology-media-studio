@@ -115,6 +115,16 @@ export async function writeOperatorPacketIndex({
   const mediationRefs = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaRuleResolutionTraceLocal)
     .map(toInspectionRef)
+  const studioSourcePressureAdapterCandidateRefs = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal)
+    .map(toInspectionRef)
+  const studioSourcePressureAdapterDecisionRefs = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal)
+    .map(toInspectionRef)
+  const studioSourcePressureObservationRefs = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaStudioSourcePressureObservationResultLocal)
+    .map(toInspectionRef)
+  const studioSourcePressureAdapterSummary = summarizeStudioSourcePressureAdapter(records)
   const providerLoopStatuses = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProviderLoopStatusLocal)
     .map((entry) => summarizeProviderLoopStatus(entry.record, entry.relativePath))
@@ -195,6 +205,10 @@ export async function writeOperatorPacketIndex({
     renderReceiptRefs,
     exportReceiptRefs,
     mediationRefs,
+    studioSourcePressureAdapterCandidateRefs,
+    studioSourcePressureAdapterDecisionRefs,
+    studioSourcePressureObservationRefs,
+    studioSourcePressureAdapterSummary,
     providerLoopStatuses,
     providerLoopDecisions,
     roughCutReviewDecisions,
@@ -255,6 +269,12 @@ export async function writeOperatorPacketIndex({
       layerDurableAppendApproved: layerInterop.durableAppendApproved,
       layerContinuityClaimed: layerInterop.continuityClaimed,
       layerAuthority: layerInterop.layerAuthority,
+      studioSourcePressureAdapterCandidates: studioSourcePressureAdapterCandidateRefs.length,
+      studioSourcePressureAdapterDecisions: studioSourcePressureAdapterDecisionRefs.length,
+      studioSourcePressureObservations: studioSourcePressureObservationRefs.length,
+      studioSourcePressureAdapterDecisionStatus: studioSourcePressureAdapterSummary.latestDecisionStatus,
+      studioSourcePressureObservationStatus: studioSourcePressureAdapterSummary.observationStatus,
+      studioSourcePressureTargetEnvelope: studioSourcePressureAdapterSummary.targetGenericEnvelope,
       productionApprovalCandidates: productionApprovalLane.candidates,
       productionApprovalPendingAuthority: productionApprovalLane.pendingAuthority,
       ruleResolutionTraces: mediationRefs.length,
@@ -284,6 +304,7 @@ export async function writeOperatorPacketIndex({
       'Provider-loop decisions are local operator guidance and do not execute retries or grant authority.',
       'Render receipts are local preview evidence only and do not authorize export or publication.',
       'Export receipts are local delivery evidence only and do not authorize publication or production readiness.',
+      'Studio source-pressure adapter records are local review-only source evidence for the generic Layer seam.',
       'Edge may inspect these refs later, but this index does not call or verify Edge.'
     ],
     operatorGuidanceOnly: true,
@@ -348,6 +369,11 @@ export async function writeOperatorPacketIndex({
     for (const row of index.layerInterop.attentionRows) {
       console.log(formatLayerInteropAttention(row))
     }
+    if (index.studioSourcePressureAdapterSummary.candidates > 0 ||
+        index.studioSourcePressureAdapterSummary.decisions > 0 ||
+        index.studioSourcePressureAdapterSummary.observations > 0) {
+      console.log(formatStudioSourcePressureAdapterSummary(index.studioSourcePressureAdapterSummary))
+    }
     if (index.productionApprovalLane.candidates > 0) {
       console.log(formatProductionApprovalLaneSummary(index.productionApprovalLane))
     }
@@ -393,10 +419,74 @@ function formatOperatorPacketIndexSummary(index, output) {
     `historicalExportReceiptAttention=${summary.historicalExportReceiptAttention ?? 0}`,
     `layerInterop=${summary.layerInteropState ?? 'layer-refs-not-attached'}`,
     `layerAttention=${summary.layerInteropAttention ?? 0}`,
+    `studioPressure=${summary.studioSourcePressureAdapterDecisionStatus ?? 'none'}`,
+    `studioPressureObservation=${summary.studioSourcePressureObservationStatus ?? 'absent'}`,
     `productionApprovalPending=${summary.productionApprovalPendingAuthority ?? 0}`,
     `ruleTraces=${summary.ruleResolutionTraces}`,
     `attention=${summary.attentionRows ?? summary.operatorHealthExplanations}`,
     `output=${output}`
+  ].join(' | ')
+}
+
+function summarizeStudioSourcePressureAdapter(records) {
+  const candidates = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal)
+    .sort(sortNewestRecordFirst)
+  const decisions = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal)
+    .sort(sortNewestRecordFirst)
+  const observations = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaStudioSourcePressureObservationResultLocal)
+    .sort(sortNewestRecordFirst)
+  const latestCandidate = candidates[0]
+  const latestDecision = decisions[0]
+  const latestObservation = observations[0]
+
+  return {
+    candidates: candidates.length,
+    decisions: decisions.length,
+    observations: observations.length,
+    latestCandidateRef: latestCandidate ? toInspectionRef(latestCandidate) : null,
+    latestDecisionRef: latestDecision ? toInspectionRef(latestDecision) : null,
+    latestObservationRef: latestObservation ? toInspectionRef(latestObservation) : null,
+    latestDecisionStatus: latestDecision?.record.decisionStatus ?? 'none',
+    observationStatus: latestObservation
+      ? latestObservation.record.observationStatus
+      : latestDecision?.record.decisionStatus === 'rejected_bounded_studio_source_pressure_observation'
+        ? 'skipped'
+        : 'absent',
+    targetGenericEnvelope: latestCandidate?.record.targetGenericEnvelope ?? 'layer_source_pressure_review.v0',
+    emittedEnvelopeSchemaVersion: latestObservation?.record.emittedEnvelopeSchemaVersion ?? 'layer-source-pressure-review.v0',
+    layerAdmissionApproved: false,
+    durableAppendApproved: false,
+    edgeActionQueued: false,
+    autoExecute: false,
+    operatorGuidanceOnly: true,
+    localOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false
+  }
+}
+
+function sortNewestRecordFirst(left, right) {
+  const rightTime = Date.parse(right.record.createdAt ?? '') || 0
+  const leftTime = Date.parse(left.record.createdAt ?? '') || 0
+  if (rightTime !== leftTime) return rightTime - leftTime
+  return (right.relativePath ?? '').localeCompare(left.relativePath ?? '')
+}
+
+function formatStudioSourcePressureAdapterSummary(summary) {
+  return [
+    `studio source pressure: candidates=${summary.candidates}`,
+    `decisions=${summary.decisions}`,
+    `observations=${summary.observations}`,
+    `decision=${summary.latestDecisionStatus}`,
+    `observation=${summary.observationStatus}`,
+    `target=${summary.targetGenericEnvelope}`,
+    'layerAdmission=false',
+    'durableAppend=false',
+    'edgeActionQueued=false'
   ].join(' | ')
 }
 
@@ -641,7 +731,10 @@ const indexableSchemas = new Set([
   artifactKinds.mediaExportCandidateLocal,
   artifactKinds.mediaExportPlanCandidateLocal,
   artifactKinds.mediaExportReceiptLocal,
-  artifactKinds.mediaRuleResolutionTraceLocal
+  artifactKinds.mediaRuleResolutionTraceLocal,
+  artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal,
+  artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal,
+  artifactKinds.mediaStudioSourcePressureObservationResultLocal
 ])
 
 function normalizeRecordPaths(records) {
@@ -977,7 +1070,10 @@ function kindForSchema(schema) {
     [artifactKinds.mediaExportCandidateLocal]: 'media-export-candidate',
     [artifactKinds.mediaExportPlanCandidateLocal]: 'media-export-plan-candidate',
     [artifactKinds.mediaExportReceiptLocal]: 'media-export-receipt',
-    [artifactKinds.mediaRuleResolutionTraceLocal]: 'media-rule-resolution-trace'
+    [artifactKinds.mediaRuleResolutionTraceLocal]: 'media-rule-resolution-trace',
+    [artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal]: 'media-studio-source-pressure-adapter-candidate',
+    [artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal]: 'media-studio-source-pressure-adapter-operator-decision',
+    [artifactKinds.mediaStudioSourcePressureObservationResultLocal]: 'media-studio-source-pressure-observation-result'
   }[schema] ?? schema
 }
 
@@ -1000,6 +1096,8 @@ function idForRecord(record) {
     record.planId ??
     record.renderReceiptId ??
     record.bundleId ??
+    record.adapterCandidateId ??
+    record.observationId ??
     record.traceId
 }
 

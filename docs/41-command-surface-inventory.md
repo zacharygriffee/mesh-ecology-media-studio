@@ -48,6 +48,7 @@ text is not the durable contract.
 | `npm run production:publication-authority-request` | yes | yes | `--print` | yes | packages reviewed local output evidence as a future publication/export authority request candidate; no ratifier, authority grant, publication, or production readiness |
 | `npm run production:local-output` | yes | yes | `--print` | yes | orchestrates existing rough-cut, review, render, export, authority-prereq, local package review, publication/export request candidate, handoff, operator-index, and Edge-compatible bundle commands; output-integrity posture is visible in summary/health/operator/Edge-compatible surfaces; `--disable-ffmpeg` keeps execution to contact-sheet and local package-copy evidence; no new authority, publication, Edge call, or production readiness |
 | `npm run record-io:stress` | yes | temp project by default | `--print` | yes | runs a bounded overlap of local output writers and summary/index/prereq readers to verify local JSON atomic-write/tolerant-read posture; ffmpeg is disabled by default; no authority, publication, Edge call, or mesh publication |
+| `npm run pressure:studio` | yes | yes | `--print` | yes | writes Studio-owned Edge and Layer pressure artifacts by default; `--adapter-chain` also writes the bounded Studio source-pressure adapter candidate, operator decision, and approved observation for Layer's generic `layer_source_pressure_review.v0` seam; `--adapter-decision rejected` writes candidate/decision only; no Layer admission, durable append, Edge authority, queue action, dispatch, or auto-execute |
 | `npm run provider:venice:rehearse-production` | yes | yes | `--print` | yes | composes the local Venice loop, approval proposal, capsule, bundle, inspection, operator index, and Edge-compatible bundle; no live provider unless explicitly requested |
 
 ## Byte And Resource Posture
@@ -115,9 +116,12 @@ default scans do not produce timestamp-only diffs.
 ## Bundle Completeness Posture
 
 `inspect:local-run` includes optional records that exist before the inspection
-packet is regenerated. `edge:compat` includes optional source records that exist
-before the compatibility bundle is regenerated. `export:inspection-bundle`
-copies records referenced by the selected inspection packet.
+packet is regenerated, including Studio source-pressure adapter records when
+`pressure:studio --adapter-chain` has been run. `operator:index` and
+`edge:compat` summarize those adapter refs, counts, decision status, observation
+presence, and generic Layer envelope as review-only local evidence.
+`export:inspection-bundle` copies records referenced by the selected inspection
+packet.
 
 When the operator wants a complete handoff-era bundle, the safe order is:
 
@@ -136,3 +140,7 @@ npm run export:inspection-bundle -- --project-dir examples/card-to-candidate
 The second `edge:compat` and `inspect:local-run` runs pick up optional operator
 records created by the first pass. This remains local-only and does not call
 Edge.
+
+Studio source-pressure adapter artifacts are runtime handoff evidence and are
+not committed in `examples/card-to-candidate`. Generate them before the
+inspection sequence when Layer review source evidence is needed.

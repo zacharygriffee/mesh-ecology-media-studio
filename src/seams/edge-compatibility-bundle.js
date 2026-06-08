@@ -42,7 +42,10 @@ const optionalSourceRecordPaths = Object.freeze({
   edgeHandoffCandidate: 'records/exports/media-edge-handoff-candidate.local.json',
   operatorDecisionRequest: 'records/requests/media-operator-decision-request.local.json',
   edgePressureArtifact: 'records/exports/media-edge-pressure-artifact.local.json',
-  layerPressureArtifact: 'records/exports/media-layer-pressure-artifact.local.json'
+  layerPressureArtifact: 'records/exports/media-layer-pressure-artifact.local.json',
+  studioSourcePressureAdapterCandidate: 'records/exports/media-studio-source-pressure-adapter-candidate.local.json',
+  studioSourcePressureAdapterDecision: 'records/exports/media-studio-source-pressure-adapter-operator-decision.local.json',
+  studioSourcePressureObservation: 'records/exports/media-studio-source-pressure-observation-result.local.json'
 })
 const optionalSourceRoots = Object.freeze([
   'records/approvals',
@@ -59,7 +62,10 @@ const optionalSourceSchemas = new Set([
   artifactKinds.mediaOperationCandidateLocal,
   artifactKinds.mediaRuleResolutionTraceLocal,
   artifactKinds.mediaEdgePressureArtifactLocal,
-  artifactKinds.mediaLayerPressureArtifactLocal
+  artifactKinds.mediaLayerPressureArtifactLocal,
+  artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal,
+  artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal,
+  artifactKinds.mediaStudioSourcePressureObservationResultLocal
 ])
 const productionSourceSchemas = new Set([
   artifactKinds.mediaProductionUnit,
@@ -134,6 +140,7 @@ export async function writeEdgeCompatibilityBundle({
   const readinessResourceSummary = createReadinessResourceSummary({ sources })
   const exportDeliverySummary = createExportDeliverySummary({ sources })
   const layerInteropSummary = createLayerInteropSummary({ sources })
+  const studioSourcePressureAdapterSummary = createStudioSourcePressureAdapterSummary({ sources })
   const createdAt = nowIso()
   const reviewEvidence = createStudioEdgeReviewEvidence({
     projectId,
@@ -197,6 +204,7 @@ export async function writeEdgeCompatibilityBundle({
     readinessResourceSummary,
     exportDeliverySummary,
     layerInteropSummary,
+    studioSourcePressureAdapterSummary,
     studioReviewEvidence: reviewEvidence,
     edgeWorkPacketCandidate: workPacketCandidate,
     edgeEvidenceImportCandidate: evidenceImportCandidate,
@@ -205,6 +213,7 @@ export async function writeEdgeCompatibilityBundle({
     warnings: [
       'Compatibility bundle is Studio-built, not Edge-built.',
       'Edge shape candidates target documented Edge review artifacts but are not Edge runtime verification.',
+      'Studio source-pressure adapter records are source evidence for Layer review only, not Edge action or Layer admission.',
       'No Edge process, REPL command, browser endpoint, repo mutation, live discovery, mesh publication, scheduler, or runner is called.',
       'Operator decisions remain review-only records; this bundle does not authorize execution or publication.'
     ],
@@ -238,7 +247,9 @@ export async function writeEdgeCompatibilityBundle({
       `historicalExportReceipts=${bundle.exportDeliverySummary.historicalExportReceipts}`,
       `localDeliveryEvidenceIntact=${bundle.exportDeliverySummary.localDeliveryEvidenceIntact}`,
       `outputIntegrityBlocking=${bundle.exportDeliverySummary.outputIntegrityBlockingIssues}`,
-      `outputIntegrityAttention=${bundle.exportDeliverySummary.outputIntegrityAttentionIssues}`
+      `outputIntegrityAttention=${bundle.exportDeliverySummary.outputIntegrityAttentionIssues}`,
+      `studioPressure=${bundle.studioSourcePressureAdapterSummary.latestDecisionStatus}`,
+      `studioPressureObservation=${bundle.studioSourcePressureAdapterSummary.observationStatus}`
     ].join(' | '))
   }
 
@@ -355,6 +366,71 @@ function createStudioEdgeReviewEvidence({ projectId, sourceRefs, readinessResour
 
   validateRequiredRecord(reviewEvidence)
   return reviewEvidence
+}
+
+function createStudioSourcePressureAdapterSummary({ sources }) {
+  const entries = Object.values(sources)
+  const candidates = entries
+    .filter((source) => source.record.schema === artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal)
+    .sort(sortNewestSourceFirst)
+  const decisions = entries
+    .filter((source) => source.record.schema === artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal)
+    .sort(sortNewestSourceFirst)
+  const observations = entries
+    .filter((source) => source.record.schema === artifactKinds.mediaStudioSourcePressureObservationResultLocal)
+    .sort(sortNewestSourceFirst)
+  const latestCandidate = candidates[0]
+  const latestDecision = decisions[0]
+  const latestObservation = observations[0]
+
+  return {
+    summaryKind: 'studio-source-pressure-adapter-summary',
+    candidates: candidates.length,
+    decisions: decisions.length,
+    observations: observations.length,
+    latestCandidateRef: latestCandidate ? localRecordRef({
+      kind: kindForSchema(latestCandidate.record.schema),
+      id: idForRecord(latestCandidate.record),
+      schema: latestCandidate.record.schema,
+      relativePath: latestCandidate.relativePath
+    }) : null,
+    latestDecisionRef: latestDecision ? localRecordRef({
+      kind: kindForSchema(latestDecision.record.schema),
+      id: idForRecord(latestDecision.record),
+      schema: latestDecision.record.schema,
+      relativePath: latestDecision.relativePath
+    }) : null,
+    latestObservationRef: latestObservation ? localRecordRef({
+      kind: kindForSchema(latestObservation.record.schema),
+      id: idForRecord(latestObservation.record),
+      schema: latestObservation.record.schema,
+      relativePath: latestObservation.relativePath
+    }) : null,
+    latestDecisionStatus: latestDecision?.record.decisionStatus ?? 'none',
+    observationStatus: latestObservation
+      ? latestObservation.record.observationStatus
+      : latestDecision?.record.decisionStatus === 'rejected_bounded_studio_source_pressure_observation'
+        ? 'skipped'
+        : 'absent',
+    targetGenericEnvelope: latestCandidate?.record.targetGenericEnvelope ?? 'layer_source_pressure_review.v0',
+    emittedEnvelopeSchemaVersion: latestObservation?.record.emittedEnvelopeSchemaVersion ?? 'layer-source-pressure-review.v0',
+    layerAdmissionApproved: false,
+    durableAppendApproved: false,
+    edgeActionQueued: false,
+    autoExecute: false,
+    operatorGuidanceOnly: true,
+    localOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false
+  }
+}
+
+function sortNewestSourceFirst(left, right) {
+  const rightTime = Date.parse(right.record.createdAt ?? '') || 0
+  const leftTime = Date.parse(left.record.createdAt ?? '') || 0
+  if (rightTime !== leftTime) return rightTime - leftTime
+  return (right.relativePath ?? '').localeCompare(left.relativePath ?? '')
 }
 
 function createLayerInteropSummary({ sources }) {
@@ -781,7 +857,10 @@ function kindForSchema(schema) {
     [artifactKinds.mediaByteDescriptorProposalLocal]: 'media-byte-descriptor-proposal',
     [artifactKinds.mediaLocalLayerResourceRefCandidateLocal]: 'media-local-layer-resource-ref-candidate',
     [artifactKinds.mediaOperationCandidateLocal]: 'media-operation-candidate',
-    [artifactKinds.mediaRuleResolutionTraceLocal]: 'media-rule-resolution-trace'
+    [artifactKinds.mediaRuleResolutionTraceLocal]: 'media-rule-resolution-trace',
+    [artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal]: 'media-studio-source-pressure-adapter-candidate',
+    [artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal]: 'media-studio-source-pressure-adapter-operator-decision',
+    [artifactKinds.mediaStudioSourcePressureObservationResultLocal]: 'media-studio-source-pressure-observation-result'
   }
 
   return schemaKinds[schema] ?? schema
@@ -818,6 +897,8 @@ function idForRecord(record) {
     record.proposalId ??
     record.byteDescriptorProposalId ??
     record.resourceRefCandidateId ??
+    record.adapterCandidateId ??
+    record.observationId ??
     record.operationId ??
     record.traceId ??
     record.schema

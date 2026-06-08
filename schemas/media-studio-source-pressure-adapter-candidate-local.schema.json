@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-studio-source-pressure-adapter-candidate-local.schema.json",
+  "title": "media.studio_source_pressure_adapter_candidate.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "adapterCandidateId",
+    "projectId",
+    "createdAt",
+    "mode",
+    "candidateKind",
+    "sourceRepo",
+    "targetRepo",
+    "targetGenericEnvelope",
+    "sourceLayerPressureArtifactRef",
+    "requestedLayerProfileRef",
+    "sourceRefs",
+    "blockedClaims",
+    "nonClaims",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "localTruthLabel",
+    "truthStatus"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.studio_source_pressure_adapter_candidate.local.v1"
+    },
+    "adapterCandidateId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "candidateKind": {
+      "const": "studio_source_pressure_adapter_candidate"
+    },
+    "sourceRepo": {
+      "const": "mesh-ecology-media-studio"
+    },
+    "targetRepo": {
+      "const": "mesh-ecology-layer"
+    },
+    "targetGenericEnvelope": {
+      "const": "layer_source_pressure_review.v0"
+    },
+    "sourceLayerPressureArtifactRef": {
+      "type": "object"
+    },
+    "requestedLayerProfileRef": {
+      "type": "object"
+    },
+    "sourceRefs": {
+      "type": "array"
+    },
+    "blockedClaims": {
+      "type": "array"
+    },
+    "nonClaims": {
+      "type": "object"
+    },
+    "studioSpecificLayerApiCreated": {
+      "const": false
+    },
+    "layerAdmissionApproved": {
+      "const": false
+    },
+    "durableAppendApproved": {
+      "const": false
+    },
+    "acceptedContinuityCreated": {
+      "const": false
+    },
+    "productionStorageSelected": {
+      "const": false
+    },
+    "writerReaderAdmissionChanged": {
+      "const": false
+    },
+    "edgeAuthorityCreated": {
+      "const": false
+    },
+    "payloadValidityFromRefDiscovery": {
+      "const": false
+    },
+    "autoExecute": {
+      "const": false
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    },
+    "providerTruth": {
+      "const": false
+    },
+    "edgeRuntimeBuilt": {
+      "const": false
+    },
+    "edgeRuntimeVerified": {
+      "const": false
+    }
+  }
+}

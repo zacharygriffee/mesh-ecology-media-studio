@@ -13,6 +13,9 @@ const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
 const defaultEdgeOutput = 'records/exports/media-edge-pressure-artifact.local.json'
 const defaultLayerOutput = 'records/exports/media-layer-pressure-artifact.local.json'
+const defaultAdapterCandidateOutput = 'records/exports/media-studio-source-pressure-adapter-candidate.local.json'
+const defaultAdapterDecisionOutput = 'records/exports/media-studio-source-pressure-adapter-operator-decision.local.json'
+const defaultAdapterObservationOutput = 'records/exports/media-studio-source-pressure-observation-result.local.json'
 const truthStatus = 'not mesh truth; not distributed proof; not ratified shared state'
 const genericLayerEnvelope = 'layer_source_pressure_review.v0'
 const genericLayerEnvelopeSchema = 'layer-source-pressure-review.v0'
@@ -34,11 +37,24 @@ const layerPressureSchemas = new Set([
   artifactKinds.mediaProductionBundleLocal
 ])
 
+const pressureOutputSchemas = new Set([
+  artifactKinds.mediaEdgePressureArtifactLocal,
+  artifactKinds.mediaLayerPressureArtifactLocal,
+  artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal,
+  artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal,
+  artifactKinds.mediaStudioSourcePressureObservationResultLocal
+])
+
 function parseArgs(argv) {
   const args = {
     projectDir: defaultProjectDir,
     edgeOutput: defaultEdgeOutput,
     layerOutput: defaultLayerOutput,
+    adapterCandidateOutput: defaultAdapterCandidateOutput,
+    adapterDecisionOutput: defaultAdapterDecisionOutput,
+    adapterObservationOutput: defaultAdapterObservationOutput,
+    adapterChain: false,
+    adapterDecision: 'approved',
     print: false,
     quiet: false
   }
@@ -56,6 +72,11 @@ function parseArgs(argv) {
     } else if (arg === '--layer-output') {
       args.layerOutput = next
       i += 1
+    } else if (arg === '--adapter-chain') {
+      args.adapterChain = true
+    } else if (arg === '--adapter-decision') {
+      args.adapterDecision = next
+      i += 1
     } else if (arg === '--print') {
       args.print = true
     } else if (arg === '--quiet') {
@@ -70,6 +91,11 @@ export async function writeStudioPressureArtifacts({
   projectDir = defaultProjectDir,
   edgeOutput = defaultEdgeOutput,
   layerOutput = defaultLayerOutput,
+  adapterCandidateOutput = defaultAdapterCandidateOutput,
+  adapterDecisionOutput = defaultAdapterDecisionOutput,
+  adapterObservationOutput = defaultAdapterObservationOutput,
+  adapterChain = false,
+  adapterDecision = 'approved',
   createdAt = nowIso(),
   print = false,
   quiet = false
@@ -77,12 +103,19 @@ export async function writeStudioPressureArtifacts({
   assertSafeLocalPath(edgeOutput)
   assertSafeLocalPath(layerOutput)
 
+  if (!['approved', 'rejected'].includes(adapterDecision)) {
+    throw new Error('adapter decision must be approved or rejected')
+  }
+
+  if (adapterChain) {
+    assertSafeLocalPath(adapterCandidateOutput)
+    assertSafeLocalPath(adapterDecisionOutput)
+    assertSafeLocalPath(adapterObservationOutput)
+  }
+
   const root = path.resolve(projectDir)
   const records = (await readProjectRecords(root))
-    .filter((entry) => ![
-      artifactKinds.mediaEdgePressureArtifactLocal,
-      artifactKinds.mediaLayerPressureArtifactLocal
-    ].includes(entry.record.schema))
+    .filter((entry) => !pressureOutputSchemas.has(entry.record.schema))
   const projectId = records.find((entry) => typeof entry.record.projectId === 'string')?.record.projectId ??
     path.basename(root)
   const edgeSourceRefs = refsForSchemas(records, edgePressureSchemas)
@@ -113,20 +146,112 @@ export async function writeStudioPressureArtifacts({
   await writeJsonAtomic(root, edgeOutput, edgePressureArtifact)
   await writeJsonAtomic(root, layerOutput, layerPressureArtifact)
 
+  const adapterResult = adapterChain
+    ? await writeStudioSourcePressureAdapterChain({
+      root,
+      projectId,
+      layerPressureArtifact,
+      layerOutput,
+      adapterCandidateOutput,
+      adapterDecisionOutput,
+      adapterObservationOutput,
+      adapterDecision,
+      createdAt
+    })
+    : {
+      enabled: false,
+      decision: null,
+      targetGenericEnvelope: genericLayerEnvelope,
+      emittedEnvelopeSchemaVersion: genericLayerEnvelopeSchema,
+      observationWritten: false,
+      outputs: {}
+    }
+
+  const result = {
+    edgePressureArtifact,
+    layerPressureArtifact,
+    adapter: adapterResult,
+    outputs: {
+      edgeOutput,
+      layerOutput,
+      ...adapterResult.outputs
+    }
+  }
+
   if (print) {
-    console.log(JSON.stringify({ edgePressureArtifact, layerPressureArtifact }, null, 2))
+    console.log(JSON.stringify(result, null, 2))
   } else if (!quiet) {
     console.log(`edge pressure artifact: ${edgeOutput}`)
     console.log(`layer pressure artifact: ${layerOutput}`)
+    console.log(`adapter chain: ${adapterResult.enabled ? adapterResult.decision : 'disabled'} | target=${genericLayerEnvelope}`)
+    if (adapterResult.enabled) {
+      console.log(`adapter candidate: ${adapterCandidateOutput}`)
+      console.log(`adapter decision: ${adapterDecisionOutput}`)
+      console.log(adapterResult.observationWritten
+        ? `adapter observation: ${adapterObservationOutput}`
+        : 'adapter observation: skipped')
+    }
     console.log('nonClaims: source pressure only; no Edge approval; no Layer admission; no production authority; productionReady=false')
   }
 
+  return result
+}
+
+async function writeStudioSourcePressureAdapterChain({
+  root,
+  projectId,
+  layerPressureArtifact,
+  layerOutput,
+  adapterCandidateOutput,
+  adapterDecisionOutput,
+  adapterObservationOutput,
+  adapterDecision,
+  createdAt
+}) {
+  const approved = adapterDecision === 'approved'
+  const candidate = createStudioSourcePressureAdapterCandidate({
+    projectId,
+    sourceLayerPressureArtifact: layerPressureArtifact,
+    sourceLayerPressureArtifactPath: layerOutput,
+    createdAt
+  })
+  const operatorDecision = createStudioSourcePressureAdapterOperatorDecision({
+    projectId,
+    sourceAdapterCandidate: candidate,
+    approved,
+    createdAt
+  })
+  const observationResult = approved
+    ? createStudioSourcePressureObservationResult({
+      projectId,
+      sourceAdapterCandidate: candidate,
+      sourceOperatorDecision: operatorDecision,
+      sourceLayerPressureArtifact: layerPressureArtifact,
+      createdAt
+    })
+    : null
+
+  await writeJsonAtomic(root, adapterCandidateOutput, candidate)
+  await writeJsonAtomic(root, adapterDecisionOutput, operatorDecision)
+
+  if (observationResult) {
+    await writeJsonAtomic(root, adapterObservationOutput, observationResult)
+  }
+
   return {
-    edgePressureArtifact,
-    layerPressureArtifact,
+    enabled: true,
+    decision: adapterDecision,
+    targetGenericEnvelope: genericLayerEnvelope,
+    emittedEnvelopeSchemaVersion: genericLayerEnvelopeSchema,
+    observationWritten: Boolean(observationResult),
+    candidate,
+    operatorDecision,
+    observationResult,
+    nonClaims: studioSourcePressureAdapterNonClaims(),
     outputs: {
-      edgeOutput,
-      layerOutput
+      adapterCandidateOutput,
+      adapterDecisionOutput,
+      ...(observationResult ? { adapterObservationOutput } : {})
     }
   }
 }
@@ -265,6 +390,7 @@ export function createLayerPressureArtifact({
 export function createStudioSourcePressureAdapterCandidate({
   projectId,
   sourceLayerPressureArtifact,
+  sourceLayerPressureArtifactPath = defaultLayerOutput,
   layerRef = defaultLayerRef,
   layerProfileRef = defaultLayerProfileRef,
   sourceRefs = sourceLayerPressureArtifact?.sourceRefs ?? [],
@@ -275,7 +401,7 @@ export function createStudioSourcePressureAdapterCandidate({
       kind: 'media-layer-pressure-artifact',
       id: sourceLayerPressureArtifact.pressureArtifactId,
       schema: sourceLayerPressureArtifact.schema,
-      relativePath: 'records/exports/media-layer-pressure-artifact.local.json'
+      relativePath: sourceLayerPressureArtifactPath
     })
     : {
       kind: 'media-layer-pressure-artifact',

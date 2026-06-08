@@ -46,10 +46,13 @@ const extraInspectionSchemas = new Set([
   'media.byte_descriptor_proposal.local.v1',
   'media.local_layer_resource_ref_candidate.local.v1',
   'media.operation_candidate.local.v1',
-    'media.rule_resolution_trace.local.v1',
-    artifactKinds.mediaEdgePressureArtifactLocal,
-    artifactKinds.mediaLayerPressureArtifactLocal,
-    'media.operator_packet_index.local.v1',
+  'media.rule_resolution_trace.local.v1',
+  artifactKinds.mediaEdgePressureArtifactLocal,
+  artifactKinds.mediaLayerPressureArtifactLocal,
+  artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal,
+  artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal,
+  artifactKinds.mediaStudioSourcePressureObservationResultLocal,
+  'media.operator_packet_index.local.v1',
   'media.edge_handoff_candidate.local.v1',
   'media.operator_decision_request.local.v1'
 ])
@@ -243,6 +246,9 @@ function nameForSchema(schema, relativePath) {
     'media.local_layer_resource_ref_candidate.local.v1': `resourceRefCandidate:${path.basename(relativePath, '.json')}`,
     'media.operation_candidate.local.v1': `operationCandidate:${path.basename(relativePath, '.json')}`,
     'media.rule_resolution_trace.local.v1': `ruleResolutionTrace:${path.basename(relativePath, '.json')}`,
+    [artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal]: `studioSourcePressureAdapterCandidate:${path.basename(relativePath, '.json')}`,
+    [artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal]: `studioSourcePressureAdapterDecision:${path.basename(relativePath, '.json')}`,
+    [artifactKinds.mediaStudioSourcePressureObservationResultLocal]: `studioSourcePressureObservation:${path.basename(relativePath, '.json')}`,
     'media.operator_packet_index.local.v1': `operatorPacketIndex:${path.basename(relativePath, '.json')}`,
     'media.edge_handoff_candidate.local.v1': `edgeHandoffCandidate:${path.basename(relativePath, '.json')}`,
     'media.operator_decision_request.local.v1': `operatorDecisionRequest:${path.basename(relativePath, '.json')}`
@@ -277,6 +283,9 @@ function kindForSchema(schema) {
     'media.local_layer_resource_ref_candidate.local.v1': 'media-local-layer-resource-ref-candidate',
     'media.operation_candidate.local.v1': 'media-operation-candidate',
     'media.rule_resolution_trace.local.v1': 'media-rule-resolution-trace',
+    [artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal]: 'media-studio-source-pressure-adapter-candidate',
+    [artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal]: 'media-studio-source-pressure-adapter-operator-decision',
+    [artifactKinds.mediaStudioSourcePressureObservationResultLocal]: 'media-studio-source-pressure-observation-result',
     'media.operator_packet_index.local.v1': 'media-operator-packet-index',
     'media.edge_handoff_candidate.local.v1': 'media-edge-handoff-candidate',
     'media.operator_decision_request.local.v1': 'media-operator-decision-request'

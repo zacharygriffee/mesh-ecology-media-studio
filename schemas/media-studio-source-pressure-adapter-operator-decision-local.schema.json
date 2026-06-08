@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-studio-source-pressure-adapter-operator-decision-local.schema.json",
+  "title": "media.studio_source_pressure_adapter_operator_decision.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "decisionId",
+    "projectId",
+    "createdAt",
+    "mode",
+    "decisionKind",
+    "decisionStatus",
+    "sourceAdapterCandidateRef",
+    "approvedOnly",
+    "blockedClaims",
+    "nonClaims",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "localTruthLabel",
+    "truthStatus"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.studio_source_pressure_adapter_operator_decision.local.v1"
+    },
+    "decisionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "decisionKind": {
+      "const": "studio_source_pressure_adapter_operator_decision"
+    },
+    "decisionStatus": {
+      "enum": [
+        "approved_bounded_studio_source_pressure_observation",
+        "rejected_bounded_studio_source_pressure_observation"
+      ]
+    },
+    "sourceAdapterCandidateRef": {
+      "type": "object"
+    },
+    "approvedOnly": {
+      "type": "array"
+    },
+    "blockedClaims": {
+      "type": "array"
+    },
+    "nonClaims": {
+      "type": "object"
+    },
+    "studioSourcePressureEmitted": {
+      "const": false
+    },
+    "layerAdmissionApproved": {
+      "const": false
+    },
+    "durableAppendApproved": {
+      "const": false
+    },
+    "acceptedContinuityCreated": {
+      "const": false
+    },
+    "productionStorageSelected": {
+      "const": false
+    },
+    "writerReaderAdmissionChanged": {
+      "const": false
+    },
+    "edgeAuthorityCreated": {
+      "const": false
+    },
+    "autoExecute": {
+      "const": false
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    },
+    "providerTruth": {
+      "const": false
+    },
+    "edgeRuntimeBuilt": {
+      "const": false
+    },
+    "edgeRuntimeVerified": {
+      "const": false
+    }
+  }
+}
