@@ -15,6 +15,8 @@ import {
 } from '../production/package-authority-freshness.js'
 import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
 import { writeProjectStatus, readProjectRecords } from '../seams/project-status.js'
+import { summarizeSwarmSeamPosture, formatSwarmSeamPostureFields } from '../seams/swarm-seam-posture.js'
+import { summarizeStudioSourcePressure } from '../seams/studio-source-pressure-summary.js'
 import { summarizeRecordReadDiagnostics } from '../local/atomic-json.js'
 
 const modulePath = fileURLToPath(import.meta.url)
@@ -75,6 +77,17 @@ export async function createMediaSummary({
     outputIntegritySummary: outputIntegrity
   })
   const layerInterop = summarizeLayerInteropFromRecords(records)
+  const studioSourcePressureSummary = summarizeStudioSourcePressure(records)
+  const studioSourcePressureAdapterSummary = studioSourcePressureSummary.studioSourcePressureAdapterSummary
+  const swarmSeamPosture = summarizeSwarmSeamPosture({
+    localPackagePosture,
+    adapterSummary: studioSourcePressureAdapterSummary,
+    edgeSourceRefs: studioSourcePressureSummary.edgeSourceRefs,
+    layerSourceRefs: studioSourcePressureSummary.layerSourceRefs,
+    missingEdgeSourceSchemas: studioSourcePressureSummary.missingEdgeSourceSchemas,
+    missingLayerSourceSchemas: studioSourcePressureSummary.missingLayerSourceSchemas,
+    layerInteropSummary: layerInterop
+  })
   const productionApprovalLane = summarizeProductionApprovalLane({
     assetRecords,
     records,
@@ -163,6 +176,8 @@ export async function createMediaSummary({
     outputIntegrity,
     packageAuthority,
     localPackagePosture,
+    studioSourcePressureAdapterSummary,
+    swarmSeamPosture,
     layerInterop,
     recordIO,
     productionApprovalLane,
@@ -323,6 +338,7 @@ function printMediaSummary(summary) {
     `attention=${summary.packageAuthority.attentionRows.length}`
   ].join(' | '))
   console.log(`local package posture: ${formatLocalPackagePostureFields(summary.localPackagePosture)}`)
+  console.log(`swarm seam posture: ${formatSwarmSeamPostureFields(summary.swarmSeamPosture)}`)
   console.log([
     `production approval: candidates=${summary.productionApprovalLane.candidates}`,
     `decisions=${summary.productionApprovalLane.localDecisions}`,

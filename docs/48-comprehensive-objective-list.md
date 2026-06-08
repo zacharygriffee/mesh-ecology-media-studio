@@ -78,8 +78,9 @@ storage decisions into Studio.
    - `inspect:local-run`, `operator:index`, and `edge:compat` expose adapter
      refs and counts without Layer admission, Edge action, queue action,
      dispatch, append, continuity, or production storage claims.
-   - `pressure:studio`, `operator:index`, and `edge:compat` report
-     `swarmSeamPosture` with `swarmProof=false` and `activation=false`.
+   - `media:summary`, `health:summary`, `pressure:studio`, `operator:index`,
+     and `edge:compat` report `swarmSeamPosture` with `swarmProof=false` and
+     `activation=false`.
 
 4. **Example And Fixture Discipline**
 
@@ -210,7 +211,7 @@ pressing the family swarm seams. Preferred order:
 2. run `production:package-rework` only when the latest package review requested
    changes or went stale;
 3. keep `media:summary`, `health:summary`, `operator:index`, and `edge:compat`
-   aligned with the shared local package posture;
+   aligned with the shared local package and swarm-seam postures;
 4. preserve source-pressure adapter evidence and swarm-seam posture as
    runtime-only review material;
 5. refresh docs/tests whenever an operator-visible command surface changes.

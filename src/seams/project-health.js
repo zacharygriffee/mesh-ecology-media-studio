@@ -14,6 +14,9 @@ import { summarizeExportReceipts } from '../production/export-receipts.js'
 import { evaluateLocalOutputIntegrity } from '../production/output-integrity.js'
 import { createProductionAuthorityPrerequisiteReport } from '../production/authority-prerequisites.js'
 import { summarizeLocalPackagePosture, formatLocalPackagePostureFields } from '../production/local-package-posture.js'
+import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
+import { summarizeSwarmSeamPosture, formatSwarmSeamPostureFields } from './swarm-seam-posture.js'
+import { summarizeStudioSourcePressure } from './studio-source-pressure-summary.js'
 import { writeJsonAtomic } from '../local/atomic-json.js'
 
 const modulePath = fileURLToPath(import.meta.url)
@@ -79,6 +82,18 @@ export async function writeProjectHealth({
     records,
     prerequisiteReport: authorityPrerequisiteReport,
     outputIntegritySummary
+  })
+  const layerInteropSummary = summarizeLayerInteropFromRecords(records)
+  const studioSourcePressureSummary = summarizeStudioSourcePressure(records)
+  const studioSourcePressureAdapterSummary = studioSourcePressureSummary.studioSourcePressureAdapterSummary
+  const swarmSeamPosture = summarizeSwarmSeamPosture({
+    localPackagePosture,
+    adapterSummary: studioSourcePressureAdapterSummary,
+    edgeSourceRefs: studioSourcePressureSummary.edgeSourceRefs,
+    layerSourceRefs: studioSourcePressureSummary.layerSourceRefs,
+    missingEdgeSourceSchemas: studioSourcePressureSummary.missingEdgeSourceSchemas,
+    missingLayerSourceSchemas: studioSourcePressureSummary.missingLayerSourceSchemas,
+    layerInteropSummary
   })
   const renderExportCandidateHealthExplanations = renderExportCandidateSummary.attentionRows.map((row) => ({
     subjectRef: {
@@ -185,6 +200,8 @@ export async function writeProjectHealth({
     exportReceiptHealthExplanations,
     outputIntegritySummary,
     localPackagePosture,
+    studioSourcePressureAdapterSummary,
+    swarmSeamPosture,
     outputIntegrityHealthExplanations,
     renderReceiptHealthExplanations: renderReceiptSummary.attentionRows.map((row) => ({
       subjectRef: row.receiptRef,
@@ -305,6 +322,7 @@ function printHealthSummary(health, output) {
     `exportReceipts=${health.outputIntegritySummary?.exportReceipts ?? 0}`
   ].join(' | '))
   console.log(`localPackagePosture: ${formatLocalPackagePostureFields(health.localPackagePosture)}`)
+  console.log(`swarmSeamPosture: ${formatSwarmSeamPostureFields(health.swarmSeamPosture)}`)
   for (const explanation of health.operatorHealthExplanations ?? []) {
     console.log(formatHealthExplanation(explanation))
   }

@@ -9,6 +9,7 @@ import { promisify } from 'node:util'
 import { artifactKinds } from '../src/contracts/artifact-kinds.js'
 import { readSchema, validateRequiredRecord } from '../src/contracts/schemas.js'
 import { writeByteDescriptorProposals } from '../src/assets/byte-descriptor-proposal.js'
+import { writeMediaSummary } from '../src/assets/media-summary.js'
 import { writeApprovalProposal } from '../src/review/approval-proposal.js'
 import { writeOperatorDecisionRequest } from '../src/review/operator-decision-request.js'
 import { runFirstWedge } from '../src/local/run-first-wedge.js'
@@ -30,6 +31,7 @@ import {
   writeStudioPressureArtifacts
 } from '../src/seams/studio-pressure-artifacts.js'
 import { summarizeSwarmSeamPosture } from '../src/seams/swarm-seam-posture.js'
+import { summarizeStudioSourcePressure } from '../src/seams/studio-source-pressure-summary.js'
 
 const pressureOutputSchemas = new Set([
   artifactKinds.mediaEdgePressureArtifactLocal,
@@ -185,6 +187,83 @@ test('Studio swarm seam posture classifies review-only readiness states', () => 
     ...pressureRefs()
   })
   assert.equal(integrityBlocked.state, 'integrity_blocked')
+})
+
+test('Studio source-pressure summary feeds shared swarm seam posture inputs', () => {
+  const {
+    layerPressureArtifact,
+    candidate,
+    operatorDecision,
+    observationResult
+  } = buildStudioSourcePressureAdapterFixture()
+  const edgePressureArtifact = {
+    schema: artifactKinds.mediaEdgePressureArtifactLocal,
+    pressureArtifactId: 'edge-pressure-test',
+    projectId: candidate.projectId,
+    createdAt: candidate.createdAt,
+    sourceRefs: [
+      { kind: 'media-edge-inspection-packet', id: 'edge-ref', schema: artifactKinds.mediaEdgeInspectionPacketLocal }
+    ],
+    readinessBlockers: []
+  }
+  const records = [
+    { record: edgePressureArtifact, relativePath: 'records/exports/media-edge-pressure-artifact.local.json' },
+    { record: layerPressureArtifact, relativePath: 'records/exports/media-layer-pressure-artifact.local.json' },
+    { record: candidate, relativePath: 'records/exports/media-studio-source-pressure-adapter-candidate.local.json' },
+    { record: operatorDecision, relativePath: 'records/exports/media-studio-source-pressure-adapter-operator-decision.local.json' },
+    { record: observationResult, relativePath: 'records/exports/media-studio-source-pressure-observation-result.local.json' }
+  ]
+
+  const sourcePressure = summarizeStudioSourcePressure(records)
+  assert.equal(sourcePressure.studioSourcePressureAdapterSummary.candidates, 1)
+  assert.equal(sourcePressure.studioSourcePressureAdapterSummary.decisions, 1)
+  assert.equal(sourcePressure.studioSourcePressureAdapterSummary.observations, 1)
+  assert.equal(sourcePressure.studioSourcePressureAdapterSummary.latestDecisionStatus, 'approved_bounded_studio_source_pressure_observation')
+  assert.equal(sourcePressure.studioSourcePressureAdapterSummary.observationStatus, 'studio_source_pressure_routed_through_generic_layer_seam')
+  assert.equal(sourcePressure.edgeSourceRefs.length, edgePressureArtifact.sourceRefs.length)
+  assert.equal(sourcePressure.layerSourceRefs.length, layerPressureArtifact.sourceRefs.length)
+
+  const ready = summarizeSwarmSeamPosture({
+    localPackagePosture: completeLocalPackagePosture(),
+    adapterSummary: sourcePressure.studioSourcePressureAdapterSummary,
+    edgeSourceRefs: sourcePressure.edgeSourceRefs,
+    layerSourceRefs: sourcePressure.layerSourceRefs,
+    missingEdgeSourceSchemas: sourcePressure.missingEdgeSourceSchemas,
+    missingLayerSourceSchemas: sourcePressure.missingLayerSourceSchemas
+  })
+  assert.equal(ready.state, 'ready_for_review_only_swarm_pressure')
+
+  const rejectedDecision = {
+    ...operatorDecision,
+    decisionStatus: 'rejected_bounded_studio_source_pressure_observation'
+  }
+  const rejectedSourcePressure = summarizeStudioSourcePressure([
+    { record: edgePressureArtifact, relativePath: 'records/exports/media-edge-pressure-artifact.local.json' },
+    { record: layerPressureArtifact, relativePath: 'records/exports/media-layer-pressure-artifact.local.json' },
+    { record: candidate, relativePath: 'records/exports/media-studio-source-pressure-adapter-candidate.local.json' },
+    { record: rejectedDecision, relativePath: 'records/exports/media-studio-source-pressure-adapter-operator-decision.local.json' }
+  ])
+  assert.equal(rejectedSourcePressure.studioSourcePressureAdapterSummary.observationStatus, 'skipped')
+  const rejected = summarizeSwarmSeamPosture({
+    localPackagePosture: completeLocalPackagePosture(),
+    adapterSummary: rejectedSourcePressure.studioSourcePressureAdapterSummary,
+    edgeSourceRefs: rejectedSourcePressure.edgeSourceRefs,
+    layerSourceRefs: rejectedSourcePressure.layerSourceRefs
+  })
+  assert.equal(rejected.state, 'adapter_hold')
+
+  const missingChain = summarizeStudioSourcePressure([
+    { record: edgePressureArtifact, relativePath: 'records/exports/media-edge-pressure-artifact.local.json' },
+    { record: layerPressureArtifact, relativePath: 'records/exports/media-layer-pressure-artifact.local.json' }
+  ])
+  const missing = summarizeSwarmSeamPosture({
+    localPackagePosture: completeLocalPackagePosture(),
+    adapterSummary: missingChain.studioSourcePressureAdapterSummary,
+    edgeSourceRefs: missingChain.edgeSourceRefs,
+    layerSourceRefs: missingChain.layerSourceRefs
+  })
+  assert.equal(missing.state, 'source_pressure_attention')
+  assert.ok(missing.attentionCodes.includes('source_pressure_adapter_chain_missing'))
 })
 
 test('Studio source-pressure adapter candidate targets the generic Layer envelope only', () => {
@@ -508,6 +587,19 @@ test('Studio pressure rejected adapter chain surfaces without observation error'
   assert.ok(inspection.packet.artifactKinds.includes(artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal))
   assert.ok(inspection.packet.artifactKinds.includes(artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal))
   assert.equal(inspection.packet.artifactKinds.includes(artifactKinds.mediaStudioSourcePressureObservationResultLocal), false)
+
+  const mediaSummary = await writeMediaSummary({ projectDir: dir })
+  assert.equal(mediaSummary.swarmSeamPosture.state, 'local_package_attention')
+  assert.ok(mediaSummary.swarmSeamPosture.attentionCodes.includes('adapter_hold'))
+  assert.equal(mediaSummary.studioSourcePressureAdapterSummary.latestDecisionStatus, 'rejected_bounded_studio_source_pressure_observation')
+  assert.equal(mediaSummary.studioSourcePressureAdapterSummary.observationStatus, 'skipped')
+
+  const healthSummary = await writeProjectHealth({ projectDir: dir, summary: true })
+  assert.equal(healthSummary.health.swarmSeamPosture.state, 'local_package_attention')
+  assert.ok(healthSummary.health.swarmSeamPosture.attentionCodes.includes('adapter_hold'))
+  assert.equal(healthSummary.health.studioSourcePressureAdapterSummary.latestDecisionStatus, 'rejected_bounded_studio_source_pressure_observation')
+  assert.equal(healthSummary.health.studioSourcePressureAdapterSummary.observationStatus, 'skipped')
+  assert.equal(healthSummary.health.blockingIssues.includes('source-pressure-attention'), false)
 
   const indexResult = await writeOperatorPacketIndex({ projectDir: dir, quiet: true })
   assert.equal(indexResult.index.studioSourcePressureAdapterCandidateRefs.length, 1)

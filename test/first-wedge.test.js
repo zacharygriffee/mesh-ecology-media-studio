@@ -4147,6 +4147,31 @@ test('local production output runner creates reviewable delivery without authori
     line.includes('swarmProof=false') &&
     line.includes('activation=false')
   ))
+  const pressureMediaSummary = await captureConsole(() => writeMediaSummary({ projectDir: dir }))
+  assert.equal(pressureMediaSummary.result.swarmSeamPosture.state, 'ready_for_review_only_swarm_pressure')
+  assert.equal(pressureMediaSummary.result.swarmSeamPosture.publicSwarmProof, false)
+  assert.equal(pressureMediaSummary.result.swarmSeamPosture.swarmRuntimeActivated, false)
+  assert.equal(pressureMediaSummary.result.studioSourcePressureAdapterSummary.latestDecisionStatus, 'approved_bounded_studio_source_pressure_observation')
+  assert.equal(pressureMediaSummary.result.studioSourcePressureAdapterSummary.observationStatus, 'studio_source_pressure_routed_through_generic_layer_seam')
+  assert.ok(pressureMediaSummary.lines.some((line) =>
+    line.startsWith('swarm seam posture:') &&
+    line.includes('swarmSeam=ready_for_review_only_swarm_pressure') &&
+    line.includes('swarmProof=false') &&
+    line.includes('activation=false')
+  ))
+  const pressureHealthSummary = await captureConsole(() => writeProjectHealth({ projectDir: dir, summary: true }))
+  assert.equal(pressureHealthSummary.result.health.swarmSeamPosture.state, 'ready_for_review_only_swarm_pressure')
+  assert.equal(pressureHealthSummary.result.health.swarmSeamPosture.publicSwarmProof, false)
+  assert.equal(pressureHealthSummary.result.health.swarmSeamPosture.swarmRuntimeActivated, false)
+  assert.equal(pressureHealthSummary.result.health.studioSourcePressureAdapterSummary.latestDecisionStatus, 'approved_bounded_studio_source_pressure_observation')
+  assert.equal(pressureHealthSummary.result.health.studioSourcePressureAdapterSummary.observationStatus, 'studio_source_pressure_routed_through_generic_layer_seam')
+  assert.equal(pressureHealthSummary.result.health.blockingIssues.includes('source-pressure-attention'), false)
+  assert.ok(pressureHealthSummary.lines.some((line) =>
+    line.startsWith('swarmSeamPosture:') &&
+    line.includes('swarmSeam=ready_for_review_only_swarm_pressure') &&
+    line.includes('swarmProof=false') &&
+    line.includes('activation=false')
+  ))
   const pressureOperatorIndex = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
   assert.equal(pressureOperatorIndex.result.index.swarmSeamPosture.state, 'ready_for_review_only_swarm_pressure')
   assert.equal(pressureOperatorIndex.result.index.summary.swarmSeamState, 'ready_for_review_only_swarm_pressure')
@@ -5041,6 +5066,9 @@ test('local output integrity blocks production package when export delivery byte
   assert.equal(mediaSummary.result.localPackagePosture.packageState, 'output_integrity_blocked')
   assert.equal(mediaSummary.result.localPackagePosture.latestReviewPosture, 'reviewed_stale')
   assert.equal(mediaSummary.result.localPackagePosture.integrityPosture, 'blocked')
+  assert.equal(mediaSummary.result.swarmSeamPosture.state, 'integrity_blocked')
+  assert.equal(mediaSummary.result.swarmSeamPosture.publicSwarmProof, false)
+  assert.equal(mediaSummary.result.swarmSeamPosture.swarmRuntimeActivated, false)
   assert.ok(mediaSummary.lines.some((line) =>
     line.includes('output integrity: deliveryIntact=0') &&
     line.includes('activeDeliveryIntact=0') &&
@@ -5052,6 +5080,12 @@ test('local output integrity blocks production package when export delivery byte
     line.includes('review=reviewed_stale') &&
     line.includes('integrity=blocked')
   ))
+  assert.ok(mediaSummary.lines.some((line) =>
+    line.startsWith('swarm seam posture:') &&
+    line.includes('swarmSeam=integrity_blocked') &&
+    line.includes('swarmProof=false') &&
+    line.includes('activation=false')
+  ))
   assert.ok(mediaSummary.lines.some((line) => line.startsWith('package authority: localPackageReviews=1 | needsRework=0 | staleReviews=1 | publicationAuthorityRequests=1 | staleRequests=1 | blockingRequests=1')))
   assert.ok(mediaSummary.lines.some((line) => line.includes('package-authority:') && line.includes('current_output_integrity_blocking')))
   assert.ok(mediaSummary.lines.some((line) => line.includes('output-integrity blocking:') && line.includes('missing_export_delivery_bytes')))
@@ -5062,6 +5096,9 @@ test('local output integrity blocks production package when export delivery byte
   assert.equal(healthSummary.result.health.localPackagePosture.packageState, 'output_integrity_blocked')
   assert.equal(healthSummary.result.health.localPackagePosture.latestReviewPosture, 'reviewed_stale')
   assert.equal(healthSummary.result.health.localPackagePosture.integrityPosture, 'blocked')
+  assert.equal(healthSummary.result.health.swarmSeamPosture.state, 'integrity_blocked')
+  assert.equal(healthSummary.result.health.swarmSeamPosture.publicSwarmProof, false)
+  assert.equal(healthSummary.result.health.swarmSeamPosture.swarmRuntimeActivated, false)
   assert.ok(healthSummary.result.health.blockingIssues.includes('output-integrity-blocking'))
   assert.ok(healthSummary.lines.some((line) =>
     line.includes('outputIntegrity: deliveryIntact=0') &&
@@ -5074,6 +5111,12 @@ test('local output integrity blocks production package when export delivery byte
     line.includes('review=reviewed_stale') &&
     line.includes('integrity=blocked')
   ))
+  assert.ok(healthSummary.lines.some((line) =>
+    line.startsWith('swarmSeamPosture:') &&
+    line.includes('swarmSeam=integrity_blocked') &&
+    line.includes('swarmProof=false') &&
+    line.includes('activation=false')
+  ))
   assert.ok(healthSummary.lines.some((line) => line.includes('media-export-receipt:') && line.includes('missing_export_delivery_bytes')))
 
   await writeProductionAuthorityPrerequisiteReport({ projectDir: dir, quiet: true })
@@ -5083,6 +5126,7 @@ test('local output integrity blocks production package when export delivery byte
   assert.equal(operatorIndex.result.index.summary.outputIntegrityBlockingIssues > 0, true)
   assert.equal(operatorIndex.result.index.localPackagePosture.packageState, 'output_integrity_blocked')
   assert.equal(operatorIndex.result.index.localPackagePosture.integrityPosture, 'blocked')
+  assert.equal(operatorIndex.result.index.swarmSeamPosture.state, 'integrity_blocked')
   assert.equal(operatorIndex.result.index.summary.localPackageState, 'output_integrity_blocked')
   assert.ok(operatorIndex.lines.some((line) =>
     line.includes('localDeliveryEvidenceIntact=0') &&
@@ -5099,7 +5143,9 @@ test('local output integrity blocks production package when export delivery byte
   assert.equal(edgeBundle.result.bundle.exportDeliverySummary.outputIntegrityBlockingIssues > 0, true)
   assert.equal(edgeBundle.result.bundle.localPackagePosture.packageState, 'output_integrity_blocked')
   assert.equal(edgeBundle.result.bundle.localPackagePosture.integrityPosture, 'blocked')
+  assert.equal(edgeBundle.result.bundle.swarmSeamPosture.state, 'integrity_blocked')
   assert.equal(edgeBundle.result.bundle.studioReviewEvidence.localPackagePosture.packageState, 'output_integrity_blocked')
+  assert.equal(edgeBundle.result.bundle.studioReviewEvidence.swarmSeamPosture.state, 'integrity_blocked')
   assert.ok(edgeBundle.lines.some((line) =>
     line.includes('edge source refs: authorityPrereqs=') &&
     line.includes('outputIntegrityBlocking=') &&

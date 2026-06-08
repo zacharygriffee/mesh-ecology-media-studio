@@ -12,6 +12,7 @@ import { summarizeLocalPackagePosture } from '../production/local-package-postur
 import { latestLocalPackageReviewEntry } from '../production/package-authority-freshness.js'
 import { isDiscoverableJsonPath, readJsonFileTolerant, writeJsonAtomic } from '../local/atomic-json.js'
 import { summarizeSwarmSeamPosture, formatSwarmSeamPostureFields } from './swarm-seam-posture.js'
+import { summarizeStudioSourcePressure } from './studio-source-pressure-summary.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
@@ -143,12 +144,16 @@ export async function writeEdgeCompatibilityBundle({
   const exportDeliverySummary = createExportDeliverySummary({ sources })
   const localPackagePosture = createLocalPackagePostureSummary({ sources })
   const layerInteropSummary = createLayerInteropSummary({ sources })
-  const studioSourcePressureAdapterSummary = createStudioSourcePressureAdapterSummary({ sources })
-  const swarmSeamPosture = createSwarmSeamPostureSummary({
-    sources,
+  const studioSourcePressureSummary = summarizeStudioSourcePressure(sources)
+  const studioSourcePressureAdapterSummary = studioSourcePressureSummary.studioSourcePressureAdapterSummary
+  const swarmSeamPosture = summarizeSwarmSeamPosture({
     localPackagePosture,
-    layerInteropSummary,
-    studioSourcePressureAdapterSummary
+    adapterSummary: studioSourcePressureAdapterSummary,
+    edgeSourceRefs: studioSourcePressureSummary.edgeSourceRefs,
+    layerSourceRefs: studioSourcePressureSummary.layerSourceRefs,
+    missingEdgeSourceSchemas: studioSourcePressureSummary.missingEdgeSourceSchemas,
+    missingLayerSourceSchemas: studioSourcePressureSummary.missingLayerSourceSchemas,
+    layerInteropSummary
   })
   const createdAt = nowIso()
   const reviewEvidence = createStudioEdgeReviewEvidence({
@@ -395,89 +400,6 @@ function createStudioEdgeReviewEvidence({
 
   validateRequiredRecord(reviewEvidence)
   return reviewEvidence
-}
-
-function createSwarmSeamPostureSummary({
-  sources,
-  localPackagePosture,
-  layerInteropSummary,
-  studioSourcePressureAdapterSummary
-}) {
-  const edgePressure = sources.edgePressureArtifact?.record
-  const layerPressure = sources.layerPressureArtifact?.record
-  return summarizeSwarmSeamPosture({
-    localPackagePosture,
-    adapterSummary: studioSourcePressureAdapterSummary,
-    edgeSourceRefs: edgePressure?.sourceRefs ?? [],
-    layerSourceRefs: layerPressure?.sourceRefs ?? [],
-    missingEdgeSourceSchemas: missingSourceSchemasFromPressure(edgePressure),
-    missingLayerSourceSchemas: missingSourceSchemasFromPressure(layerPressure),
-    layerInteropSummary
-  })
-}
-
-function missingSourceSchemasFromPressure(pressureArtifact) {
-  return (pressureArtifact?.readinessBlockers ?? [])
-    .filter((blocker) => typeof blocker === 'string' && blocker.startsWith('missing_source_schema:'))
-    .map((blocker) => blocker.slice('missing_source_schema:'.length))
-}
-
-function createStudioSourcePressureAdapterSummary({ sources }) {
-  const entries = Object.values(sources)
-  const candidates = entries
-    .filter((source) => source.record.schema === artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal)
-    .sort(sortNewestSourceFirst)
-  const decisions = entries
-    .filter((source) => source.record.schema === artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal)
-    .sort(sortNewestSourceFirst)
-  const observations = entries
-    .filter((source) => source.record.schema === artifactKinds.mediaStudioSourcePressureObservationResultLocal)
-    .sort(sortNewestSourceFirst)
-  const latestCandidate = candidates[0]
-  const latestDecision = decisions[0]
-  const latestObservation = observations[0]
-
-  return {
-    summaryKind: 'studio-source-pressure-adapter-summary',
-    candidates: candidates.length,
-    decisions: decisions.length,
-    observations: observations.length,
-    latestCandidateRef: latestCandidate ? localRecordRef({
-      kind: kindForSchema(latestCandidate.record.schema),
-      id: idForRecord(latestCandidate.record),
-      schema: latestCandidate.record.schema,
-      relativePath: latestCandidate.relativePath
-    }) : null,
-    latestDecisionRef: latestDecision ? localRecordRef({
-      kind: kindForSchema(latestDecision.record.schema),
-      id: idForRecord(latestDecision.record),
-      schema: latestDecision.record.schema,
-      relativePath: latestDecision.relativePath
-    }) : null,
-    latestObservationRef: latestObservation ? localRecordRef({
-      kind: kindForSchema(latestObservation.record.schema),
-      id: idForRecord(latestObservation.record),
-      schema: latestObservation.record.schema,
-      relativePath: latestObservation.relativePath
-    }) : null,
-    latestDecisionStatus: latestDecision?.record.decisionStatus ?? 'none',
-    observationStatus: latestObservation
-      ? latestObservation.record.observationStatus
-      : latestDecision?.record.decisionStatus === 'rejected_bounded_studio_source_pressure_observation'
-        ? 'skipped'
-        : 'absent',
-    targetGenericEnvelope: latestCandidate?.record.targetGenericEnvelope ?? 'layer_source_pressure_review.v0',
-    emittedEnvelopeSchemaVersion: latestObservation?.record.emittedEnvelopeSchemaVersion ?? 'layer-source-pressure-review.v0',
-    layerAdmissionApproved: false,
-    durableAppendApproved: false,
-    edgeActionQueued: false,
-    autoExecute: false,
-    operatorGuidanceOnly: true,
-    localOnly: true,
-    meshTruth: false,
-    distributedProof: false,
-    ratifiedSharedState: false
-  }
 }
 
 function createLocalPackagePostureSummary({ sources }) {

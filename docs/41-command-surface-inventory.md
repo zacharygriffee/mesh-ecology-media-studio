@@ -20,8 +20,8 @@ text is not the durable contract.
 | `npm run promote:candidate` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
 | `npm run reference:ingest` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
 | `npm run media:import` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
-| `npm run media:summary` | yes | no | `--print` | reads local refs | refreshes project status snapshot; includes provider-loop, approval-lane, production-capsule, package-authority freshness, shared local package posture, Layer interop attention, and safe-next posture |
-| `npm run health:summary` | yes | yes | `--print` | yes | runtime health uses fresh timestamp; reports shared local package posture without adding package-only health blockers |
+| `npm run media:summary` | yes | no | `--print` | reads local refs | refreshes project status snapshot; includes provider-loop, approval-lane, production-capsule, package-authority freshness, shared local package posture, swarm seam posture, Layer interop attention, and safe-next posture |
+| `npm run health:summary` | yes | yes | `--print` | yes | runtime health uses fresh timestamp; reports shared local package posture and swarm seam posture without adding package-only or swarm-readiness health blockers |
 | `npm run derivatives:thumbnail` | yes | yes | no | yes | runtime thumbnails and records use fresh timestamps |
 | `npm run review:candidates` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
 | `npm run approval:proposal` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
@@ -175,10 +175,11 @@ inspection sequence when Layer review source evidence is needed.
 
 ## Swarm Seam Posture
 
-`pressure:studio`, `operator:index`, and `edge:compat` expose additive
-`swarmSeamPosture` fields for the local proof stage before future family swarm
-seam pressure. Compact output uses `swarmSeam=<state>`, `swarmProof=false`,
-`activation=false`, and a safe next action. Valid states are
+`media:summary`, `health:summary`, `pressure:studio`, `operator:index`, and
+`edge:compat` expose additive `swarmSeamPosture` fields for the local proof
+stage before future family swarm seam pressure. Compact output uses
+`swarmSeam=<state>`, `swarmProof=false`, `activation=false`, and a safe next
+action. Valid states are
 `ready_for_review_only_swarm_pressure`, `local_package_attention`,
 `source_pressure_attention`, `adapter_hold`, and `integrity_blocked`.
 
@@ -187,6 +188,8 @@ The safe local order is:
 ```bash
 npm run production:local-output -- --project-dir examples/card-to-candidate
 npm run pressure:studio -- --project-dir examples/card-to-candidate --adapter-chain
+npm run media:summary -- --project-dir examples/card-to-candidate
+npm run health:summary -- --project-dir examples/card-to-candidate
 npm run inspect:local-run -- --project-dir examples/card-to-candidate
 npm run operator:index -- --project-dir examples/card-to-candidate
 npm run edge:compat -- --project-dir examples/card-to-candidate

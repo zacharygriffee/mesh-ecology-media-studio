@@ -15,6 +15,7 @@ import { summarizeLocalPackagePosture } from '../production/local-package-postur
 import { evaluateLocalOutputIntegrity } from '../production/output-integrity.js'
 import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
 import { summarizeSwarmSeamPosture, formatSwarmSeamPostureFields } from './swarm-seam-posture.js'
+import { summarizeStudioSourcePressure } from './studio-source-pressure-summary.js'
 import {
   isDiscoverableJsonPath,
   readJsonFileTolerant,
@@ -127,7 +128,8 @@ export async function writeOperatorPacketIndex({
   const studioSourcePressureObservationRefs = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaStudioSourcePressureObservationResultLocal)
     .map(toInspectionRef)
-  const studioSourcePressureAdapterSummary = summarizeStudioSourcePressureAdapter(records)
+  const studioSourcePressureSummary = summarizeStudioSourcePressure(records)
+  const studioSourcePressureAdapterSummary = studioSourcePressureSummary.studioSourcePressureAdapterSummary
   const providerLoopStatuses = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProviderLoopStatusLocal)
     .map((entry) => summarizeProviderLoopStatus(entry.record, entry.relativePath))
@@ -176,10 +178,10 @@ export async function writeOperatorPacketIndex({
   const swarmSeamPosture = summarizeSwarmSeamPosture({
     localPackagePosture,
     adapterSummary: studioSourcePressureAdapterSummary,
-    edgeSourceRefs: latestPressureSourceRefs(records, artifactKinds.mediaEdgePressureArtifactLocal),
-    layerSourceRefs: latestPressureSourceRefs(records, artifactKinds.mediaLayerPressureArtifactLocal),
-    missingEdgeSourceSchemas: latestPressureMissingSourceSchemas(records, artifactKinds.mediaEdgePressureArtifactLocal),
-    missingLayerSourceSchemas: latestPressureMissingSourceSchemas(records, artifactKinds.mediaLayerPressureArtifactLocal),
+    edgeSourceRefs: studioSourcePressureSummary.edgeSourceRefs,
+    layerSourceRefs: studioSourcePressureSummary.layerSourceRefs,
+    missingEdgeSourceSchemas: studioSourcePressureSummary.missingEdgeSourceSchemas,
+    missingLayerSourceSchemas: studioSourcePressureSummary.missingLayerSourceSchemas,
     layerInteropSummary: layerInterop
   })
   const productionApprovalLane = summarizeProductionApprovalLane({
@@ -462,70 +464,6 @@ function formatOperatorPacketIndexSummary(index, output) {
     `attention=${summary.attentionRows ?? summary.operatorHealthExplanations}`,
     `output=${output}`
   ].join(' | ')
-}
-
-function latestPressureSourceRefs(records, schema) {
-  return latestPressureRecord(records, schema)?.record.sourceRefs ?? []
-}
-
-function latestPressureMissingSourceSchemas(records, schema) {
-  return (latestPressureRecord(records, schema)?.record.readinessBlockers ?? [])
-    .filter((blocker) => typeof blocker === 'string' && blocker.startsWith('missing_source_schema:'))
-    .map((blocker) => blocker.slice('missing_source_schema:'.length))
-}
-
-function latestPressureRecord(records, schema) {
-  return records
-    .filter((entry) => entry.record.schema === schema)
-    .sort(sortNewestRecordFirst)[0]
-}
-
-function summarizeStudioSourcePressureAdapter(records) {
-  const candidates = records
-    .filter((entry) => entry.record.schema === artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal)
-    .sort(sortNewestRecordFirst)
-  const decisions = records
-    .filter((entry) => entry.record.schema === artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal)
-    .sort(sortNewestRecordFirst)
-  const observations = records
-    .filter((entry) => entry.record.schema === artifactKinds.mediaStudioSourcePressureObservationResultLocal)
-    .sort(sortNewestRecordFirst)
-  const latestCandidate = candidates[0]
-  const latestDecision = decisions[0]
-  const latestObservation = observations[0]
-
-  return {
-    candidates: candidates.length,
-    decisions: decisions.length,
-    observations: observations.length,
-    latestCandidateRef: latestCandidate ? toInspectionRef(latestCandidate) : null,
-    latestDecisionRef: latestDecision ? toInspectionRef(latestDecision) : null,
-    latestObservationRef: latestObservation ? toInspectionRef(latestObservation) : null,
-    latestDecisionStatus: latestDecision?.record.decisionStatus ?? 'none',
-    observationStatus: latestObservation
-      ? latestObservation.record.observationStatus
-      : latestDecision?.record.decisionStatus === 'rejected_bounded_studio_source_pressure_observation'
-        ? 'skipped'
-        : 'absent',
-    targetGenericEnvelope: latestCandidate?.record.targetGenericEnvelope ?? 'layer_source_pressure_review.v0',
-    emittedEnvelopeSchemaVersion: latestObservation?.record.emittedEnvelopeSchemaVersion ?? 'layer-source-pressure-review.v0',
-    layerAdmissionApproved: false,
-    durableAppendApproved: false,
-    edgeActionQueued: false,
-    autoExecute: false,
-    operatorGuidanceOnly: true,
-    localOnly: true,
-    meshTruth: false,
-    distributedProof: false,
-    ratifiedSharedState: false
-  }
-}
-
-function sortNewestRecordFirst(left, right) {
-  const rightTime = Date.parse(right.record.createdAt ?? '') || 0
-  const leftTime = Date.parse(left.record.createdAt ?? '') || 0
-  if (rightTime !== leftTime) return rightTime - leftTime
-  return (right.relativePath ?? '').localeCompare(left.relativePath ?? '')
 }
 
 function formatStudioSourcePressureAdapterSummary(summary) {
