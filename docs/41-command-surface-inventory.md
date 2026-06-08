@@ -44,9 +44,9 @@ text is not the durable contract.
 | `npm run production:export-local-package` | yes | yes | `--print` | yes | copies a local preview into a delivery-candidate package; no publication authorization, production readiness, or authority |
 | `npm run production:export-ffmpeg` | yes | yes | `--print` | yes | renders a local MP4 delivery candidate with ffmpeg by default; `--disable-ffmpeg` skips execution; no publication authorization, production readiness, or authority |
 | `npm run production:local-package-review` | yes | yes | `--print` | yes | records local operator review of a complete integrity-checked output package; no export/publication authorization, production readiness, or authority |
-| `npm run production:package-rework` | yes | updates existing local output artifacts | `--print` | yes | reruns the local output lane when the latest package review requests changes or a reviewed package is stale against rough-cut/output refs; regenerates package review/request/handoff posture; no authority, publication, Edge call, or production readiness |
+| `npm run production:package-rework` | yes | updates existing local output artifacts | `--print` | yes | reruns the local output lane when the latest package review requests changes or a reviewed package is stale against rough-cut/output refs; prints rework eligibility plus `localPackagePosture` (`localPackage`, `review`, `integrity`, `nextAction`) after regeneration; no authority, publication, Edge call, or production readiness |
 | `npm run production:publication-authority-request` | yes | yes | `--print` | yes | packages reviewed local output evidence as a future publication/export authority request candidate; no ratifier, authority grant, publication, or production readiness |
-| `npm run production:local-output` | yes | yes | `--print` | yes | orchestrates existing rough-cut, review, render, export, authority-prereq, local package review, publication/export request candidate, handoff, operator-index, and Edge-compatible bundle commands; output-integrity posture is visible in summary/health/operator/Edge-compatible surfaces; `--disable-ffmpeg` keeps execution to contact-sheet and local package-copy evidence; no new authority, publication, Edge call, or production readiness |
+| `npm run production:local-output` | yes | yes | `--print` | yes | orchestrates existing rough-cut, review, render, export, authority-prereq, local package review, publication/export request candidate, handoff, operator-index, and Edge-compatible bundle commands; `--print` includes shared `localPackagePosture` and compact output shows `localPackage`, `review`, `integrity`, and `nextAction`; `--disable-ffmpeg` keeps execution to contact-sheet and local package-copy evidence; no new authority, publication, Edge call, or production readiness |
 | `npm run record-io:stress` | yes | temp project by default | `--print` | yes | runs a bounded overlap of local output writers and summary/index/prereq readers to verify local JSON atomic-write/tolerant-read posture; ffmpeg is disabled by default; no authority, publication, Edge call, or mesh publication |
 | `npm run pressure:studio` | yes | yes | `--print` | yes | writes Studio-owned Edge and Layer pressure artifacts by default; `--adapter-chain` also writes the bounded Studio source-pressure adapter candidate, operator decision, and approved observation for Layer's generic `layer_source_pressure_review.v0` seam; `--adapter-decision rejected` writes candidate/decision only; no Layer admission, durable append, Edge authority, queue action, dispatch, or auto-execute |
 | `npm run provider:venice:rehearse-production` | yes | yes | `--print` | yes | composes the local Venice loop, approval proposal, capsule, bundle, inspection, operator index, and Edge-compatible bundle; no live provider unless explicitly requested |
@@ -73,8 +73,8 @@ text is not the durable contract.
 | `npm run inspect:venice-loop` | yes | no | `--print` | reads provider-loop status/request/decision refs | no output mutation; prints retry path, live-provider-called posture, and production blockers |
 | `npm run export:inspection-bundle` | yes | yes | `--print` | yes | bundle manifest uses fresh timestamp |
 | `npm run control:surface` | yes | yes | `--print` | yes | runtime projection uses fresh timestamp |
-| `npm run edge:compat` | yes | yes | `--print` | yes | runtime bundle uses fresh timestamp; includes production-capsule, production-bundle, rough-cut, render/export candidate, authority-prereq, and Layer interop source refs/attention when present |
-| `npm run operator:index` | yes | yes | `--print` | yes | runtime index uses fresh timestamp; includes provider-loop, production-capsule, production-bundle, rough-cut, and Layer interop refs/attention when present |
+| `npm run edge:compat` | yes | yes | `--print` | yes | runtime bundle uses fresh timestamp; includes production-capsule, production-bundle, rough-cut, render/export candidate, authority-prereq, local package posture, and Layer interop source refs/attention when present; no Edge queue, dispatch, approval, or runtime verification |
+| `npm run operator:index` | yes | yes | `--print` | yes | runtime index uses fresh timestamp; includes provider-loop, production-capsule, production-bundle, rough-cut, local package posture, and Layer interop refs/attention when present |
 | `npm run handoff:edge` | yes | yes | `--print` | yes | runtime handoff uses fresh timestamp |
 | `npm run operator:decision-request` | yes | yes | `--print` | yes | runtime request uses fresh timestamp |
 | `npm run operator:provider-loop-request` | yes | yes | `--print` | yes | runtime request uses fresh timestamp; retry is request-only |
@@ -112,6 +112,32 @@ instead of treating partial JSON as a command crash.
 Committed fixture commands normalize timestamps and UUIDs. The cross-project
 operator index preserves `createdAt` for the same output/index id so repeated
 default scans do not produce timestamp-only diffs.
+
+## Local Package Posture
+
+`production:local-output`, `production:package-rework`, `operator:index`, and
+`edge:compat` now expose the same shared `localPackagePosture` summary. The
+stable compact fields are `localPackage=<state>`, `review=<posture>`,
+`integrity=<posture>`, and `nextAction=<safe action>`. Valid package states are
+`complete_review_only_authority_missing`, `incomplete_local_package`,
+`output_integrity_blocked`, `review_requested_changes`, `stale_review`, and
+`no_package_review`.
+
+For the local proof stage, run:
+
+```bash
+npm run production:local-output -- --project-dir examples/card-to-candidate
+npm run production:package-rework -- --project-dir examples/card-to-candidate # optional when eligible
+npm run operator:index -- --project-dir examples/card-to-candidate
+npm run edge:compat -- --project-dir examples/card-to-candidate
+```
+
+`production:package-rework` is optional and only eligible when the latest local
+package review requested changes or the reviewed package is stale. These
+summaries prepare Studio evidence for future swarm seam pressure; they do not
+activate swarm runtime, Edge dispatch, Layer admission, durable append, storage
+selection, materialization proof, causal truth, publication authority, or
+production readiness.
 
 ## Bundle Completeness Posture
 

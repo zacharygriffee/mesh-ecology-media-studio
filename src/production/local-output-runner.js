@@ -11,6 +11,7 @@ import { writeFfmpegExport } from './export-ffmpeg.js'
 import { writeLocalExportPackage } from './export-local-package.js'
 import { writeExportPlanCandidate } from './export-plan-candidate.js'
 import { writeLocalPackageReviewDecision } from './local-package-review-decision.js'
+import { createLocalPackagePostureSummary, formatLocalPackagePostureFields } from './local-package-posture.js'
 import { writePublicationAuthorityRequestCandidate } from './publication-authority-request-candidate.js'
 import { writeRenderAdapterContract } from './render-adapter-contract.js'
 import { writeContactSheetRender } from './render-contact-sheet.js'
@@ -129,6 +130,10 @@ export async function runLocalProductionOutput({
   )
   const mediaSummary = await createMediaSummary({ projectDir })
   const finalPrereqs = await createProductionAuthorityPrerequisiteReport({ projectDir })
+  const localPackagePosture = await createLocalPackagePostureSummary({
+    projectDir,
+    prerequisiteReport: finalPrereqs
+  })
 
   const result = {
     projectId: mediaSummary.projectId,
@@ -167,8 +172,13 @@ export async function runLocalProductionOutput({
       publicationAuthorityRequests: publicationAuthorityRequest.result?.candidate ? 1 : 0,
       localProductionPackageComplete: finalPrereqs.localProductionPackageComplete ?? 0,
       pendingAuthority: finalPrereqs.pendingAuthority ?? 0,
-      productionReady: finalPrereqs.productionReady ?? 0
+      productionReady: finalPrereqs.productionReady ?? 0,
+      localPackageState: localPackagePosture.packageState,
+      latestLocalPackageReviewPosture: localPackagePosture.latestReviewPosture,
+      localPackageIntegrityPosture: localPackagePosture.integrityPosture,
+      localPackageNextAction: localPackagePosture.safeNextAction
     },
+    localPackagePosture,
     nonClaims: {
       localOnly: true,
       operatorGuidanceOnly: true,
@@ -214,7 +224,8 @@ export function formatLocalProductionOutputSummary(result) {
     `publicationAuthorityRequests=${result.summary.publicationAuthorityRequests}`,
     `localProductionPackageComplete=${result.summary.localProductionPackageComplete}`,
     `pendingAuthority=${result.summary.pendingAuthority}`,
-    `productionReady=${result.summary.productionReady}`
+    `productionReady=${result.summary.productionReady}`,
+    formatLocalPackagePostureFields(result.localPackagePosture)
   ].join(' | ')
 }
 

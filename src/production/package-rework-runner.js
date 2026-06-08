@@ -7,6 +7,7 @@ import {
   evaluateLocalPackageReviewFreshness,
   latestLocalPackageReviewEntry
 } from './package-authority-freshness.js'
+import { formatLocalPackagePostureFields } from './local-package-posture.js'
 import { runLocalProductionOutput } from './local-output-runner.js'
 
 const modulePath = fileURLToPath(import.meta.url)
@@ -81,7 +82,18 @@ export async function runLocalPackageRework({
     },
     reworkTrigger: eligibility.trigger,
     reworkIssueCodes: eligibility.issueCodes,
+    reworkEligibility: {
+      allowed: eligibility.allowed,
+      trigger: eligibility.trigger,
+      issueCodes: eligibility.issueCodes,
+      reason: eligibility.reason,
+      localOnly: true,
+      operatorGuidanceOnly: true,
+      authorityGranted: false,
+      productionReady: false
+    },
     output,
+    localPackagePosture: output.localPackagePosture,
     summary: {
       steps: output.steps.filter((step) => step.state === 'completed').length,
       totalSteps: output.steps.length,
@@ -89,11 +101,13 @@ export async function runLocalPackageRework({
       publicationAuthorityRequests: output.summary.publicationAuthorityRequests,
       localProductionPackageComplete: output.summary.localProductionPackageComplete,
       pendingAuthority: output.summary.pendingAuthority,
-      productionReady: output.summary.productionReady
+      productionReady: output.summary.productionReady,
+      localPackageState: output.localPackagePosture.packageState,
+      latestLocalPackageReviewPosture: output.localPackagePosture.latestReviewPosture,
+      localPackageIntegrityPosture: output.localPackagePosture.integrityPosture,
+      localPackageNextAction: output.localPackagePosture.safeNextAction
     },
-    nextAction: output.summary.localPackageReviewed === 1
-      ? 'Inspect the regenerated local package and route the request candidate to a future authority lane only if desired.'
-      : 'Resolve local output/package integrity blockers, then rerun package rework.',
+    nextAction: output.localPackagePosture.safeNextAction,
     nonClaims: {
       localOnly: true,
       operatorGuidanceOnly: true,
@@ -192,7 +206,8 @@ export function formatLocalPackageReworkSummary(result) {
     `publicationAuthorityRequests=${result.summary.publicationAuthorityRequests}`,
     `localProductionPackageComplete=${result.summary.localProductionPackageComplete}`,
     `pendingAuthority=${result.summary.pendingAuthority}`,
-    `productionReady=${result.summary.productionReady}`
+    `productionReady=${result.summary.productionReady}`,
+    formatLocalPackagePostureFields(result.localPackagePosture)
   ].join(' | ')
 }
 

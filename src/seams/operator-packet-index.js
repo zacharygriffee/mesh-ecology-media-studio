@@ -7,9 +7,11 @@ import { makeRef, nowIso } from '../contracts/constructors.js'
 import { validateRequiredRecord } from '../contracts/schemas.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
 import { summarizeProductionApprovalLane } from '../production/approval-lane.js'
+import { createProductionAuthorityPrerequisiteReport } from '../production/authority-prerequisites.js'
 import { evaluateRenderExportCandidateFreshness } from '../production/render-export-candidate.js'
 import { summarizeRenderReceipt } from '../production/render-receipts.js'
 import { summarizeExportReceipt, summarizeExportReceipts } from '../production/export-receipts.js'
+import { summarizeLocalPackagePosture } from '../production/local-package-posture.js'
 import { evaluateLocalOutputIntegrity } from '../production/output-integrity.js'
 import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
 import {
@@ -163,6 +165,12 @@ export async function writeOperatorPacketIndex({
     projectDir,
     records: normalizeRecordPaths(records)
   })
+  const localPackagePrerequisiteReport = await createProductionAuthorityPrerequisiteReport({ projectDir })
+  const localPackagePosture = summarizeLocalPackagePosture({
+    records: normalizeRecordPaths(records),
+    prerequisiteReport: localPackagePrerequisiteReport,
+    outputIntegritySummary
+  })
   const layerInterop = summarizeLayerInteropFromRecords(records)
   const productionApprovalLane = summarizeProductionApprovalLane({
     assetRecords: records
@@ -219,6 +227,7 @@ export async function writeOperatorPacketIndex({
     renderReceipts,
     exportReceipts,
     outputIntegritySummary,
+    localPackagePosture,
     layerInterop,
     productionApprovalLane,
     operatorHealthExplanations,
@@ -257,6 +266,14 @@ export async function writeOperatorPacketIndex({
       activeDeliveryEvidenceIntact: outputIntegritySummary.activeDeliveryEvidenceIntact,
       outputIntegrityBlockingIssues: outputIntegritySummary.outputIntegrityBlockingIssues,
       outputIntegrityAttentionIssues: outputIntegritySummary.outputIntegrityAttentionIssues,
+      localPackageState: localPackagePosture.packageState,
+      latestLocalPackageReviewPosture: localPackagePosture.latestReviewPosture,
+      localPackageIntegrityPosture: localPackagePosture.integrityPosture,
+      localPackageCompletenessCount: localPackagePosture.localProductionPackageComplete,
+      localPackagePublicationAuthorityRequests: localPackagePosture.publicationAuthorityRequests,
+      localPackagePendingAuthority: localPackagePosture.pendingAuthority,
+      localPackageProductionReady: localPackagePosture.productionReady,
+      localPackageNextAction: localPackagePosture.safeNextAction,
       recordIODiagnostics: recordReadDiagnostics.diagnostics,
       exportReceiptsNeedingAttention: exportReceiptSummary.currentAttentionRows.length,
       currentExportReceiptAttention: exportReceiptSummary.currentAttentionRows.length,
@@ -415,6 +432,10 @@ function formatOperatorPacketIndexSummary(index, output) {
     `activeDeliveryIntact=${summary.activeDeliveryEvidenceIntact ?? 0}`,
     `outputIntegrityBlocking=${summary.outputIntegrityBlockingIssues ?? 0}`,
     `outputIntegrityAttention=${summary.outputIntegrityAttentionIssues ?? 0}`,
+    `localPackage=${summary.localPackageState ?? 'unknown'}`,
+    `review=${summary.latestLocalPackageReviewPosture ?? 'unknown'}`,
+    `integrity=${summary.localPackageIntegrityPosture ?? 'unknown'}`,
+    `nextAction=${summary.localPackageNextAction ?? 'Inspect local package posture.'}`,
     `currentExportReceiptAttention=${summary.currentExportReceiptAttention ?? 0}`,
     `historicalExportReceiptAttention=${summary.historicalExportReceiptAttention ?? 0}`,
     `layerInterop=${summary.layerInteropState ?? 'layer-refs-not-attached'}`,

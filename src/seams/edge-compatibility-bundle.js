@@ -8,6 +8,7 @@ import { validateRequiredRecord } from '../contracts/schemas.js'
 import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
 import { summarizeExportReceipts } from '../production/export-receipts.js'
+import { summarizeLocalPackagePosture } from '../production/local-package-posture.js'
 import { latestLocalPackageReviewEntry } from '../production/package-authority-freshness.js'
 import { isDiscoverableJsonPath, readJsonFileTolerant, writeJsonAtomic } from '../local/atomic-json.js'
 
@@ -139,6 +140,7 @@ export async function writeEdgeCompatibilityBundle({
   }))
   const readinessResourceSummary = createReadinessResourceSummary({ sources })
   const exportDeliverySummary = createExportDeliverySummary({ sources })
+  const localPackagePosture = createLocalPackagePostureSummary({ sources })
   const layerInteropSummary = createLayerInteropSummary({ sources })
   const studioSourcePressureAdapterSummary = createStudioSourcePressureAdapterSummary({ sources })
   const createdAt = nowIso()
@@ -147,6 +149,7 @@ export async function writeEdgeCompatibilityBundle({
     sourceRefs: studioSourceRefs,
     readinessResourceSummary,
     exportDeliverySummary,
+    localPackagePosture,
     layerInteropSummary,
     createdAt
   })
@@ -203,6 +206,7 @@ export async function writeEdgeCompatibilityBundle({
     ],
     readinessResourceSummary,
     exportDeliverySummary,
+    localPackagePosture,
     layerInteropSummary,
     studioSourcePressureAdapterSummary,
     studioReviewEvidence: reviewEvidence,
@@ -248,6 +252,10 @@ export async function writeEdgeCompatibilityBundle({
       `localDeliveryEvidenceIntact=${bundle.exportDeliverySummary.localDeliveryEvidenceIntact}`,
       `outputIntegrityBlocking=${bundle.exportDeliverySummary.outputIntegrityBlockingIssues}`,
       `outputIntegrityAttention=${bundle.exportDeliverySummary.outputIntegrityAttentionIssues}`,
+      `localPackage=${bundle.localPackagePosture.packageState}`,
+      `review=${bundle.localPackagePosture.latestReviewPosture}`,
+      `integrity=${bundle.localPackagePosture.integrityPosture}`,
+      `nextAction=${bundle.localPackagePosture.safeNextAction}`,
       `studioPressure=${bundle.studioSourcePressureAdapterSummary.latestDecisionStatus}`,
       `studioPressureObservation=${bundle.studioSourcePressureAdapterSummary.observationStatus}`
     ].join(' | '))
@@ -318,7 +326,15 @@ async function readSourceRecords(root) {
   return sources
 }
 
-function createStudioEdgeReviewEvidence({ projectId, sourceRefs, readinessResourceSummary, exportDeliverySummary, layerInteropSummary, createdAt }) {
+function createStudioEdgeReviewEvidence({
+  projectId,
+  sourceRefs,
+  readinessResourceSummary,
+  exportDeliverySummary,
+  localPackagePosture,
+  layerInteropSummary,
+  createdAt
+}) {
   const reviewEvidence = {
     schema: artifactKinds.mediaEdgeReviewEvidenceLocal,
     edgeReviewEvidenceId: `media-studio-edge-review-${projectId}`,
@@ -341,6 +357,7 @@ function createStudioEdgeReviewEvidence({ projectId, sourceRefs, readinessResour
     sourceArtifactRefs: sourceRefs.map((ref) => `${ref.kind}:${ref.id}`),
     readinessResourceSummary,
     exportDeliverySummary,
+    localPackagePosture,
     layerInteropSummary,
     summary: 'Studio local inspection artifacts are ready for Edge-style operator review as local evidence only.',
     reasonCodes: [
@@ -424,6 +441,23 @@ function createStudioSourcePressureAdapterSummary({ sources }) {
     distributedProof: false,
     ratifiedSharedState: false
   }
+}
+
+function createLocalPackagePostureSummary({ sources }) {
+  const entries = Object.values(sources).map((source) => ({
+    record: source.record,
+    path: source.relativePath,
+    relativePath: source.relativePath
+  }))
+  const authorityPrereqEntries = entries
+    .filter((entry) => entry.record.schema === artifactKinds.mediaProductionAuthorityPrerequisitesLocal)
+    .sort(sortNewestSourceFirst)
+  const prerequisiteReport = authorityPrereqEntries[0]?.record ?? {}
+
+  return summarizeLocalPackagePosture({
+    records: entries,
+    prerequisiteReport
+  })
 }
 
 function sortNewestSourceFirst(left, right) {

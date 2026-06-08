@@ -199,13 +199,16 @@ approves them:
 
 ## Next Safe Studio Work
 
-The safest next Studio lane is to improve local package and operator clarity,
-not to add authority. Preferred order:
+The current Studio lane is to prove local package and operator clarity before
+pressing the family swarm seams. Preferred order:
 
-1. tighten `production:local-output` and package-rework summaries;
-2. keep `operator:index` and `edge:compat` aligned with those summaries;
-3. preserve source-pressure adapter evidence as runtime-only review material;
-4. refresh docs/tests whenever an operator-visible command surface changes.
+1. run `production:local-output` to create review-only package evidence;
+2. run `production:package-rework` only when the latest package review requested
+   changes or went stale;
+3. keep `operator:index` and `edge:compat` aligned with the shared local package
+   posture;
+4. preserve source-pressure adapter evidence as runtime-only review material;
+5. refresh docs/tests whenever an operator-visible command surface changes.
 
 Success means a reviewer can run one local project through production evidence,
 source-pressure evidence, inspection, operator index, and Edge-compatible review

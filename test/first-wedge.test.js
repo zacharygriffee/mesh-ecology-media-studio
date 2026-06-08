@@ -137,6 +137,7 @@ import {
 } from '../src/production/package-authority-freshness.js'
 import { runLocalProductionOutput } from '../src/production/local-output-runner.js'
 import { runLocalPackageRework } from '../src/production/package-rework-runner.js'
+import { createLocalPackagePostureSummary } from '../src/production/local-package-posture.js'
 import { evaluateRenderReceiptFreshness, summarizeRenderReceipts } from '../src/production/render-receipts.js'
 import { evaluateExportReceiptFreshness } from '../src/production/export-receipts.js'
 import { evaluateLocalOutputIntegrity } from '../src/production/output-integrity.js'
@@ -4017,6 +4018,15 @@ test('local production output runner creates reviewable delivery without authori
   assert.equal(result.summary.localProductionPackageComplete, 1)
   assert.equal(result.summary.pendingAuthority, 1)
   assert.equal(result.summary.productionReady, 0)
+  assert.equal(result.summary.localPackageState, 'complete_review_only_authority_missing')
+  assert.equal(result.summary.latestLocalPackageReviewPosture, 'reviewed_fresh')
+  assert.equal(result.summary.localPackageIntegrityPosture, 'clear')
+  assert.equal(result.localPackagePosture.packageState, 'complete_review_only_authority_missing')
+  assert.equal(result.localPackagePosture.latestReviewPosture, 'reviewed_fresh')
+  assert.equal(result.localPackagePosture.integrityPosture, 'clear')
+  assert.equal(result.localPackagePosture.publicationAuthorityRequests, 1)
+  assert.equal(result.localPackagePosture.pendingAuthority, 1)
+  assert.equal(result.localPackagePosture.productionReady, 0)
   assert.equal(result.nonClaims.localOnly, true)
   assert.equal(result.nonClaims.approvalAuthority, false)
   assert.equal(result.nonClaims.publicationAuthorization, false)
@@ -4041,7 +4051,12 @@ test('local production output runner creates reviewable delivery without authori
   assert.equal(result.steps.every((step) => step.authorityGranted === false), true)
   assert.equal(result.steps.every((step) => step.productionReady === false), true)
   assert.ok(output.lines.some((line) =>
-    line === 'production local output: project=venice-smoke-project | steps=17/17 | roughCutItems=1 | roughCutReviewed=1 | renderReceipts=2 | exportReceipts=2 | ffmpegDeliveryReceipts=1 | localDeliveryEvidencePresent=2 | activeDeliveryReceipts=2 | historicalExportReceipts=0 | currentExportReceiptAttention=0 | historicalExportReceiptAttention=0 | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=1 | pendingAuthority=1 | productionReady=0'
+    line.startsWith('production local output: project=venice-smoke-project | steps=17/17') &&
+    line.includes('productionReady=0') &&
+    line.includes('localPackage=complete_review_only_authority_missing') &&
+    line.includes('review=reviewed_fresh') &&
+    line.includes('integrity=clear') &&
+    line.includes('nextAction=Route the reviewed local package')
   ))
   assert.ok(output.lines.some((line) => line.includes('no approval authority')))
 
@@ -4066,6 +4081,29 @@ test('local production output runner creates reviewable delivery without authori
   assert.equal(prereqs.packageAuthoritySummary.attentionRows.length, 0)
   assert.equal(prereqs.pendingAuthority, 1)
   assert.equal(prereqs.productionReady, 0)
+  const operatorIndex = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
+  assert.equal(operatorIndex.result.index.localPackagePosture.packageState, 'complete_review_only_authority_missing')
+  assert.equal(operatorIndex.result.index.localPackagePosture.latestReviewPosture, 'reviewed_fresh')
+  assert.equal(operatorIndex.result.index.localPackagePosture.integrityPosture, 'clear')
+  assert.equal(operatorIndex.result.index.localPackagePosture.nonClaims.edgeCalled, false)
+  assert.equal(operatorIndex.result.index.summary.localPackageState, 'complete_review_only_authority_missing')
+  assert.ok(operatorIndex.lines.some((line) =>
+    line.includes('localPackage=complete_review_only_authority_missing') &&
+    line.includes('review=reviewed_fresh') &&
+    line.includes('integrity=clear')
+  ))
+  const edgeCompatibility = await captureConsole(() => writeEdgeCompatibilityBundle({ projectDir: dir }))
+  assert.equal(edgeCompatibility.result.bundle.localPackagePosture.packageState, 'complete_review_only_authority_missing')
+  assert.equal(edgeCompatibility.result.bundle.localPackagePosture.latestReviewPosture, 'reviewed_fresh')
+  assert.equal(edgeCompatibility.result.bundle.localPackagePosture.integrityPosture, 'clear')
+  assert.equal(edgeCompatibility.result.bundle.localPackagePosture.nonClaims.edgeCalled, false)
+  assert.equal(edgeCompatibility.result.bundle.studioReviewEvidence.localPackagePosture.packageState, 'complete_review_only_authority_missing')
+  assert.equal(edgeCompatibility.result.bundle.edgeRuntimeVerified, false)
+  assert.ok(edgeCompatibility.lines.some((line) =>
+    line.includes('localPackage=complete_review_only_authority_missing') &&
+    line.includes('review=reviewed_fresh') &&
+    line.includes('integrity=clear')
+  ))
   const prereqOutput = await captureConsole(() => writeProductionAuthorityPrerequisiteReport({ projectDir: dir }))
   assert.ok(prereqOutput.lines.some((line) =>
     line.includes('localPackageReviews=1') &&
@@ -4099,6 +4137,10 @@ test('local production output runner can keep ffmpeg disabled without blocking l
   assert.equal(result.summary.localProductionPackageComplete, 1)
   assert.equal(result.summary.pendingAuthority, 1)
   assert.equal(result.summary.productionReady, 0)
+  assert.equal(result.localPackagePosture.packageState, 'complete_review_only_authority_missing')
+  assert.equal(result.localPackagePosture.latestReviewPosture, 'reviewed_fresh')
+  assert.equal(result.localPackagePosture.integrityPosture, 'clear')
+  assert.equal(result.localPackagePosture.productionReady, 0)
   assert.ok(result.refs.contactSheetRenderReceiptId)
   assert.equal(result.refs.ffmpegRenderReceiptId, null)
   assert.ok(result.refs.localExportReceiptId)
@@ -4120,7 +4162,12 @@ test('local production output runner can keep ffmpeg disabled without blocking l
     step.productionReady === false
   ))
   assert.ok(output.lines.some((line) =>
-    line === 'production local output: project=venice-smoke-project | steps=15/17 | roughCutItems=1 | roughCutReviewed=1 | renderReceipts=1 | exportReceipts=1 | ffmpegDeliveryReceipts=0 | localDeliveryEvidencePresent=1 | activeDeliveryReceipts=1 | historicalExportReceipts=0 | currentExportReceiptAttention=0 | historicalExportReceiptAttention=0 | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=1 | pendingAuthority=1 | productionReady=0'
+    line.startsWith('production local output: project=venice-smoke-project | steps=15/17') &&
+    line.includes('ffmpegDeliveryReceipts=0') &&
+    line.includes('productionReady=0') &&
+    line.includes('localPackage=complete_review_only_authority_missing') &&
+    line.includes('review=reviewed_fresh') &&
+    line.includes('integrity=clear')
   ))
 
   const summary = await createMediaSummary({ projectDir: dir })
@@ -4133,6 +4180,32 @@ test('local production output runner can keep ffmpeg disabled without blocking l
   assert.equal(prereqs.outputIntegrityBlockingIssues, 0)
   assert.equal(prereqs.pendingAuthority, 1)
   assert.equal(prereqs.productionReady, 0)
+})
+
+test('local package posture marks absent delivery evidence as incomplete', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-local-package-posture-incomplete-'))
+  await runVeniceProductionRehearsal({ projectDir: dir })
+  const output = await runLocalProductionOutput({
+    projectDir: dir,
+    disableFfmpeg: true,
+    skipLocalPackage: true,
+    quiet: true,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  })
+
+  assert.equal(output.summary.localPackageReviewed, 0)
+  assert.equal(output.refs.localPackageReviewDecisionId, null)
+  assert.equal(output.refs.publicationAuthorityRequestCandidateId, null)
+  assert.equal(output.localPackagePosture.packageState, 'incomplete_local_package')
+  assert.equal(output.localPackagePosture.latestReviewPosture, 'missing')
+  assert.equal(output.localPackagePosture.integrityPosture, 'incomplete')
+  assert.equal(output.localPackagePosture.productionReady, 0)
+
+  const posture = await createLocalPackagePostureSummary({ projectDir: dir })
+  assert.equal(posture.packageState, 'incomplete_local_package')
+  assert.equal(posture.localProductionPackageComplete, 0)
+  assert.equal(posture.localDeliveryEvidenceIntact, 0)
+  assert.equal(posture.safeNextAction, 'Run npm run production:local-output to create or refresh complete local package evidence.')
 })
 
 test('media summary safe next action ignores stale inactive export receipts when local delivery is intact', async () => {
@@ -4359,6 +4432,10 @@ test('local package rework runner regenerates output after needs rework', async 
     () => writePublicationAuthorityRequestCandidate({ projectDir: dir, quiet: true }),
     /requires local package review decision/
   )
+  const requestedChangesPosture = await createLocalPackagePostureSummary({ projectDir: dir })
+  assert.equal(requestedChangesPosture.packageState, 'review_requested_changes')
+  assert.equal(requestedChangesPosture.latestReviewPosture, 'request_changes')
+  assert.equal(requestedChangesPosture.safeNextAction, 'Run npm run production:package-rework to regenerate local output from the request-changes review.')
 
   const output = await captureConsole(() => runLocalPackageRework({
     projectDir: dir,
@@ -4369,10 +4446,16 @@ test('local package rework runner regenerates output after needs rework', async 
   assert.equal(result.reworkKind, 'local-package-rework-runner')
   assert.equal(result.sourcePackageReviewDecisionRef.id, 'decision-local-package-venice-smoke-project-request_changes')
   assert.equal(result.reworkTrigger, 'local-package-review-request-changes')
+  assert.equal(result.reworkEligibility.allowed, true)
+  assert.equal(result.reworkEligibility.trigger, 'local-package-review-request-changes')
   assert.equal(result.summary.localPackageReviewed, 1)
   assert.equal(result.summary.publicationAuthorityRequests, 1)
   assert.equal(result.summary.localProductionPackageComplete, 1)
   assert.equal(result.summary.productionReady, 0)
+  assert.equal(result.summary.localPackageState, 'complete_review_only_authority_missing')
+  assert.equal(result.localPackagePosture.packageState, 'complete_review_only_authority_missing')
+  assert.equal(result.localPackagePosture.latestReviewPosture, 'reviewed_fresh')
+  assert.equal(result.localPackagePosture.integrityPosture, 'clear')
   assert.equal(result.nonClaims.publicationAuthorization, false)
   assert.equal(result.nonClaims.meshTruth, false)
   assert.equal(result.nonClaims.resourceAdmission, false)
@@ -4383,7 +4466,10 @@ test('local package rework runner regenerates output after needs rework', async 
     line.includes('trigger=local-package-review-request-changes') &&
     line.includes('localPackageReviewed=1') &&
     line.includes('publicationAuthorityRequests=1') &&
-    line.includes('productionReady=0')
+    line.includes('productionReady=0') &&
+    line.includes('localPackage=complete_review_only_authority_missing') &&
+    line.includes('review=reviewed_fresh') &&
+    line.includes('integrity=clear')
   ))
 
   const mediaSummary = await createMediaSummary({ projectDir: dir })
@@ -4442,12 +4528,27 @@ test('local package rework runner preserves two-item output posture', async () =
     assert.equal(result.summary.localProductionPackageComplete, 2)
     assert.equal(result.summary.pendingAuthority, 2)
     assert.equal(result.summary.productionReady, 0)
+    assert.equal(result.summary.localPackageState, 'complete_review_only_authority_missing')
+    assert.equal(result.localPackagePosture.packageState, 'complete_review_only_authority_missing')
+    assert.equal(result.localPackagePosture.latestReviewPosture, 'reviewed_fresh')
+    assert.equal(result.localPackagePosture.integrityPosture, 'clear')
     assert.equal(result.nonClaims.publicationAuthorization, false)
     assert.equal(result.nonClaims.productionReady, false)
     assert.equal(result.nonClaims.edgeCalled, false)
     assert.equal(result.nonClaims.meshPublished, false)
     assert.ok(output.lines.some((line) =>
-      line === `local package rework: project=venice-smoke-project | sourceReview=decision-local-package-venice-smoke-project-request_changes | trigger=local-package-review-request-changes | steps=${mode.completedSteps} | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=2 | pendingAuthority=2 | productionReady=0`
+      line.startsWith('local package rework: project=venice-smoke-project') &&
+      line.includes('sourceReview=decision-local-package-venice-smoke-project-request_changes') &&
+      line.includes('trigger=local-package-review-request-changes') &&
+      line.includes(`steps=${mode.completedSteps}`) &&
+      line.includes('localPackageReviewed=1') &&
+      line.includes('publicationAuthorityRequests=1') &&
+      line.includes('localProductionPackageComplete=2') &&
+      line.includes('pendingAuthority=2') &&
+      line.includes('productionReady=0') &&
+      line.includes('localPackage=complete_review_only_authority_missing') &&
+      line.includes('review=reviewed_fresh') &&
+      line.includes('integrity=clear')
     ))
 
     const roughCut = JSON.parse(await readFile(path.join(dir, 'records/production/media-rough-cut-capsule.local.json'), 'utf8'))
@@ -4503,6 +4604,10 @@ test('local package rework runner regenerates stale package after rough cut revi
   assert.equal(stalePrereqs.publicationAuthorityRequestsFresh, 0)
   assert.equal(stalePrereqs.publicationAuthorityRequestsStale, 1)
   assert.equal(stalePrereqs.productionReady, 0)
+  const stalePosture = await createLocalPackagePostureSummary({ projectDir: dir })
+  assert.equal(stalePosture.packageState, 'stale_review')
+  assert.equal(stalePosture.latestReviewPosture, 'reviewed_stale')
+  assert.ok(stalePosture.issueCodes.includes('local_package_review_source_refs_changed'))
 
   await assert.rejects(
     () => writePublicationAuthorityRequestCandidate({ projectDir: dir, quiet: true }),
@@ -4516,6 +4621,8 @@ test('local package rework runner regenerates stale package after rough cut revi
   const result = output.result
 
   assert.equal(result.reworkTrigger, 'stale-local-package-review')
+  assert.equal(result.reworkEligibility.allowed, true)
+  assert.equal(result.reworkEligibility.trigger, 'stale-local-package-review')
   assert.ok(result.reworkIssueCodes.includes('local_package_review_source_refs_changed'))
   assert.ok(result.reworkIssueCodes.includes('current_local_production_package_incomplete'))
   assert.equal(result.output.summary.roughCutItems, 1)
@@ -4524,11 +4631,17 @@ test('local package rework runner regenerates stale package after rough cut revi
   assert.equal(result.summary.publicationAuthorityRequests, 1)
   assert.equal(result.summary.localProductionPackageComplete, 1)
   assert.equal(result.summary.productionReady, 0)
+  assert.equal(result.summary.localPackageState, 'complete_review_only_authority_missing')
+  assert.equal(result.localPackagePosture.packageState, 'complete_review_only_authority_missing')
+  assert.equal(result.localPackagePosture.latestReviewPosture, 'reviewed_fresh')
   assert.ok(output.lines.some((line) =>
     line.startsWith('local package rework: project=venice-smoke-project') &&
     line.includes('trigger=stale-local-package-review') &&
     line.includes('localPackageReviewed=1') &&
-    line.includes('productionReady=0')
+    line.includes('productionReady=0') &&
+    line.includes('localPackage=complete_review_only_authority_missing') &&
+    line.includes('review=reviewed_fresh') &&
+    line.includes('integrity=clear')
   ))
 
   const freshPrereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
@@ -4563,10 +4676,20 @@ test('local production output runner carries two accepted production items throu
   assert.equal(result.summary.localProductionPackageComplete, 2)
   assert.equal(result.summary.pendingAuthority, 2)
   assert.equal(result.summary.productionReady, 0)
+  assert.equal(result.localPackagePosture.packageState, 'complete_review_only_authority_missing')
+  assert.equal(result.localPackagePosture.latestReviewPosture, 'reviewed_fresh')
+  assert.equal(result.localPackagePosture.integrityPosture, 'clear')
   assert.equal(result.nonClaims.publicationAuthorization, false)
   assert.equal(result.nonClaims.productionReady, false)
   assert.ok(output.lines.some((line) =>
-    line === 'production local output: project=venice-smoke-project | steps=17/17 | roughCutItems=2 | roughCutReviewed=1 | renderReceipts=2 | exportReceipts=2 | ffmpegDeliveryReceipts=1 | localDeliveryEvidencePresent=2 | activeDeliveryReceipts=2 | historicalExportReceipts=0 | currentExportReceiptAttention=0 | historicalExportReceiptAttention=0 | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=2 | pendingAuthority=2 | productionReady=0'
+    line.startsWith('production local output: project=venice-smoke-project | steps=17/17') &&
+    line.includes('roughCutItems=2') &&
+    line.includes('localProductionPackageComplete=2') &&
+    line.includes('pendingAuthority=2') &&
+    line.includes('productionReady=0') &&
+    line.includes('localPackage=complete_review_only_authority_missing') &&
+    line.includes('review=reviewed_fresh') &&
+    line.includes('integrity=clear')
   ))
 
   const roughCut = JSON.parse(await readFile(path.join(dir, 'records/production/media-rough-cut-capsule.local.json'), 'utf8'))
@@ -4633,10 +4756,17 @@ test('local production output runner carries two accepted production items throu
   assert.equal(operatorIndex.result.index.roughCutCapsules[0].items, 2)
   assert.equal(operatorIndex.result.index.summary.ffmpegDeliveryReceipts, 1)
   assert.equal(operatorIndex.result.index.summary.publicationAuthorityRequests, 1)
+  assert.equal(operatorIndex.result.index.summary.localPackageState, 'complete_review_only_authority_missing')
+  assert.equal(operatorIndex.result.index.localPackagePosture.packageState, 'complete_review_only_authority_missing')
+  assert.equal(operatorIndex.result.index.localPackagePosture.latestReviewPosture, 'reviewed_fresh')
+  assert.equal(operatorIndex.result.index.localPackagePosture.integrityPosture, 'clear')
   assert.ok(operatorIndex.lines.some((line) =>
     line.includes('roughCuts=1') &&
     line.includes('ffmpegDeliveryReceipts=1') &&
-    line.includes('publicationAuthorityRequests=1')
+    line.includes('publicationAuthorityRequests=1') &&
+    line.includes('localPackage=complete_review_only_authority_missing') &&
+    line.includes('review=reviewed_fresh') &&
+    line.includes('integrity=clear')
   ))
 })
 
@@ -4663,12 +4793,23 @@ test('local production output runner carries two accepted production items witho
   assert.equal(result.summary.localProductionPackageComplete, 2)
   assert.equal(result.summary.pendingAuthority, 2)
   assert.equal(result.summary.productionReady, 0)
+  assert.equal(result.localPackagePosture.packageState, 'complete_review_only_authority_missing')
+  assert.equal(result.localPackagePosture.latestReviewPosture, 'reviewed_fresh')
+  assert.equal(result.localPackagePosture.integrityPosture, 'clear')
   assert.equal(result.refs.ffmpegRenderReceiptId, null)
   assert.equal(result.refs.ffmpegExportReceiptId, null)
   assert.ok(result.refs.localPackageReviewDecisionId)
   assert.ok(result.refs.publicationAuthorityRequestCandidateId)
   assert.ok(output.lines.some((line) =>
-    line === 'production local output: project=venice-smoke-project | steps=15/17 | roughCutItems=2 | roughCutReviewed=1 | renderReceipts=1 | exportReceipts=1 | ffmpegDeliveryReceipts=0 | localDeliveryEvidencePresent=1 | activeDeliveryReceipts=1 | historicalExportReceipts=0 | currentExportReceiptAttention=0 | historicalExportReceiptAttention=0 | localPackageReviewed=1 | publicationAuthorityRequests=1 | localProductionPackageComplete=2 | pendingAuthority=2 | productionReady=0'
+    line.startsWith('production local output: project=venice-smoke-project | steps=15/17') &&
+    line.includes('roughCutItems=2') &&
+    line.includes('ffmpegDeliveryReceipts=0') &&
+    line.includes('localProductionPackageComplete=2') &&
+    line.includes('pendingAuthority=2') &&
+    line.includes('productionReady=0') &&
+    line.includes('localPackage=complete_review_only_authority_missing') &&
+    line.includes('review=reviewed_fresh') &&
+    line.includes('integrity=clear')
   ))
 
   const localExport = JSON.parse(await readFile(path.join(dir, 'records/production/media-export-receipt.local.json'), 'utf8'))
@@ -4761,6 +4902,11 @@ test('local output integrity blocks production package when export delivery byte
     () => writeLocalPackageReviewDecision({ projectDir: dir, quiet: true }),
     /complete local production package|output integrity/
   )
+  const blockedPosture = await createLocalPackagePostureSummary({ projectDir: dir })
+  assert.equal(blockedPosture.packageState, 'output_integrity_blocked')
+  assert.equal(blockedPosture.latestReviewPosture, 'reviewed_stale')
+  assert.equal(blockedPosture.integrityPosture, 'blocked')
+  assert.ok(blockedPosture.issueCodes.includes('output_integrity_blocked'))
 
   const mediaSummary = await captureConsole(() => writeMediaSummary({ projectDir: dir }))
   assert.equal(mediaSummary.result.outputIntegrity.localDeliveryEvidenceIntact, 0)
@@ -4796,7 +4942,15 @@ test('local output integrity blocks production package when export delivery byte
   const operatorIndex = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
   assert.equal(operatorIndex.result.index.summary.localDeliveryEvidenceIntact, 0)
   assert.equal(operatorIndex.result.index.summary.outputIntegrityBlockingIssues > 0, true)
-  assert.ok(operatorIndex.lines.some((line) => line.includes('localDeliveryEvidenceIntact=0') && line.includes('outputIntegrityBlocking=')))
+  assert.equal(operatorIndex.result.index.localPackagePosture.packageState, 'output_integrity_blocked')
+  assert.equal(operatorIndex.result.index.localPackagePosture.integrityPosture, 'blocked')
+  assert.equal(operatorIndex.result.index.summary.localPackageState, 'output_integrity_blocked')
+  assert.ok(operatorIndex.lines.some((line) =>
+    line.includes('localDeliveryEvidenceIntact=0') &&
+    line.includes('outputIntegrityBlocking=') &&
+    line.includes('localPackage=output_integrity_blocked') &&
+    line.includes('integrity=blocked')
+  ))
   assert.ok(operatorIndex.lines.some((line) => line.includes('output-integrity blocking:') && line.includes('missing_export_delivery_bytes')))
 
   const edgeBundle = await captureConsole(() => writeEdgeCompatibilityBundle({ projectDir: dir }))
@@ -4804,7 +4958,15 @@ test('local output integrity blocks production package when export delivery byte
   assert.equal(edgeBundle.result.bundle.exportDeliverySummary.authorityHandoffRefs >= 1, true)
   assert.equal(edgeBundle.result.bundle.exportDeliverySummary.localDeliveryEvidenceIntact, 0)
   assert.equal(edgeBundle.result.bundle.exportDeliverySummary.outputIntegrityBlockingIssues > 0, true)
-  assert.ok(edgeBundle.lines.some((line) => line.includes('edge source refs: authorityPrereqs=') && line.includes('outputIntegrityBlocking=')))
+  assert.equal(edgeBundle.result.bundle.localPackagePosture.packageState, 'output_integrity_blocked')
+  assert.equal(edgeBundle.result.bundle.localPackagePosture.integrityPosture, 'blocked')
+  assert.equal(edgeBundle.result.bundle.studioReviewEvidence.localPackagePosture.packageState, 'output_integrity_blocked')
+  assert.ok(edgeBundle.lines.some((line) =>
+    line.includes('edge source refs: authorityPrereqs=') &&
+    line.includes('outputIntegrityBlocking=') &&
+    line.includes('localPackage=output_integrity_blocked') &&
+    line.includes('integrity=blocked')
+  ))
 })
 
 test('local output integrity blocks production package when export delivery bytes drift', async () => {
