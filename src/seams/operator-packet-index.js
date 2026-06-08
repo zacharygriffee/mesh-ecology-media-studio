@@ -16,6 +16,7 @@ import { evaluateLocalOutputIntegrity } from '../production/output-integrity.js'
 import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
 import { summarizeSwarmSeamPosture, formatSwarmSeamPostureFields } from './swarm-seam-posture.js'
 import { summarizeStudioSourcePressure } from './studio-source-pressure-summary.js'
+import { summarizeLocalProofRehearsal } from './local-proof-summary.js'
 import {
   isDiscoverableJsonPath,
   readJsonFileTolerant,
@@ -128,8 +129,12 @@ export async function writeOperatorPacketIndex({
   const studioSourcePressureObservationRefs = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaStudioSourcePressureObservationResultLocal)
     .map(toInspectionRef)
+  const localProofRehearsalRefs = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaStudioLocalProofRehearsalLocal)
+    .map(toInspectionRef)
   const studioSourcePressureSummary = summarizeStudioSourcePressure(records)
   const studioSourcePressureAdapterSummary = studioSourcePressureSummary.studioSourcePressureAdapterSummary
+  const localProofRehearsalSummary = summarizeLocalProofRehearsal(records)
   const providerLoopStatuses = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProviderLoopStatusLocal)
     .map((entry) => summarizeProviderLoopStatus(entry.record, entry.relativePath))
@@ -228,7 +233,9 @@ export async function writeOperatorPacketIndex({
     studioSourcePressureAdapterCandidateRefs,
     studioSourcePressureAdapterDecisionRefs,
     studioSourcePressureObservationRefs,
+    localProofRehearsalRefs,
     studioSourcePressureAdapterSummary,
+    localProofRehearsalSummary,
     providerLoopStatuses,
     providerLoopDecisions,
     roughCutReviewDecisions,
@@ -305,6 +312,15 @@ export async function writeOperatorPacketIndex({
       studioSourcePressureAdapterDecisionStatus: studioSourcePressureAdapterSummary.latestDecisionStatus,
       studioSourcePressureObservationStatus: studioSourcePressureAdapterSummary.observationStatus,
       studioSourcePressureTargetEnvelope: studioSourcePressureAdapterSummary.targetGenericEnvelope,
+      localProofRehearsals: localProofRehearsalRefs.length,
+      localProofState: localProofRehearsalSummary.latestProofState,
+      localProofLocalPackageState: localProofRehearsalSummary.localPackageState,
+      localProofSwarmSeamState: localProofRehearsalSummary.swarmSeamState,
+      localProofAdapterDecisionStatus: localProofRehearsalSummary.adapterDecisionStatus,
+      localProofObservationStatus: localProofRehearsalSummary.observationStatus,
+      localProofTargetEnvelope: localProofRehearsalSummary.targetGenericEnvelope,
+      localProofSurfaced: localProofRehearsalSummary.surfaced,
+      localProofNextAction: localProofRehearsalSummary.safeNextAction,
       swarmSeamState: swarmSeamPosture.state,
       swarmProof: false,
       swarmActivation: false,
@@ -326,7 +342,8 @@ export async function writeOperatorPacketIndex({
         outputIntegritySummary.outputIntegrityAttentionIssues +
         recordReadDiagnostics.diagnostics +
         layerInterop.attentionRows.length +
-        productionApprovalLane.attentionRows.length,
+        productionApprovalLane.attentionRows.length +
+        localProofRehearsalSummary.attentionRows,
       newestRecordPath: newestPath(records),
       operatorGuidanceOnly: true
     },
@@ -338,6 +355,7 @@ export async function writeOperatorPacketIndex({
       'Render receipts are local preview evidence only and do not authorize export or publication.',
       'Export receipts are local delivery evidence only and do not authorize publication or production readiness.',
       'Studio source-pressure adapter records are local review-only source evidence for the generic Layer seam.',
+      'Studio local proof rehearsal records are local review evidence only and do not activate swarm runtime.',
       'Edge may inspect these refs later, but this index does not call or verify Edge.'
     ],
     operatorGuidanceOnly: true,
@@ -407,6 +425,9 @@ export async function writeOperatorPacketIndex({
         index.studioSourcePressureAdapterSummary.observations > 0) {
       console.log(formatStudioSourcePressureAdapterSummary(index.studioSourcePressureAdapterSummary))
     }
+    if (index.localProofRehearsalSummary.proofs > 0) {
+      console.log(formatLocalProofRehearsalSummary(index.localProofRehearsalSummary))
+    }
     if (index.productionApprovalLane.candidates > 0) {
       console.log(formatProductionApprovalLaneSummary(index.productionApprovalLane))
     }
@@ -451,14 +472,18 @@ function formatOperatorPacketIndexSummary(index, output) {
     `localPackage=${summary.localPackageState ?? 'unknown'}`,
     `review=${summary.latestLocalPackageReviewPosture ?? 'unknown'}`,
     `integrity=${summary.localPackageIntegrityPosture ?? 'unknown'}`,
-    `nextAction=${summary.localPackageNextAction ?? 'Inspect local package posture.'}`,
     `currentExportReceiptAttention=${summary.currentExportReceiptAttention ?? 0}`,
     `historicalExportReceiptAttention=${summary.historicalExportReceiptAttention ?? 0}`,
     `layerInterop=${summary.layerInteropState ?? 'layer-refs-not-attached'}`,
     `layerAttention=${summary.layerInteropAttention ?? 0}`,
     `studioPressure=${summary.studioSourcePressureAdapterDecisionStatus ?? 'none'}`,
     `studioPressureObservation=${summary.studioSourcePressureObservationStatus ?? 'absent'}`,
+    `localProof=${summary.localProofState ?? 'absent'}`,
+    `localProofs=${summary.localProofRehearsals ?? 0}`,
     formatSwarmSeamPostureFields(index.swarmSeamPosture),
+    `nextAction=${summary.localProofRehearsals > 0
+      ? summary.localProofNextAction
+      : summary.localPackageNextAction ?? 'Inspect local package posture.'}`,
     `productionApprovalPending=${summary.productionApprovalPendingAuthority ?? 0}`,
     `ruleTraces=${summary.ruleResolutionTraces}`,
     `attention=${summary.attentionRows ?? summary.operatorHealthExplanations}`,
@@ -477,6 +502,22 @@ function formatStudioSourcePressureAdapterSummary(summary) {
     'layerAdmission=false',
     'durableAppend=false',
     'edgeActionQueued=false'
+  ].join(' | ')
+}
+
+function formatLocalProofRehearsalSummary(summary) {
+  return [
+    `studio local proof: proofs=${summary.proofs}`,
+    `proof=${summary.latestProofState}`,
+    `localPackage=${summary.localPackageState}`,
+    `swarmSeam=${summary.swarmSeamState}`,
+    `adapter=${summary.adapterDecisionStatus}`,
+    `observation=${summary.observationStatus}`,
+    `target=${summary.targetGenericEnvelope}`,
+    `surfaced=${summary.surfaced}`,
+    'swarmProof=false',
+    'activation=false',
+    `nextAction=${summary.safeNextAction}`
   ].join(' | ')
 }
 
@@ -726,7 +767,8 @@ const indexableSchemas = new Set([
   artifactKinds.mediaLayerPressureArtifactLocal,
   artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal,
   artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal,
-  artifactKinds.mediaStudioSourcePressureObservationResultLocal
+  artifactKinds.mediaStudioSourcePressureObservationResultLocal,
+  artifactKinds.mediaStudioLocalProofRehearsalLocal
 ])
 
 function normalizeRecordPaths(records) {
@@ -1065,7 +1107,8 @@ function kindForSchema(schema) {
     [artifactKinds.mediaRuleResolutionTraceLocal]: 'media-rule-resolution-trace',
     [artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal]: 'media-studio-source-pressure-adapter-candidate',
     [artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal]: 'media-studio-source-pressure-adapter-operator-decision',
-    [artifactKinds.mediaStudioSourcePressureObservationResultLocal]: 'media-studio-source-pressure-observation-result'
+    [artifactKinds.mediaStudioSourcePressureObservationResultLocal]: 'media-studio-source-pressure-observation-result',
+    [artifactKinds.mediaStudioLocalProofRehearsalLocal]: 'media-studio-local-proof-rehearsal'
   }[schema] ?? schema
 }
 
@@ -1090,6 +1133,7 @@ function idForRecord(record) {
     record.bundleId ??
     record.adapterCandidateId ??
     record.observationId ??
+    record.proofRehearsalId ??
     record.traceId
 }
 

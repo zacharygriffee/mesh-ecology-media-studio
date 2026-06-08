@@ -13,6 +13,7 @@ import { latestLocalPackageReviewEntry } from '../production/package-authority-f
 import { isDiscoverableJsonPath, readJsonFileTolerant, writeJsonAtomic } from '../local/atomic-json.js'
 import { summarizeSwarmSeamPosture, formatSwarmSeamPostureFields } from './swarm-seam-posture.js'
 import { summarizeStudioSourcePressure } from './studio-source-pressure-summary.js'
+import { summarizeLocalProofRehearsal } from './local-proof-summary.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
@@ -48,7 +49,8 @@ const optionalSourceRecordPaths = Object.freeze({
   layerPressureArtifact: 'records/exports/media-layer-pressure-artifact.local.json',
   studioSourcePressureAdapterCandidate: 'records/exports/media-studio-source-pressure-adapter-candidate.local.json',
   studioSourcePressureAdapterDecision: 'records/exports/media-studio-source-pressure-adapter-operator-decision.local.json',
-  studioSourcePressureObservation: 'records/exports/media-studio-source-pressure-observation-result.local.json'
+  studioSourcePressureObservation: 'records/exports/media-studio-source-pressure-observation-result.local.json',
+  localProofRehearsal: 'records/exports/media-studio-local-proof-rehearsal.local.json'
 })
 const optionalSourceRoots = Object.freeze([
   'records/approvals',
@@ -68,7 +70,8 @@ const optionalSourceSchemas = new Set([
   artifactKinds.mediaLayerPressureArtifactLocal,
   artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal,
   artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal,
-  artifactKinds.mediaStudioSourcePressureObservationResultLocal
+  artifactKinds.mediaStudioSourcePressureObservationResultLocal,
+  artifactKinds.mediaStudioLocalProofRehearsalLocal
 ])
 const productionSourceSchemas = new Set([
   artifactKinds.mediaProductionUnit,
@@ -146,6 +149,7 @@ export async function writeEdgeCompatibilityBundle({
   const layerInteropSummary = createLayerInteropSummary({ sources })
   const studioSourcePressureSummary = summarizeStudioSourcePressure(sources)
   const studioSourcePressureAdapterSummary = studioSourcePressureSummary.studioSourcePressureAdapterSummary
+  const localProofRehearsalSummary = summarizeLocalProofRehearsal(sources)
   const swarmSeamPosture = summarizeSwarmSeamPosture({
     localPackagePosture,
     adapterSummary: studioSourcePressureAdapterSummary,
@@ -164,6 +168,7 @@ export async function writeEdgeCompatibilityBundle({
     localPackagePosture,
     layerInteropSummary,
     swarmSeamPosture,
+    localProofRehearsalSummary,
     createdAt
   })
   const sourceRefStrings = studioSourceRefs.map((ref) => `${ref.kind}:${ref.id}`)
@@ -223,6 +228,7 @@ export async function writeEdgeCompatibilityBundle({
     layerInteropSummary,
     swarmSeamPosture,
     studioSourcePressureAdapterSummary,
+    localProofRehearsalSummary,
     studioReviewEvidence: reviewEvidence,
     edgeWorkPacketCandidate: workPacketCandidate,
     edgeEvidenceImportCandidate: evidenceImportCandidate,
@@ -272,6 +278,8 @@ export async function writeEdgeCompatibilityBundle({
       `nextAction=${bundle.localPackagePosture.safeNextAction}`,
       `studioPressure=${bundle.studioSourcePressureAdapterSummary.latestDecisionStatus}`,
       `studioPressureObservation=${bundle.studioSourcePressureAdapterSummary.observationStatus}`,
+      `localProof=${bundle.localProofRehearsalSummary.latestProofState}`,
+      `localProofs=${bundle.localProofRehearsalSummary.proofs}`,
       formatSwarmSeamPostureFields(bundle.swarmSeamPosture)
     ].join(' | '))
   }
@@ -349,6 +357,7 @@ function createStudioEdgeReviewEvidence({
   localPackagePosture,
   layerInteropSummary,
   swarmSeamPosture,
+  localProofRehearsalSummary,
   createdAt
 }) {
   const reviewEvidence = {
@@ -376,6 +385,7 @@ function createStudioEdgeReviewEvidence({
     localPackagePosture,
     layerInteropSummary,
     swarmSeamPosture,
+    localProofRehearsalSummary,
     summary: 'Studio local inspection artifacts are ready for Edge-style operator review as local evidence only.',
     reasonCodes: [
       'studio_local_wedge_complete',
@@ -853,7 +863,8 @@ function kindForSchema(schema) {
     [artifactKinds.mediaRuleResolutionTraceLocal]: 'media-rule-resolution-trace',
     [artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal]: 'media-studio-source-pressure-adapter-candidate',
     [artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal]: 'media-studio-source-pressure-adapter-operator-decision',
-    [artifactKinds.mediaStudioSourcePressureObservationResultLocal]: 'media-studio-source-pressure-observation-result'
+    [artifactKinds.mediaStudioSourcePressureObservationResultLocal]: 'media-studio-source-pressure-observation-result',
+    [artifactKinds.mediaStudioLocalProofRehearsalLocal]: 'media-studio-local-proof-rehearsal'
   }
 
   return schemaKinds[schema] ?? schema
@@ -892,6 +903,7 @@ function idForRecord(record) {
     record.resourceRefCandidateId ??
     record.adapterCandidateId ??
     record.observationId ??
+    record.proofRehearsalId ??
     record.operationId ??
     record.traceId ??
     record.schema

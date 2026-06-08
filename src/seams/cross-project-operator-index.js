@@ -125,6 +125,9 @@ export async function writeCrossProjectOperatorIndex({
       if (project.swarmSeamPosture && !isSwarmSeamReady(project.swarmSeamPosture)) {
         console.log(`  swarm seam: state=${project.swarmSeamPosture.state} | adapter=${project.studioSourcePressureAdapterSummary?.latestDecisionStatus ?? 'none'} | observation=${project.studioSourcePressureAdapterSummary?.observationStatus ?? 'absent'} | swarmProof=false | activation=false | nextAction=${project.swarmSeamPosture.safeNextAction}`)
       }
+      if (project.localProofRehearsalSummary?.latestProofState === 'attention') {
+        console.log(`  local proof: proof=${project.localProofRehearsalSummary.latestProofState} | localPackage=${project.localProofRehearsalSummary.localPackageState} | swarmSeam=${project.localProofRehearsalSummary.swarmSeamState} | adapter=${project.localProofRehearsalSummary.adapterDecisionStatus} | observation=${project.localProofRehearsalSummary.observationStatus} | swarmProof=false | activation=false | nextAction=${project.localProofRehearsalSummary.safeNextAction}`)
+      }
       for (const explanation of project.operatorHealthExplanations ?? []) {
         console.log(`  subject: ${explanation.path ?? `${explanation.subjectKind}:${explanation.subjectRef?.id ?? 'unknown'}`} | issues=${(explanation.issueCodes ?? []).join(',') || 'none'} | nextAction=${explanation.nextAction ?? 'none'}`)
       }
@@ -166,6 +169,8 @@ function formatCrossProjectSummary(index, output) {
     `layerAttention=${summary.layerInteropAttention ?? 0}`,
     `localPackageComplete=${summary.localPackageComplete ?? 0}`,
     `localPackageAttention=${summary.localPackageAttention ?? 0}`,
+    `localProofReady=${summary.localProofReady ?? 0}`,
+    `localProofAttention=${summary.localProofAttention ?? 0}`,
     `swarmReady=${summary.swarmReady ?? 0}`,
     `swarmAttention=${summary.swarmAttention ?? 0}`,
     `swarmProof=false`,
@@ -183,6 +188,7 @@ function attentionRows(projectSummaries) {
     project.approvalProposal?.needsOperatorAttention === true ||
     project.layerInterop?.needsOperatorAttention === true ||
     (project.swarmSeamPosture && !isSwarmSeamReady(project.swarmSeamPosture)) ||
+    project.localProofRehearsalSummary?.latestProofState === 'attention' ||
     project.blockingIssues.length > 0 ||
     project.warnings.length > 0
   ))
@@ -231,6 +237,7 @@ async function summarizeProject(root, projectInput) {
   const localPackagePosture = summarizeProjectLocalPackagePosture(loaded, refs)
   const swarmSeamPosture = summarizeProjectSwarmSeamPosture(loaded, refs)
   const studioSourcePressureAdapterSummary = summarizeProjectStudioSourcePressureAdapterSummary(loaded, refs)
+  const localProofRehearsalSummary = summarizeProjectLocalProofRehearsalSummary(loaded, refs)
   const outputDeliverySummary = summarizeProjectOutputDelivery(health)
   const blockingIssues = health?.blockingIssues ?? []
   const operatorHealthExplanations = health?.operatorHealthExplanations ??
@@ -265,7 +272,8 @@ async function summarizeProject(root, projectInput) {
       providerLoopDecision: providerLoopDecision ? summarizeProviderLoopDecision(providerLoopDecision, refs.providerLoopDecision) : undefined,
       approvalProposal: approvalProposal ? summarizeApprovalProposal(approvalProposal, refs.approvalProposal) : undefined,
       layerInterop,
-      swarmSeamPosture
+      swarmSeamPosture,
+      localProofRehearsalSummary
     }),
     operatorGuidanceOnly: true,
     localOnly: true,
@@ -294,6 +302,10 @@ async function summarizeProject(root, projectInput) {
 
   if (studioSourcePressureAdapterSummary) {
     summary.studioSourcePressureAdapterSummary = studioSourcePressureAdapterSummary
+  }
+
+  if (localProofRehearsalSummary) {
+    summary.localProofRehearsalSummary = localProofRehearsalSummary
   }
 
   return summary
@@ -327,7 +339,8 @@ function summarizeProjectSafeNextAction({
   providerLoopDecision,
   approvalProposal,
   layerInterop,
-  swarmSeamPosture
+  swarmSeamPosture,
+  localProofRehearsalSummary
 }) {
   if (missingArtifactRefs.length > 0) return missingArtifactRefs[0].nextAction
   if (providerLoopStatus?.state === 'failed_review_only' && !providerLoopDecision) {
@@ -338,6 +351,7 @@ function summarizeProjectSafeNextAction({
   if (layerInterop?.needsOperatorAttention) return layerInterop.attentionRows[0].nextAction
   if (operatorHealthExplanations.length > 0) return operatorHealthExplanations[0].nextAction
   if (blockingIssues.length > 0) return 'Inspect project health blocking issues and regenerate the indicated local records.'
+  if (localProofRehearsalSummary?.latestProofState === 'attention') return localProofRehearsalSummary.safeNextAction
   if (swarmSeamPosture && !isSwarmSeamReady(swarmSeamPosture)) return swarmSeamPosture.safeNextAction
   return 'No local cross-project attention row is blocking inspection.'
 }
@@ -351,6 +365,7 @@ function summarizeCrossProjectSafeNextAction(projectSummaries) {
     (project) => project.layerInterop?.needsOperatorAttention === true,
     (project) => (project.operatorHealthExplanations ?? []).length > 0,
     (project) => project.blockingIssues.length > 0,
+    (project) => project.localProofRehearsalSummary?.latestProofState === 'attention',
     (project) => project.swarmSeamPosture && !isSwarmSeamReady(project.swarmSeamPosture)
   ]
 
@@ -415,6 +430,23 @@ function summarizeProjectStudioSourcePressureAdapterSummary(loaded, refs) {
     durableAppendApproved: false,
     edgeActionQueued: false,
     autoExecute: false,
+    localOnly: true,
+    operatorGuidanceOnly: true
+  }
+}
+
+function summarizeProjectLocalProofRehearsalSummary(loaded, refs) {
+  const source = postureSource(loaded, refs, 'localProofRehearsalSummary')
+  if (!source) return null
+  return {
+    ...source.value,
+    sourceRef: source.ref,
+    publicSwarmProof: false,
+    swarmRuntimeActivated: false,
+    edgeDispatch: false,
+    layerAdmission: false,
+    publicationAuthorization: false,
+    productionReady: false,
     localOnly: true,
     operatorGuidanceOnly: true
   }
@@ -646,6 +678,12 @@ function summarizeProjects(projectSummaries) {
     project.localPackagePosture?.packageState === 'output_integrity_blocked' ||
     project.swarmSeamPosture?.state === 'integrity_blocked'
   ).length
+  const localProofReady = projectSummaries.filter((project) =>
+    project.localProofRehearsalSummary?.latestProofState === 'ready'
+  ).length
+  const localProofAttention = projectSummaries.filter((project) =>
+    project.localProofRehearsalSummary?.latestProofState === 'attention'
+  ).length
   const attentionRows = projectSummaries.filter((project) => (
     project.handoffState === 'needs-local-attention' ||
     project.providerLoopStatus?.needsOperatorAttention === true ||
@@ -653,6 +691,7 @@ function summarizeProjects(projectSummaries) {
     project.approvalProposal?.needsOperatorAttention === true ||
     project.layerInterop?.needsOperatorAttention === true ||
     (project.swarmSeamPosture && !isSwarmSeamReady(project.swarmSeamPosture)) ||
+    project.localProofRehearsalSummary?.latestProofState === 'attention' ||
     project.blockingIssues.length > 0 ||
     project.warnings.length > 0
   )).length
@@ -681,6 +720,8 @@ function summarizeProjects(projectSummaries) {
     swarmAttention,
     adapterHold,
     integrityBlocked,
+    localProofReady,
+    localProofAttention,
     attentionRows,
     blockingIssues: projectSummaries.reduce((sum, project) => sum + project.blockingIssues.length, 0),
     missingArtifacts,

@@ -52,6 +52,7 @@ const extraInspectionSchemas = new Set([
   artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal,
   artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal,
   artifactKinds.mediaStudioSourcePressureObservationResultLocal,
+  artifactKinds.mediaStudioLocalProofRehearsalLocal,
   'media.operator_packet_index.local.v1',
   'media.edge_handoff_candidate.local.v1',
   'media.operator_decision_request.local.v1'
@@ -249,6 +250,7 @@ function nameForSchema(schema, relativePath) {
     [artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal]: `studioSourcePressureAdapterCandidate:${path.basename(relativePath, '.json')}`,
     [artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal]: `studioSourcePressureAdapterDecision:${path.basename(relativePath, '.json')}`,
     [artifactKinds.mediaStudioSourcePressureObservationResultLocal]: `studioSourcePressureObservation:${path.basename(relativePath, '.json')}`,
+    [artifactKinds.mediaStudioLocalProofRehearsalLocal]: `studioLocalProofRehearsal:${path.basename(relativePath, '.json')}`,
     'media.operator_packet_index.local.v1': `operatorPacketIndex:${path.basename(relativePath, '.json')}`,
     'media.edge_handoff_candidate.local.v1': `edgeHandoffCandidate:${path.basename(relativePath, '.json')}`,
     'media.operator_decision_request.local.v1': `operatorDecisionRequest:${path.basename(relativePath, '.json')}`
@@ -286,6 +288,7 @@ function kindForSchema(schema) {
     [artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal]: 'media-studio-source-pressure-adapter-candidate',
     [artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal]: 'media-studio-source-pressure-adapter-operator-decision',
     [artifactKinds.mediaStudioSourcePressureObservationResultLocal]: 'media-studio-source-pressure-observation-result',
+    [artifactKinds.mediaStudioLocalProofRehearsalLocal]: 'media-studio-local-proof-rehearsal',
     'media.operator_packet_index.local.v1': 'media-operator-packet-index',
     'media.edge_handoff_candidate.local.v1': 'media-edge-handoff-candidate',
     'media.operator_decision_request.local.v1': 'media-operator-decision-request'

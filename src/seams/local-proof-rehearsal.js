@@ -97,13 +97,13 @@ export async function runLocalProofRehearsal({
   const health = await runStep('health-summary', () =>
     writeProjectHealth({ projectDir, summary: true })
   )
-  const inspection = await runStep('inspect-local-run', () =>
+  let inspection = await runStep('inspect-local-run', () =>
     inspectLocalRun({ projectDir })
   )
-  const operatorIndex = await runStep('operator-index', () =>
+  let operatorIndex = await runStep('operator-index', () =>
     writeOperatorPacketIndex({ projectDir, quiet: true })
   )
-  const edgeCompatibility = await runStep('edge-compatibility-bundle', () =>
+  let edgeCompatibility = await runStep('edge-compatibility-bundle', () =>
     writeEdgeCompatibilityBundle({ projectDir, quiet: true })
   )
 
@@ -241,6 +241,43 @@ export async function runLocalProofRehearsal({
   validateRequiredRecord(proof)
   await writeJsonAtomic(projectDir, output, proof)
 
+  inspection = await runStep('surface-inspect-local-run', () =>
+    inspectLocalRun({ projectDir })
+  )
+  operatorIndex = await runStep('surface-operator-index', () =>
+    writeOperatorPacketIndex({ projectDir, quiet: true })
+  )
+  edgeCompatibility = await runStep('surface-edge-compatibility-bundle', () =>
+    writeEdgeCompatibilityBundle({ projectDir, quiet: true })
+  )
+  proof.surfaceRefs = {
+    inspectionPacketRef: localRef(
+      'media-edge-inspection-packet',
+      inspection.packet.packetId,
+      inspection.packet.schema,
+      inspection.output
+    ),
+    operatorPacketIndexRef: localRef(
+      'media-operator-packet-index',
+      operatorIndex.index.indexId,
+      operatorIndex.index.schema,
+      operatorIndex.output
+    ),
+    edgeCompatibilityBundleRef: localRef(
+      'media-edge-compatibility-bundle',
+      edgeCompatibility.bundle.compatibilityBundleId,
+      edgeCompatibility.bundle.schema,
+      edgeCompatibility.output
+    )
+  }
+  proof.summary.surfaced = true
+  proof.summary.surfaceInspectionPacket = inspection.output
+  proof.summary.surfaceOperatorIndex = operatorIndex.output
+  proof.summary.surfaceEdgeCompatibilityBundle = edgeCompatibility.output
+
+  validateRequiredRecord(proof)
+  await writeJsonAtomic(projectDir, output, proof)
+
   if (print) {
     console.log(JSON.stringify(proof, null, 2))
   } else if (!quiet) {
@@ -271,6 +308,7 @@ export function formatLocalProofRehearsal(proof, output = defaultOutput) {
     `observation=${proof.studioSourcePressureAdapterSummary.observationStatus}`,
     'swarmProof=false',
     'activation=false',
+    `surfaced=${proof.summary.surfaced === true}`,
     `nextAction=${proof.safeNextAction}`,
     `output=${output}`
   ].join(' | ')
