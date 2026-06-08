@@ -4130,6 +4130,43 @@ test('local production output runner creates reviewable delivery without authori
     line.includes('review=reviewed_fresh') &&
     line.includes('integrity=clear')
   ))
+  const pressureOutput = await captureConsole(() => writeStudioPressureArtifacts({
+    projectDir: dir,
+    adapterChain: true,
+    quiet: false,
+    createdAt: '2026-05-19T00:01:00.000Z'
+  }))
+  assert.equal(pressureOutput.result.swarmSeamPosture.state, 'ready_for_review_only_swarm_pressure')
+  assert.equal(pressureOutput.result.swarmSeamPosture.publicSwarmProof, false)
+  assert.equal(pressureOutput.result.swarmSeamPosture.swarmRuntimeActivated, false)
+  assert.equal(pressureOutput.result.swarmSeamPosture.edgeDispatch, false)
+  assert.equal(pressureOutput.result.swarmSeamPosture.layerAdmission, false)
+  assert.ok(pressureOutput.lines.some((line) =>
+    line.startsWith('swarm seam posture:') &&
+    line.includes('swarmSeam=ready_for_review_only_swarm_pressure') &&
+    line.includes('swarmProof=false') &&
+    line.includes('activation=false')
+  ))
+  const pressureOperatorIndex = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
+  assert.equal(pressureOperatorIndex.result.index.swarmSeamPosture.state, 'ready_for_review_only_swarm_pressure')
+  assert.equal(pressureOperatorIndex.result.index.summary.swarmSeamState, 'ready_for_review_only_swarm_pressure')
+  assert.equal(pressureOperatorIndex.result.index.summary.swarmProof, false)
+  assert.equal(pressureOperatorIndex.result.index.summary.swarmActivation, false)
+  assert.ok(pressureOperatorIndex.lines.some((line) =>
+    line.includes('swarmSeam=ready_for_review_only_swarm_pressure') &&
+    line.includes('swarmProof=false') &&
+    line.includes('activation=false')
+  ))
+  const pressureEdgeCompatibility = await captureConsole(() => writeEdgeCompatibilityBundle({ projectDir: dir }))
+  assert.equal(pressureEdgeCompatibility.result.bundle.swarmSeamPosture.state, 'ready_for_review_only_swarm_pressure')
+  assert.equal(pressureEdgeCompatibility.result.bundle.studioReviewEvidence.swarmSeamPosture.state, 'ready_for_review_only_swarm_pressure')
+  assert.equal(pressureEdgeCompatibility.result.bundle.swarmSeamPosture.publicSwarmProof, false)
+  assert.equal(pressureEdgeCompatibility.result.bundle.swarmSeamPosture.swarmRuntimeActivated, false)
+  assert.ok(pressureEdgeCompatibility.lines.some((line) =>
+    line.includes('swarmSeam=ready_for_review_only_swarm_pressure') &&
+    line.includes('swarmProof=false') &&
+    line.includes('activation=false')
+  ))
   const prereqOutput = await captureConsole(() => writeProductionAuthorityPrerequisiteReport({ projectDir: dir }))
   assert.ok(prereqOutput.lines.some((line) =>
     line.includes('localPackageReviews=1') &&

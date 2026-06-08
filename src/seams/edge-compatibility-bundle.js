@@ -11,6 +11,7 @@ import { summarizeExportReceipts } from '../production/export-receipts.js'
 import { summarizeLocalPackagePosture } from '../production/local-package-posture.js'
 import { latestLocalPackageReviewEntry } from '../production/package-authority-freshness.js'
 import { isDiscoverableJsonPath, readJsonFileTolerant, writeJsonAtomic } from '../local/atomic-json.js'
+import { summarizeSwarmSeamPosture, formatSwarmSeamPostureFields } from './swarm-seam-posture.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
@@ -143,6 +144,12 @@ export async function writeEdgeCompatibilityBundle({
   const localPackagePosture = createLocalPackagePostureSummary({ sources })
   const layerInteropSummary = createLayerInteropSummary({ sources })
   const studioSourcePressureAdapterSummary = createStudioSourcePressureAdapterSummary({ sources })
+  const swarmSeamPosture = createSwarmSeamPostureSummary({
+    sources,
+    localPackagePosture,
+    layerInteropSummary,
+    studioSourcePressureAdapterSummary
+  })
   const createdAt = nowIso()
   const reviewEvidence = createStudioEdgeReviewEvidence({
     projectId,
@@ -151,6 +158,7 @@ export async function writeEdgeCompatibilityBundle({
     exportDeliverySummary,
     localPackagePosture,
     layerInteropSummary,
+    swarmSeamPosture,
     createdAt
   })
   const sourceRefStrings = studioSourceRefs.map((ref) => `${ref.kind}:${ref.id}`)
@@ -208,6 +216,7 @@ export async function writeEdgeCompatibilityBundle({
     exportDeliverySummary,
     localPackagePosture,
     layerInteropSummary,
+    swarmSeamPosture,
     studioSourcePressureAdapterSummary,
     studioReviewEvidence: reviewEvidence,
     edgeWorkPacketCandidate: workPacketCandidate,
@@ -257,7 +266,8 @@ export async function writeEdgeCompatibilityBundle({
       `integrity=${bundle.localPackagePosture.integrityPosture}`,
       `nextAction=${bundle.localPackagePosture.safeNextAction}`,
       `studioPressure=${bundle.studioSourcePressureAdapterSummary.latestDecisionStatus}`,
-      `studioPressureObservation=${bundle.studioSourcePressureAdapterSummary.observationStatus}`
+      `studioPressureObservation=${bundle.studioSourcePressureAdapterSummary.observationStatus}`,
+      formatSwarmSeamPostureFields(bundle.swarmSeamPosture)
     ].join(' | '))
   }
 
@@ -333,6 +343,7 @@ function createStudioEdgeReviewEvidence({
   exportDeliverySummary,
   localPackagePosture,
   layerInteropSummary,
+  swarmSeamPosture,
   createdAt
 }) {
   const reviewEvidence = {
@@ -359,6 +370,7 @@ function createStudioEdgeReviewEvidence({
     exportDeliverySummary,
     localPackagePosture,
     layerInteropSummary,
+    swarmSeamPosture,
     summary: 'Studio local inspection artifacts are ready for Edge-style operator review as local evidence only.',
     reasonCodes: [
       'studio_local_wedge_complete',
@@ -383,6 +395,31 @@ function createStudioEdgeReviewEvidence({
 
   validateRequiredRecord(reviewEvidence)
   return reviewEvidence
+}
+
+function createSwarmSeamPostureSummary({
+  sources,
+  localPackagePosture,
+  layerInteropSummary,
+  studioSourcePressureAdapterSummary
+}) {
+  const edgePressure = sources.edgePressureArtifact?.record
+  const layerPressure = sources.layerPressureArtifact?.record
+  return summarizeSwarmSeamPosture({
+    localPackagePosture,
+    adapterSummary: studioSourcePressureAdapterSummary,
+    edgeSourceRefs: edgePressure?.sourceRefs ?? [],
+    layerSourceRefs: layerPressure?.sourceRefs ?? [],
+    missingEdgeSourceSchemas: missingSourceSchemasFromPressure(edgePressure),
+    missingLayerSourceSchemas: missingSourceSchemasFromPressure(layerPressure),
+    layerInteropSummary
+  })
+}
+
+function missingSourceSchemasFromPressure(pressureArtifact) {
+  return (pressureArtifact?.readinessBlockers ?? [])
+    .filter((blocker) => typeof blocker === 'string' && blocker.startsWith('missing_source_schema:'))
+    .map((blocker) => blocker.slice('missing_source_schema:'.length))
 }
 
 function createStudioSourcePressureAdapterSummary({ sources }) {

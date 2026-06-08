@@ -81,8 +81,10 @@ or grant authority.
 `media.layer_pressure_artifact.local.v1` package Studio-owned source pressure
 for Edge and Layer review. They carry local media, operator, production-package,
 authority-handoff, and resource-ref candidate refs with non-claims attached. They
-do not grant Edge approval, Layer admission, production authority, publication
-authorization, mesh publication, accepted continuity, or local-layer authority.
+also carry additive `swarmSeamPosture` when generated from the current local
+proof lane. They do not grant Edge approval, Layer admission, production
+authority, publication authorization, mesh publication, accepted continuity,
+swarm runtime activation, public swarm proof, or local-layer authority.
 
 `media.studio_source_pressure_adapter_candidate.local.v1`,
 `media.studio_source_pressure_adapter_operator_decision.local.v1`, and
@@ -90,8 +92,8 @@ authorization, mesh publication, accepted continuity, or local-layer authority.
 bounded Studio-shaped pressure artifact to the generic
 `layer_source_pressure_review.v0` seam. They do not create a Studio-specific
 Layer API, grant Layer admission, approve durable append, create accepted
-continuity, select production storage, mutate writer/reader admission, or make
-Edge authority.
+continuity, select production storage, mutate writer/reader admission, activate
+swarm runtime, prove public swarm transport, or make Edge authority.
 
 `media.authority_handoff_candidate.local.v1` packages local production bundle,
 approval proposal, capsule, situated identity, and prerequisite refs for a

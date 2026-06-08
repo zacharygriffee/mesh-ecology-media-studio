@@ -14,6 +14,7 @@ import { summarizeExportReceipt, summarizeExportReceipts } from '../production/e
 import { summarizeLocalPackagePosture } from '../production/local-package-posture.js'
 import { evaluateLocalOutputIntegrity } from '../production/output-integrity.js'
 import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
+import { summarizeSwarmSeamPosture, formatSwarmSeamPostureFields } from './swarm-seam-posture.js'
 import {
   isDiscoverableJsonPath,
   readJsonFileTolerant,
@@ -172,6 +173,15 @@ export async function writeOperatorPacketIndex({
     outputIntegritySummary
   })
   const layerInterop = summarizeLayerInteropFromRecords(records)
+  const swarmSeamPosture = summarizeSwarmSeamPosture({
+    localPackagePosture,
+    adapterSummary: studioSourcePressureAdapterSummary,
+    edgeSourceRefs: latestPressureSourceRefs(records, artifactKinds.mediaEdgePressureArtifactLocal),
+    layerSourceRefs: latestPressureSourceRefs(records, artifactKinds.mediaLayerPressureArtifactLocal),
+    missingEdgeSourceSchemas: latestPressureMissingSourceSchemas(records, artifactKinds.mediaEdgePressureArtifactLocal),
+    missingLayerSourceSchemas: latestPressureMissingSourceSchemas(records, artifactKinds.mediaLayerPressureArtifactLocal),
+    layerInteropSummary: layerInterop
+  })
   const productionApprovalLane = summarizeProductionApprovalLane({
     assetRecords: records
       .filter((entry) => entry.record.schema === artifactKinds.mediaAssetDescriptor)
@@ -228,6 +238,7 @@ export async function writeOperatorPacketIndex({
     exportReceipts,
     outputIntegritySummary,
     localPackagePosture,
+    swarmSeamPosture,
     layerInterop,
     productionApprovalLane,
     operatorHealthExplanations,
@@ -292,6 +303,9 @@ export async function writeOperatorPacketIndex({
       studioSourcePressureAdapterDecisionStatus: studioSourcePressureAdapterSummary.latestDecisionStatus,
       studioSourcePressureObservationStatus: studioSourcePressureAdapterSummary.observationStatus,
       studioSourcePressureTargetEnvelope: studioSourcePressureAdapterSummary.targetGenericEnvelope,
+      swarmSeamState: swarmSeamPosture.state,
+      swarmProof: false,
+      swarmActivation: false,
       productionApprovalCandidates: productionApprovalLane.candidates,
       productionApprovalPendingAuthority: productionApprovalLane.pendingAuthority,
       ruleResolutionTraces: mediationRefs.length,
@@ -442,11 +456,28 @@ function formatOperatorPacketIndexSummary(index, output) {
     `layerAttention=${summary.layerInteropAttention ?? 0}`,
     `studioPressure=${summary.studioSourcePressureAdapterDecisionStatus ?? 'none'}`,
     `studioPressureObservation=${summary.studioSourcePressureObservationStatus ?? 'absent'}`,
+    formatSwarmSeamPostureFields(index.swarmSeamPosture),
     `productionApprovalPending=${summary.productionApprovalPendingAuthority ?? 0}`,
     `ruleTraces=${summary.ruleResolutionTraces}`,
     `attention=${summary.attentionRows ?? summary.operatorHealthExplanations}`,
     `output=${output}`
   ].join(' | ')
+}
+
+function latestPressureSourceRefs(records, schema) {
+  return latestPressureRecord(records, schema)?.record.sourceRefs ?? []
+}
+
+function latestPressureMissingSourceSchemas(records, schema) {
+  return (latestPressureRecord(records, schema)?.record.readinessBlockers ?? [])
+    .filter((blocker) => typeof blocker === 'string' && blocker.startsWith('missing_source_schema:'))
+    .map((blocker) => blocker.slice('missing_source_schema:'.length))
+}
+
+function latestPressureRecord(records, schema) {
+  return records
+    .filter((entry) => entry.record.schema === schema)
+    .sort(sortNewestRecordFirst)[0]
 }
 
 function summarizeStudioSourcePressureAdapter(records) {
@@ -753,6 +784,8 @@ const indexableSchemas = new Set([
   artifactKinds.mediaExportPlanCandidateLocal,
   artifactKinds.mediaExportReceiptLocal,
   artifactKinds.mediaRuleResolutionTraceLocal,
+  artifactKinds.mediaEdgePressureArtifactLocal,
+  artifactKinds.mediaLayerPressureArtifactLocal,
   artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal,
   artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal,
   artifactKinds.mediaStudioSourcePressureObservationResultLocal

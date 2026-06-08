@@ -29,6 +29,7 @@ import {
   createStudioSourcePressureObservationResult,
   writeStudioPressureArtifacts
 } from '../src/seams/studio-pressure-artifacts.js'
+import { summarizeSwarmSeamPosture } from '../src/seams/swarm-seam-posture.js'
 
 const pressureOutputSchemas = new Set([
   artifactKinds.mediaEdgePressureArtifactLocal,
@@ -113,6 +114,78 @@ async function runStudioCli(script, args) {
   })
   return JSON.parse(stdout.trim())
 }
+
+function completeLocalPackagePosture(overrides = {}) {
+  return {
+    packageState: 'complete_review_only_authority_missing',
+    latestReviewPosture: 'reviewed_fresh',
+    integrityPosture: 'clear',
+    safeNextAction: 'Route the reviewed local package and request candidate to a future authority lane; no publication authorization is granted locally.',
+    ...overrides
+  }
+}
+
+function approvedAdapterSummary(overrides = {}) {
+  return {
+    latestDecisionStatus: 'approved_bounded_studio_source_pressure_observation',
+    observationStatus: 'studio_source_pressure_routed_through_generic_layer_seam',
+    targetGenericEnvelope: 'layer_source_pressure_review.v0',
+    emittedEnvelopeSchemaVersion: 'layer-source-pressure-review.v0',
+    ...overrides
+  }
+}
+
+function pressureRefs() {
+  return {
+    edgeSourceRefs: [{ kind: 'media-edge-inspection-packet', id: 'edge-ref', schema: artifactKinds.mediaEdgeInspectionPacketLocal }],
+    layerSourceRefs: [{ kind: 'media-layer-resource-ref', id: 'layer-ref', schema: artifactKinds.mediaLocalLayerResourceRefCandidateLocal }]
+  }
+}
+
+test('Studio swarm seam posture classifies review-only readiness states', () => {
+  const ready = summarizeSwarmSeamPosture({
+    localPackagePosture: completeLocalPackagePosture(),
+    adapterSummary: approvedAdapterSummary(),
+    ...pressureRefs()
+  })
+  assert.equal(ready.state, 'ready_for_review_only_swarm_pressure')
+  assert.equal(ready.publicSwarmProof, false)
+  assert.equal(ready.swarmRuntimeActivated, false)
+  assert.equal(ready.edgeDispatch, false)
+  assert.equal(ready.layerAdmission, false)
+
+  const rejected = summarizeSwarmSeamPosture({
+    localPackagePosture: completeLocalPackagePosture(),
+    adapterSummary: approvedAdapterSummary({
+      latestDecisionStatus: 'rejected_bounded_studio_source_pressure_observation',
+      observationStatus: 'skipped'
+    }),
+    ...pressureRefs()
+  })
+  assert.equal(rejected.state, 'adapter_hold')
+  assert.ok(rejected.attentionCodes.includes('adapter_hold'))
+
+  const missingObservation = summarizeSwarmSeamPosture({
+    localPackagePosture: completeLocalPackagePosture(),
+    adapterSummary: approvedAdapterSummary({ observationStatus: 'absent' }),
+    ...pressureRefs()
+  })
+  assert.equal(missingObservation.state, 'source_pressure_attention')
+
+  const incompletePackage = summarizeSwarmSeamPosture({
+    localPackagePosture: completeLocalPackagePosture({ packageState: 'incomplete_local_package', integrityPosture: 'incomplete' }),
+    adapterSummary: approvedAdapterSummary(),
+    ...pressureRefs()
+  })
+  assert.equal(incompletePackage.state, 'local_package_attention')
+
+  const integrityBlocked = summarizeSwarmSeamPosture({
+    localPackagePosture: completeLocalPackagePosture({ packageState: 'output_integrity_blocked', integrityPosture: 'blocked' }),
+    adapterSummary: approvedAdapterSummary(),
+    ...pressureRefs()
+  })
+  assert.equal(integrityBlocked.state, 'integrity_blocked')
+})
 
 test('Studio source-pressure adapter candidate targets the generic Layer envelope only', () => {
   const { candidate, layerPressureArtifact } = buildStudioSourcePressureAdapterFixture()
@@ -247,14 +320,26 @@ test('Studio pressure command emission writes approved adapter chain artifacts',
   assert.equal(result.adapter.nonClaims.layerAdmission, false)
   assert.equal(result.adapter.nonClaims.durableAppendApproved, false)
   assert.equal(result.adapter.nonClaims.autoExecute, false)
+  assert.equal(result.swarmSeamPosture.state, 'local_package_attention')
+  assert.equal(result.swarmSeamPosture.adapterDecision, 'approved_bounded_studio_source_pressure_observation')
+  assert.equal(result.swarmSeamPosture.adapterObservation, 'studio_source_pressure_routed_through_generic_layer_seam')
+  assert.equal(result.swarmSeamPosture.publicSwarmProof, false)
+  assert.equal(result.swarmSeamPosture.swarmRuntimeActivated, false)
+  assert.equal(result.edgePressureArtifact.swarmSeamPosture.state, result.swarmSeamPosture.state)
+  assert.equal(result.layerPressureArtifact.swarmSeamPosture.state, result.swarmSeamPosture.state)
+  assert.equal(result.adapter.swarmSeamPosture.state, result.swarmSeamPosture.state)
 
   const writtenCandidate = JSON.parse(await readFile(path.join(dir, result.outputs.adapterCandidateOutput), 'utf8'))
   const writtenDecision = JSON.parse(await readFile(path.join(dir, result.outputs.adapterDecisionOutput), 'utf8'))
   const writtenObservation = JSON.parse(await readFile(path.join(dir, result.outputs.adapterObservationOutput), 'utf8'))
+  const writtenEdgePressure = JSON.parse(await readFile(path.join(dir, result.outputs.edgeOutput), 'utf8'))
+  const writtenLayerPressure = JSON.parse(await readFile(path.join(dir, result.outputs.layerOutput), 'utf8'))
 
   assert.equal(writtenCandidate.adapterCandidateId, result.adapter.candidate.adapterCandidateId)
   assert.equal(writtenDecision.decisionId, result.adapter.operatorDecision.decisionId)
   assert.equal(writtenObservation.observationId, result.adapter.observationResult.observationId)
+  assert.equal(writtenEdgePressure.swarmSeamPosture.state, 'local_package_attention')
+  assert.equal(writtenLayerPressure.swarmSeamPosture.state, 'local_package_attention')
   assert.equal(validateRequiredRecord(writtenCandidate), true)
   assert.equal(validateRequiredRecord(writtenDecision), true)
   assert.equal(validateRequiredRecord(writtenObservation), true)
@@ -284,6 +369,12 @@ test('Studio pressure adapter chain surfaces through inspection operator and Edg
   assert.equal(indexResult.index.studioSourcePressureAdapterSummary.targetGenericEnvelope, 'layer_source_pressure_review.v0')
   assert.equal(indexResult.index.studioSourcePressureAdapterSummary.layerAdmissionApproved, false)
   assert.equal(indexResult.index.studioSourcePressureAdapterSummary.edgeActionQueued, false)
+  assert.equal(indexResult.index.swarmSeamPosture.state, 'local_package_attention')
+  assert.equal(indexResult.index.swarmSeamPosture.publicSwarmProof, false)
+  assert.equal(indexResult.index.swarmSeamPosture.swarmRuntimeActivated, false)
+  assert.equal(indexResult.index.summary.swarmSeamState, 'local_package_attention')
+  assert.equal(indexResult.index.summary.swarmProof, false)
+  assert.equal(indexResult.index.summary.swarmActivation, false)
   assert.equal(validateRequiredRecord(indexResult.index), true)
 
   const compatibilityResult = await writeEdgeCompatibilityBundle({ projectDir: dir, quiet: true })
@@ -295,6 +386,10 @@ test('Studio pressure adapter chain surfaces through inspection operator and Edg
   assert.equal(compatibilityResult.bundle.studioSourcePressureAdapterSummary.layerAdmissionApproved, false)
   assert.equal(compatibilityResult.bundle.studioSourcePressureAdapterSummary.durableAppendApproved, false)
   assert.equal(compatibilityResult.bundle.studioSourcePressureAdapterSummary.edgeActionQueued, false)
+  assert.equal(compatibilityResult.bundle.swarmSeamPosture.state, 'local_package_attention')
+  assert.equal(compatibilityResult.bundle.swarmSeamPosture.publicSwarmProof, false)
+  assert.equal(compatibilityResult.bundle.swarmSeamPosture.swarmRuntimeActivated, false)
+  assert.equal(compatibilityResult.bundle.studioReviewEvidence.swarmSeamPosture.state, 'local_package_attention')
   assert.equal(validateRequiredRecord(compatibilityResult.bundle), true)
 })
 
@@ -314,6 +409,9 @@ test('Studio pressure adapter chain is visible through public CLI print surfaces
   assert.equal(pressure.adapter.nonClaims.layerAdmission, false)
   assert.equal(pressure.adapter.nonClaims.edgeAuthority, false)
   assert.equal(pressure.adapter.nonClaims.autoExecute, false)
+  assert.equal(pressure.swarmSeamPosture.state, 'local_package_attention')
+  assert.equal(pressure.swarmSeamPosture.publicSwarmProof, false)
+  assert.equal(pressure.swarmSeamPosture.swarmRuntimeActivated, false)
 
   const inspection = await runStudioCli('inspect:local-run', [
     '--project-dir',
@@ -339,6 +437,10 @@ test('Studio pressure adapter chain is visible through public CLI print surfaces
   assert.equal(operatorIndex.summary.studioSourcePressureTargetEnvelope, 'layer_source_pressure_review.v0')
   assert.equal(operatorIndex.studioSourcePressureAdapterSummary.layerAdmissionApproved, false)
   assert.equal(operatorIndex.studioSourcePressureAdapterSummary.edgeActionQueued, false)
+  assert.equal(operatorIndex.swarmSeamPosture.state, 'local_package_attention')
+  assert.equal(operatorIndex.summary.swarmSeamState, 'local_package_attention')
+  assert.equal(operatorIndex.summary.swarmProof, false)
+  assert.equal(operatorIndex.summary.swarmActivation, false)
 
   const edgeCompatibility = await runStudioCli('edge:compat', [
     '--project-dir',
@@ -353,6 +455,9 @@ test('Studio pressure adapter chain is visible through public CLI print surfaces
   assert.equal(edgeCompatibility.studioSourcePressureAdapterSummary.targetGenericEnvelope, 'layer_source_pressure_review.v0')
   assert.equal(edgeCompatibility.studioSourcePressureAdapterSummary.layerAdmissionApproved, false)
   assert.equal(edgeCompatibility.studioSourcePressureAdapterSummary.edgeActionQueued, false)
+  assert.equal(edgeCompatibility.swarmSeamPosture.state, 'local_package_attention')
+  assert.equal(edgeCompatibility.swarmSeamPosture.publicSwarmProof, false)
+  assert.equal(edgeCompatibility.swarmSeamPosture.swarmRuntimeActivated, false)
   assert.equal(edgeCompatibility.edgeRuntimeBuilt, false)
   assert.equal(edgeCompatibility.edgeRuntimeVerified, false)
 })
@@ -375,6 +480,9 @@ test('Studio pressure command emission can reject adapter observation', async ()
   assert.equal(result.adapter.operatorDecision.nextSafeMove, 'hold')
   assert.equal(result.adapter.observationResult, null)
   assert.equal(result.outputs.adapterObservationOutput, undefined)
+  assert.equal(result.swarmSeamPosture.state, 'local_package_attention')
+  assert.ok(result.swarmSeamPosture.attentionCodes.includes('adapter_hold'))
+  assert.equal(result.swarmSeamPosture.publicSwarmProof, false)
 
   const writtenCandidate = JSON.parse(await readFile(path.join(dir, result.outputs.adapterCandidateOutput), 'utf8'))
   const writtenDecision = JSON.parse(await readFile(path.join(dir, result.outputs.adapterDecisionOutput), 'utf8'))
@@ -408,6 +516,8 @@ test('Studio pressure rejected adapter chain surfaces without observation error'
   assert.equal(indexResult.index.studioSourcePressureAdapterSummary.latestDecisionStatus, 'rejected_bounded_studio_source_pressure_observation')
   assert.equal(indexResult.index.studioSourcePressureAdapterSummary.observationStatus, 'skipped')
   assert.equal(indexResult.index.summary.studioSourcePressureObservationStatus, 'skipped')
+  assert.equal(indexResult.index.swarmSeamPosture.state, 'local_package_attention')
+  assert.ok(indexResult.index.swarmSeamPosture.attentionCodes.includes('adapter_hold'))
   assert.equal(validateRequiredRecord(indexResult.index), true)
 
   const compatibilityResult = await writeEdgeCompatibilityBundle({ projectDir: dir, quiet: true })
@@ -417,6 +527,8 @@ test('Studio pressure rejected adapter chain surfaces without observation error'
   assert.equal(compatibilityResult.bundle.studioSourcePressureAdapterSummary.latestDecisionStatus, 'rejected_bounded_studio_source_pressure_observation')
   assert.equal(compatibilityResult.bundle.studioSourcePressureAdapterSummary.observationStatus, 'skipped')
   assert.equal(compatibilityResult.bundle.studioSourcePressureAdapterSummary.edgeActionQueued, false)
+  assert.equal(compatibilityResult.bundle.swarmSeamPosture.state, 'local_package_attention')
+  assert.ok(compatibilityResult.bundle.swarmSeamPosture.attentionCodes.includes('adapter_hold'))
   assert.equal(validateRequiredRecord(compatibilityResult.bundle), true)
 })
 
@@ -437,6 +549,8 @@ test('Studio pressure rejected adapter chain is visible through public CLI print
   assert.equal(pressure.adapter.operatorDecision.nextSafeMove, 'hold')
   assert.equal(pressure.adapter.observationResult, null)
   assert.equal(pressure.outputs.adapterObservationOutput, undefined)
+  assert.equal(pressure.swarmSeamPosture.state, 'local_package_attention')
+  assert.ok(pressure.swarmSeamPosture.attentionCodes.includes('adapter_hold'))
 
   const inspection = await runStudioCli('inspect:local-run', [
     '--project-dir',
@@ -458,6 +572,8 @@ test('Studio pressure rejected adapter chain is visible through public CLI print
   assert.equal(operatorIndex.summary.studioSourcePressureAdapterDecisionStatus, 'rejected_bounded_studio_source_pressure_observation')
   assert.equal(operatorIndex.summary.studioSourcePressureObservationStatus, 'skipped')
   assert.equal(operatorIndex.studioSourcePressureAdapterSummary.observationStatus, 'skipped')
+  assert.equal(operatorIndex.swarmSeamPosture.state, 'local_package_attention')
+  assert.ok(operatorIndex.swarmSeamPosture.attentionCodes.includes('adapter_hold'))
 
   const edgeCompatibility = await runStudioCli('edge:compat', [
     '--project-dir',
@@ -470,6 +586,8 @@ test('Studio pressure rejected adapter chain is visible through public CLI print
   assert.equal(edgeCompatibility.studioSourcePressureAdapterSummary.latestDecisionStatus, 'rejected_bounded_studio_source_pressure_observation')
   assert.equal(edgeCompatibility.studioSourcePressureAdapterSummary.observationStatus, 'skipped')
   assert.equal(edgeCompatibility.studioSourcePressureAdapterSummary.edgeActionQueued, false)
+  assert.equal(edgeCompatibility.swarmSeamPosture.state, 'local_package_attention')
+  assert.ok(edgeCompatibility.swarmSeamPosture.attentionCodes.includes('adapter_hold'))
   assert.equal(edgeCompatibility.edgeRuntimeBuilt, false)
   assert.equal(edgeCompatibility.edgeRuntimeVerified, false)
 })

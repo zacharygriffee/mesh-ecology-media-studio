@@ -49,7 +49,7 @@ text is not the durable contract.
 | `npm run production:publication-authority-request` | yes | yes | `--print` | yes | packages reviewed local output evidence as a future publication/export authority request candidate; no ratifier, authority grant, publication, or production readiness |
 | `npm run production:local-output` | yes | yes | `--print` | yes | orchestrates existing rough-cut, review, render, export, authority-prereq, local package review, publication/export request candidate, handoff, operator-index, and Edge-compatible bundle commands; `--print` includes shared `localPackagePosture` and compact output shows `localPackage`, `review`, `integrity`, and `nextAction`; `--disable-ffmpeg` keeps execution to contact-sheet and local package-copy evidence; no new authority, publication, Edge call, or production readiness |
 | `npm run record-io:stress` | yes | temp project by default | `--print` | yes | runs a bounded overlap of local output writers and summary/index/prereq readers to verify local JSON atomic-write/tolerant-read posture; ffmpeg is disabled by default; no authority, publication, Edge call, or mesh publication |
-| `npm run pressure:studio` | yes | yes | `--print` | yes | writes Studio-owned Edge and Layer pressure artifacts by default; `--adapter-chain` also writes the bounded Studio source-pressure adapter candidate, operator decision, and approved observation for Layer's generic `layer_source_pressure_review.v0` seam; `--adapter-decision rejected` writes candidate/decision only; no Layer admission, durable append, Edge authority, queue action, dispatch, or auto-execute |
+| `npm run pressure:studio` | yes | yes | `--print` | yes | writes Studio-owned Edge and Layer pressure artifacts by default; `--adapter-chain` also writes the bounded Studio source-pressure adapter candidate, operator decision, and approved observation for Layer's generic `layer_source_pressure_review.v0` seam; `--adapter-decision rejected` writes candidate/decision only; emits review-only `swarmSeamPosture`; no Layer admission, durable append, Edge authority, queue action, dispatch, swarm activation, or auto-execute |
 | `npm run provider:venice:rehearse-production` | yes | yes | `--print` | yes | composes the local Venice loop, approval proposal, capsule, bundle, inspection, operator index, and Edge-compatible bundle; no live provider unless explicitly requested |
 
 ## Byte And Resource Posture
@@ -74,8 +74,8 @@ text is not the durable contract.
 | `npm run inspect:venice-loop` | yes | no | `--print` | reads provider-loop status/request/decision refs | no output mutation; prints retry path, live-provider-called posture, and production blockers |
 | `npm run export:inspection-bundle` | yes | yes | `--print` | yes | bundle manifest uses fresh timestamp |
 | `npm run control:surface` | yes | yes | `--print` | yes | runtime projection uses fresh timestamp |
-| `npm run edge:compat` | yes | yes | `--print` | yes | runtime bundle uses fresh timestamp; includes production-capsule, production-bundle, rough-cut, render/export candidate, authority-prereq, local package posture, and Layer interop source refs/attention when present; no Edge queue, dispatch, approval, or runtime verification |
-| `npm run operator:index` | yes | yes | `--print` | yes | runtime index uses fresh timestamp; includes provider-loop, production-capsule, production-bundle, rough-cut, local package posture, and Layer interop refs/attention when present |
+| `npm run edge:compat` | yes | yes | `--print` | yes | runtime bundle uses fresh timestamp; includes production-capsule, production-bundle, rough-cut, render/export candidate, authority-prereq, local package posture, swarm seam posture, and Layer interop source refs/attention when present; no Edge queue, dispatch, approval, swarm activation, or runtime verification |
+| `npm run operator:index` | yes | yes | `--print` | yes | runtime index uses fresh timestamp; includes provider-loop, production-capsule, production-bundle, rough-cut, local package posture, swarm seam posture, and Layer interop refs/attention when present |
 | `npm run handoff:edge` | yes | yes | `--print` | yes | runtime handoff uses fresh timestamp |
 | `npm run operator:decision-request` | yes | yes | `--print` | yes | runtime request uses fresh timestamp |
 | `npm run operator:provider-loop-request` | yes | yes | `--print` | yes | runtime request uses fresh timestamp; retry is request-only |
@@ -172,3 +172,27 @@ Edge.
 Studio source-pressure adapter artifacts are runtime handoff evidence and are
 not committed in `examples/card-to-candidate`. Generate them before the
 inspection sequence when Layer review source evidence is needed.
+
+## Swarm Seam Posture
+
+`pressure:studio`, `operator:index`, and `edge:compat` expose additive
+`swarmSeamPosture` fields for the local proof stage before future family swarm
+seam pressure. Compact output uses `swarmSeam=<state>`, `swarmProof=false`,
+`activation=false`, and a safe next action. Valid states are
+`ready_for_review_only_swarm_pressure`, `local_package_attention`,
+`source_pressure_attention`, `adapter_hold`, and `integrity_blocked`.
+
+The safe local order is:
+
+```bash
+npm run production:local-output -- --project-dir examples/card-to-candidate
+npm run pressure:studio -- --project-dir examples/card-to-candidate --adapter-chain
+npm run inspect:local-run -- --project-dir examples/card-to-candidate
+npm run operator:index -- --project-dir examples/card-to-candidate
+npm run edge:compat -- --project-dir examples/card-to-candidate
+```
+
+This posture is review-only source evidence. It does not activate swarm
+runtime, prove public swarm transport, prove a device boundary, dispatch Edge
+work, admit Layer refs, append continuity, select storage, authorize
+publication, or make Studio production-ready.

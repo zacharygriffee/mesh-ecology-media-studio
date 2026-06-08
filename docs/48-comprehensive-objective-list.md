@@ -63,7 +63,9 @@ storage decisions into Studio.
 
    Keep `pressure:studio --adapter-chain` useful as local evidence for Layer's
    generic `layer_source_pressure_review.v0` seam while preserving Studio's
-   source-evidence role only.
+   source-evidence role only. Surface review-only swarm seam posture so future
+   family swarm pressure can inspect local readiness without treating Studio as
+   a swarm runtime.
 
    Acceptance signals:
 
@@ -76,6 +78,8 @@ storage decisions into Studio.
    - `inspect:local-run`, `operator:index`, and `edge:compat` expose adapter
      refs and counts without Layer admission, Edge action, queue action,
      dispatch, append, continuity, or production storage claims.
+   - `pressure:studio`, `operator:index`, and `edge:compat` report
+     `swarmSeamPosture` with `swarmProof=false` and `activation=false`.
 
 4. **Example And Fixture Discipline**
 
@@ -207,7 +211,8 @@ pressing the family swarm seams. Preferred order:
    changes or went stale;
 3. keep `media:summary`, `health:summary`, `operator:index`, and `edge:compat`
    aligned with the shared local package posture;
-4. preserve source-pressure adapter evidence as runtime-only review material;
+4. preserve source-pressure adapter evidence and swarm-seam posture as
+   runtime-only review material;
 5. refresh docs/tests whenever an operator-visible command surface changes.
 
 Success means a reviewer can run one local project through production evidence,

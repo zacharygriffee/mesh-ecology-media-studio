@@ -7,7 +7,9 @@ import { validateRequiredRecord } from '../contracts/schemas.js'
 import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
 import { writeJsonAtomic } from '../local/atomic-json.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
+import { createLocalPackagePostureSummary } from '../production/local-package-posture.js'
 import { readProjectRecords } from './project-status.js'
+import { summarizeSwarmSeamPosture, formatSwarmSeamPostureFields } from './swarm-seam-posture.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
@@ -120,6 +122,13 @@ export async function writeStudioPressureArtifacts({
     path.basename(root)
   const edgeSourceRefs = refsForSchemas(records, edgePressureSchemas)
   const layerSourceRefs = refsForSchemas(records, layerPressureSchemas)
+  const missingEdgeSourceSchemas = missingSchemas(records, edgePressureSchemas)
+  const missingLayerSourceSchemas = missingSchemas(records, layerPressureSchemas)
+  const layerInteropSummary = summarizeLayerInteropFromRecords(records)
+  const localPackagePosture = await createLocalPackagePostureSummary({
+    projectDir: root,
+    records
+  })
 
   if (edgeSourceRefs.length === 0) {
     throw new Error('Edge pressure artifact requires at least one Edge-facing Studio source ref')
@@ -132,19 +141,16 @@ export async function writeStudioPressureArtifacts({
   const edgePressureArtifact = createEdgePressureArtifact({
     projectId,
     sourceRefs: edgeSourceRefs,
-    missingSourceSchemas: missingSchemas(records, edgePressureSchemas),
+    missingSourceSchemas: missingEdgeSourceSchemas,
     createdAt
   })
   const layerPressureArtifact = createLayerPressureArtifact({
     projectId,
     sourceRefs: layerSourceRefs,
-    layerInteropSummary: summarizeLayerInteropFromRecords(records),
-    missingSourceSchemas: missingSchemas(records, layerPressureSchemas),
+    layerInteropSummary,
+    missingSourceSchemas: missingLayerSourceSchemas,
     createdAt
   })
-
-  await writeJsonAtomic(root, edgeOutput, edgePressureArtifact)
-  await writeJsonAtomic(root, layerOutput, layerPressureArtifact)
 
   const adapterResult = adapterChain
     ? await writeStudioSourcePressureAdapterChain({
@@ -167,10 +173,30 @@ export async function writeStudioPressureArtifacts({
       outputs: {}
     }
 
+  const swarmSeamPosture = summarizeSwarmSeamPosture({
+    localPackagePosture,
+    adapterSummary: adapterResult,
+    edgeSourceRefs,
+    layerSourceRefs,
+    missingEdgeSourceSchemas,
+    missingLayerSourceSchemas,
+    layerInteropSummary
+  })
+  edgePressureArtifact.swarmSeamPosture = swarmSeamPosture
+  layerPressureArtifact.swarmSeamPosture = swarmSeamPosture
+  adapterResult.swarmSeamPosture = swarmSeamPosture
+
+  validateRequiredRecord(edgePressureArtifact)
+  validateRequiredRecord(layerPressureArtifact)
+
+  await writeJsonAtomic(root, edgeOutput, edgePressureArtifact)
+  await writeJsonAtomic(root, layerOutput, layerPressureArtifact)
+
   const result = {
     edgePressureArtifact,
     layerPressureArtifact,
     adapter: adapterResult,
+    swarmSeamPosture,
     outputs: {
       edgeOutput,
       layerOutput,
@@ -184,6 +210,7 @@ export async function writeStudioPressureArtifacts({
     console.log(`edge pressure artifact: ${edgeOutput}`)
     console.log(`layer pressure artifact: ${layerOutput}`)
     console.log(`adapter chain: ${adapterResult.enabled ? adapterResult.decision : 'disabled'} | target=${genericLayerEnvelope}`)
+    console.log(`swarm seam posture: ${formatSwarmSeamPostureFields(swarmSeamPosture)}`)
     if (adapterResult.enabled) {
       console.log(`adapter candidate: ${adapterCandidateOutput}`)
       console.log(`adapter decision: ${adapterDecisionOutput}`)
