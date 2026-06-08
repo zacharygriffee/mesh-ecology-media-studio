@@ -685,7 +685,9 @@ Current risks to manage:
 
 ## Next Objectives
 
-Recommended next objectives:
+Recommended next objectives are maintained in
+[Studio Comprehensive Objective List](48-comprehensive-objective-list.md).
+The current short-form priorities remain:
 
 1. Keep broad production strategy moving without adding UI.
 2. Add compact production/operator summaries where existing commands are still

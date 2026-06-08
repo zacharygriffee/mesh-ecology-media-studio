@@ -482,6 +482,7 @@ Start with:
 - [First Wedge](docs/09-first-wedge.md)
 - [Command Surface Inventory](docs/41-command-surface-inventory.md)
 - [Comprehensive State](docs/37-comprehensive-state.md)
+- [Comprehensive Objective List](docs/48-comprehensive-objective-list.md)
 
 Current posture docs:
 
@@ -491,6 +492,7 @@ Current posture docs:
 - [Identity Migration Boundary](docs/44-identity-migration-boundary.md)
 - [Local Media Intake And Derivative Readiness](docs/45-local-media-intake-and-derivative-readiness.md)
 - [Production Asset Capsule](docs/46-production-asset-capsule.md)
+- [Studio Source-Pressure Adapter](docs/47-studio-source-pressure-adapter.md)
 
 Provider and Edge docs:
 

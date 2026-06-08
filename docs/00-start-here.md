@@ -49,6 +49,8 @@ Read in this order:
 41. [Identity Migration Boundary](44-identity-migration-boundary.md)
 42. [Local Media Intake And Derivative Readiness](45-local-media-intake-and-derivative-readiness.md)
 43. [Production Asset Capsule](46-production-asset-capsule.md)
+44. [Studio Source-Pressure Adapter](47-studio-source-pressure-adapter.md)
+45. [Comprehensive Objective List](48-comprehensive-objective-list.md)
 
 Spine now uses Rulebook Cascade (RBC) as the family-wide vocabulary for
 effective rule-book posture. Studio docs align to RBC as a policy-domain
