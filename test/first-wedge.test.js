@@ -4069,6 +4069,10 @@ test('local production output runner creates reviewable delivery without authori
   assert.equal(summary.packageAuthority.freshRequests, 1)
   assert.equal(summary.packageAuthority.publicationAuthorization, 0)
   assert.equal(summary.packageAuthority.productionReady, 0)
+  assert.equal(summary.localPackagePosture.packageState, 'complete_review_only_authority_missing')
+  assert.equal(summary.localPackagePosture.latestReviewPosture, 'reviewed_fresh')
+  assert.equal(summary.localPackagePosture.integrityPosture, 'clear')
+  assert.equal(summary.localPackagePosture.nonClaims.edgeCalled, false)
   const prereqs = await createProductionAuthorityPrerequisiteReport({ projectDir: dir })
   assert.equal(prereqs.localProductionPackageComplete, 1)
   assert.equal(prereqs.localDeliveryEvidenceIntact, 1)
@@ -4081,6 +4085,28 @@ test('local production output runner creates reviewable delivery without authori
   assert.equal(prereqs.packageAuthoritySummary.attentionRows.length, 0)
   assert.equal(prereqs.pendingAuthority, 1)
   assert.equal(prereqs.productionReady, 0)
+  const mediaSummaryOutput = await captureConsole(() => writeMediaSummary({ projectDir: dir }))
+  assert.equal(mediaSummaryOutput.result.localPackagePosture.packageState, 'complete_review_only_authority_missing')
+  assert.equal(mediaSummaryOutput.result.localPackagePosture.latestReviewPosture, 'reviewed_fresh')
+  assert.equal(mediaSummaryOutput.result.localPackagePosture.integrityPosture, 'clear')
+  assert.ok(mediaSummaryOutput.lines.some((line) =>
+    line.startsWith('local package posture:') &&
+    line.includes('localPackage=complete_review_only_authority_missing') &&
+    line.includes('review=reviewed_fresh') &&
+    line.includes('integrity=clear')
+  ))
+  const healthSummaryOutput = await captureConsole(() => writeProjectHealth({ projectDir: dir, summary: true }))
+  assert.equal(healthSummaryOutput.result.health.localPackagePosture.packageState, 'complete_review_only_authority_missing')
+  assert.equal(healthSummaryOutput.result.health.localPackagePosture.latestReviewPosture, 'reviewed_fresh')
+  assert.equal(healthSummaryOutput.result.health.localPackagePosture.integrityPosture, 'clear')
+  assert.equal(healthSummaryOutput.result.health.localPackagePosture.nonClaims.edgeCalled, false)
+  assert.equal(healthSummaryOutput.result.health.localPackagePosture.productionReady, 0)
+  assert.ok(healthSummaryOutput.lines.some((line) =>
+    line.startsWith('localPackagePosture:') &&
+    line.includes('localPackage=complete_review_only_authority_missing') &&
+    line.includes('review=reviewed_fresh') &&
+    line.includes('integrity=clear')
+  ))
   const operatorIndex = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
   assert.equal(operatorIndex.result.index.localPackagePosture.packageState, 'complete_review_only_authority_missing')
   assert.equal(operatorIndex.result.index.localPackagePosture.latestReviewPosture, 'reviewed_fresh')
@@ -4206,6 +4232,27 @@ test('local package posture marks absent delivery evidence as incomplete', async
   assert.equal(posture.localProductionPackageComplete, 0)
   assert.equal(posture.localDeliveryEvidenceIntact, 0)
   assert.equal(posture.safeNextAction, 'Run npm run production:local-output to create or refresh complete local package evidence.')
+  const mediaSummary = await captureConsole(() => writeMediaSummary({ projectDir: dir }))
+  assert.equal(mediaSummary.result.localPackagePosture.packageState, 'incomplete_local_package')
+  assert.equal(mediaSummary.result.localPackagePosture.latestReviewPosture, 'missing')
+  assert.equal(mediaSummary.result.localPackagePosture.integrityPosture, 'incomplete')
+  assert.ok(mediaSummary.lines.some((line) =>
+    line.startsWith('local package posture:') &&
+    line.includes('localPackage=incomplete_local_package') &&
+    line.includes('review=missing') &&
+    line.includes('integrity=incomplete')
+  ))
+  const healthSummary = await captureConsole(() => writeProjectHealth({ projectDir: dir, summary: true }))
+  assert.equal(healthSummary.result.health.localPackagePosture.packageState, 'incomplete_local_package')
+  assert.equal(healthSummary.result.health.localPackagePosture.latestReviewPosture, 'missing')
+  assert.equal(healthSummary.result.health.localPackagePosture.integrityPosture, 'incomplete')
+  assert.equal(healthSummary.result.health.blockingIssues.includes('incomplete_local_package'), false)
+  assert.ok(healthSummary.lines.some((line) =>
+    line.startsWith('localPackagePosture:') &&
+    line.includes('localPackage=incomplete_local_package') &&
+    line.includes('review=missing') &&
+    line.includes('integrity=incomplete')
+  ))
 })
 
 test('media summary safe next action ignores stale inactive export receipts when local delivery is intact', async () => {
@@ -4358,14 +4405,34 @@ test('local package review can request changes without publication authority', a
   assert.equal(mediaSummary.result.packageAuthority.localPackageReviews, 0)
   assert.equal(mediaSummary.result.packageAuthority.packageReworkRequests, 1)
   assert.equal(mediaSummary.result.packageAuthority.staleRequests, 1)
+  assert.equal(mediaSummary.result.localPackagePosture.packageState, 'review_requested_changes')
+  assert.equal(mediaSummary.result.localPackagePosture.latestReviewPosture, 'request_changes')
+  assert.equal(mediaSummary.result.localPackagePosture.integrityPosture, 'clear')
   assert.ok(mediaSummary.lines.some((line) =>
     line.startsWith('package authority: localPackageReviews=0 | needsRework=1') &&
     line.includes('publicationAuthorityRequests=1') &&
     line.includes('productionReady=0')
   ))
   assert.ok(mediaSummary.lines.some((line) =>
+    line.startsWith('local package posture:') &&
+    line.includes('localPackage=review_requested_changes') &&
+    line.includes('review=request_changes') &&
+    line.includes('integrity=clear')
+  ))
+  assert.ok(mediaSummary.lines.some((line) =>
     line.includes('package-authority:') &&
     line.includes('local_package_needs_rework')
+  ))
+  const healthSummary = await captureConsole(() => writeProjectHealth({ projectDir: dir, summary: true }))
+  assert.equal(healthSummary.result.health.localPackagePosture.packageState, 'review_requested_changes')
+  assert.equal(healthSummary.result.health.localPackagePosture.latestReviewPosture, 'request_changes')
+  assert.equal(healthSummary.result.health.localPackagePosture.integrityPosture, 'clear')
+  assert.equal(healthSummary.result.health.blockingIssues.includes('review_requested_changes'), false)
+  assert.ok(healthSummary.lines.some((line) =>
+    line.startsWith('localPackagePosture:') &&
+    line.includes('localPackage=review_requested_changes') &&
+    line.includes('review=request_changes') &&
+    line.includes('integrity=clear')
   ))
 })
 
@@ -4608,6 +4675,23 @@ test('local package rework runner regenerates stale package after rough cut revi
   assert.equal(stalePosture.packageState, 'stale_review')
   assert.equal(stalePosture.latestReviewPosture, 'reviewed_stale')
   assert.ok(stalePosture.issueCodes.includes('local_package_review_source_refs_changed'))
+  const staleMediaSummary = await captureConsole(() => writeMediaSummary({ projectDir: dir }))
+  assert.equal(staleMediaSummary.result.localPackagePosture.packageState, 'stale_review')
+  assert.equal(staleMediaSummary.result.localPackagePosture.latestReviewPosture, 'reviewed_stale')
+  assert.ok(staleMediaSummary.lines.some((line) =>
+    line.startsWith('local package posture:') &&
+    line.includes('localPackage=stale_review') &&
+    line.includes('review=reviewed_stale')
+  ))
+  const staleHealthSummary = await captureConsole(() => writeProjectHealth({ projectDir: dir, summary: true }))
+  assert.equal(staleHealthSummary.result.health.localPackagePosture.packageState, 'stale_review')
+  assert.equal(staleHealthSummary.result.health.localPackagePosture.latestReviewPosture, 'reviewed_stale')
+  assert.equal(staleHealthSummary.result.health.blockingIssues.includes('stale_review'), false)
+  assert.ok(staleHealthSummary.lines.some((line) =>
+    line.startsWith('localPackagePosture:') &&
+    line.includes('localPackage=stale_review') &&
+    line.includes('review=reviewed_stale')
+  ))
 
   await assert.rejects(
     () => writePublicationAuthorityRequestCandidate({ projectDir: dir, quiet: true }),
@@ -4917,10 +5001,19 @@ test('local output integrity blocks production package when export delivery byte
   assert.equal(mediaSummary.result.packageAuthority.staleRequests, 1)
   assert.equal(mediaSummary.result.packageAuthority.blockingRequests, 1)
   assert.equal(mediaSummary.result.packageAuthority.integrityBlockingRequests, 1)
+  assert.equal(mediaSummary.result.localPackagePosture.packageState, 'output_integrity_blocked')
+  assert.equal(mediaSummary.result.localPackagePosture.latestReviewPosture, 'reviewed_stale')
+  assert.equal(mediaSummary.result.localPackagePosture.integrityPosture, 'blocked')
   assert.ok(mediaSummary.lines.some((line) =>
     line.includes('output integrity: deliveryIntact=0') &&
     line.includes('activeDeliveryIntact=0') &&
     line.includes('blocking=')
+  ))
+  assert.ok(mediaSummary.lines.some((line) =>
+    line.startsWith('local package posture:') &&
+    line.includes('localPackage=output_integrity_blocked') &&
+    line.includes('review=reviewed_stale') &&
+    line.includes('integrity=blocked')
   ))
   assert.ok(mediaSummary.lines.some((line) => line.startsWith('package authority: localPackageReviews=1 | needsRework=0 | staleReviews=1 | publicationAuthorityRequests=1 | staleRequests=1 | blockingRequests=1')))
   assert.ok(mediaSummary.lines.some((line) => line.includes('package-authority:') && line.includes('current_output_integrity_blocking')))
@@ -4929,11 +5022,20 @@ test('local output integrity blocks production package when export delivery byte
   const healthSummary = await captureConsole(() => writeProjectHealth({ projectDir: dir, summary: true }))
   assert.equal(healthSummary.result.health.outputIntegritySummary.localDeliveryEvidenceIntact, 0)
   assert.equal(healthSummary.result.health.outputIntegritySummary.outputIntegrityBlockingIssues > 0, true)
+  assert.equal(healthSummary.result.health.localPackagePosture.packageState, 'output_integrity_blocked')
+  assert.equal(healthSummary.result.health.localPackagePosture.latestReviewPosture, 'reviewed_stale')
+  assert.equal(healthSummary.result.health.localPackagePosture.integrityPosture, 'blocked')
   assert.ok(healthSummary.result.health.blockingIssues.includes('output-integrity-blocking'))
   assert.ok(healthSummary.lines.some((line) =>
     line.includes('outputIntegrity: deliveryIntact=0') &&
     line.includes('activeDeliveryIntact=0') &&
     line.includes('blocking=')
+  ))
+  assert.ok(healthSummary.lines.some((line) =>
+    line.startsWith('localPackagePosture:') &&
+    line.includes('localPackage=output_integrity_blocked') &&
+    line.includes('review=reviewed_stale') &&
+    line.includes('integrity=blocked')
   ))
   assert.ok(healthSummary.lines.some((line) => line.includes('media-export-receipt:') && line.includes('missing_export_delivery_bytes')))
 

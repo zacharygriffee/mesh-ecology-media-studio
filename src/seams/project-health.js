@@ -12,6 +12,8 @@ import { evaluateRenderExportCandidateFreshness } from '../production/render-exp
 import { summarizeRenderReceipts } from '../production/render-receipts.js'
 import { summarizeExportReceipts } from '../production/export-receipts.js'
 import { evaluateLocalOutputIntegrity } from '../production/output-integrity.js'
+import { createProductionAuthorityPrerequisiteReport } from '../production/authority-prerequisites.js'
+import { summarizeLocalPackagePosture, formatLocalPackagePostureFields } from '../production/local-package-posture.js'
 import { writeJsonAtomic } from '../local/atomic-json.js'
 
 const modulePath = fileURLToPath(import.meta.url)
@@ -72,6 +74,12 @@ export async function writeProjectHealth({
   const renderReceiptSummary = summarizeRenderReceipts(records)
   const exportReceiptSummary = summarizeExportReceipts(records)
   const outputIntegritySummary = await evaluateLocalOutputIntegrity({ projectDir, records })
+  const authorityPrerequisiteReport = await createProductionAuthorityPrerequisiteReport({ projectDir })
+  const localPackagePosture = summarizeLocalPackagePosture({
+    records,
+    prerequisiteReport: authorityPrerequisiteReport,
+    outputIntegritySummary
+  })
   const renderExportCandidateHealthExplanations = renderExportCandidateSummary.attentionRows.map((row) => ({
     subjectRef: {
       kind: 'media-render-export-candidate',
@@ -176,6 +184,7 @@ export async function writeProjectHealth({
     exportReceiptSummary,
     exportReceiptHealthExplanations,
     outputIntegritySummary,
+    localPackagePosture,
     outputIntegrityHealthExplanations,
     renderReceiptHealthExplanations: renderReceiptSummary.attentionRows.map((row) => ({
       subjectRef: row.receiptRef,
@@ -295,6 +304,7 @@ function printHealthSummary(health, output) {
     `renderReceipts=${health.outputIntegritySummary?.renderReceipts ?? 0}`,
     `exportReceipts=${health.outputIntegritySummary?.exportReceipts ?? 0}`
   ].join(' | '))
+  console.log(`localPackagePosture: ${formatLocalPackagePostureFields(health.localPackagePosture)}`)
   for (const explanation of health.operatorHealthExplanations ?? []) {
     console.log(formatHealthExplanation(explanation))
   }

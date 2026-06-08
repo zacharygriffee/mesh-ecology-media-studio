@@ -20,7 +20,8 @@ text is not the durable contract.
 | `npm run promote:candidate` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
 | `npm run reference:ingest` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
 | `npm run media:import` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
-| `npm run media:summary` | yes | no | `--print` | reads local refs | refreshes project status snapshot; includes provider-loop, approval-lane, production-capsule, package-authority freshness, Layer interop attention, and safe-next posture |
+| `npm run media:summary` | yes | no | `--print` | reads local refs | refreshes project status snapshot; includes provider-loop, approval-lane, production-capsule, package-authority freshness, shared local package posture, Layer interop attention, and safe-next posture |
+| `npm run health:summary` | yes | yes | `--print` | yes | runtime health uses fresh timestamp; reports shared local package posture without adding package-only health blockers |
 | `npm run derivatives:thumbnail` | yes | yes | no | yes | runtime thumbnails and records use fresh timestamps |
 | `npm run review:candidates` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
 | `npm run approval:proposal` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
@@ -115,8 +116,9 @@ default scans do not produce timestamp-only diffs.
 
 ## Local Package Posture
 
-`production:local-output`, `production:package-rework`, `operator:index`, and
-`edge:compat` now expose the same shared `localPackagePosture` summary. The
+`production:local-output`, `production:package-rework`, `media:summary`,
+`health:summary`, `operator:index`, and `edge:compat` now expose the same shared
+`localPackagePosture` summary. The
 stable compact fields are `localPackage=<state>`, `review=<posture>`,
 `integrity=<posture>`, and `nextAction=<safe action>`. Valid package states are
 `complete_review_only_authority_missing`, `incomplete_local_package`,

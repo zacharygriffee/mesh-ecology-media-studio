@@ -8,6 +8,7 @@ import { summarizeRenderReceipts } from '../production/render-receipts.js'
 import { summarizeExportReceipts } from '../production/export-receipts.js'
 import { evaluateLocalOutputIntegrity } from '../production/output-integrity.js'
 import { createProductionAuthorityPrerequisiteReport } from '../production/authority-prerequisites.js'
+import { summarizeLocalPackagePosture, formatLocalPackagePostureFields } from '../production/local-package-posture.js'
 import {
   evaluateLocalPackageReviewFreshness,
   evaluatePublicationAuthorityRequestFreshness
@@ -68,6 +69,11 @@ export async function createMediaSummary({
   const recordIO = summarizeRecordReadDiagnostics(records)
   const authorityPrerequisites = await createProductionAuthorityPrerequisiteReport({ projectDir })
   const packageAuthority = summarizePackageAuthority(records, authorityPrerequisites)
+  const localPackagePosture = summarizeLocalPackagePosture({
+    records,
+    prerequisiteReport: authorityPrerequisites,
+    outputIntegritySummary: outputIntegrity
+  })
   const layerInterop = summarizeLayerInteropFromRecords(records)
   const productionApprovalLane = summarizeProductionApprovalLane({
     assetRecords,
@@ -156,6 +162,7 @@ export async function createMediaSummary({
     exportReceipts,
     outputIntegrity,
     packageAuthority,
+    localPackagePosture,
     layerInterop,
     recordIO,
     productionApprovalLane,
@@ -315,6 +322,7 @@ function printMediaSummary(summary) {
     `productionReady=${summary.packageAuthority.productionReady}`,
     `attention=${summary.packageAuthority.attentionRows.length}`
   ].join(' | '))
+  console.log(`local package posture: ${formatLocalPackagePostureFields(summary.localPackagePosture)}`)
   console.log([
     `production approval: candidates=${summary.productionApprovalLane.candidates}`,
     `decisions=${summary.productionApprovalLane.localDecisions}`,

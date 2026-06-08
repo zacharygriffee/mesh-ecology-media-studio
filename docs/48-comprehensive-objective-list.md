@@ -205,8 +205,8 @@ pressing the family swarm seams. Preferred order:
 1. run `production:local-output` to create review-only package evidence;
 2. run `production:package-rework` only when the latest package review requested
    changes or went stale;
-3. keep `operator:index` and `edge:compat` aligned with the shared local package
-   posture;
+3. keep `media:summary`, `health:summary`, `operator:index`, and `edge:compat`
+   aligned with the shared local package posture;
 4. preserve source-pressure adapter evidence as runtime-only review material;
 5. refresh docs/tests whenever an operator-visible command surface changes.
 
