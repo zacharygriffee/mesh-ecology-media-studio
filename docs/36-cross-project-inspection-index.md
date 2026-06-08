@@ -7,7 +7,10 @@ discover projects, crawl adjacent repos, or infer authority from local files.
 `media.cross_project_operator_index.local.v1` summarizes those refs across
 projects for later operator attention. It can show health state, handoff state,
 operator decision request kind, provider-loop status, blocking issue count, and
-next actions.
+next actions. When the explicit refs include `operatorPacketIndex`, it also
+prefers that packet's local package posture, source-pressure adapter summary,
+and swarm-seam posture; when the operator packet is absent, it falls back to
+the same fields from `projectHealth`.
 
 ## Command
 
@@ -67,9 +70,24 @@ projects without opening raw JSON. It remains local consistency guidance only:
 no Layer runtime is called, no durable append is approved, and no continuity or
 authority is claimed.
 
-The index also prints one `safeNextAction` selected from the first current
-attention row. This is operator guidance only; it does not execute repair,
-approval, retry, or publication.
+The same operator-index ref can also surface Studio's local package and
+swarm-seam posture. Compact output reports:
+
+```text
+localPackageComplete=<n> | localPackageAttention=<n> | swarmReady=<n> | swarmAttention=<n> | swarmProof=false | activation=false
+```
+
+Rejected source-pressure adapter decisions are counted as swarm attention and
+shown as `adapter_hold`; missing or drifted local delivery bytes are counted as
+`integrityBlocked`. These are local attention signals only. They do not activate
+swarm runtime, dispatch Edge work, approve Layer admission, prove public swarm
+state, or mark a production package ready.
+
+The index also prints one `safeNextAction` selected by local attention
+precedence: missing explicit refs, provider or approval attention, Layer interop
+attention, operator health, blocking health, then swarm-seam guidance. This is
+operator guidance only; it does not execute repair, approval, retry, or
+publication.
 
 ## Boundary
 
@@ -81,6 +99,8 @@ This is a local scanning aid only:
 - no mesh publication
 - no byte materialization proof
 - no ratifier or approval authority
+- no swarm runtime activation
+- no public swarm proof
 
 Edge may later inspect this index through `media-edge-operator-seam`, but the
 index itself remains Studio-owned local guidance.

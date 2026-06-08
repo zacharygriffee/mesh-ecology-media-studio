@@ -535,6 +535,60 @@ function createCrossProjectInputList(projects) {
   }
 }
 
+function createCrossProjectInputListWithArtifactRefs(projects, { inputListId = 'test-cross-project-input-list' } = {}) {
+  return {
+    schema: 'media.cross_project_inspection_input_list.local.v1',
+    inputListId,
+    createdAt: '2026-05-19T00:00:00.000Z',
+    mode: 'standalone-local',
+    projects: projects.map(({ projectId, label, rootPath, artifactRefs }) => ({
+      projectId,
+      label,
+      rootRef: {
+        kind: 'local-directory',
+        id: projectId,
+        schema: 'media.local_ref.v1',
+        path: rootPath,
+        localOnly: true
+      },
+      artifactRefs
+    })),
+    warnings: [
+      'Test input list only.',
+      'All referenced artifacts are local-only and not mesh truth.'
+    ],
+    operatorGuidanceOnly: true,
+    localOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    providerTruth: false,
+    edgeRuntimeBuilt: false,
+    edgeRuntimeVerified: false,
+    localTruthLabel: 'local draft',
+    truthStatus: 'not mesh truth; not distributed proof; not ratified shared state'
+  }
+}
+
+function crossProjectArtifactRef(name) {
+  return {
+    projectHealth: {
+      kind: 'media-project-health',
+      id: 'project-health-venice-smoke-project',
+      schema: 'media.project_health.local.v1',
+      path: 'records/manifests/media-project-health.local.json',
+      localOnly: true
+    },
+    operatorPacketIndex: {
+      kind: 'media-operator-packet-index',
+      id: 'operator-packet-index-venice-smoke-project',
+      schema: 'media.operator_packet_index.local.v1',
+      path: 'records/exports/media-operator-packet-index.local.json',
+      localOnly: true
+    }
+  }[name]
+}
+
 test('first wedge creates local records without claiming mesh truth', async () => {
   const dir = await createFixtureProject()
 
@@ -6858,6 +6912,176 @@ test('cross-project operator index surfaces Layer interop attention from operato
   assert.ok(lines.some((line) => line.includes('layerInterop=1') && line.includes('layerAttention=1')))
   assert.ok(lines.some((line) => line.includes('layer interop: state=layer-refs-attached-review-only')))
   assert.equal(validateRequiredRecord(inputList), true)
+  assert.equal(validateRequiredRecord(result.index), true)
+})
+
+test('cross-project operator index carries local package and swarm posture from operator index refs', async () => {
+  const baseDir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-cross-project-swarm-operator-'))
+  const readyDir = path.join(baseDir, 'ready-project')
+  const holdDir = path.join(baseDir, 'hold-project')
+
+  await runVeniceProductionRehearsal({ projectDir: readyDir })
+  await runLocalProductionOutput({ projectDir: readyDir, quiet: true })
+  await writeStudioPressureArtifacts({ projectDir: readyDir, adapterChain: true, quiet: true })
+  await writeProjectHealth({ projectDir: readyDir, summary: true })
+  await writeOperatorPacketIndex({ projectDir: readyDir, quiet: true })
+
+  await runVeniceProductionRehearsal({ projectDir: holdDir })
+  await runLocalProductionOutput({ projectDir: holdDir, quiet: true })
+  await writeStudioPressureArtifacts({
+    projectDir: holdDir,
+    adapterChain: true,
+    adapterDecision: 'rejected',
+    quiet: true
+  })
+  await writeProjectHealth({ projectDir: holdDir, summary: true })
+  await writeOperatorPacketIndex({ projectDir: holdDir, quiet: true })
+
+  const inputList = createCrossProjectInputListWithArtifactRefs([
+    {
+      projectId: 'ready-project',
+      rootPath: 'ready-project',
+      artifactRefs: {
+        projectHealth: crossProjectArtifactRef('projectHealth'),
+        operatorPacketIndex: crossProjectArtifactRef('operatorPacketIndex')
+      }
+    },
+    {
+      projectId: 'hold-project',
+      rootPath: 'hold-project',
+      artifactRefs: {
+        projectHealth: crossProjectArtifactRef('projectHealth'),
+        operatorPacketIndex: crossProjectArtifactRef('operatorPacketIndex')
+      }
+    }
+  ], { inputListId: 'swarm-operator-index-fixture' })
+  await writeFile(path.join(baseDir, 'input-list.local.json'), `${JSON.stringify(inputList, null, 2)}\n`)
+
+  const { result, lines } = await captureConsole(() => writeCrossProjectOperatorIndex({
+    baseDir,
+    inputList: 'input-list.local.json',
+    output: 'cross-project-swarm.local.json'
+  }))
+
+  assert.equal(result.index.summary.localPackageComplete, 2)
+  assert.equal(result.index.summary.localPackageAttention, 0)
+  assert.equal(result.index.summary.swarmReady, 1)
+  assert.equal(result.index.summary.swarmAttention, 1)
+  assert.equal(result.index.summary.adapterHold, 1)
+  assert.equal(result.index.summary.integrityBlocked, 0)
+  assert.equal(result.index.summary.attentionRows, 1)
+  assert.equal(result.index.projectSummaries[0].localPackagePosture.sourceRef.path, 'ready-project/records/exports/media-operator-packet-index.local.json')
+  assert.equal(result.index.projectSummaries[0].swarmSeamPosture.state, 'ready_for_review_only_swarm_pressure')
+  assert.equal(result.index.projectSummaries[0].swarmSeamPosture.publicSwarmProof, false)
+  assert.equal(result.index.projectSummaries[0].swarmSeamPosture.swarmRuntimeActivated, false)
+  assert.equal(result.index.projectSummaries[0].swarmSeamPosture.edgeDispatch, false)
+  assert.equal(result.index.projectSummaries[0].swarmSeamPosture.layerAdmission, false)
+  assert.equal(result.index.projectSummaries[0].studioSourcePressureAdapterSummary.latestDecisionStatus, 'approved_bounded_studio_source_pressure_observation')
+  assert.equal(result.index.projectSummaries[1].swarmSeamPosture.state, 'adapter_hold')
+  assert.equal(result.index.projectSummaries[1].studioSourcePressureAdapterSummary.latestDecisionStatus, 'rejected_bounded_studio_source_pressure_observation')
+  assert.equal(result.index.projectSummaries[1].studioSourcePressureAdapterSummary.observationStatus, 'skipped')
+  assert.equal(result.index.projectSummaries[1].safeNextAction, 'Hold Studio source-pressure observation; keep candidate and decision as review-only local evidence.')
+  assert.ok(lines.some((line) => line.includes('localPackageComplete=2') &&
+    line.includes('localPackageAttention=0') &&
+    line.includes('swarmReady=1') &&
+    line.includes('swarmAttention=1') &&
+    line.includes('swarmProof=false') &&
+    line.includes('activation=false')))
+  assert.ok(lines.some((line) => line.includes('swarm seam: state=adapter_hold') &&
+    line.includes('adapter=rejected_bounded_studio_source_pressure_observation') &&
+    line.includes('observation=skipped') &&
+    line.includes('activation=false')))
+  assert.equal(validateRequiredRecord(result.index), true)
+})
+
+test('cross-project operator index falls back to project health for local package and swarm posture', async () => {
+  const baseDir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-cross-project-swarm-health-'))
+  const projectDir = path.join(baseDir, 'health-only-project')
+  await runVeniceProductionRehearsal({ projectDir })
+  await runLocalProductionOutput({ projectDir, quiet: true })
+  await writeStudioPressureArtifacts({ projectDir, adapterChain: true, quiet: true })
+  await writeProjectHealth({ projectDir, summary: true })
+
+  const inputList = createCrossProjectInputListWithArtifactRefs([
+    {
+      projectId: 'health-only-project',
+      rootPath: 'health-only-project',
+      artifactRefs: {
+        projectHealth: crossProjectArtifactRef('projectHealth')
+      }
+    }
+  ], { inputListId: 'swarm-health-fallback-fixture' })
+  await writeFile(path.join(baseDir, 'input-list.local.json'), `${JSON.stringify(inputList, null, 2)}\n`)
+
+  const { result } = await captureConsole(() => writeCrossProjectOperatorIndex({
+    baseDir,
+    inputList: 'input-list.local.json',
+    output: 'cross-project-health-fallback.local.json'
+  }))
+
+  assert.equal(result.index.summary.localPackageComplete, 1)
+  assert.equal(result.index.summary.localPackageAttention, 0)
+  assert.equal(result.index.summary.swarmReady, 1)
+  assert.equal(result.index.summary.swarmAttention, 0)
+  assert.equal(result.index.summary.adapterHold, 0)
+  assert.equal(result.index.projectSummaries[0].localPackagePosture.sourceRef.path, 'health-only-project/records/manifests/media-project-health.local.json')
+  assert.equal(result.index.projectSummaries[0].swarmSeamPosture.sourceRef.path, 'health-only-project/records/manifests/media-project-health.local.json')
+  assert.equal(result.index.projectSummaries[0].studioSourcePressureAdapterSummary.sourceRef.path, 'health-only-project/records/manifests/media-project-health.local.json')
+  assert.equal(result.index.projectSummaries[0].swarmSeamPosture.state, 'ready_for_review_only_swarm_pressure')
+  assert.equal(result.index.projectSummaries[0].safeNextAction, 'No local cross-project attention row is blocking inspection.')
+  assert.equal(validateRequiredRecord(result.index), true)
+})
+
+test('cross-project operator index reports integrity-blocked posture as local attention', async () => {
+  const baseDir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-cross-project-integrity-blocked-'))
+  const projectDir = path.join(baseDir, 'integrity-project')
+  await runVeniceProductionRehearsal({ projectDir })
+  await runLocalProductionOutput({ projectDir, quiet: true })
+  await writeStudioPressureArtifacts({ projectDir, adapterChain: true, quiet: true })
+  await removeExportDeliveryFiles(projectDir)
+  await writeProjectHealth({ projectDir, summary: true })
+  await writeProductionAuthorityPrerequisiteReport({ projectDir, quiet: true })
+  await writeAuthorityHandoffCandidate({ projectDir, quiet: true })
+  await writeOperatorPacketIndex({ projectDir, quiet: true })
+
+  const inputList = createCrossProjectInputListWithArtifactRefs([
+    {
+      projectId: 'integrity-project',
+      rootPath: 'integrity-project',
+      artifactRefs: {
+        projectHealth: crossProjectArtifactRef('projectHealth'),
+        operatorPacketIndex: crossProjectArtifactRef('operatorPacketIndex')
+      }
+    }
+  ], { inputListId: 'swarm-integrity-blocked-fixture' })
+  await writeFile(path.join(baseDir, 'input-list.local.json'), `${JSON.stringify(inputList, null, 2)}\n`)
+
+  const { result, lines } = await captureConsole(() => writeCrossProjectOperatorIndex({
+    baseDir,
+    inputList: 'input-list.local.json',
+    output: 'cross-project-integrity-blocked.local.json'
+  }))
+
+  assert.equal(result.index.summary.localPackageComplete, 0)
+  assert.equal(result.index.summary.localPackageAttention, 1)
+  assert.equal(result.index.summary.swarmReady, 0)
+  assert.equal(result.index.summary.swarmAttention, 1)
+  assert.equal(result.index.summary.adapterHold, 0)
+  assert.equal(result.index.summary.integrityBlocked, 1)
+  assert.equal(result.index.summary.attentionRows, 1)
+  assert.equal(result.index.projectSummaries[0].localPackagePosture.packageState, 'output_integrity_blocked')
+  assert.equal(result.index.projectSummaries[0].localPackagePosture.integrityPosture, 'blocked')
+  assert.equal(result.index.projectSummaries[0].swarmSeamPosture.state, 'integrity_blocked')
+  assert.equal(result.index.projectSummaries[0].swarmSeamPosture.publicSwarmProof, false)
+  assert.equal(result.index.projectSummaries[0].swarmSeamPosture.swarmRuntimeActivated, false)
+  assert.ok(result.index.projectSummaries[0].blockingIssues.includes('output-integrity-blocking'))
+  assert.notEqual(result.index.projectSummaries[0].safeNextAction, result.index.projectSummaries[0].swarmSeamPosture.safeNextAction)
+  assert.ok(lines.some((line) => line.includes('localPackageAttention=1') &&
+    line.includes('swarmAttention=1') &&
+    line.includes('activation=false')))
+  assert.ok(lines.some((line) => line.includes('swarm seam: state=integrity_blocked') &&
+    line.includes('swarmProof=false') &&
+    line.includes('activation=false')))
   assert.equal(validateRequiredRecord(result.index), true)
 })
 

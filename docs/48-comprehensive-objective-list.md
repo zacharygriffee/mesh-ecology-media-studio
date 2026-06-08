@@ -81,6 +81,9 @@ storage decisions into Studio.
    - `media:summary`, `health:summary`, `pressure:studio`, `operator:index`,
      and `edge:compat` report `swarmSeamPosture` with `swarmProof=false` and
      `activation=false`.
+   - `operator:cross-project-index` aggregates local package completeness,
+     swarm-seam readiness, adapter holds, and integrity blocks from explicit
+     project refs without claiming swarm activation or public swarm proof.
 
 4. **Example And Fixture Discipline**
 

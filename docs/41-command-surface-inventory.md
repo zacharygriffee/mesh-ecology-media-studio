@@ -80,7 +80,7 @@ text is not the durable contract.
 | `npm run operator:decision-request` | yes | yes | `--print` | yes | runtime request uses fresh timestamp |
 | `npm run operator:provider-loop-request` | yes | yes | `--print` | yes | runtime request uses fresh timestamp; retry is request-only |
 | `npm run operator:provider-loop-decision` | yes | yes | `--print` | yes | local retry/defer decision only; does not execute provider work |
-| `npm run operator:cross-project-index` | yes | yes | `--print` | yes | preserves existing `createdAt` for the same output/index id; can surface provider-loop status/decision refs and Layer interop attention from explicit operator-index refs |
+| `npm run operator:cross-project-index` | yes | yes | `--print` | yes | preserves existing `createdAt` for the same output/index id; can surface provider-loop status/decision refs, Layer interop attention, local package posture, source-pressure adapter summary, and swarm seam posture from explicit operator-index refs, with health fallback for package/swarm fields; compact output includes `localPackageComplete`, `localPackageAttention`, `swarmReady`, `swarmAttention`, `swarmProof=false`, and `activation=false` |
 
 ## Provider Commands
 
@@ -182,6 +182,9 @@ stage before future family swarm seam pressure. Compact output uses
 action. Valid states are
 `ready_for_review_only_swarm_pressure`, `local_package_attention`,
 `source_pressure_attention`, `adapter_hold`, and `integrity_blocked`.
+`operator:cross-project-index` aggregates those local summaries across explicit
+project refs as review-only posture with the same non-claims; it does not
+activate swarm runtime or prove public swarm state.
 
 The safe local order is:
 
