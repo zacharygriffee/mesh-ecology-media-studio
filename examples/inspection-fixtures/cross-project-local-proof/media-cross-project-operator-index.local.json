@@ -1,0 +1,165 @@
+{
+  "schema": "media.cross_project_operator_index.local.v1",
+  "indexId": "cross-project-operator-index-fixture-cross-project-local-proof",
+  "createdAt": "2026-06-08T00:00:00.000Z",
+  "mode": "standalone-local",
+  "inputListRef": {
+    "kind": "media-cross-project-inspection-input-list",
+    "id": "fixture-cross-project-local-proof",
+    "schema": "media.cross_project_inspection_input_list.local.v1",
+    "path": "examples/inspection-fixtures/cross-project-local-proof/input-list.local.json",
+    "localOnly": true
+  },
+  "projectRefs": [
+    {
+      "kind": "local-directory",
+      "id": "local-proof-ready",
+      "schema": "media.local_ref.v1",
+      "path": "examples/inspection-fixtures/local-proof-ready",
+      "localOnly": true
+    },
+    {
+      "kind": "local-directory",
+      "id": "local-proof-attention",
+      "schema": "media.local_ref.v1",
+      "path": "examples/inspection-fixtures/local-proof-attention",
+      "localOnly": true
+    }
+  ],
+  "projectSummaries": [
+    {
+      "projectId": "studio-example-project:local-proof-ready",
+      "label": "Local proof ready",
+      "rootRef": {
+        "kind": "local-directory",
+        "id": "local-proof-ready",
+        "schema": "media.local_ref.v1",
+        "path": "examples/inspection-fixtures/local-proof-ready",
+        "localOnly": true
+      },
+      "refs": {
+        "operatorPacketIndex": {
+          "kind": "media-operator-packet-index",
+          "id": "operator-packet-index-local-proof-ready",
+          "schema": "media.operator_packet_index.local.v1",
+          "path": "examples/inspection-fixtures/local-proof-ready/records/exports/media-operator-packet-index.local.json",
+          "localOnly": true
+        }
+      },
+      "healthState": "unknown",
+      "handoffState": "unknown",
+      "requestKind": "none",
+      "blockingIssues": [],
+      "nextActions": [],
+      "warnings": [],
+      "missingArtifactRefs": [],
+      "safeNextAction": "No local cross-project attention row is blocking inspection.",
+      "localProofRehearsalSummary": {
+        "latestProofState": "ready",
+        "localPackageState": "complete_review_only_authority_missing",
+        "swarmSeamState": "ready_for_review_only_swarm_pressure",
+        "adapterDecisionStatus": "approved_bounded_studio_source_pressure_observation",
+        "observationStatus": "studio_source_pressure_routed_through_generic_layer_seam",
+        "publicSwarmProof": false,
+        "swarmRuntimeActivated": false,
+        "edgeDispatch": false,
+        "layerAdmission": false,
+        "publicationAuthorization": false,
+        "productionReady": false,
+        "localOnly": true,
+        "operatorGuidanceOnly": true
+      },
+      "operatorGuidanceOnly": true,
+      "localOnly": true,
+      "meshTruth": false,
+      "distributedProof": false,
+      "ratifiedSharedState": false,
+      "edgeRuntimeBuilt": false,
+      "edgeRuntimeVerified": false
+    },
+    {
+      "projectId": "studio-example-project:local-proof-attention",
+      "label": "Local proof adapter hold",
+      "rootRef": {
+        "kind": "local-directory",
+        "id": "local-proof-attention",
+        "schema": "media.local_ref.v1",
+        "path": "examples/inspection-fixtures/local-proof-attention",
+        "localOnly": true
+      },
+      "refs": {
+        "operatorPacketIndex": {
+          "kind": "media-operator-packet-index",
+          "id": "operator-packet-index-local-proof-attention",
+          "schema": "media.operator_packet_index.local.v1",
+          "path": "examples/inspection-fixtures/local-proof-attention/records/exports/media-operator-packet-index.local.json",
+          "localOnly": true
+        }
+      },
+      "healthState": "unknown",
+      "handoffState": "unknown",
+      "requestKind": "none",
+      "blockingIssues": [],
+      "nextActions": [],
+      "warnings": [],
+      "missingArtifactRefs": [],
+      "safeNextAction": "Hold Studio source-pressure observation; keep candidate and decision as review-only local evidence.",
+      "localProofRehearsalSummary": {
+        "latestProofState": "attention",
+        "localPackageState": "complete_review_only_authority_missing",
+        "swarmSeamState": "adapter_hold",
+        "adapterDecisionStatus": "rejected_bounded_studio_source_pressure_observation",
+        "observationStatus": "skipped",
+        "publicSwarmProof": false,
+        "swarmRuntimeActivated": false,
+        "edgeDispatch": false,
+        "layerAdmission": false,
+        "publicationAuthorization": false,
+        "productionReady": false,
+        "localOnly": true,
+        "operatorGuidanceOnly": true
+      },
+      "operatorGuidanceOnly": true,
+      "localOnly": true,
+      "meshTruth": false,
+      "distributedProof": false,
+      "ratifiedSharedState": false,
+      "edgeRuntimeBuilt": false,
+      "edgeRuntimeVerified": false
+    }
+  ],
+  "summary": {
+    "projects": 2,
+    "readyForEdgeInspection": 0,
+    "needsLocalAttention": 0,
+    "unknownHandoffState": 2,
+    "localPackageComplete": 2,
+    "localPackageAttention": 0,
+    "swarmReady": 1,
+    "swarmAttention": 1,
+    "adapterHold": 1,
+    "integrityBlocked": 0,
+    "localProofReady": 1,
+    "localProofAttention": 1,
+    "attentionRows": 1,
+    "blockingIssues": 0,
+    "missingArtifacts": 0,
+    "operatorGuidanceOnly": true
+  },
+  "warnings": [
+    "Cross-project operator index is a local scan over explicit input refs.",
+    "It does not discover projects, call Edge, publish mesh state, or ratify readiness.",
+    "Each project summary is operator guidance only and may be stale until regenerated."
+  ],
+  "safeNextAction": "Hold Studio source-pressure observation; keep candidate and decision as review-only local evidence.",
+  "operatorGuidanceOnly": true,
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "providerTruth": false,
+  "edgeRuntimeBuilt": false,
+  "edgeRuntimeVerified": false,
+  "localTruthLabel": "local cache",
+  "truthStatus": "not mesh truth; not distributed proof; not ratified shared state"
+}

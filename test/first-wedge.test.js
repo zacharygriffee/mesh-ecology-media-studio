@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { copyFile, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { copyFile, cp, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
@@ -599,6 +599,10 @@ function crossProjectArtifactRef(name) {
       localOnly: true
     }
   }[name]
+}
+
+function selectedNextActionFields(line) {
+  return line.match(/(^| \| )nextAction=/g)?.length ?? 0
 }
 
 test('first wedge creates local records without claiming mesh truth', async () => {
@@ -4416,6 +4420,33 @@ test('local proof rehearsal print mode emits parseable JSON with non-claims', as
   assert.equal(validateRequiredRecord(proof), true)
 })
 
+test('operator and Edge compact proof posture expose one selected next action', async () => {
+  const dir = await createLocalProofFixtureProject()
+  await runLocalProofRehearsal({ projectDir: dir, quiet: true })
+
+  const operatorOutput = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
+  const operatorLine = operatorOutput.lines.find((line) => line.startsWith('operator packet index:'))
+  assert.ok(operatorLine)
+  assert.equal(selectedNextActionFields(operatorLine), 1)
+  assert.match(operatorLine, /packageNextAction=/)
+  assert.match(operatorLine, /proofNextAction=/)
+  assert.match(operatorLine, /swarmNextAction=/)
+  assert.match(operatorLine, /localProof=ready/)
+  assert.match(operatorLine, /swarmProof=false/)
+  assert.match(operatorLine, /activation=false/)
+
+  const edgeOutput = await captureConsole(() => writeEdgeCompatibilityBundle({ projectDir: dir }))
+  const edgeLine = edgeOutput.lines.find((line) => line.startsWith('edge source refs:'))
+  assert.ok(edgeLine)
+  assert.equal(selectedNextActionFields(edgeLine), 1)
+  assert.match(edgeLine, /packageNextAction=/)
+  assert.match(edgeLine, /proofNextAction=/)
+  assert.match(edgeLine, /swarmNextAction=/)
+  assert.match(edgeLine, /localProof=ready/)
+  assert.match(edgeLine, /swarmProof=false/)
+  assert.match(edgeLine, /activation=false/)
+})
+
 test('local production output runner can keep ffmpeg disabled without blocking local delivery posture', async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-local-output-no-ffmpeg-'))
   await runVeniceProductionRehearsal({ projectDir: dir })
@@ -7327,6 +7358,56 @@ test('committed cross-project inspection fixture validates', async () => {
   assert.equal(index.summary.projects, 3)
   assert.equal(index.summary.needsLocalAttention, 3)
   assert.equal(index.meshTruth, false)
+})
+
+test('committed cross-project local proof fixture validates and runs', async () => {
+  const fixtureRoot = 'examples/inspection-fixtures'
+  const inputList = JSON.parse(
+    await readFile(`${fixtureRoot}/cross-project-local-proof/input-list.local.json`, 'utf8')
+  )
+  const index = JSON.parse(
+    await readFile(`${fixtureRoot}/cross-project-local-proof/media-cross-project-operator-index.local.json`, 'utf8')
+  )
+  const readyOperatorIndex = JSON.parse(
+    await readFile(`${fixtureRoot}/local-proof-ready/records/exports/media-operator-packet-index.local.json`, 'utf8')
+  )
+  const attentionOperatorIndex = JSON.parse(
+    await readFile(`${fixtureRoot}/local-proof-attention/records/exports/media-operator-packet-index.local.json`, 'utf8')
+  )
+
+  assert.equal(validateRequiredRecord(inputList), true)
+  assert.equal(validateRequiredRecord(index), true)
+  assert.equal(validateRequiredRecord(readyOperatorIndex), true)
+  assert.equal(validateRequiredRecord(attentionOperatorIndex), true)
+  assert.equal(index.summary.localProofReady, 1)
+  assert.equal(index.summary.localProofAttention, 1)
+  assert.equal(index.summary.adapterHold, 1)
+  assert.equal(index.projectSummaries[1].localProofRehearsalSummary.observationStatus, 'skipped')
+  assert.equal(index.projectSummaries[1].localProofRehearsalSummary.edgeDispatch, false)
+
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'media-studio-local-proof-fixture-'))
+  await mkdir(path.join(tempRoot, 'examples'), { recursive: true })
+  await cp(fixtureRoot, path.join(tempRoot, fixtureRoot), { recursive: true })
+
+  const { result, lines } = await captureConsole(() => writeCrossProjectOperatorIndex({
+    baseDir: tempRoot,
+    inputList: `${fixtureRoot}/cross-project-local-proof/input-list.local.json`,
+    output: `${fixtureRoot}/cross-project-local-proof/media-cross-project-operator-index.local.json`
+  }))
+
+  assert.equal(result.index.summary.localProofReady, 1)
+  assert.equal(result.index.summary.localProofAttention, 1)
+  assert.equal(result.index.summary.swarmReady, 1)
+  assert.equal(result.index.summary.swarmAttention, 1)
+  assert.equal(result.index.safeNextAction, 'Hold Studio source-pressure observation; keep candidate and decision as review-only local evidence.')
+  assert.ok(lines.some((line) => line.includes('localProofReady=1') &&
+    line.includes('localProofAttention=1') &&
+    line.includes('swarmProof=false') &&
+    line.includes('activation=false')))
+  assert.ok(lines.some((line) => line.includes('local proof: proof=attention') &&
+    line.includes('observation=skipped') &&
+    line.includes('activation=false')))
+  assert.equal(validateRequiredRecord(result.index), true)
 })
 
 test('committed cross-project missing-artifact fixture validates', async () => {

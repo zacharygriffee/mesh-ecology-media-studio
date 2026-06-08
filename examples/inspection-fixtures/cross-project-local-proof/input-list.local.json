@@ -1,0 +1,63 @@
+{
+  "schema": "media.cross_project_inspection_input_list.local.v1",
+  "inputListId": "fixture-cross-project-local-proof",
+  "createdAt": "2026-06-08T00:00:00.000Z",
+  "mode": "standalone-local",
+  "projects": [
+    {
+      "projectId": "studio-example-project:local-proof-ready",
+      "label": "Local proof ready",
+      "rootRef": {
+        "kind": "local-directory",
+        "id": "local-proof-ready",
+        "schema": "media.local_ref.v1",
+        "path": "examples/inspection-fixtures/local-proof-ready",
+        "localOnly": true
+      },
+      "artifactRefs": {
+        "operatorPacketIndex": {
+          "kind": "media-operator-packet-index",
+          "id": "operator-packet-index-local-proof-ready",
+          "schema": "media.operator_packet_index.local.v1",
+          "path": "records/exports/media-operator-packet-index.local.json",
+          "localOnly": true
+        }
+      }
+    },
+    {
+      "projectId": "studio-example-project:local-proof-attention",
+      "label": "Local proof adapter hold",
+      "rootRef": {
+        "kind": "local-directory",
+        "id": "local-proof-attention",
+        "schema": "media.local_ref.v1",
+        "path": "examples/inspection-fixtures/local-proof-attention",
+        "localOnly": true
+      },
+      "artifactRefs": {
+        "operatorPacketIndex": {
+          "kind": "media-operator-packet-index",
+          "id": "operator-packet-index-local-proof-attention",
+          "schema": "media.operator_packet_index.local.v1",
+          "path": "records/exports/media-operator-packet-index.local.json",
+          "localOnly": true
+        }
+      }
+    }
+  ],
+  "warnings": [
+    "Fixture input list only; not project discovery.",
+    "All referenced artifacts are local-only and not mesh truth.",
+    "Cross-project indexing does not call Edge, Layer, or swarm runtime."
+  ],
+  "operatorGuidanceOnly": true,
+  "localOnly": true,
+  "meshTruth": false,
+  "distributedProof": false,
+  "ratifiedSharedState": false,
+  "providerTruth": false,
+  "edgeRuntimeBuilt": false,
+  "edgeRuntimeVerified": false,
+  "localTruthLabel": "local draft",
+  "truthStatus": "not mesh truth; not distributed proof; not ratified shared state"
+}

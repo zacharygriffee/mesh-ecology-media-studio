@@ -60,12 +60,12 @@ export function summarizeSwarmSeamPosture({
   }
 }
 
-export function formatSwarmSeamPostureFields(posture = {}) {
+export function formatSwarmSeamPostureFields(posture = {}, { nextActionField = 'nextAction' } = {}) {
   return [
     `swarmSeam=${posture.state ?? 'unknown'}`,
     'swarmProof=false',
     'activation=false',
-    `nextAction=${posture.safeNextAction ?? 'Inspect Studio swarm seam posture.'}`
+    `${nextActionField}=${posture.safeNextAction ?? 'Inspect Studio swarm seam posture.'}`
   ].join(' | ')
 }
 

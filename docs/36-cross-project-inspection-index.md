@@ -71,23 +71,36 @@ no Layer runtime is called, no durable append is approved, and no continuity or
 authority is claimed.
 
 The same operator-index ref can also surface Studio's local package and
-swarm-seam posture. Compact output reports:
+swarm-seam posture, plus local proof rehearsal posture when present. Compact
+output reports:
 
 ```text
-localPackageComplete=<n> | localPackageAttention=<n> | swarmReady=<n> | swarmAttention=<n> | swarmProof=false | activation=false
+localPackageComplete=<n> | localPackageAttention=<n> | localProofReady=<n> | localProofAttention=<n> | swarmReady=<n> | swarmAttention=<n> | swarmProof=false | activation=false
 ```
 
 Rejected source-pressure adapter decisions are counted as swarm attention and
-shown as `adapter_hold`; missing or drifted local delivery bytes are counted as
-`integrityBlocked`. These are local attention signals only. They do not activate
-swarm runtime, dispatch Edge work, approve Layer admission, prove public swarm
-state, or mark a production package ready.
+shown as `adapter_hold`; rejected local proof rehearsals are counted as
+`localProofAttention` with observation `skipped`, not malformed state. Missing
+or drifted local delivery bytes are counted as `integrityBlocked`. These are
+local attention signals only. They do not activate swarm runtime, dispatch Edge
+work, approve Layer admission, prove public swarm state, or mark a production
+package ready.
+
+A committed local-proof fixture is available at:
+
+```text
+examples/inspection-fixtures/cross-project-local-proof/
+```
+
+It references two compact operator packet records: one ready proof and one
+adapter-hold proof. The fixture documents how local proof posture should be read
+before any future family swarm seam pressure.
 
 The index also prints one `safeNextAction` selected by local attention
 precedence: missing explicit refs, provider or approval attention, Layer interop
-attention, operator health, blocking health, then swarm-seam guidance. This is
-operator guidance only; it does not execute repair, approval, retry, or
-publication.
+attention, operator health, blocking health, local proof attention, then
+swarm-seam guidance. This is operator guidance only; it does not execute repair,
+approval, retry, swarm activation, or publication.
 
 ## Boundary
 

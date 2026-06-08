@@ -480,13 +480,15 @@ function formatOperatorPacketIndexSummary(index, output) {
     `studioPressureObservation=${summary.studioSourcePressureObservationStatus ?? 'absent'}`,
     `localProof=${summary.localProofState ?? 'absent'}`,
     `localProofs=${summary.localProofRehearsals ?? 0}`,
-    formatSwarmSeamPostureFields(index.swarmSeamPosture),
-    `nextAction=${summary.localProofRehearsals > 0
-      ? summary.localProofNextAction
-      : summary.localPackageNextAction ?? 'Inspect local package posture.'}`,
+    `packageNextAction=${summary.localPackageNextAction ?? 'Inspect local package posture.'}`,
+    `proofNextAction=${summary.localProofNextAction ?? 'Run npm run proof:local to create local proof rehearsal evidence.'}`,
+    formatSwarmSeamPostureFields(index.swarmSeamPosture, { nextActionField: 'swarmNextAction' }),
     `productionApprovalPending=${summary.productionApprovalPendingAuthority ?? 0}`,
     `ruleTraces=${summary.ruleResolutionTraces}`,
     `attention=${summary.attentionRows ?? summary.operatorHealthExplanations}`,
+    `nextAction=${summary.localProofRehearsals > 0
+      ? summary.localProofNextAction
+      : summary.localPackageNextAction ?? 'Inspect local package posture.'}`,
     `output=${output}`
   ].join(' | ')
 }

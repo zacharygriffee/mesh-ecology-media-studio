@@ -275,12 +275,16 @@ export async function writeEdgeCompatibilityBundle({
       `localPackage=${bundle.localPackagePosture.packageState}`,
       `review=${bundle.localPackagePosture.latestReviewPosture}`,
       `integrity=${bundle.localPackagePosture.integrityPosture}`,
-      `nextAction=${bundle.localPackagePosture.safeNextAction}`,
       `studioPressure=${bundle.studioSourcePressureAdapterSummary.latestDecisionStatus}`,
       `studioPressureObservation=${bundle.studioSourcePressureAdapterSummary.observationStatus}`,
       `localProof=${bundle.localProofRehearsalSummary.latestProofState}`,
       `localProofs=${bundle.localProofRehearsalSummary.proofs}`,
-      formatSwarmSeamPostureFields(bundle.swarmSeamPosture)
+      `packageNextAction=${bundle.localPackagePosture.safeNextAction}`,
+      `proofNextAction=${bundle.localProofRehearsalSummary.safeNextAction}`,
+      formatSwarmSeamPostureFields(bundle.swarmSeamPosture, { nextActionField: 'swarmNextAction' }),
+      `nextAction=${bundle.localProofRehearsalSummary.proofs > 0
+        ? bundle.localProofRehearsalSummary.safeNextAction
+        : bundle.swarmSeamPosture.safeNextAction ?? bundle.localPackagePosture.safeNextAction}`
     ].join(' | '))
   }
 

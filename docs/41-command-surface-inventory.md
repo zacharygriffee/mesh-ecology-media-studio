@@ -75,8 +75,8 @@ text is not the durable contract.
 | `npm run inspect:venice-loop` | yes | no | `--print` | reads provider-loop status/request/decision refs | no output mutation; prints retry path, live-provider-called posture, and production blockers |
 | `npm run export:inspection-bundle` | yes | yes | `--print` | yes | bundle manifest uses fresh timestamp |
 | `npm run control:surface` | yes | yes | `--print` | yes | runtime projection uses fresh timestamp |
-| `npm run edge:compat` | yes | yes | `--print` | yes | runtime bundle uses fresh timestamp; includes production-capsule, production-bundle, rough-cut, render/export candidate, authority-prereq, local package posture, local proof rehearsal posture, swarm seam posture, and Layer interop source refs/attention when present; no Edge queue, dispatch, approval, swarm activation, or runtime verification |
-| `npm run operator:index` | yes | yes | `--print` | yes | runtime index uses fresh timestamp; includes provider-loop, production-capsule, production-bundle, rough-cut, local package posture, local proof rehearsal posture, swarm seam posture, and Layer interop refs/attention when present |
+| `npm run edge:compat` | yes | yes | `--print` | yes | runtime bundle uses fresh timestamp; includes production-capsule, production-bundle, rough-cut, render/export candidate, authority-prereq, local package posture, local proof rehearsal posture, swarm seam posture, and Layer interop source refs/attention when present; compact output uses one selected `nextAction` plus `packageNextAction`, `proofNextAction`, and `swarmNextAction`; no Edge queue, dispatch, approval, swarm activation, or runtime verification |
+| `npm run operator:index` | yes | yes | `--print` | yes | runtime index uses fresh timestamp; includes provider-loop, production-capsule, production-bundle, rough-cut, local package posture, local proof rehearsal posture, swarm seam posture, and Layer interop refs/attention when present; compact output uses one selected `nextAction` plus `packageNextAction`, `proofNextAction`, and `swarmNextAction` |
 | `npm run handoff:edge` | yes | yes | `--print` | yes | runtime handoff uses fresh timestamp |
 | `npm run operator:decision-request` | yes | yes | `--print` | yes | runtime request uses fresh timestamp |
 | `npm run operator:provider-loop-request` | yes | yes | `--print` | yes | runtime request uses fresh timestamp; retry is request-only |
@@ -119,9 +119,11 @@ default scans do not produce timestamp-only diffs.
 
 `production:local-output`, `production:package-rework`, `media:summary`,
 `health:summary`, `operator:index`, and `edge:compat` now expose the same shared
-`localPackagePosture` summary. The
-stable compact fields are `localPackage=<state>`, `review=<posture>`,
-`integrity=<posture>`, and `nextAction=<safe action>`. Valid package states are
+`localPackagePosture` summary. The stable compact fields are
+`localPackage=<state>`, `review=<posture>`, `integrity=<posture>`, and a safe
+action field. On `operator:index` and `edge:compat`, `packageNextAction`,
+`proofNextAction`, and `swarmNextAction` keep subsystem guidance distinct while
+one final `nextAction` reports the selected operator move. Valid package states are
 `complete_review_only_authority_missing`, `incomplete_local_package`,
 `output_integrity_blocked`, `review_requested_changes`, `stale_review`, and
 `no_package_review`.
