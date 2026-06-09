@@ -300,6 +300,7 @@ export async function writeEdgeCompatibilityBundle({
       `proofStaleReasons=${formatStaleReasons(bundle.localProofRehearsalSummary.staleReasons)}`,
       `proofDrill=${bundle.localProofRehearsalSummary.drillStatus}`,
       `drillAttention=${bundle.localProofRehearsalSummary.drillAttention}`,
+      `drillAttentionReasons=${formatStaleReasons(bundle.localProofRehearsalSummary.drillAttentionReasons)}`,
       `adjacentNeeds=${bundle.adjacentSeamNeedsSummary.adjacentNeeds}`,
       `adjacentReady=${bundle.adjacentSeamNeedsSummary.adjacentReady}`,
       `adjacentAttention=${bundle.adjacentSeamNeedsSummary.adjacentAttention}`,

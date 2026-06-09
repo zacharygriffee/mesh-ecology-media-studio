@@ -45,6 +45,7 @@ export function summarizeLocalProofRehearsal(recordsOrSources = [], {
     : 'absent'
   const drillChecks = record?.drillSummary?.checks ?? record?.summary?.drillChecks ?? 0
   const drillAttention = record?.drillSummary?.attentionChecks ?? record?.summary?.drillAttention ?? 0
+  const drillAttentionReasons = drillAttentionReasonCodes(record)
   const drillNextAction = record?.drillSummary?.safeNextAction ??
     record?.summary?.drillNextAction ??
     'Run npm run proof:local -- --drill to create local proof drill evidence.'
@@ -65,6 +66,7 @@ export function summarizeLocalProofRehearsal(recordsOrSources = [], {
     drillStatus,
     drillChecks,
     drillAttention,
+    drillAttentionReasons,
     drillNextAction,
     localPackageState,
     swarmSeamState,
@@ -93,6 +95,13 @@ export function summarizeLocalProofRehearsal(recordsOrSources = [], {
     distributedProof: false,
     ratifiedSharedState: false
   }
+}
+
+function drillAttentionReasonCodes(record) {
+  const rows = record?.drillSummary?.attentionRows ?? record?.summary?.drillAttentionRows ?? []
+  return [...new Set(rows
+    .map((row) => row.issueCode)
+    .filter((issueCode) => typeof issueCode === 'string' && issueCode.length > 0))]
 }
 
 function proofStaleReasons({

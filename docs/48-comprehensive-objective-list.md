@@ -98,6 +98,8 @@ storage decisions into Studio.
    - `proof:local --drill` checks local inspection/operator/Edge-compatible
      surface coherence and reports `proofDrill` without claiming family runtime
      activation.
+   - operator and Edge-compatible compact proof summaries name
+     `drillAttentionReasons` when proof drill checks need a refresh.
    - `seam:needs` turns a fresh local proof drill into an adjacent-repo
      discussion packet for the operator and Spine repo agent, without writing
      adjacent repos or routing implementation.

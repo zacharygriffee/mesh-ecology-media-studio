@@ -4613,6 +4613,17 @@ test('local proof drill reports mismatched surfaces and non-claim overclaims as 
   assert.equal(attention.drillStatus, 'attention')
   assert.ok(attention.attentionRows.some((row) => row.issueCode === 'operator_adapter_decision_mismatch'))
   assert.ok(attention.attentionRows.some((row) => row.issueCode === 'proof_edge_dispatch_overclaim'))
+  const attentionSummary = summarizeLocalProofRehearsal([{
+    record: {
+      ...proof,
+      drillSummary: attention
+    },
+    relativePath: 'records/exports/media-studio-local-proof-rehearsal.local.json'
+  }])
+  assert.deepEqual(attentionSummary.drillAttentionReasons, [
+    'operator_adapter_decision_mismatch',
+    'proof_edge_dispatch_overclaim'
+  ])
   assert.match(attention.safeNextAction, /proof:local -- --drill/)
   assert.equal(attention.edgeDispatch, false)
   assert.equal(attention.layerAdmission, false)
@@ -5097,6 +5108,63 @@ test('operator and Edge compact proof posture mark stale proof as local attentio
   assert.match(edgeLine, /nextAction=Run npm run proof:local/)
   assert.equal(edgeOutput.result.bundle.localProofRehearsalSummary.proofFreshness, 'stale')
   assert.equal(edgeOutput.result.bundle.localProofRehearsalSummary.edgeDispatch, false)
+})
+
+test('operator and Edge compact proof posture names drill attention reasons', async () => {
+  const dir = await createLocalProofFixtureProject()
+  await runLocalProofRehearsal({ projectDir: dir, drill: true, quiet: true })
+
+  const proofPath = path.join(dir, 'records/exports/media-studio-local-proof-rehearsal.local.json')
+  const proof = JSON.parse(await readFile(proofPath, 'utf8'))
+  proof.drillSummary = {
+    ...proof.drillSummary,
+    drillStatus: 'attention',
+    checks: proof.drillSummary?.checks ?? 1,
+    passedChecks: Math.max((proof.drillSummary?.checks ?? 1) - 1, 0),
+    attentionChecks: 1,
+    attentionRows: [
+      {
+        check: 'operator-adapter-decision',
+        status: 'attention',
+        issueCode: 'operator_adapter_decision_mismatch',
+        expected: 'approved_bounded_studio_source_pressure_observation',
+        actual: 'rejected_bounded_studio_source_pressure_observation',
+        localOnly: true,
+        operatorGuidanceOnly: true
+      }
+    ],
+    safeNextAction: 'Run npm run proof:local -- --drill to refresh local proof rehearsal evidence and drill surfaces.'
+  }
+  proof.summary = {
+    ...proof.summary,
+    drillStatus: 'attention',
+    drillChecks: proof.drillSummary.checks,
+    drillAttention: 1
+  }
+  await writeFile(proofPath, `${JSON.stringify(proof, null, 2)}\n`)
+
+  const operatorOutput = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
+  const operatorLine = operatorOutput.lines.find((line) => line.startsWith('operator packet index:'))
+  const operatorProofLine = operatorOutput.lines.find((line) => line.startsWith('studio local proof:'))
+  assert.ok(operatorLine)
+  assert.match(operatorLine, /proofDrill=attention/)
+  assert.match(operatorLine, /drillAttention=1/)
+  assert.match(operatorLine, /drillAttentionReasons=operator_adapter_decision_mismatch/)
+  assert.ok(operatorProofLine)
+  assert.match(operatorProofLine, /drillAttentionReasons=operator_adapter_decision_mismatch/)
+  assert.deepEqual(operatorOutput.result.index.localProofRehearsalSummary.drillAttentionReasons, [
+    'operator_adapter_decision_mismatch'
+  ])
+
+  const edgeOutput = await captureConsole(() => writeEdgeCompatibilityBundle({ projectDir: dir }))
+  const edgeLine = edgeOutput.lines.find((line) => line.startsWith('edge source refs:'))
+  assert.ok(edgeLine)
+  assert.match(edgeLine, /proofDrill=attention/)
+  assert.match(edgeLine, /drillAttention=1/)
+  assert.match(edgeLine, /drillAttentionReasons=operator_adapter_decision_mismatch/)
+  assert.deepEqual(edgeOutput.result.bundle.localProofRehearsalSummary.drillAttentionReasons, [
+    'operator_adapter_decision_mismatch'
+  ])
 })
 
 test('local production output runner can keep ffmpeg disabled without blocking local delivery posture', async () => {
