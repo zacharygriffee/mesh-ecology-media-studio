@@ -290,6 +290,26 @@ async function createLocalProofFixtureProject(projectDir) {
   return dir
 }
 
+async function createCardOnlyFixtureProject() {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-card-only-'))
+  await mkdir(path.join(dir, 'cards'), { recursive: true })
+  await writeFile(path.join(dir, 'cards', 'card.json'), JSON.stringify({
+    schema: 'media.card.v1',
+    cardId: 'card-test',
+    projectId: 'project-test',
+    kind: 'image',
+    prompt: 'test prompt',
+    referenceAssetRefs: [],
+    target: {
+      contentType: 'image/png'
+    },
+    providerHints: {},
+    acceptanceCriteria: ['hash recorded'],
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }, null, 2))
+  return dir
+}
+
 async function readProductionReceipt(projectDir, relativePath) {
   return JSON.parse(await readFile(path.join(projectDir, relativePath), 'utf8'))
 }
@@ -4793,6 +4813,48 @@ test('current operational command completes local proof through review surfaces'
   assert.ok(line.includes('surfaceFreshnessIssues=none'))
   assert.ok(line.includes('output=records/exports/media-current-operational-runbook.local.json'))
   assert.ok(line.includes('swarmRuntimeActivated=false'))
+})
+
+test('current operational command prepares from card-only local project', async () => {
+  const dir = await createCardOnlyFixtureProject()
+
+  const output = await captureConsole(() => runCurrentOperationalRunbook({
+    projectDir: dir,
+    prepareLocalFixture: true,
+    crossProjectIndex: true,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const line = output.lines.find((entry) => entry.startsWith('studio current operation:'))
+
+  assert.equal(output.result.operation.operationState, 'ready_for_spine_discussion')
+  assert.equal(output.result.operation.preparedLocalFixture, true)
+  assert.equal(output.result.operation.proofState, 'ready')
+  assert.equal(output.result.operation.proofDrill, 'passed')
+  assert.equal(output.result.operation.surfaceFreshness.state, 'fresh')
+  assert.equal(output.result.operation.outputs.preparation.generatedCandidate, 'media/generated/current-operation-candidate.png')
+  const assetDescriptor = await readJsonFile(dir, 'records/assets/media-asset-descriptor.local.json')
+  const manifest = await readJsonFile(dir, 'records/manifests/media-local-run-manifest.local.json')
+  const operationSummary = await readJsonFile(dir, 'records/exports/media-current-operational-runbook.local.json')
+  assert.equal(assetDescriptor.localRef.path, 'media/accepted/current-operation-candidate.png')
+  assert.equal(manifest.candidateInputRef.path, 'media/generated/current-operation-candidate.png')
+  assert.ok(manifest.generatedRecordRefs.some((ref) =>
+    ref.path === 'records/assets/media-asset-descriptor.local.json' &&
+    ref.kind === 'media.asset.descriptor.v1'
+  ))
+  assert.equal(output.result.preparation.inspection.packet.recordRefs.manifest.path, 'records/manifests/media-local-run-manifest.local.json')
+  assert.equal(output.result.preparation.inspection.packet.generatedArtifactRefs[0].path, 'media/accepted/current-operation-candidate.png')
+  assert.deepEqual(operationSummary, output.result.operation)
+  assert.equal(output.result.operatorIndex.index.currentOperationSummary.operationState, 'ready_for_spine_discussion')
+  assert.equal(output.result.edgeCompatibility.bundle.currentOperationSummary.operationState, 'ready_for_spine_discussion')
+  assert.equal(output.result.crossProject.index.summary.currentOperations, 1)
+  assert.equal(output.result.crossProject.index.summary.currentOperationReady, 1)
+  assert.equal(output.result.operation.adjacentRepoWrite, false)
+  assert.equal(output.result.operation.layerAdmission, false)
+  assert.equal(output.result.operation.edgeDispatch, false)
+  assert.equal(output.result.operation.swarmRuntimeActivated, false)
+  assert.ok(line.includes('preparedLocalFixture=true'))
+  assert.ok(line.includes('operation=ready_for_spine_discussion'))
+  assert.ok(line.includes('surfaceFreshness=fresh'))
 })
 
 test('current operational command exposes refreshed inspection without fixture preparation', async () => {
