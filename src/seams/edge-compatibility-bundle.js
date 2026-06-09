@@ -149,7 +149,6 @@ export async function writeEdgeCompatibilityBundle({
   const layerInteropSummary = createLayerInteropSummary({ sources })
   const studioSourcePressureSummary = summarizeStudioSourcePressure(sources)
   const studioSourcePressureAdapterSummary = studioSourcePressureSummary.studioSourcePressureAdapterSummary
-  const localProofRehearsalSummary = summarizeLocalProofRehearsal(sources)
   const swarmSeamPosture = summarizeSwarmSeamPosture({
     localPackagePosture,
     adapterSummary: studioSourcePressureAdapterSummary,
@@ -158,6 +157,11 @@ export async function writeEdgeCompatibilityBundle({
     missingEdgeSourceSchemas: studioSourcePressureSummary.missingEdgeSourceSchemas,
     missingLayerSourceSchemas: studioSourcePressureSummary.missingLayerSourceSchemas,
     layerInteropSummary
+  })
+  const localProofRehearsalSummary = summarizeLocalProofRehearsal(sources, {
+    localPackagePosture,
+    swarmSeamPosture,
+    adapterSummary: studioSourcePressureAdapterSummary
   })
   const createdAt = nowIso()
   const reviewEvidence = createStudioEdgeReviewEvidence({
@@ -279,6 +283,7 @@ export async function writeEdgeCompatibilityBundle({
       `studioPressureObservation=${bundle.studioSourcePressureAdapterSummary.observationStatus}`,
       `localProof=${bundle.localProofRehearsalSummary.latestProofState}`,
       `localProofs=${bundle.localProofRehearsalSummary.proofs}`,
+      `proofFreshness=${bundle.localProofRehearsalSummary.proofFreshness}`,
       `packageNextAction=${bundle.localPackagePosture.safeNextAction}`,
       `proofNextAction=${bundle.localProofRehearsalSummary.safeNextAction}`,
       formatSwarmSeamPostureFields(bundle.swarmSeamPosture, { nextActionField: 'swarmNextAction' }),

@@ -85,6 +85,7 @@ import { writeControlSurfaceProjection } from '../src/seams/control-surface-proj
 import { writeEdgeCompatibilityBundle } from '../src/seams/edge-compatibility-bundle.js'
 import { writeStudioPressureArtifacts } from '../src/seams/studio-pressure-artifacts.js'
 import { runLocalProofRehearsal } from '../src/seams/local-proof-rehearsal.js'
+import { summarizeLocalProofRehearsal } from '../src/seams/local-proof-summary.js'
 import { writeEdgeHandoffCandidate } from '../src/seams/edge-handoff-candidate.js'
 import { writeOperatorPacketIndex } from '../src/seams/operator-packet-index.js'
 import { writeCrossProjectOperatorIndex } from '../src/seams/cross-project-operator-index.js'
@@ -4312,12 +4313,15 @@ test('local proof rehearsal runs safe proof order and writes ready review summar
   ))
   assert.equal(output.result.operatorIndex.index.localProofRehearsalSummary.proofs, 1)
   assert.equal(output.result.operatorIndex.index.localProofRehearsalSummary.latestProofState, 'ready')
+  assert.equal(output.result.operatorIndex.index.localProofRehearsalSummary.proofFreshness, 'fresh')
   assert.equal(output.result.operatorIndex.index.summary.localProofState, 'ready')
+  assert.equal(output.result.operatorIndex.index.summary.localProofFreshness, 'fresh')
   assert.equal(output.result.operatorIndex.index.summary.localProofTargetEnvelope, 'layer_source_pressure_review.v0')
   assert.equal(output.result.operatorIndex.index.summary.swarmProof, false)
   assert.equal(output.result.operatorIndex.index.summary.swarmActivation, false)
   assert.equal(output.result.edgeCompatibility.bundle.localProofRehearsalSummary.proofs, 1)
   assert.equal(output.result.edgeCompatibility.bundle.localProofRehearsalSummary.latestProofState, 'ready')
+  assert.equal(output.result.edgeCompatibility.bundle.localProofRehearsalSummary.proofFreshness, 'fresh')
   assert.equal(output.result.edgeCompatibility.bundle.localProofRehearsalSummary.publicSwarmProof, false)
   assert.equal(output.result.edgeCompatibility.bundle.localProofRehearsalSummary.swarmRuntimeActivated, false)
   assert.ok(output.result.edgeCompatibility.bundle.studioSourceRefs.some((ref) =>
@@ -4359,6 +4363,7 @@ test('local proof rehearsal preserves rejected adapter hold as attention posture
   assert.equal(proof.nonClaims.edgeDispatch, false)
   assert.equal(proof.nonClaims.activation, false)
   assert.equal(output.result.operatorIndex.index.localProofRehearsalSummary.latestProofState, 'attention')
+  assert.equal(output.result.operatorIndex.index.localProofRehearsalSummary.proofFreshness, 'fresh')
   assert.equal(output.result.operatorIndex.index.localProofRehearsalSummary.observationStatus, 'skipped')
   assert.equal(output.result.operatorIndex.index.summary.localProofState, 'attention')
   assert.equal(output.result.edgeCompatibility.bundle.localProofRehearsalSummary.latestProofState, 'attention')
@@ -4420,6 +4425,67 @@ test('local proof rehearsal print mode emits parseable JSON with non-claims', as
   assert.equal(validateRequiredRecord(proof), true)
 })
 
+test('local proof summary reports freshness against current posture', () => {
+  const proofRecord = {
+    schema: 'media.studio_local_proof_rehearsal.local.v1',
+    proofRehearsalId: 'studio-local-proof-rehearsal-freshness-fixture',
+    createdAt: '2026-06-08T00:00:00.000Z',
+    proofState: 'ready',
+    localPackagePosture: {
+      packageState: 'complete_review_only_authority_missing'
+    },
+    swarmSeamPosture: {
+      state: 'ready_for_review_only_swarm_pressure'
+    },
+    studioSourcePressureAdapterSummary: {
+      latestDecisionStatus: 'approved_bounded_studio_source_pressure_observation',
+      observationStatus: 'studio_source_pressure_routed_through_generic_layer_seam',
+      targetGenericEnvelope: 'layer_source_pressure_review.v0'
+    },
+    safeNextAction: 'Carry Studio evidence to future family swarm-seam review only; do not activate swarm runtime locally.'
+  }
+
+  const fresh = summarizeLocalProofRehearsal([{ record: proofRecord, relativePath: 'records/exports/proof.local.json' }], {
+    localPackagePosture: { packageState: 'complete_review_only_authority_missing' },
+    swarmSeamPosture: { state: 'ready_for_review_only_swarm_pressure' },
+    adapterSummary: {
+      latestDecisionStatus: 'approved_bounded_studio_source_pressure_observation',
+      observationStatus: 'studio_source_pressure_routed_through_generic_layer_seam',
+      targetGenericEnvelope: 'layer_source_pressure_review.v0'
+    }
+  })
+  assert.equal(fresh.proofFreshness, 'fresh')
+  assert.equal(fresh.attentionRows, 0)
+  assert.deepEqual(fresh.staleReasons, [])
+
+  const stale = summarizeLocalProofRehearsal([{ record: proofRecord, relativePath: 'records/exports/proof.local.json' }], {
+    localPackagePosture: { packageState: 'output_integrity_blocked' },
+    swarmSeamPosture: { state: 'adapter_hold' },
+    adapterSummary: {
+      latestDecisionStatus: 'rejected_bounded_studio_source_pressure_observation',
+      observationStatus: 'skipped',
+      targetGenericEnvelope: 'layer_source_pressure_review.v0'
+    }
+  })
+  assert.equal(stale.latestProofState, 'ready')
+  assert.equal(stale.proofFreshness, 'stale')
+  assert.equal(stale.attentionRows, 1)
+  assert.deepEqual(stale.staleReasons, [
+    'local_package_changed',
+    'swarm_seam_changed',
+    'adapter_decision_changed',
+    'observation_status_changed'
+  ])
+  assert.match(stale.safeNextAction, /proof:local/)
+
+  const absent = summarizeLocalProofRehearsal([], {
+    localPackagePosture: { packageState: 'complete_review_only_authority_missing' }
+  })
+  assert.equal(absent.latestProofState, 'absent')
+  assert.equal(absent.proofFreshness, 'absent')
+  assert.equal(absent.attentionRows, 0)
+})
+
 test('operator and Edge compact proof posture expose one selected next action', async () => {
   const dir = await createLocalProofFixtureProject()
   await runLocalProofRehearsal({ projectDir: dir, quiet: true })
@@ -4432,6 +4498,7 @@ test('operator and Edge compact proof posture expose one selected next action', 
   assert.match(operatorLine, /proofNextAction=/)
   assert.match(operatorLine, /swarmNextAction=/)
   assert.match(operatorLine, /localProof=ready/)
+  assert.match(operatorLine, /proofFreshness=fresh/)
   assert.match(operatorLine, /swarmProof=false/)
   assert.match(operatorLine, /activation=false/)
 
@@ -4443,8 +4510,43 @@ test('operator and Edge compact proof posture expose one selected next action', 
   assert.match(edgeLine, /proofNextAction=/)
   assert.match(edgeLine, /swarmNextAction=/)
   assert.match(edgeLine, /localProof=ready/)
+  assert.match(edgeLine, /proofFreshness=fresh/)
   assert.match(edgeLine, /swarmProof=false/)
   assert.match(edgeLine, /activation=false/)
+})
+
+test('operator and Edge compact proof posture mark stale proof as local attention', async () => {
+  const dir = await createLocalProofFixtureProject()
+  await runLocalProofRehearsal({ projectDir: dir, quiet: true })
+  await writeStudioPressureArtifacts({
+    projectDir: dir,
+    adapterChain: true,
+    adapterDecision: 'rejected',
+    quiet: true
+  })
+
+  const operatorOutput = await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir }))
+  const operatorLine = operatorOutput.lines.find((line) => line.startsWith('operator packet index:'))
+  assert.ok(operatorLine)
+  assert.equal(selectedNextActionFields(operatorLine), 1)
+  assert.match(operatorLine, /localProof=ready/)
+  assert.match(operatorLine, /proofFreshness=stale/)
+  assert.match(operatorLine, /proofNextAction=Run npm run proof:local/)
+  assert.match(operatorLine, /nextAction=Run npm run proof:local/)
+  assert.equal(operatorOutput.result.index.localProofRehearsalSummary.proofFreshness, 'stale')
+  assert.ok(operatorOutput.result.index.localProofRehearsalSummary.staleReasons.includes('adapter_decision_changed'))
+  assert.equal(operatorOutput.result.index.localProofRehearsalSummary.publicSwarmProof, false)
+  assert.equal(operatorOutput.result.index.localProofRehearsalSummary.swarmRuntimeActivated, false)
+
+  const edgeOutput = await captureConsole(() => writeEdgeCompatibilityBundle({ projectDir: dir }))
+  const edgeLine = edgeOutput.lines.find((line) => line.startsWith('edge source refs:'))
+  assert.ok(edgeLine)
+  assert.equal(selectedNextActionFields(edgeLine), 1)
+  assert.match(edgeLine, /localProof=ready/)
+  assert.match(edgeLine, /proofFreshness=stale/)
+  assert.match(edgeLine, /nextAction=Run npm run proof:local/)
+  assert.equal(edgeOutput.result.bundle.localProofRehearsalSummary.proofFreshness, 'stale')
+  assert.equal(edgeOutput.result.bundle.localProofRehearsalSummary.edgeDispatch, false)
 })
 
 test('local production output runner can keep ffmpeg disabled without blocking local delivery posture', async () => {
@@ -7226,18 +7328,25 @@ test('cross-project operator index carries local proof posture from operator ind
 
   assert.equal(result.index.summary.localProofReady, 1)
   assert.equal(result.index.summary.localProofAttention, 1)
+  assert.equal(result.index.summary.localProofFresh, 2)
+  assert.equal(result.index.summary.localProofStale, 0)
   assert.equal(result.index.projectSummaries[0].localProofRehearsalSummary.latestProofState, 'ready')
+  assert.equal(result.index.projectSummaries[0].localProofRehearsalSummary.proofFreshness, 'fresh')
   assert.equal(result.index.projectSummaries[0].localProofRehearsalSummary.publicSwarmProof, false)
   assert.equal(result.index.projectSummaries[0].localProofRehearsalSummary.swarmRuntimeActivated, false)
   assert.equal(result.index.projectSummaries[1].localProofRehearsalSummary.latestProofState, 'attention')
+  assert.equal(result.index.projectSummaries[1].localProofRehearsalSummary.proofFreshness, 'fresh')
   assert.equal(result.index.projectSummaries[1].localProofRehearsalSummary.observationStatus, 'skipped')
   assert.equal(result.index.projectSummaries[1].localProofRehearsalSummary.edgeDispatch, false)
   assert.equal(result.index.projectSummaries[1].safeNextAction, 'Hold Studio source-pressure observation; keep candidate and decision as review-only local evidence.')
   assert.ok(lines.some((line) => line.includes('localProofReady=1') &&
     line.includes('localProofAttention=1') &&
+    line.includes('localProofFresh=2') &&
+    line.includes('localProofStale=0') &&
     line.includes('swarmProof=false') &&
     line.includes('activation=false')))
   assert.ok(lines.some((line) => line.includes('local proof: proof=attention') &&
+    line.includes('proofFreshness=fresh') &&
     line.includes('observation=skipped') &&
     line.includes('activation=false')))
   assert.equal(validateRequiredRecord(result.index), true)
@@ -7381,8 +7490,14 @@ test('committed cross-project local proof fixture validates and runs', async () 
   assert.equal(validateRequiredRecord(attentionOperatorIndex), true)
   assert.equal(index.summary.localProofReady, 1)
   assert.equal(index.summary.localProofAttention, 1)
+  assert.equal(index.summary.localProofFresh, 1)
+  assert.equal(index.summary.localProofStale, 1)
   assert.equal(index.summary.adapterHold, 1)
-  assert.equal(index.projectSummaries[1].localProofRehearsalSummary.observationStatus, 'skipped')
+  assert.equal(index.projectSummaries[0].localProofRehearsalSummary.proofFreshness, 'fresh')
+  assert.equal(index.projectSummaries[1].localProofRehearsalSummary.latestProofState, 'ready')
+  assert.equal(index.projectSummaries[1].localProofRehearsalSummary.proofFreshness, 'stale')
+  assert.ok(index.projectSummaries[1].localProofRehearsalSummary.staleReasons.includes('adapter_decision_changed'))
+  assert.equal(index.projectSummaries[1].localProofRehearsalSummary.observationStatus, 'studio_source_pressure_routed_through_generic_layer_seam')
   assert.equal(index.projectSummaries[1].localProofRehearsalSummary.edgeDispatch, false)
 
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'media-studio-local-proof-fixture-'))
@@ -7397,15 +7512,20 @@ test('committed cross-project local proof fixture validates and runs', async () 
 
   assert.equal(result.index.summary.localProofReady, 1)
   assert.equal(result.index.summary.localProofAttention, 1)
+  assert.equal(result.index.summary.localProofFresh, 1)
+  assert.equal(result.index.summary.localProofStale, 1)
   assert.equal(result.index.summary.swarmReady, 1)
   assert.equal(result.index.summary.swarmAttention, 1)
-  assert.equal(result.index.safeNextAction, 'Hold Studio source-pressure observation; keep candidate and decision as review-only local evidence.')
+  assert.equal(result.index.safeNextAction, 'Run npm run proof:local to refresh local proof rehearsal evidence after local posture changes.')
   assert.ok(lines.some((line) => line.includes('localProofReady=1') &&
     line.includes('localProofAttention=1') &&
+    line.includes('localProofFresh=1') &&
+    line.includes('localProofStale=1') &&
     line.includes('swarmProof=false') &&
     line.includes('activation=false')))
-  assert.ok(lines.some((line) => line.includes('local proof: proof=attention') &&
-    line.includes('observation=skipped') &&
+  assert.ok(lines.some((line) => line.includes('local proof: proof=ready') &&
+    line.includes('proofFreshness=stale') &&
+    line.includes('staleReasons=swarm_seam_changed,adapter_decision_changed,observation_status_changed') &&
     line.includes('activation=false')))
   assert.equal(validateRequiredRecord(result.index), true)
 })

@@ -134,7 +134,6 @@ export async function writeOperatorPacketIndex({
     .map(toInspectionRef)
   const studioSourcePressureSummary = summarizeStudioSourcePressure(records)
   const studioSourcePressureAdapterSummary = studioSourcePressureSummary.studioSourcePressureAdapterSummary
-  const localProofRehearsalSummary = summarizeLocalProofRehearsal(records)
   const providerLoopStatuses = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProviderLoopStatusLocal)
     .map((entry) => summarizeProviderLoopStatus(entry.record, entry.relativePath))
@@ -188,6 +187,11 @@ export async function writeOperatorPacketIndex({
     missingEdgeSourceSchemas: studioSourcePressureSummary.missingEdgeSourceSchemas,
     missingLayerSourceSchemas: studioSourcePressureSummary.missingLayerSourceSchemas,
     layerInteropSummary: layerInterop
+  })
+  const localProofRehearsalSummary = summarizeLocalProofRehearsal(records, {
+    localPackagePosture,
+    swarmSeamPosture,
+    adapterSummary: studioSourcePressureAdapterSummary
   })
   const productionApprovalLane = summarizeProductionApprovalLane({
     assetRecords: records
@@ -320,6 +324,8 @@ export async function writeOperatorPacketIndex({
       localProofObservationStatus: localProofRehearsalSummary.observationStatus,
       localProofTargetEnvelope: localProofRehearsalSummary.targetGenericEnvelope,
       localProofSurfaced: localProofRehearsalSummary.surfaced,
+      localProofFreshness: localProofRehearsalSummary.proofFreshness,
+      localProofStaleReasons: localProofRehearsalSummary.staleReasons,
       localProofNextAction: localProofRehearsalSummary.safeNextAction,
       swarmSeamState: swarmSeamPosture.state,
       swarmProof: false,
@@ -480,6 +486,7 @@ function formatOperatorPacketIndexSummary(index, output) {
     `studioPressureObservation=${summary.studioSourcePressureObservationStatus ?? 'absent'}`,
     `localProof=${summary.localProofState ?? 'absent'}`,
     `localProofs=${summary.localProofRehearsals ?? 0}`,
+    `proofFreshness=${summary.localProofFreshness ?? 'absent'}`,
     `packageNextAction=${summary.localPackageNextAction ?? 'Inspect local package posture.'}`,
     `proofNextAction=${summary.localProofNextAction ?? 'Run npm run proof:local to create local proof rehearsal evidence.'}`,
     formatSwarmSeamPostureFields(index.swarmSeamPosture, { nextActionField: 'swarmNextAction' }),
@@ -511,6 +518,7 @@ function formatLocalProofRehearsalSummary(summary) {
   return [
     `studio local proof: proofs=${summary.proofs}`,
     `proof=${summary.latestProofState}`,
+    `proofFreshness=${summary.proofFreshness}`,
     `localPackage=${summary.localPackageState}`,
     `swarmSeam=${summary.swarmSeamState}`,
     `adapter=${summary.adapterDecisionStatus}`,

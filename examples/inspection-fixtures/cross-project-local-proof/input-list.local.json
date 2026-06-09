@@ -26,7 +26,7 @@
     },
     {
       "projectId": "studio-example-project:local-proof-attention",
-      "label": "Local proof adapter hold",
+      "label": "Local proof stale adapter hold",
       "rootRef": {
         "kind": "local-directory",
         "id": "local-proof-attention",

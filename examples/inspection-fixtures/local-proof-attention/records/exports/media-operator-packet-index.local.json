@@ -17,8 +17,9 @@
   "handoffCandidateRefs": [],
   "operatorDecisionRequestRefs": [],
   "summary": {
-    "localProofState": "attention",
+    "localProofState": "ready",
     "localProofRehearsals": 1,
+    "localProofFreshness": "stale",
     "swarmProof": false,
     "swarmActivation": false,
     "operatorGuidanceOnly": true
@@ -79,17 +80,26 @@
       "path": "records/exports/media-studio-local-proof-rehearsal.local.json",
       "localOnly": true
     },
-    "latestProofState": "attention",
+    "latestProofState": "ready",
+    "proofFreshness": "stale",
+    "staleReasons": [
+      "swarm_seam_changed",
+      "adapter_decision_changed",
+      "observation_status_changed"
+    ],
     "localPackageState": "complete_review_only_authority_missing",
-    "swarmSeamState": "adapter_hold",
-    "adapterDecisionStatus": "rejected_bounded_studio_source_pressure_observation",
-    "observationStatus": "skipped",
+    "swarmSeamState": "ready_for_review_only_swarm_pressure",
+    "adapterDecisionStatus": "approved_bounded_studio_source_pressure_observation",
+    "observationStatus": "studio_source_pressure_routed_through_generic_layer_seam",
     "targetGenericEnvelope": "layer_source_pressure_review.v0",
-    "safeNextAction": "Hold Studio source-pressure observation; keep candidate and decision as review-only local evidence.",
+    "safeNextAction": "Run npm run proof:local to refresh local proof rehearsal evidence after local posture changes.",
+    "proofNextAction": "Run npm run proof:local to refresh local proof rehearsal evidence after local posture changes.",
     "surfaced": true,
     "attentionRows": 1,
-    "readyProofs": 0,
-    "attentionProofs": 1,
+    "readyProofs": 1,
+    "attentionProofs": 0,
+    "freshProofs": 0,
+    "staleProofs": 1,
     "publicSwarmProof": false,
     "swarmRuntimeActivated": false,
     "edgeDispatch": false,
@@ -100,7 +110,7 @@
     "operatorGuidanceOnly": true
   },
   "warnings": [
-    "Fixture operator index only; adapter rejection is local attention, not malformed state."
+    "Fixture operator index only; stale proof is local attention, not malformed state."
   ],
   "operatorGuidanceOnly": true,
   "localOnly": true,

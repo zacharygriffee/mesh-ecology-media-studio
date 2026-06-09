@@ -75,13 +75,13 @@ text is not the durable contract.
 | `npm run inspect:venice-loop` | yes | no | `--print` | reads provider-loop status/request/decision refs | no output mutation; prints retry path, live-provider-called posture, and production blockers |
 | `npm run export:inspection-bundle` | yes | yes | `--print` | yes | bundle manifest uses fresh timestamp |
 | `npm run control:surface` | yes | yes | `--print` | yes | runtime projection uses fresh timestamp |
-| `npm run edge:compat` | yes | yes | `--print` | yes | runtime bundle uses fresh timestamp; includes production-capsule, production-bundle, rough-cut, render/export candidate, authority-prereq, local package posture, local proof rehearsal posture, swarm seam posture, and Layer interop source refs/attention when present; compact output uses one selected `nextAction` plus `packageNextAction`, `proofNextAction`, and `swarmNextAction`; no Edge queue, dispatch, approval, swarm activation, or runtime verification |
-| `npm run operator:index` | yes | yes | `--print` | yes | runtime index uses fresh timestamp; includes provider-loop, production-capsule, production-bundle, rough-cut, local package posture, local proof rehearsal posture, swarm seam posture, and Layer interop refs/attention when present; compact output uses one selected `nextAction` plus `packageNextAction`, `proofNextAction`, and `swarmNextAction` |
+| `npm run edge:compat` | yes | yes | `--print` | yes | runtime bundle uses fresh timestamp; includes production-capsule, production-bundle, rough-cut, render/export candidate, authority-prereq, local package posture, local proof rehearsal posture, swarm seam posture, and Layer interop source refs/attention when present; compact output uses `proofFreshness`, one selected `nextAction`, plus `packageNextAction`, `proofNextAction`, and `swarmNextAction`; no Edge queue, dispatch, approval, swarm activation, or runtime verification |
+| `npm run operator:index` | yes | yes | `--print` | yes | runtime index uses fresh timestamp; includes provider-loop, production-capsule, production-bundle, rough-cut, local package posture, local proof rehearsal posture, swarm seam posture, and Layer interop refs/attention when present; compact output uses `proofFreshness`, one selected `nextAction`, plus `packageNextAction`, `proofNextAction`, and `swarmNextAction` |
 | `npm run handoff:edge` | yes | yes | `--print` | yes | runtime handoff uses fresh timestamp |
 | `npm run operator:decision-request` | yes | yes | `--print` | yes | runtime request uses fresh timestamp |
 | `npm run operator:provider-loop-request` | yes | yes | `--print` | yes | runtime request uses fresh timestamp; retry is request-only |
 | `npm run operator:provider-loop-decision` | yes | yes | `--print` | yes | local retry/defer decision only; does not execute provider work |
-| `npm run operator:cross-project-index` | yes | yes | `--print` | yes | preserves existing `createdAt` for the same output/index id; can surface provider-loop status/decision refs, Layer interop attention, local package posture, source-pressure adapter summary, local proof rehearsal posture, and swarm seam posture from explicit operator-index refs, with health fallback for package/swarm fields; compact output includes `localPackageComplete`, `localPackageAttention`, `localProofReady`, `localProofAttention`, `swarmReady`, `swarmAttention`, `swarmProof=false`, and `activation=false` |
+| `npm run operator:cross-project-index` | yes | yes | `--print` | yes | preserves existing `createdAt` for the same output/index id; can surface provider-loop status/decision refs, Layer interop attention, local package posture, source-pressure adapter summary, local proof rehearsal posture, and swarm seam posture from explicit operator-index refs, with health fallback for package/swarm fields; compact output includes `localPackageComplete`, `localPackageAttention`, `localProofReady`, `localProofAttention`, `localProofFresh`, `localProofStale`, `swarmReady`, `swarmAttention`, `swarmProof=false`, and `activation=false` |
 
 ## Provider Commands
 
@@ -121,7 +121,8 @@ default scans do not produce timestamp-only diffs.
 `health:summary`, `operator:index`, and `edge:compat` now expose the same shared
 `localPackagePosture` summary. The stable compact fields are
 `localPackage=<state>`, `review=<posture>`, `integrity=<posture>`, and a safe
-action field. On `operator:index` and `edge:compat`, `packageNextAction`,
+action field. On `operator:index` and `edge:compat`, `proofFreshness`,
+`packageNextAction`,
 `proofNextAction`, and `swarmNextAction` keep subsystem guidance distinct while
 one final `nextAction` reports the selected operator move. Valid package states are
 `complete_review_only_authority_missing`, `incomplete_local_package`,
@@ -206,7 +207,11 @@ examples/card-to-candidate`; it performs the local output, pressure, summary,
 inspection, operator, and Edge-compatible refreshes before writing the
 review-only proof summary. It then reruns inspection, operator index, and
 Edge-compatible bundle generation so those surfaces include the proof artifact
-kind and proof summary on the same run.
+kind and proof summary on the same run. Later `operator:index` and `edge:compat`
+runs compare the proof record against current local package, swarm seam, and
+adapter posture. If those inputs drift, `proofFreshness=stale` is local
+attention and `proofNextAction` asks for `npm run proof:local` to refresh the
+review evidence.
 
 This posture is review-only source evidence. It does not activate swarm
 runtime, prove public swarm transport, prove a device boundary, dispatch Edge

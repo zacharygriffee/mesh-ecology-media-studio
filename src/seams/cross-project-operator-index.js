@@ -126,7 +126,9 @@ export async function writeCrossProjectOperatorIndex({
         console.log(`  swarm seam: state=${project.swarmSeamPosture.state} | adapter=${project.studioSourcePressureAdapterSummary?.latestDecisionStatus ?? 'none'} | observation=${project.studioSourcePressureAdapterSummary?.observationStatus ?? 'absent'} | swarmProof=false | activation=false | nextAction=${project.swarmSeamPosture.safeNextAction}`)
       }
       if (project.localProofRehearsalSummary?.latestProofState === 'attention') {
-        console.log(`  local proof: proof=${project.localProofRehearsalSummary.latestProofState} | localPackage=${project.localProofRehearsalSummary.localPackageState} | swarmSeam=${project.localProofRehearsalSummary.swarmSeamState} | adapter=${project.localProofRehearsalSummary.adapterDecisionStatus} | observation=${project.localProofRehearsalSummary.observationStatus} | swarmProof=false | activation=false | nextAction=${project.localProofRehearsalSummary.safeNextAction}`)
+        console.log(`  local proof: proof=${project.localProofRehearsalSummary.latestProofState} | proofFreshness=${project.localProofRehearsalSummary.proofFreshness ?? 'unknown'} | localPackage=${project.localProofRehearsalSummary.localPackageState} | swarmSeam=${project.localProofRehearsalSummary.swarmSeamState} | adapter=${project.localProofRehearsalSummary.adapterDecisionStatus} | observation=${project.localProofRehearsalSummary.observationStatus} | swarmProof=false | activation=false | nextAction=${project.localProofRehearsalSummary.safeNextAction}`)
+      } else if (project.localProofRehearsalSummary?.proofFreshness === 'stale') {
+        console.log(`  local proof: proof=${project.localProofRehearsalSummary.latestProofState} | proofFreshness=stale | localPackage=${project.localProofRehearsalSummary.localPackageState} | swarmSeam=${project.localProofRehearsalSummary.swarmSeamState} | adapter=${project.localProofRehearsalSummary.adapterDecisionStatus} | observation=${project.localProofRehearsalSummary.observationStatus} | staleReasons=${(project.localProofRehearsalSummary.staleReasons ?? []).join(',') || 'none'} | swarmProof=false | activation=false | nextAction=${project.localProofRehearsalSummary.safeNextAction}`)
       }
       for (const explanation of project.operatorHealthExplanations ?? []) {
         console.log(`  subject: ${explanation.path ?? `${explanation.subjectKind}:${explanation.subjectRef?.id ?? 'unknown'}`} | issues=${(explanation.issueCodes ?? []).join(',') || 'none'} | nextAction=${explanation.nextAction ?? 'none'}`)
@@ -171,6 +173,8 @@ function formatCrossProjectSummary(index, output) {
     `localPackageAttention=${summary.localPackageAttention ?? 0}`,
     `localProofReady=${summary.localProofReady ?? 0}`,
     `localProofAttention=${summary.localProofAttention ?? 0}`,
+    `localProofFresh=${summary.localProofFresh ?? 0}`,
+    `localProofStale=${summary.localProofStale ?? 0}`,
     `swarmReady=${summary.swarmReady ?? 0}`,
     `swarmAttention=${summary.swarmAttention ?? 0}`,
     `swarmProof=false`,
@@ -189,6 +193,7 @@ function attentionRows(projectSummaries) {
     project.layerInterop?.needsOperatorAttention === true ||
     (project.swarmSeamPosture && !isSwarmSeamReady(project.swarmSeamPosture)) ||
     project.localProofRehearsalSummary?.latestProofState === 'attention' ||
+    project.localProofRehearsalSummary?.proofFreshness === 'stale' ||
     project.blockingIssues.length > 0 ||
     project.warnings.length > 0
   ))
@@ -351,7 +356,10 @@ function summarizeProjectSafeNextAction({
   if (layerInterop?.needsOperatorAttention) return layerInterop.attentionRows[0].nextAction
   if (operatorHealthExplanations.length > 0) return operatorHealthExplanations[0].nextAction
   if (blockingIssues.length > 0) return 'Inspect project health blocking issues and regenerate the indicated local records.'
-  if (localProofRehearsalSummary?.latestProofState === 'attention') return localProofRehearsalSummary.safeNextAction
+  if (localProofRehearsalSummary?.latestProofState === 'attention' ||
+      localProofRehearsalSummary?.proofFreshness === 'stale') {
+    return localProofRehearsalSummary.safeNextAction
+  }
   if (swarmSeamPosture && !isSwarmSeamReady(swarmSeamPosture)) return swarmSeamPosture.safeNextAction
   return 'No local cross-project attention row is blocking inspection.'
 }
@@ -365,7 +373,8 @@ function summarizeCrossProjectSafeNextAction(projectSummaries) {
     (project) => project.layerInterop?.needsOperatorAttention === true,
     (project) => (project.operatorHealthExplanations ?? []).length > 0,
     (project) => project.blockingIssues.length > 0,
-    (project) => project.localProofRehearsalSummary?.latestProofState === 'attention',
+    (project) => project.localProofRehearsalSummary?.latestProofState === 'attention' ||
+      project.localProofRehearsalSummary?.proofFreshness === 'stale',
     (project) => project.swarmSeamPosture && !isSwarmSeamReady(project.swarmSeamPosture)
   ]
 
@@ -679,10 +688,18 @@ function summarizeProjects(projectSummaries) {
     project.swarmSeamPosture?.state === 'integrity_blocked'
   ).length
   const localProofReady = projectSummaries.filter((project) =>
-    project.localProofRehearsalSummary?.latestProofState === 'ready'
+    project.localProofRehearsalSummary?.latestProofState === 'ready' &&
+    project.localProofRehearsalSummary?.proofFreshness !== 'stale'
   ).length
   const localProofAttention = projectSummaries.filter((project) =>
-    project.localProofRehearsalSummary?.latestProofState === 'attention'
+    project.localProofRehearsalSummary?.latestProofState === 'attention' ||
+    project.localProofRehearsalSummary?.proofFreshness === 'stale'
+  ).length
+  const localProofFresh = projectSummaries.filter((project) =>
+    project.localProofRehearsalSummary?.proofFreshness === 'fresh'
+  ).length
+  const localProofStale = projectSummaries.filter((project) =>
+    project.localProofRehearsalSummary?.proofFreshness === 'stale'
   ).length
   const attentionRows = projectSummaries.filter((project) => (
     project.handoffState === 'needs-local-attention' ||
@@ -692,6 +709,7 @@ function summarizeProjects(projectSummaries) {
     project.layerInterop?.needsOperatorAttention === true ||
     (project.swarmSeamPosture && !isSwarmSeamReady(project.swarmSeamPosture)) ||
     project.localProofRehearsalSummary?.latestProofState === 'attention' ||
+    project.localProofRehearsalSummary?.proofFreshness === 'stale' ||
     project.blockingIssues.length > 0 ||
     project.warnings.length > 0
   )).length
@@ -722,6 +740,8 @@ function summarizeProjects(projectSummaries) {
     integrityBlocked,
     localProofReady,
     localProofAttention,
+    localProofFresh,
+    localProofStale,
     attentionRows,
     blockingIssues: projectSummaries.reduce((sum, project) => sum + project.blockingIssues.length, 0),
     missingArtifacts,

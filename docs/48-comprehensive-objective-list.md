@@ -89,6 +89,9 @@ storage decisions into Studio.
      operator-index, Edge-compatible, and cross-project views without claiming
      Edge dispatch, Layer admission, publication authorization, public swarm
      proof, or activation.
+   - operator and Edge-compatible proof summaries report `proofFreshness`;
+     stale proof records are local attention that asks for `proof:local`
+     refresh, not malformed state.
 
 4. **Example And Fixture Discipline**
 
@@ -223,7 +226,8 @@ pressing the family swarm seams. Preferred order:
 4. preserve source-pressure adapter evidence and swarm-seam posture as
    runtime-only review material;
 5. use `proof:local` when a reviewer needs one consolidated local proof summary
-   and surfaced proof refs in the operator/Edge-compatible views;
+   and surfaced proof refs in the operator/Edge-compatible views, then rerun it
+   when `proofFreshness=stale`;
 6. refresh docs/tests whenever an operator-visible command surface changes.
 
 Success means a reviewer can run one local project through production evidence,
