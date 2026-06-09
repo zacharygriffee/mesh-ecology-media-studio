@@ -33,14 +33,18 @@ The command writes its operator review summary to
 `records/exports/media-current-operational-runbook.local.json` by default. Use
 `--output <relative-json-path>` only when a different local summary path is
 needed. After writing that summary, the command refreshes `inspect:local-run`,
-`operator:index`, and `edge:compat` so inspection carries the summary ref and
-operator surfaces carry `currentOperation` and `currentOperationPath`. When
-`--cross-project-index` is present, the command also refreshes the cross-project
-index after those surfaces exist, so the aggregate summary carries
+`control:surface`, `operator:index`, and `edge:compat` so inspection and the
+control projection carry the summary ref, while operator surfaces carry
+`currentOperation` and `currentOperationPath`. When `--cross-project-index` is
+present, the command also refreshes the cross-project index after those surfaces
+exist, so the aggregate summary carries
 `currentOperations` and `currentOperationReady`.
 The compact line and `--print` output include `inspectionRefreshed` and
 `inspectionPacket`, so projects that already have local-run evidence can confirm
 the refreshed inspection packet without rerunning `--prepare-local-fixture`.
+They also include `controlSurfaceRefreshed` and `controlSurface`, so the local
+control projection can be inspected for the same current-operation ref without
+claiming a UI contract or control-plane authority.
 
 `--prepare-local-fixture` writes a tiny local PNG candidate for the bundled
 example, runs the accepted first wedge, and seeds the local inspection,
@@ -67,6 +71,11 @@ Use the compact line as the first decision point:
   `inspectionPacket=records/exports/local-run-edge-inspection-packet.local.json`
   mean the local inspection packet was refreshed after the current operation
   summary was written and now carries the summary ref.
+- `controlSurfaceRefreshed=true` and
+  `controlSurface=records/exports/media-control-surface-projection.local.json`
+  mean the local control projection was refreshed after the current operation
+  summary was written and now carries a local-only current-operation observation
+  ref.
 - `proof=ready`, `proofFreshness=fresh`, and `proofDrill=passed` mean Studio's
   local proof surfaces agree.
 - `localPackage=complete_review_only_authority_missing` means the local package

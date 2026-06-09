@@ -139,6 +139,12 @@ export async function runCurrentOperationalRunbook({
     operation.inspectionRefreshed = true
     operation.outputs.inspectionPacket = refreshedInspection.output
   }
+  const refreshedControlSurface = await withQuietConsole(() => writeControlSurfaceProjection({ projectDir }))
+  if (preparation && refreshedControlSurface) {
+    preparation.controlSurface = refreshedControlSurface
+  }
+  operation.controlSurfaceRefreshed = true
+  operation.outputs.controlSurfaceProjection = refreshedControlSurface.output
   operatorIndex = await writeOperatorPacketIndex({
     projectDir,
     quiet: true
@@ -183,6 +189,7 @@ export async function runCurrentOperationalRunbook({
     output,
     preparation,
     inspection: refreshedInspection,
+    controlSurface: refreshedControlSurface,
     proof,
     adjacentNeeds,
     readiness,
@@ -244,6 +251,7 @@ export function createCurrentOperationalRunbookSummary({
     edgeProofDrill: edgeProof.drillStatus,
     crossProjectIndexed: crossProject !== null,
     inspectionRefreshed: false,
+    controlSurfaceRefreshed: false,
     crossProjectSummary: crossProject
       ? {
         projects: crossProject.index.summary.projects,
@@ -280,6 +288,7 @@ export function createCurrentOperationalRunbookSummary({
       operatorIndex: operatorIndex.output,
       edgeCompatibility: edgeCompatibility.output,
       inspectionPacket: preparation?.inspection.output ?? null,
+      controlSurfaceProjection: preparation?.controlSurface.output ?? null,
       crossProjectInputList: crossProject?.inputListOutput ?? null,
       crossProjectIndex: crossProject?.output ?? null,
       currentOperationSummary: output
@@ -319,6 +328,8 @@ export function formatCurrentOperationalRunbook(operation) {
     `crossProjectCurrentOperations=${operation.crossProjectSummary?.currentOperations ?? 0}`,
     `inspectionRefreshed=${operation.inspectionRefreshed}`,
     `inspectionPacket=${operation.outputs.inspectionPacket ?? 'absent'}`,
+    `controlSurfaceRefreshed=${operation.controlSurfaceRefreshed}`,
+    `controlSurface=${operation.outputs.controlSurfaceProjection ?? 'absent'}`,
     `output=${operation.outputs.currentOperationSummary}`,
     'adjacentRepoWrite=false',
     'layerAdmission=false',

@@ -28,7 +28,8 @@ const knownObservationPaths = Object.freeze({
   inspectionPacket: 'records/exports/local-run-edge-inspection-packet.local.json',
   exportBundle: 'records/exports/bundles/edge-export-bundle-local-run-inspection/bundle-manifest.local.json',
   providerRunLedger: 'records/provider-results/media-provider-run-ledger.local.json',
-  projectStatus: 'records/manifests/media-project-status.local.json'
+  projectStatus: 'records/manifests/media-project-status.local.json',
+  currentOperationSummary: 'records/exports/media-current-operational-runbook.local.json'
 })
 
 function parseArgs(argv) {
@@ -117,7 +118,7 @@ export async function writeControlSurfaceProjection({
     views: [
       {
         view: 'evidence',
-        consumes: ['inspectionPacket', 'localRunManifest', 'candidateReview', 'continuityEvidence'],
+        consumes: ['inspectionPacket', 'localRunManifest', 'candidateReview', 'continuityEvidence', 'currentOperationSummary'],
         stableLocalRecords: true
       },
       {
@@ -152,7 +153,8 @@ export async function writeControlSurfaceProjection({
       localAction('status-project', 'status:project', 'media-readiness-guidance-seam'),
       localAction('review-candidates', 'review:candidates', 'media-operator-decision-seam'),
       localAction('continuity-draft', 'continuity:draft', 'media-causal-evidence-seam'),
-      localAction('inspect-provider-runs', 'inspect:provider-runs', 'media-work-packet-seam')
+      localAction('inspect-provider-runs', 'inspect:provider-runs', 'media-work-packet-seam'),
+      localAction('current-operation', 'operation:studio', 'media-current-operation-seam')
     ],
     observationRefs,
     warnings: [
@@ -196,13 +198,14 @@ async function collectObservationRefs(root) {
 
   for (const [name, relativePath] of Object.entries(knownObservationPaths)) {
     const record = await readOptionalJson(root, relativePath)
-    if (!record?.schema) continue
+    const schema = record?.schema ?? record?.summaryKind
+    if (!schema) continue
 
     const unwrapped = record.providerResult?.schema === artifactKinds.mediaProviderResult
       ? record.providerResult
       : record
-    validateRequiredRecord(unwrapped)
-    refs[name] = localRecordRef(kindForSchema(unwrapped.schema), idForRecord(unwrapped), relativePath, unwrapped.schema)
+    if (unwrapped.schema) validateRequiredRecord(unwrapped)
+    refs[name] = localRecordRef(kindForSchema(schema), idForRecord(unwrapped), relativePath, schema)
   }
 
   const evidenceRefs = await collectEvidenceObservationRefs(root)
@@ -331,7 +334,8 @@ function kindForSchema(schema) {
     [artifactKinds.mediaProviderRunLedgerLocal]: 'media-provider-run-ledger',
     [artifactKinds.mediaProjectStatusLocal]: 'media-project-status',
     [artifactKinds.mediaCandidateReviewLocal]: 'media-candidate-review',
-    [artifactKinds.mediaContinuityEvidenceLocal]: 'media-continuity-evidence'
+    [artifactKinds.mediaContinuityEvidenceLocal]: 'media-continuity-evidence',
+    'studio-current-operational-runbook': 'media-current-operational-runbook'
   }
 
   return schemaKinds[schema] ?? schema
@@ -345,7 +349,11 @@ function idForRecord(record) {
     record.statusId ??
     record.candidateReviewId ??
     record.continuityEvidenceId ??
+    (record.summaryKind === 'studio-current-operational-runbook' && record.projectId
+      ? `current-operation-${record.projectId}`
+      : undefined) ??
     record.projectionId ??
+    record.summaryKind ??
     record.schema
 }
 
