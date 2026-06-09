@@ -4629,6 +4629,80 @@ test('local proof drill reports mismatched surfaces and non-claim overclaims as 
   assert.equal(attention.layerAdmission, false)
 })
 
+test('current operational runbook path completes local proof through review surfaces', async () => {
+  const dir = await createLocalProofFixtureProject()
+
+  const proofOutput = await captureConsole(() => runLocalProofRehearsal({
+    projectDir: dir,
+    drill: true,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const proofLine = proofOutput.lines.find((entry) => entry.startsWith('studio local proof:'))
+
+  assert.equal(proofOutput.result.proof.proofState, 'ready')
+  assert.equal(proofOutput.result.proof.drillSummary.drillStatus, 'passed')
+  assert.equal(proofOutput.result.proof.localPackagePosture.packageState, 'complete_review_only_authority_missing')
+  assert.equal(proofOutput.result.proof.swarmSeamPosture.state, 'ready_for_review_only_swarm_pressure')
+  assert.equal(proofOutput.result.operatorIndex.index.localProofRehearsalSummary.proofFreshness, 'fresh')
+  assert.equal(proofOutput.result.edgeCompatibility.bundle.localProofRehearsalSummary.proofFreshness, 'fresh')
+  assert.ok(proofLine.includes('proof=ready'))
+  assert.ok(proofLine.includes('drill=passed'))
+  assert.ok(proofLine.includes('localPackage=complete_review_only_authority_missing'))
+  assert.ok(proofLine.includes('swarmProof=false'))
+  assert.ok(proofLine.includes('activation=false'))
+
+  const needsOutput = await captureConsole(() => writeAdjacentSeamNeedsPacket({
+    projectDir: dir,
+    createdAt: '2026-05-19T00:00:01.000Z'
+  }))
+  const needsLine = needsOutput.lines.find((entry) => entry.startsWith('studio adjacent seam needs:'))
+
+  assert.equal(needsOutput.result.packet.declarationStatus, 'ready_for_spine_discussion')
+  assert.equal(needsOutput.result.packet.spineDiscussion, 'required')
+  assert.equal(needsOutput.result.packet.summary.adjacentReady, 5)
+  assert.equal(needsOutput.result.packet.summary.adjacentAttention, 0)
+  assert.ok(needsLine.includes('declaration=ready_for_spine_discussion'))
+  assert.ok(needsLine.includes('spineDiscussion=required'))
+
+  const readinessOutput = await captureConsole(() =>
+    inspectAdjacentSeamReadiness({ projectDir: dir })
+  )
+  const readinessLine = readinessOutput.lines.find((entry) => entry.startsWith('studio adjacent seam readiness:'))
+
+  assert.equal(readinessOutput.result.readiness.readiness, 'ready_for_spine_discussion')
+  assert.equal(readinessOutput.result.readiness.adjacentFreshness, 'fresh')
+  assert.equal(readinessOutput.result.readiness.adjacentRepoWrite, false)
+  assert.equal(readinessOutput.result.readiness.layerAdmission, false)
+  assert.equal(readinessOutput.result.readiness.edgeDispatch, false)
+  assert.ok(readinessLine.includes('readiness=ready_for_spine_discussion'))
+  assert.ok(readinessLine.includes('adjacentFreshness=fresh'))
+  assert.ok(readinessLine.includes('swarmRuntimeActivated=false'))
+
+  const operatorOutput = await captureConsole(() =>
+    writeOperatorPacketIndex({ projectDir: dir })
+  )
+  const edgeOutput = await captureConsole(() =>
+    writeEdgeCompatibilityBundle({ projectDir: dir })
+  )
+  const operatorLine = operatorOutput.lines.find((entry) => entry.startsWith('operator packet index:'))
+  const edgeLine = edgeOutput.lines.find((entry) => entry.startsWith('edge source refs:'))
+
+  assert.equal(operatorOutput.result.index.localProofRehearsalSummary.latestProofState, 'ready')
+  assert.equal(operatorOutput.result.index.localProofRehearsalSummary.proofFreshness, 'fresh')
+  assert.equal(operatorOutput.result.index.localProofRehearsalSummary.drillStatus, 'passed')
+  assert.equal(operatorOutput.result.index.adjacentSeamReadiness.readiness, 'ready_for_spine_discussion')
+  assert.equal(edgeOutput.result.bundle.localProofRehearsalSummary.latestProofState, 'ready')
+  assert.equal(edgeOutput.result.bundle.localProofRehearsalSummary.proofFreshness, 'fresh')
+  assert.equal(edgeOutput.result.bundle.localProofRehearsalSummary.drillStatus, 'passed')
+  assert.equal(edgeOutput.result.bundle.adjacentSeamReadiness.readiness, 'ready_for_spine_discussion')
+  assert.ok(operatorLine.includes('localProof=ready'))
+  assert.ok(operatorLine.includes('proofDrill=passed'))
+  assert.ok(operatorLine.includes('spineReadiness=ready_for_spine_discussion'))
+  assert.ok(edgeLine.includes('localProof=ready'))
+  assert.ok(edgeLine.includes('proofDrill=passed'))
+  assert.ok(edgeLine.includes('spineReadiness=ready_for_spine_discussion'))
+})
+
 test('adjacent seam needs packet declares ready proof for Spine discussion', async () => {
   const dir = await createLocalProofFixtureProject()
   await captureConsole(() => runLocalProofRehearsal({
