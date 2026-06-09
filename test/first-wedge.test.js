@@ -4655,6 +4655,7 @@ test('current operational command completes local proof through review surfaces'
   assert.equal(output.result.operation.adjacentReady, 5)
   assert.equal(output.result.operation.adjacentAttention, 0)
   assert.equal(output.result.operation.crossProjectIndexed, true)
+  assert.equal(output.result.operation.inspectionRefreshed, true)
   assert.equal(output.result.operation.crossProjectSummary.projects, 1)
   assert.equal(output.result.operation.crossProjectSummary.localProofReady, 1)
   assert.equal(output.result.operation.crossProjectSummary.adjacentReady, 5)
@@ -4671,6 +4672,9 @@ test('current operational command completes local proof through review surfaces'
   assert.equal(output.result.preparation.inspection.packet.recordRefs.currentOperationSummary.path, 'records/exports/media-current-operational-runbook.local.json')
   assert.equal(output.result.preparation.inspection.packet.recordRefs.currentOperationSummary.schema, 'studio-current-operational-runbook')
   assert.ok(output.result.preparation.inspection.packet.artifactKinds.includes('studio-current-operational-runbook'))
+  assert.equal(output.result.inspection.output, 'records/exports/local-run-edge-inspection-packet.local.json')
+  assert.equal(output.result.inspection.packet.recordRefs.currentOperationSummary.path, 'records/exports/media-current-operational-runbook.local.json')
+  assert.equal(output.result.operation.outputs.inspectionPacket, 'records/exports/local-run-edge-inspection-packet.local.json')
   const inspectionSummary = await captureConsole(() => summarizeInspectionPacket({
     projectDir: dir,
     packet: 'records/exports/local-run-edge-inspection-packet.local.json'
@@ -4725,7 +4729,35 @@ test('current operational command completes local proof through review surfaces'
   assert.ok(line.includes('crossProjectLocalProofReady=1'))
   assert.ok(line.includes('crossProjectSpineReady=1'))
   assert.ok(line.includes('crossProjectCurrentOperations=1'))
+  assert.ok(line.includes('inspectionRefreshed=true'))
+  assert.ok(line.includes('inspectionPacket=records/exports/local-run-edge-inspection-packet.local.json'))
   assert.ok(line.includes('output=records/exports/media-current-operational-runbook.local.json'))
+  assert.ok(line.includes('swarmRuntimeActivated=false'))
+})
+
+test('current operational command exposes refreshed inspection without fixture preparation', async () => {
+  const dir = await createLocalProofFixtureProject()
+
+  const output = await captureConsole(() => runCurrentOperationalRunbook({
+    projectDir: dir,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const line = output.lines.find((entry) => entry.startsWith('studio current operation:'))
+
+  assert.equal(output.result.preparation, null)
+  assert.equal(output.result.operation.preparedLocalFixture, false)
+  assert.equal(output.result.operation.inspectionRefreshed, true)
+  assert.equal(output.result.inspection.output, 'records/exports/local-run-edge-inspection-packet.local.json')
+  assert.equal(output.result.inspection.packet.recordRefs.currentOperationSummary.path, 'records/exports/media-current-operational-runbook.local.json')
+  assert.equal(output.result.inspection.packet.recordRefs.currentOperationSummary.schema, 'studio-current-operational-runbook')
+  assert.equal(output.result.operation.outputs.inspectionPacket, 'records/exports/local-run-edge-inspection-packet.local.json')
+  assert.deepEqual(
+    await readJsonFile(dir, 'records/exports/media-current-operational-runbook.local.json'),
+    output.result.operation
+  )
+  assert.ok(line.includes('preparedLocalFixture=false'))
+  assert.ok(line.includes('inspectionRefreshed=true'))
+  assert.ok(line.includes('inspectionPacket=records/exports/local-run-edge-inspection-packet.local.json'))
   assert.ok(line.includes('swarmRuntimeActivated=false'))
 })
 

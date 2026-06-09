@@ -135,6 +135,10 @@ export async function runCurrentOperationalRunbook({
   if (preparation && refreshedInspection) {
     preparation.inspection = refreshedInspection
   }
+  if (refreshedInspection) {
+    operation.inspectionRefreshed = true
+    operation.outputs.inspectionPacket = refreshedInspection.output
+  }
   operatorIndex = await writeOperatorPacketIndex({
     projectDir,
     quiet: true
@@ -165,8 +169,8 @@ export async function runCurrentOperationalRunbook({
       localOnly: true,
       operatorGuidanceOnly: true
     }
-    await writeJsonAtomic(path.resolve(projectDir), output, operation)
   }
+  await writeJsonAtomic(path.resolve(projectDir), output, operation)
 
   if (print) {
     console.log(JSON.stringify(operation, null, 2))
@@ -178,6 +182,7 @@ export async function runCurrentOperationalRunbook({
     operation,
     output,
     preparation,
+    inspection: refreshedInspection,
     proof,
     adjacentNeeds,
     readiness,
@@ -238,6 +243,7 @@ export function createCurrentOperationalRunbookSummary({
     edgeProofState: edgeProof.latestProofState,
     edgeProofDrill: edgeProof.drillStatus,
     crossProjectIndexed: crossProject !== null,
+    inspectionRefreshed: false,
     crossProjectSummary: crossProject
       ? {
         projects: crossProject.index.summary.projects,
@@ -273,6 +279,7 @@ export function createCurrentOperationalRunbookSummary({
       adjacentNeeds: adjacentNeeds.output,
       operatorIndex: operatorIndex.output,
       edgeCompatibility: edgeCompatibility.output,
+      inspectionPacket: preparation?.inspection.output ?? null,
       crossProjectInputList: crossProject?.inputListOutput ?? null,
       crossProjectIndex: crossProject?.output ?? null,
       currentOperationSummary: output
@@ -310,6 +317,8 @@ export function formatCurrentOperationalRunbook(operation) {
     `crossProjectLocalProofReady=${operation.crossProjectSummary?.localProofReady ?? 0}`,
     `crossProjectSpineReady=${operation.crossProjectSummary?.spineReady ?? 0}`,
     `crossProjectCurrentOperations=${operation.crossProjectSummary?.currentOperations ?? 0}`,
+    `inspectionRefreshed=${operation.inspectionRefreshed}`,
+    `inspectionPacket=${operation.outputs.inspectionPacket ?? 'absent'}`,
     `output=${operation.outputs.currentOperationSummary}`,
     'adjacentRepoWrite=false',
     'layerAdmission=false',

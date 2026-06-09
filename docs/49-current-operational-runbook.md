@@ -38,6 +38,9 @@ operator surfaces carry `currentOperation` and `currentOperationPath`. When
 `--cross-project-index` is present, the command also refreshes the cross-project
 index after those surfaces exist, so the aggregate summary carries
 `currentOperations` and `currentOperationReady`.
+The compact line and `--print` output include `inspectionRefreshed` and
+`inspectionPacket`, so projects that already have local-run evidence can confirm
+the refreshed inspection packet without rerunning `--prepare-local-fixture`.
 
 `--prepare-local-fixture` writes a tiny local PNG candidate for the bundled
 example, runs the accepted first wedge, and seeds the local inspection,
@@ -60,6 +63,10 @@ Use the compact line as the first decision point:
   persisted current operation summary through the refreshed operator index.
 - `output=records/exports/media-current-operational-runbook.local.json` is the
   persisted summary for operator review after the command exits.
+- `inspectionRefreshed=true` and
+  `inspectionPacket=records/exports/local-run-edge-inspection-packet.local.json`
+  mean the local inspection packet was refreshed after the current operation
+  summary was written and now carries the summary ref.
 - `proof=ready`, `proofFreshness=fresh`, and `proofDrill=passed` mean Studio's
   local proof surfaces agree.
 - `localPackage=complete_review_only_authority_missing` means the local package
