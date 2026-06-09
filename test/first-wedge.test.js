@@ -4657,6 +4657,13 @@ test('current operational command completes local proof through review surfaces'
   assert.equal(output.result.operation.crossProjectIndexed, true)
   assert.equal(output.result.operation.inspectionRefreshed, true)
   assert.equal(output.result.operation.controlSurfaceRefreshed, true)
+  assert.equal(output.result.operation.surfaceFreshness.state, 'fresh')
+  assert.equal(output.result.operation.surfaceFreshness.expectedSurfaces, 5)
+  assert.equal(output.result.operation.surfaceFreshness.refreshedSurfaces, 5)
+  assert.deepEqual(output.result.operation.surfaceFreshness.issueCodes, [])
+  assert.ok(output.result.operation.surfaceFreshness.checks.every((entry) =>
+    entry.state === 'fresh' || entry.state === 'not_requested'
+  ))
   assert.equal(output.result.operation.crossProjectSummary.projects, 1)
   assert.equal(output.result.operation.crossProjectSummary.localProofReady, 1)
   assert.equal(output.result.operation.crossProjectSummary.adjacentReady, 5)
@@ -4744,6 +4751,8 @@ test('current operational command completes local proof through review surfaces'
   assert.ok(line.includes('inspectionPacket=records/exports/local-run-edge-inspection-packet.local.json'))
   assert.ok(line.includes('controlSurfaceRefreshed=true'))
   assert.ok(line.includes('controlSurface=records/exports/media-control-surface-projection.local.json'))
+  assert.ok(line.includes('surfaceFreshness=fresh'))
+  assert.ok(line.includes('surfaceFreshnessIssues=none'))
   assert.ok(line.includes('output=records/exports/media-current-operational-runbook.local.json'))
   assert.ok(line.includes('swarmRuntimeActivated=false'))
 })
@@ -4761,6 +4770,14 @@ test('current operational command exposes refreshed inspection without fixture p
   assert.equal(output.result.operation.preparedLocalFixture, false)
   assert.equal(output.result.operation.inspectionRefreshed, true)
   assert.equal(output.result.operation.controlSurfaceRefreshed, true)
+  assert.equal(output.result.operation.surfaceFreshness.state, 'fresh')
+  assert.equal(output.result.operation.surfaceFreshness.expectedSurfaces, 4)
+  assert.equal(output.result.operation.surfaceFreshness.refreshedSurfaces, 4)
+  assert.deepEqual(output.result.operation.surfaceFreshness.issueCodes, [])
+  assert.equal(
+    output.result.operation.surfaceFreshness.checks.find((entry) => entry.surface === 'crossProjectIndex').state,
+    'not_requested'
+  )
   assert.equal(output.result.inspection.output, 'records/exports/local-run-edge-inspection-packet.local.json')
   assert.equal(output.result.inspection.packet.recordRefs.currentOperationSummary.path, 'records/exports/media-current-operational-runbook.local.json')
   assert.equal(output.result.inspection.packet.recordRefs.currentOperationSummary.schema, 'studio-current-operational-runbook')
@@ -4776,6 +4793,8 @@ test('current operational command exposes refreshed inspection without fixture p
   assert.ok(line.includes('inspectionPacket=records/exports/local-run-edge-inspection-packet.local.json'))
   assert.ok(line.includes('controlSurfaceRefreshed=true'))
   assert.ok(line.includes('controlSurface=records/exports/media-control-surface-projection.local.json'))
+  assert.ok(line.includes('surfaceFreshness=fresh'))
+  assert.ok(line.includes('surfaceFreshnessIssues=none'))
   assert.ok(line.includes('swarmRuntimeActivated=false'))
 })
 

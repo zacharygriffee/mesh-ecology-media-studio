@@ -176,6 +176,14 @@ export async function runCurrentOperationalRunbook({
       operatorGuidanceOnly: true
     }
   }
+  operation.surfaceFreshness = createCurrentOperationSurfaceFreshness({
+    operation,
+    inspection: refreshedInspection,
+    controlSurface: refreshedControlSurface,
+    operatorIndex,
+    edgeCompatibility,
+    crossProject
+  })
   await writeJsonAtomic(path.resolve(projectDir), output, operation)
 
   if (print) {
@@ -252,6 +260,13 @@ export function createCurrentOperationalRunbookSummary({
     crossProjectIndexed: crossProject !== null,
     inspectionRefreshed: false,
     controlSurfaceRefreshed: false,
+    surfaceFreshness: {
+      state: 'pending',
+      checks: [],
+      issueCodes: [],
+      localOnly: true,
+      operatorGuidanceOnly: true
+    },
     crossProjectSummary: crossProject
       ? {
         projects: crossProject.index.summary.projects,
@@ -330,6 +345,8 @@ export function formatCurrentOperationalRunbook(operation) {
     `inspectionPacket=${operation.outputs.inspectionPacket ?? 'absent'}`,
     `controlSurfaceRefreshed=${operation.controlSurfaceRefreshed}`,
     `controlSurface=${operation.outputs.controlSurfaceProjection ?? 'absent'}`,
+    `surfaceFreshness=${operation.surfaceFreshness?.state ?? 'unknown'}`,
+    `surfaceFreshnessIssues=${operation.surfaceFreshness?.issueCodes?.join(',') || 'none'}`,
     `output=${operation.outputs.currentOperationSummary}`,
     'adjacentRepoWrite=false',
     'layerAdmission=false',
@@ -339,6 +356,146 @@ export function formatCurrentOperationalRunbook(operation) {
     'swarmRuntimeActivated=false',
     `nextAction=${operation.safeNextAction}`
   ].join(' | ')
+}
+
+function createCurrentOperationSurfaceFreshness({
+  operation,
+  inspection,
+  controlSurface,
+  operatorIndex,
+  edgeCompatibility,
+  crossProject
+}) {
+  const expectedPath = operation.outputs.currentOperationSummary
+  const expectedSchema = operation.summaryKind
+  const checks = [
+    currentOperationRefCheck({
+      surface: 'inspectionPacket',
+      required: true,
+      ref: inspection?.packet?.recordRefs?.currentOperationSummary,
+      expectedPath,
+      expectedSchema
+    }),
+    currentOperationRefCheck({
+      surface: 'controlSurface',
+      required: true,
+      ref: controlSurface?.projection?.observationRefs?.currentOperationSummary,
+      expectedPath,
+      expectedSchema
+    }),
+    currentOperationRefCheck({
+      surface: 'operatorIndex',
+      required: true,
+      ref: operatorIndex?.index?.currentOperationSummaryRefs?.[0],
+      expectedPath,
+      expectedSchema
+    }),
+    currentOperationRefCheck({
+      surface: 'edgeCompatibility',
+      required: true,
+      ref: edgeCompatibility?.bundle?.currentOperationSummary?.ref,
+      expectedPath,
+      expectedSchema
+    }),
+    currentOperationCrossProjectCheck({
+      operation,
+      crossProject,
+      operatorIndex,
+      expectedPath
+    })
+  ]
+  const issueCodes = checks
+    .filter((check) => check.state === 'attention')
+    .map((check) => check.issueCode)
+
+  return {
+    state: issueCodes.length === 0 ? 'fresh' : 'attention',
+    currentOperationSummaryPath: expectedPath,
+    checks,
+    issueCodes,
+    refreshedSurfaces: checks.filter((check) => check.state === 'fresh').length,
+    expectedSurfaces: checks.filter((check) => check.state !== 'not_requested').length,
+    safeNextAction: issueCodes.length === 0
+      ? 'Keep this current operation package ready for Spine discussion; no runtime activation is claimed.'
+      : 'Rerun npm run operation:studio so refreshed local surfaces point at the current operation summary.',
+    localOnly: true,
+    operatorGuidanceOnly: true
+  }
+}
+
+function currentOperationCrossProjectCheck({
+  operation,
+  crossProject,
+  operatorIndex,
+  expectedPath
+}) {
+  if (operation.crossProjectIndexed !== true) {
+    return {
+      surface: 'crossProjectIndex',
+      state: 'not_requested',
+      expectedPath,
+      actualPath: null,
+      localOnly: true
+    }
+  }
+
+  const projectSummary = crossProject?.index?.projectSummaries?.[0]?.currentOperationSummary
+  const sourceRef = projectSummary?.sourceRef
+  const sourcePathMatches = sourceRef?.path === operatorIndex?.output ||
+    sourceRef?.path?.endsWith(`/${operatorIndex?.output}`)
+  const fresh = (crossProject?.index?.summary?.currentOperations ?? 0) > 0 &&
+    (crossProject?.index?.summary?.currentOperationReady ?? 0) > 0 &&
+    projectSummary?.operationState === operation.operationState &&
+    projectSummary?.path === expectedPath &&
+    sourcePathMatches &&
+    sourceRef?.localOnly !== false
+
+  return {
+    surface: 'crossProjectIndex',
+    state: fresh ? 'fresh' : 'attention',
+    issueCode: fresh ? null : 'crossProjectIndex_current_operation_ref_mismatch',
+    expectedPath,
+    actualPath: projectSummary?.path ?? null,
+    sourcePath: sourceRef?.path ?? null,
+    expectedSourcePath: operatorIndex?.output ?? null,
+    currentOperations: crossProject?.index?.summary?.currentOperations ?? 0,
+    currentOperationReady: crossProject?.index?.summary?.currentOperationReady ?? 0,
+    localOnly: sourceRef?.localOnly !== false
+  }
+}
+
+function currentOperationRefCheck({
+  surface,
+  required,
+  ref,
+  expectedPath,
+  expectedSchema
+}) {
+  if (!required) {
+    return {
+      surface,
+      state: 'not_requested',
+      expectedPath,
+      actualPath: ref?.path ?? null,
+      localOnly: true
+    }
+  }
+
+  const pathMatches = ref?.path === expectedPath || ref?.path?.endsWith(`/${expectedPath}`)
+  const schemaMatches = ref?.schema === expectedSchema
+  const localOnly = ref?.localOnly !== false
+  const fresh = pathMatches && schemaMatches && localOnly
+
+  return {
+    surface,
+    state: fresh ? 'fresh' : 'attention',
+    issueCode: fresh ? null : `${surface}_current_operation_ref_mismatch`,
+    expectedPath,
+    actualPath: ref?.path ?? null,
+    expectedSchema,
+    actualSchema: ref?.schema ?? null,
+    localOnly
+  }
 }
 
 async function writeCurrentOperationCrossProjectIndex({

@@ -45,6 +45,9 @@ the refreshed inspection packet without rerunning `--prepare-local-fixture`.
 They also include `controlSurfaceRefreshed` and `controlSurface`, so the local
 control projection can be inspected for the same current-operation ref without
 claiming a UI contract or control-plane authority.
+`surfaceFreshness` reports whether the refreshed Studio inspection, control,
+operator, Edge-compatible, and optional cross-project surfaces point back to the
+current operation summary.
 
 `--prepare-local-fixture` writes a tiny local PNG candidate for the bundled
 example, runs the accepted first wedge, and seeds the local inspection,
@@ -76,6 +79,9 @@ Use the compact line as the first decision point:
   mean the local control projection was refreshed after the current operation
   summary was written and now carries a local-only current-operation observation
   ref.
+- `surfaceFreshness=fresh` and `surfaceFreshnessIssues=none` mean every expected
+  refreshed Studio surface points back to the current operation summary. This is
+  local surface coherence only; it is not swarm proof or runtime activation.
 - `proof=ready`, `proofFreshness=fresh`, and `proofDrill=passed` mean Studio's
   local proof surfaces agree.
 - `localPackage=complete_review_only_authority_missing` means the local package
