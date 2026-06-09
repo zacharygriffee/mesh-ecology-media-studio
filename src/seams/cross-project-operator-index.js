@@ -134,7 +134,7 @@ export async function writeCrossProjectOperatorIndex({
         console.log(`  local proof: proof=${project.localProofRehearsalSummary.latestProofState} | proofFreshness=${project.localProofRehearsalSummary.proofFreshness ?? 'unknown'} | proofDrill=attention | drillAttention=${project.localProofRehearsalSummary.drillAttention ?? 0} | drillAttentionReasons=${formatStaleReasons(project.localProofRehearsalSummary.drillAttentionReasons)} | localPackage=${project.localProofRehearsalSummary.localPackageState} | swarmSeam=${project.localProofRehearsalSummary.swarmSeamState} | adapter=${project.localProofRehearsalSummary.adapterDecisionStatus} | observation=${project.localProofRehearsalSummary.observationStatus} | swarmProof=false | activation=false | nextAction=${project.localProofRehearsalSummary.safeNextAction}`)
       }
       if (project.adjacentSeamNeedsSummary?.packets > 0 && project.adjacentSeamNeedsSummary.declarationStatus !== 'ready_for_spine_discussion') {
-        console.log(`  adjacent seams: declaration=${project.adjacentSeamNeedsSummary.declarationStatus} | spineDiscussion=${project.adjacentSeamNeedsSummary.spineDiscussion} | adjacentNeeds=${project.adjacentSeamNeedsSummary.adjacentNeeds} | adjacentAttention=${project.adjacentSeamNeedsSummary.adjacentAttention} | adjacentFreshness=${project.adjacentSeamNeedsSummary.needsFreshness ?? 'absent'} | readinessFreshness=${project.adjacentSeamReadiness?.readinessFreshness ?? 'unknown'} | staleReasons=${formatStaleReasons(project.adjacentSeamReadiness?.staleReasons ?? project.adjacentSeamNeedsSummary.staleReasons)} | drillAttentionReasons=${formatStaleReasons(project.adjacentSeamReadiness?.proofDrillAttentionReasons)} | nextAction=${project.adjacentSeamNeedsSummary.safeNextAction}`)
+        console.log(`  adjacent seams: declaration=${project.adjacentSeamNeedsSummary.declarationStatus} | familyBuildout=${project.adjacentSeamNeedsSummary.familyBuildoutCoordination ?? project.adjacentSeamNeedsSummary.spineDiscussion} | familyReadiness=${project.adjacentSeamReadiness?.familyBuildoutReadiness ?? project.adjacentSeamReadiness?.readiness ?? 'unknown'} | spineDiscussion=${project.adjacentSeamNeedsSummary.spineDiscussion} | adjacentNeeds=${project.adjacentSeamNeedsSummary.adjacentNeeds} | adjacentAttention=${project.adjacentSeamNeedsSummary.adjacentAttention} | adjacentFreshness=${project.adjacentSeamNeedsSummary.needsFreshness ?? 'absent'} | readinessFreshness=${project.adjacentSeamReadiness?.readinessFreshness ?? 'unknown'} | staleReasons=${formatStaleReasons(project.adjacentSeamReadiness?.staleReasons ?? project.adjacentSeamNeedsSummary.staleReasons)} | drillAttentionReasons=${formatStaleReasons(project.adjacentSeamReadiness?.proofDrillAttentionReasons)} | familyNextAction=${project.adjacentSeamReadiness?.familyBuildoutNextAction ?? project.adjacentSeamNeedsSummary.safeNextAction} | nextAction=${project.adjacentSeamNeedsSummary.safeNextAction}`)
       }
       for (const explanation of project.operatorHealthExplanations ?? []) {
         console.log(`  subject: ${explanation.path ?? `${explanation.subjectKind}:${explanation.subjectRef?.id ?? 'unknown'}`} | issues=${(explanation.issueCodes ?? []).join(',') || 'none'} | nextAction=${explanation.nextAction ?? 'none'}`)
@@ -196,6 +196,12 @@ function formatCrossProjectSummary(index, output) {
     `adjacentAttention=${summary.adjacentAttention ?? 0}`,
     `adjacentFresh=${summary.adjacentFresh ?? 0}`,
     `adjacentStale=${summary.adjacentStale ?? 0}`,
+    `familyBuildout=${summary.familyBuildoutRequired ?? summary.spineDiscussionRequired ?? 0}`,
+    `familyReady=${summary.familyBuildoutReadinessReady ?? summary.spineReadinessReady ?? 0}`,
+    `familyAttention=${summary.familyBuildoutReadinessAttention ?? summary.spineReadinessAttention ?? 0}`,
+    `familyFresh=${summary.familyBuildoutReadinessFresh ?? summary.spineReadinessFresh ?? 0}`,
+    `familyStale=${summary.familyBuildoutReadinessStale ?? summary.spineReadinessStale ?? 0}`,
+    `familyInherited=${summary.familyBuildoutReadinessInherited ?? summary.spineReadinessInherited ?? 0}`,
     `spineDiscussion=${summary.spineDiscussionRequired ?? 0}`,
     `spineReady=${summary.spineReadinessReady ?? 0}`,
     `spineAttention=${summary.spineReadinessAttention ?? 0}`,
@@ -929,6 +935,12 @@ function summarizeProjects(projectSummaries) {
   const spineReadinessInherited = projectSummaries.filter((project) =>
     project.adjacentSeamReadiness?.readinessFreshness === 'inherited'
   ).length
+  const familyBuildoutRequired = spineDiscussionRequired
+  const familyBuildoutReadinessReady = spineReadinessReady
+  const familyBuildoutReadinessAttention = spineReadinessAttention
+  const familyBuildoutReadinessFresh = spineReadinessFresh
+  const familyBuildoutReadinessStale = spineReadinessStale
+  const familyBuildoutReadinessInherited = spineReadinessInherited
   const attentionRows = projectSummaries.filter((project) => (
     project.handoffState === 'needs-local-attention' ||
     project.providerLoopStatus?.needsOperatorAttention === true ||
@@ -986,6 +998,12 @@ function summarizeProjects(projectSummaries) {
     adjacentAttention,
     adjacentFresh,
     adjacentStale,
+    familyBuildoutRequired,
+    familyBuildoutReadinessReady,
+    familyBuildoutReadinessAttention,
+    familyBuildoutReadinessFresh,
+    familyBuildoutReadinessStale,
+    familyBuildoutReadinessInherited,
     spineDiscussionRequired,
     spineReadinessReady,
     spineReadinessAttention,

@@ -1,20 +1,23 @@
 # Studio Comprehensive Objective List
 
 Status: Studio planning list; not implementation approval, runtime state,
-authority, acceptance, publication, or family routing.
+authority, acceptance, publication, or family runtime routing.
 
 Owner: `mesh-ecology-media-studio`.
 
 Purpose: keep Studio's next work coherent after the local production, operator
-inspection, and source-pressure adapter lanes became reviewable. This list names
-bounded objectives Studio can advance without claiming Edge authority, Layer
-admission, mesh truth, durable continuity, production authority, or publication
+inspection, and source-pressure adapter lanes became reviewable. Studio is the
+media production substrate for mesh ecology: it coordinates media evidence,
+inference-source posture, provider/agent outputs, review decisions, package
+evidence, and future mesh-facing handoffs. This list names bounded objectives
+Studio can advance without claiming Edge authority, Layer admission, mesh truth,
+durable continuity, production authority, runtime routing, or publication
 authorization.
 
 ## Current Center
 
-Studio is the media-domain frontier for local-first media work. The current
-center is:
+Studio is the media-domain frontier for local-first media orchestration. The
+current center is:
 
 ```text
 local media production evidence
@@ -26,6 +29,13 @@ local media production evidence
 The next Studio work should improve repeatability, review clarity, and local
 evidence quality. It should not move authority, routing, admission, or durable
 storage decisions into Studio.
+
+Studio may keep simple media handling, rough cuts, render planning, and export
+preparation, but those are capabilities. Its purpose is to turn media work from
+loose tool calls and files into explicit source, candidate, review, package,
+continuity, and handoff artifacts. Spine is build/doctrine/coordination context
+for the family repos; Edge/operator is the runtime initiation and mediation
+seam.
 
 ## Priority Objectives
 
@@ -105,16 +115,17 @@ storage decisions into Studio.
    - `seam:ready` compact output names proof drill attention reasons while
      remaining read-only.
    - `seam:needs` turns a fresh local proof drill into an adjacent-repo
-     discussion packet for the operator and Spine repo agent, without writing
-     adjacent repos or routing implementation.
+     discussion packet for the operator and Spine repo agent as family seam
+     buildout coordination, without writing adjacent repos or routing runtime
+     implementation.
    - `seam:needs` compact output names proof state, proof freshness, and proof
      drill posture before the adjacent seam discussion counts.
    - `seam:needs` compact output names proof drill attention reasons when the
      discussion packet is blocked by drill attention.
    - changed proof drill attention reasons make older adjacent seam needs
      packets stale local attention.
-   - `seam:ready` reads existing proof and seam-needs records to report Spine
-     discussion readiness without writing another artifact or activating swarm
+   - `seam:ready` reads existing proof and seam-needs records to report family
+     buildout readiness without writing another artifact or activating swarm
      runtime.
    - `operator:index`, `edge:compat`, and `operator:cross-project-index`
      surface adjacent seam readiness without treating it as routing authority.
@@ -122,10 +133,10 @@ storage decisions into Studio.
      stale, or inherited from an operator index without an explicit seam ref.
    - stale adjacent seam needs packets are local attention in operator, Edge,
      and cross-project surfaces; they ask for a `seam:needs` refresh instead
-     of being treated as current Spine discussion readiness.
+     of being treated as current family buildout readiness.
    - `operator:index` and `edge:compat` compact output names adjacent stale
-     reasons and `spineNextAction` so the same refresh trigger and safe
-     adjacent-readiness action are visible on the inspection path.
+     reasons and canonical `familyNextAction` while retaining legacy
+     `spineNextAction` compatibility fields.
    - `operator:cross-project-index` per-project adjacent seam attention lines
      name adjacent freshness, readiness freshness, stale reasons, and proof
      drill attention reasons before any adjacent implementation discussion.
@@ -206,7 +217,8 @@ storage decisions into Studio.
    - cross-project indexes surface project status, attention, provider-loop
      posture, production posture, and Layer interop/source-pressure posture.
    - Edge-compatible bundles remain read-only source collections.
-   - Studio docs continue to name family boundaries with Spine vocabulary.
+   - Studio docs continue to name family boundaries without treating Spine as
+     runtime routing, dispatch, or production authority.
    - no Studio command writes to Spine, Layer, Edge, Virtualia, RBC, Causal,
      Bytes, Packs, or Platform.
 
@@ -257,6 +269,33 @@ approves them:
 - real video editor behavior, including multi-clip timeline stitching,
   transition handling, audio mixing, or production-grade video assembly.
 
+## Before Family Repo Work
+
+These are meaningful Studio objectives before asking adjacent repos to build
+their side of the seams:
+
+1. **Keep the current operation proof coherent**
+
+   Continue proving that `operation:studio --prepare-local-fixture
+   --cross-project-index` can start from card-only input and refresh inspection,
+   operator, Edge-compatible, and cross-project surfaces without authority
+   claims.
+
+2. **Define local inference-source posture**
+
+   Add a bounded, local-only record lane that describes whether media inference
+   source evidence came from operator-supplied material, provider adapters,
+   Edge agent seats, local inference, future Agent Bridge/BYO-AI lanes, or
+   mesh-v0-2/pub-rat proposals. This should describe source posture and
+   mediation needs only; it should not execute providers or claim mesh truth.
+
+3. **Prepare adjacent family asks without implementing them**
+
+   Keep Studio's ask packets explicit for Edge agent-seat dispatch, Agent
+   Bridge/BYO-AI inference adapters, Bytes materialization posture, Causal
+   continuity, Layer review, and mesh-v0-2 pub/rat source lanes. These asks are
+   operator/family buildout coordination, not runtime routing by Spine.
+
 ## Next Safe Studio Work
 
 The current Studio lane is to prove local package and operator clarity before
@@ -274,8 +313,9 @@ pressing the family swarm seams. Preferred order:
    when `proofFreshness=stale` or use `proof:local --drill` when surface
    coherence needs an explicit local check;
 6. run `seam:needs` after a fresh proof drill only when Studio needs to declare
-   adjacent Layer, Edge, Bytes, Causal, or Spine discussion needs, then use
-   `seam:ready` as the read-only check before operator/Spine discussion;
+   adjacent Layer, Edge, Bytes, Causal, or family buildout discussion needs,
+   then use `seam:ready` as the read-only check before operator/Spine repo-agent
+   coordination;
 7. refresh docs/tests whenever an operator-visible command surface changes.
 
 Success means a reviewer can run one local project through production evidence,

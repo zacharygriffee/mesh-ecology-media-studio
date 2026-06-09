@@ -17,7 +17,7 @@ local package evidence
 -> source-pressure adapter evidence
 -> local proof rehearsal with drill
 -> adjacent seam needs packet
--> read-only Spine discussion readiness
+-> read-only family buildout readiness
 -> operator and Edge-compatible review surfaces
 ```
 
@@ -53,7 +53,9 @@ operator, Edge-compatible, and optional cross-project surfaces point back to the
 current operation summary.
 The persisted summary also includes `adjacentFamilyAskSummary`, a compact view
 of the Spine, Layer, Edge, Bytes, and Causal discussion rows from
-`seam:needs`; it is for operator and Spine repo-agent discussion only.
+`seam:needs`; it is for operator and Spine repo-agent family buildout
+coordination only. Spine is build/doctrine/coordination context, not runtime
+routing or dispatch.
 `operator:index` and `edge:compat` carry the same family ask counts so the
 handoff remains visible from the downstream local review surfaces.
 
@@ -90,9 +92,14 @@ Use the compact line as the first decision point:
 - `surfaceFreshness=fresh` and `surfaceFreshnessIssues=none` mean every expected
   refreshed Studio surface points back to the current operation summary. This is
   local surface coherence only; it is not swarm proof or runtime activation.
+- `familyBuildout=required` and
+  `familyReadiness=ready_for_spine_discussion` are the canonical compact fields
+  for family seam buildout coordination. Legacy `spineDiscussion` and
+  `spineReadiness` fields remain for v1 compatibility.
 - `familyAsks=5` and `familyAsksReady=5` mean the adjacent-family discussion
-  rows are present and ready for Spine discussion. This does not write adjacent
-  repos, route implementation, or grant authority.
+  rows are present and ready for operator/Spine repo-agent coordination. This
+  does not write adjacent repos, route runtime implementation, or grant
+  authority.
 - `proof=ready`, `proofFreshness=fresh`, and `proofDrill=passed` mean Studio's
   local proof surfaces agree.
 - `localPackage=complete_review_only_authority_missing` means the local package
@@ -112,9 +119,11 @@ npm run edge:compat -- --project-dir examples/card-to-candidate
 npm run operator:cross-project-index -- --base-dir examples --input-list card-to-candidate/records/exports/media-current-operation-cross-project-input-list.local.json --output card-to-candidate/records/exports/media-current-operation-cross-project-index.local.json
 ```
 
-`readiness=ready_for_spine_discussion` means the packet is ready to discuss with
-the operator and Spine repo agent. It does not mean Layer, Edge, Bytes, Causal,
-or any other repo should implement work without that discussion.
+`readiness=ready_for_spine_discussion` is the legacy enum for a packet that is
+ready to discuss with the operator and Spine repo agent as family buildout
+coordination. It does not mean Spine routes runtime work, and it does not mean
+Layer, Edge, Bytes, Causal, or any other repo should implement work without
+operator-approved adjacent repo scope.
 
 ## If Blocked
 
@@ -129,8 +138,10 @@ Use the compact next-action fields instead of opening raw JSON first:
   `proof:local --drill`.
 - `adjacentFreshness=stale`: rerun `seam:needs` after the current proof drill is
   fresh and passed.
-- `spineReadiness` other than `ready_for_spine_discussion`: follow
-  `spineNextAction` before involving adjacent repo implementation work.
+- `familyReadiness` other than `ready_for_spine_discussion`: follow
+  `familyNextAction` before involving adjacent repo implementation work.
+  Legacy `spineReadiness`/`spineNextAction` fields mirror this posture for v1
+  compatibility.
 
 If the same blocker repeats twice in a row, stop and summarize that blocker for
 the operator instead of adding unrelated hardening work.
@@ -143,7 +154,8 @@ review package:
 - local production package posture;
 - source-pressure adapter candidate, decision, and observation posture;
 - local proof rehearsal and drill status;
-- adjacent seam needs for operator and Spine repo-agent discussion;
+- adjacent seam needs for operator and Spine repo-agent family buildout
+  coordination;
 - read-only adjacent seam readiness;
 - operator-index and Edge-compatible views over the same local evidence.
 

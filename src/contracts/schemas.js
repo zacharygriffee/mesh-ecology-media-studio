@@ -3551,6 +3551,9 @@ function validateStudioAdjacentSeamNeedsPacket(record, schemaId) {
   if (!['required', 'not-ready', 'absent'].includes(record.spineDiscussion)) {
     throw new Error(`Record ${schemaId} has invalid spineDiscussion: ${record.spineDiscussion}`)
   }
+  if (record.familyBuildoutCoordination !== undefined && !['required', 'not-ready', 'absent'].includes(record.familyBuildoutCoordination)) {
+    throw new Error(`Record ${schemaId} has invalid familyBuildoutCoordination: ${record.familyBuildoutCoordination}`)
+  }
 
   for (const collection of ['sourceRefs', 'adjacentDiscussionRows', 'warnings']) {
     if (!Array.isArray(record[collection])) {

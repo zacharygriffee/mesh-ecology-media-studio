@@ -50,6 +50,9 @@
     "spineDiscussion": {
       "enum": ["required", "not-ready", "absent"]
     },
+    "familyBuildoutCoordination": {
+      "enum": ["required", "not-ready", "absent"]
+    },
     "sourceRefs": {
       "type": "array"
     },

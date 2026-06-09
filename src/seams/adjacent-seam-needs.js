@@ -126,6 +126,7 @@ export function createAdjacentSeamNeedsPacket({
     mode: 'standalone-local',
     declarationStatus,
     spineDiscussion,
+    familyBuildoutCoordination: spineDiscussion,
     sourceRefs,
     adjacentDiscussionRows,
     summary: {
@@ -143,6 +144,7 @@ export function createAdjacentSeamNeedsPacket({
       swarmSeamState: proofSummary.swarmSeamState,
       latestProofRef: latestProof ? localRecordRef(latestProof) : null,
       spineDiscussion,
+      familyBuildoutCoordination: spineDiscussion,
       operatorGuidanceOnly: true,
       localOnly: true,
       meshTruth: false
@@ -196,6 +198,8 @@ export function summarizeAdjacentSeamNeeds(recordsOrSources = [], {
     originalDeclarationStatus: packet?.declarationStatus ?? 'absent',
     spineDiscussion,
     originalSpineDiscussion: packet?.spineDiscussion ?? 'absent',
+    familyBuildoutCoordination: spineDiscussion,
+    originalFamilyBuildoutCoordination: packet?.familyBuildoutCoordination ?? packet?.spineDiscussion ?? 'absent',
     needsFreshness,
     staleReasons,
     adjacentNeeds: packetAdjacentNeeds,
@@ -283,6 +287,13 @@ export function summarizeAdjacentSeamReadiness({
     adjacentAttention: adjacentSummary.adjacentAttention,
     declarationStatus: adjacentSummary.declarationStatus,
     spineDiscussion: adjacentSummary.spineDiscussion,
+    familyBuildoutCoordination: adjacentSummary.familyBuildoutCoordination ?? adjacentSummary.spineDiscussion,
+    familyBuildoutReadiness: readiness,
+    familyBuildoutNextAction: safeNextActionForReadiness({
+      readiness,
+      proofSummary,
+      adjacentSummary
+    }),
     staleReasons: adjacentSummary.staleReasons ?? [],
     safeNextAction: safeNextActionForReadiness({
       readiness,
@@ -341,7 +352,7 @@ function safeNextActionForReadiness({
   adjacentSummary
 }) {
   if (readiness === 'ready_for_spine_discussion') {
-    return 'Discuss these adjacent seam needs with the operator and Spine repo agent before any adjacent repo implementation.'
+    return 'Discuss these adjacent seam needs with the operator and Spine repo agent as family seam buildout coordination before any adjacent repo implementation.'
   }
   if (readiness === 'blocked_missing_proof') {
     return 'Run npm run proof:local -- --drill before declaring adjacent seam readiness.'
@@ -351,7 +362,7 @@ function safeNextActionForReadiness({
       'Resolve local proof attention, then rerun npm run proof:local -- --drill and npm run seam:needs.'
   }
   if (readiness === 'missing_adjacent_seam_needs') {
-    return 'Run npm run seam:needs after a fresh proof:local -- --drill before Spine discussion.'
+    return 'Run npm run seam:needs after a fresh proof:local -- --drill before family seam buildout coordination.'
   }
   return adjacentSummary?.safeNextAction ??
     'Refresh adjacent seam needs after local proof posture changes.'
@@ -414,7 +425,7 @@ function classifyDeclarationStatus(proofSummary) {
 
 function safeNextActionForDeclaration(declarationStatus, proofSummary) {
   if (declarationStatus === 'ready_for_spine_discussion') {
-    return 'Discuss these adjacent seam needs with the operator and Spine repo agent before any adjacent repo implementation.'
+    return 'Discuss these adjacent seam needs with the operator and Spine repo agent as family seam buildout coordination before any adjacent repo implementation.'
   }
   if (declarationStatus === 'blocked_missing_proof') {
     return 'Run npm run proof:local -- --drill before declaring adjacent seam needs.'
@@ -445,17 +456,17 @@ function createAdjacentDiscussionRows({
   return [
     adjacentRow({
       ownerRepo: 'mesh-ecology-spine',
-      discussionKind: 'family-routing-review',
-      requestedReview: 'Review Studio local proof and adjacent seam needs before routing any family work.',
+      discussionKind: 'family-seam-buildout-coordination',
+      requestedReview: 'Review Studio local proof and adjacent seam needs as repo-family build coordination, not runtime routing.',
       discussionStatus: baseStatus,
       evidenceRefs: allEvidence,
       stopConditions: [
-        'Stop before routing implementation without operator approval.',
+        'Stop before adjacent repo implementation without operator approval.',
         'Stop before treating Studio local proof as family authority.',
         'Stop before adjacent repo mutation.'
       ],
       nextAction: declarationStatus === 'ready_for_spine_discussion'
-        ? 'Discuss with the operator and Spine repo agent.'
+        ? 'Discuss family seam buildout with the operator and Spine repo agent.'
         : safeNextActionForDeclaration(declarationStatus, proofSummary)
     }),
     adjacentRow({
@@ -475,7 +486,7 @@ function createAdjacentDiscussionRows({
         'Stop before durable append or accepted continuity.',
         'Stop before creating a Studio-specific Layer API.'
       ],
-      nextAction: 'Keep Layer review generic and route any implementation through Spine discussion.'
+      nextAction: 'Keep Layer review generic; any Layer implementation needs separate operator-approved adjacent repo work.'
     }),
     adjacentRow({
       ownerRepo: 'mesh-ecology-edge',
@@ -493,7 +504,7 @@ function createAdjacentDiscussionRows({
         'Stop before dispatch or runtime verification.',
         'Stop before treating Edge review as Layer or Studio authority.'
       ],
-      nextAction: 'Keep Edge consumption read-only unless Spine routes a separate bounded Edge packet.'
+      nextAction: 'Keep Edge consumption read-only unless the operator approves a separate bounded Edge packet.'
     }),
     adjacentRow({
       ownerRepo: 'mesh-ecology-bytes',
@@ -527,7 +538,7 @@ function createAdjacentDiscussionRows({
         'Stop before accepted continuity or ratification.',
         'Stop before treating review evidence as canonical history.'
       ],
-      nextAction: 'Discuss Causal boundaries only after Spine confirms the adjacent need.'
+      nextAction: 'Discuss Causal boundaries only after operator-approved family seam buildout coordination confirms the adjacent need.'
     })
   ]
 }
@@ -720,6 +731,7 @@ function formatAdjacentSeamNeedsPacket(packet, output) {
   return [
     `studio adjacent seam needs: project=${packet.projectId}`,
     `declaration=${packet.declarationStatus}`,
+    `familyBuildout=${packet.familyBuildoutCoordination ?? packet.spineDiscussion}`,
     `spineDiscussion=${packet.spineDiscussion}`,
     `proof=${packet.summary.proofState ?? 'absent'}`,
     `proofFreshness=${packet.summary.proofFreshness ?? 'absent'}`,

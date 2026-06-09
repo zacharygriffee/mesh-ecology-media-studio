@@ -75,7 +75,7 @@ swarm-seam posture, plus local proof rehearsal posture when present. Compact
 output reports:
 
 ```text
-localPackageComplete=<n> | localPackageAttention=<n> | localProofReady=<n> | localProofAttention=<n> | localProofFresh=<n> | localProofStale=<n> | localProofDrillPassed=<n> | localProofDrillAttention=<n> | adjacentNeeds=<n> | adjacentReady=<n> | adjacentAttention=<n> | adjacentFresh=<n> | adjacentStale=<n> | spineDiscussion=<n> | spineReady=<n> | spineAttention=<n> | spineFresh=<n> | spineStale=<n> | spineInherited=<n> | swarmReady=<n> | swarmAttention=<n> | swarmProof=false | activation=false
+localPackageComplete=<n> | localPackageAttention=<n> | localProofReady=<n> | localProofAttention=<n> | localProofFresh=<n> | localProofStale=<n> | localProofDrillPassed=<n> | localProofDrillAttention=<n> | adjacentNeeds=<n> | adjacentReady=<n> | adjacentAttention=<n> | adjacentFresh=<n> | adjacentStale=<n> | familyBuildout=<n> | familyReady=<n> | familyAttention=<n> | familyFresh=<n> | familyStale=<n> | familyInherited=<n> | spineDiscussion=<n> | spineReady=<n> | spineAttention=<n> | spineFresh=<n> | spineStale=<n> | spineInherited=<n> | swarmReady=<n> | swarmAttention=<n> | swarmProof=false | activation=false
 ```
 
 Rejected source-pressure adapter decisions are counted as swarm attention and
@@ -89,15 +89,19 @@ Proof drill failures from `proof:local --drill` are counted as
 `drillAttentionReasons`, and the selected safe action is a local proof drill
 refresh.
 Adjacent seam needs packets are counted only when explicit input refs include
-them; `spineDiscussion` counts packets ready for operator and Spine repo agent
-discussion before any adjacent implementation. `spineReady` and
-`spineAttention` count the derived adjacent seam readiness posture carried from
-operator indexes or explicit adjacent seam refs; they do not grant routing or
-adjacent repo authority. `spineFresh` means the carried readiness agrees with
-an explicit adjacent seam ref, `spineStale` means the explicit ref or current
-proof posture no longer matches, and `spineInherited` means the readiness came
-from an operator index without an explicit adjacent seam ref in the cross-project
-input list. Stale adjacent seam packets are counted as `adjacentStale` and local
+them; `familyBuildout` counts packets ready for operator and Spine repo-agent
+family seam buildout coordination before any adjacent implementation.
+`familyReady` and `familyAttention` count the derived adjacent seam readiness
+posture carried from operator indexes or explicit adjacent seam refs; they do
+not grant routing or adjacent repo authority. `familyFresh` means the carried
+readiness agrees with an explicit adjacent seam ref, `familyStale` means the
+explicit ref or current proof posture no longer matches, and `familyInherited`
+means the readiness came from an operator index without an explicit adjacent
+seam ref in the cross-project input list. Legacy `spineDiscussion`,
+`spineReady`, `spineAttention`, `spineFresh`, `spineStale`, and
+`spineInherited` mirror these counts for v1 compatibility; they do not mean
+Spine routes runtime work. Stale adjacent seam packets are counted as
+`adjacentStale` and local
 attention; per-project adjacent seam attention lines include `adjacentFreshness`,
 `readinessFreshness`, `staleReasons`, and `drillAttentionReasons` so the
 operator can see the refresh trigger or proof drill mismatch before opening

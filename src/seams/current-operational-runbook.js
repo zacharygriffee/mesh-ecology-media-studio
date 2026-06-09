@@ -165,6 +165,7 @@ export async function runCurrentOperationalRunbook({
       projects: crossProject.index.summary.projects,
       localProofReady: crossProject.index.summary.localProofReady,
       adjacentReady: crossProject.index.summary.adjacentReady,
+      familyReady: crossProject.index.summary.familyBuildoutReadinessReady ?? crossProject.index.summary.spineReadinessReady,
       spineReady: crossProject.index.summary.spineReadinessReady,
       swarmReady: crossProject.index.summary.swarmReady,
       currentOperations: crossProject.index.summary.currentOperations,
@@ -248,7 +249,10 @@ export function createCurrentOperationalRunbookSummary({
     observationStatus: proofRecord.studioSourcePressureAdapterSummary.observationStatus,
     adjacentDeclaration: adjacentNeeds.packet.declarationStatus,
     spineDiscussion: adjacentNeeds.packet.spineDiscussion,
+    familyBuildoutCoordination: adjacentNeeds.packet.familyBuildoutCoordination ?? adjacentNeeds.packet.spineDiscussion,
     adjacentReadiness: readinessRecord.readiness,
+    familyBuildoutReadiness: readinessRecord.familyBuildoutReadiness ?? readinessRecord.readiness,
+    familyBuildoutNextAction: readinessRecord.familyBuildoutNextAction ?? readinessRecord.safeNextAction,
     adjacentFreshness: readinessRecord.adjacentFreshness,
     adjacentNeeds: readinessRecord.adjacentNeeds,
     adjacentReady: readinessRecord.adjacentReady,
@@ -273,6 +277,7 @@ export function createCurrentOperationalRunbookSummary({
         projects: crossProject.index.summary.projects,
         localProofReady: crossProject.index.summary.localProofReady,
         adjacentReady: crossProject.index.summary.adjacentReady,
+        familyReady: crossProject.index.summary.familyBuildoutReadinessReady ?? crossProject.index.summary.spineReadinessReady,
         spineReady: crossProject.index.summary.spineReadinessReady,
         swarmReady: crossProject.index.summary.swarmReady,
         currentOperations: crossProject.index.summary.currentOperations ?? 0,
@@ -333,6 +338,8 @@ export function formatCurrentOperationalRunbook(operation) {
     `adapter=${operation.adapterDecisionStatus}`,
     `observation=${operation.observationStatus}`,
     `adjacentDeclaration=${operation.adjacentDeclaration}`,
+    `familyBuildout=${operation.familyBuildoutCoordination ?? operation.spineDiscussion}`,
+    `familyReadiness=${operation.familyBuildoutReadiness ?? operation.adjacentReadiness}`,
     `spineDiscussion=${operation.spineDiscussion}`,
     `spineReadiness=${operation.adjacentReadiness}`,
     `adjacentFreshness=${operation.adjacentFreshness}`,
@@ -342,6 +349,7 @@ export function formatCurrentOperationalRunbook(operation) {
     `familyAsksReady=${operation.adjacentFamilyAskSummary?.adjacentReady ?? 0}`,
     `crossProjectIndexed=${operation.crossProjectIndexed}`,
     `crossProjectLocalProofReady=${operation.crossProjectSummary?.localProofReady ?? 0}`,
+    `crossProjectFamilyReady=${operation.crossProjectSummary?.familyReady ?? operation.crossProjectSummary?.spineReady ?? 0}`,
     `crossProjectSpineReady=${operation.crossProjectSummary?.spineReady ?? 0}`,
     `crossProjectCurrentOperations=${operation.crossProjectSummary?.currentOperations ?? 0}`,
     `inspectionRefreshed=${operation.inspectionRefreshed}`,
@@ -357,6 +365,7 @@ export function formatCurrentOperationalRunbook(operation) {
     'publicationAuthorization=false',
     'productionReady=false',
     'swarmRuntimeActivated=false',
+    `familyNextAction=${operation.familyBuildoutNextAction ?? operation.safeNextAction}`,
     `nextAction=${operation.safeNextAction}`
   ].join(' | ')
 }
@@ -370,6 +379,7 @@ function createAdjacentFamilyAskSummary(adjacentNeeds) {
       ? 'ready_for_spine_discussion'
       : 'local_attention',
     spineDiscussion: packet.spineDiscussion,
+    familyBuildoutCoordination: packet.familyBuildoutCoordination ?? packet.spineDiscussion,
     packetPath: adjacentNeeds.output,
     adjacentNeeds: rows.length,
     adjacentReady: rows.filter((row) => row.discussionStatus === 'ready_for_discussion').length,
@@ -387,6 +397,7 @@ function createAdjacentFamilyAskSummary(adjacentNeeds) {
       operatorGuidanceOnly: true
     })),
     safeNextAction: packet.safeNextAction,
+    familyBuildoutNextAction: packet.safeNextAction,
     adjacentRepoWrite: false,
     layerAdmission: false,
     edgeDispatch: false,
@@ -456,7 +467,7 @@ function createCurrentOperationSurfaceFreshness({
     refreshedSurfaces: checks.filter((check) => check.state === 'fresh').length,
     expectedSurfaces: checks.filter((check) => check.state !== 'not_requested').length,
     safeNextAction: issueCodes.length === 0
-      ? 'Keep this current operation package ready for Spine discussion; no runtime activation is claimed.'
+      ? 'Keep this current operation package ready for family seam buildout coordination; no runtime activation is claimed.'
       : 'Rerun npm run operation:studio so refreshed local surfaces point at the current operation summary.',
     localOnly: true,
     operatorGuidanceOnly: true

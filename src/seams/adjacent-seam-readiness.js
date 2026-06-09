@@ -59,6 +59,8 @@ export function formatAdjacentSeamReadiness(readiness) {
     `adjacentFreshness=${readiness.adjacentFreshness}`,
     `staleReasons=${formatStaleReasons(readiness.staleReasons)}`,
     `declaration=${readiness.declarationStatus}`,
+    `familyBuildout=${readiness.familyBuildoutCoordination ?? readiness.spineDiscussion}`,
+    `familyReadiness=${readiness.familyBuildoutReadiness ?? readiness.readiness}`,
     `spineDiscussion=${readiness.spineDiscussion}`,
     `adjacentNeeds=${readiness.adjacentNeeds}`,
     `adjacentReady=${readiness.adjacentReady}`,
@@ -77,6 +79,7 @@ export function formatAdjacentSeamReadiness(readiness) {
     'publicationAuthorization=false',
     'productionReady=false',
     'swarmRuntimeActivated=false',
+    `familyNextAction=${readiness.familyBuildoutNextAction ?? readiness.safeNextAction}`,
     `nextAction=${readiness.safeNextAction}`
   ].join(' | ')
 }
