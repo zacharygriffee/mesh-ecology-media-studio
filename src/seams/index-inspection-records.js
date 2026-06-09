@@ -36,12 +36,12 @@ export async function indexInspectionRecords({
   for (const file of files) {
     try {
       const record = JSON.parse(await readFile(file, 'utf8'))
-      const schema = record.schema ?? record.providerResult?.schema ?? 'unknown'
+      const schema = record.schema ?? record.summaryKind ?? record.providerResult?.schema ?? 'unknown'
       const relativePath = path.relative(root, file).split(path.sep).join('/')
       entries.push({
         schema,
         path: relativePath,
-        status: record.providerResult?.status ?? record.status
+        status: record.providerResult?.status ?? record.status ?? record.operationState
       })
     } catch {
       entries.push({
@@ -56,6 +56,7 @@ export async function indexInspectionRecords({
     manifests: entries.filter((entry) => entry.schema === 'media.local_run_manifest.v1'),
     providerResults: entries.filter((entry) => entry.schema === 'media.provider_result.v1'),
     inspectionPackets: entries.filter((entry) => entry.schema === 'media.edge_inspection_packet.local.v1'),
+    currentOperationSummaries: entries.filter((entry) => entry.schema === 'studio-current-operational-runbook'),
     all: entries
   }
 
@@ -66,6 +67,7 @@ export async function indexInspectionRecords({
     console.log(`manifests: ${index.manifests.length}`)
     console.log(`providerResults: ${index.providerResults.length}`)
     console.log(`inspectionPackets: ${index.inspectionPackets.length}`)
+    console.log(`currentOperationSummaries: ${index.currentOperationSummaries.length}`)
     for (const entry of entries) {
       console.log(`${entry.schema}\t${entry.path}${entry.status ? `\t${entry.status}` : ''}`)
     }

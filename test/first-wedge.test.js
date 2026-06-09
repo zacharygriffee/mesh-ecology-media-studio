@@ -4675,6 +4675,10 @@ test('current operational command completes local proof through review surfaces'
   assert.equal(output.result.inspection.output, 'records/exports/local-run-edge-inspection-packet.local.json')
   assert.equal(output.result.inspection.packet.recordRefs.currentOperationSummary.path, 'records/exports/media-current-operational-runbook.local.json')
   assert.equal(output.result.operation.outputs.inspectionPacket, 'records/exports/local-run-edge-inspection-packet.local.json')
+  const localIndex = (await captureConsole(() => indexInspectionRecords({ projectDir: dir, json: false }))).result
+  assert.equal(localIndex.currentOperationSummaries.length, 1)
+  assert.equal(localIndex.currentOperationSummaries[0].path, 'records/exports/media-current-operational-runbook.local.json')
+  assert.equal(localIndex.currentOperationSummaries[0].status, 'ready_for_spine_discussion')
   const inspectionSummary = await captureConsole(() => summarizeInspectionPacket({
     projectDir: dir,
     packet: 'records/exports/local-run-edge-inspection-packet.local.json'
