@@ -267,7 +267,9 @@ Both write `media.render_receipt.local.v1`. The contact-sheet command writes a
 PNG preview. The ffmpeg command writes a local MP4 preview by default and can be
 disabled with `--disable-ffmpeg` or `MEDIA_STUDIO_FFMPEG=disabled`. These
 receipts are local render evidence only; they are not export delivery,
-publication authorization, approval authority, or production readiness.
+publication authorization, approval authority, or production readiness. The
+current ffmpeg lane is image-ref preview evidence only; real video clip
+stitching remains deferred.
 
 `npm run production:export-candidate` and `npm run production:export-plan`
 create the first dry-run export posture over a reviewed rough cut and optional
@@ -284,7 +286,8 @@ make the package production-ready.
 `npm run production:export-ffmpeg` consumes the same export plan but renders the
 delivery candidate directly with ffmpeg. ffmpeg remains the default local video
 export posture and can be disabled with `--disable-ffmpeg`. The resulting export
-receipt remains local delivery evidence only.
+receipt remains local delivery evidence only. This does not open a real video
+editor lane or multi-clip stitching path.
 
 ## Non-Claims
 

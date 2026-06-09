@@ -191,6 +191,9 @@ storage decisions into Studio.
      and authority request candidates.
    - contact-sheet, ffmpeg preview, local-package copy, and ffmpeg delivery
      paths preserve distinct posture.
+   - real video clip stitching remains deferred; current ffmpeg work is limited
+     to image-ref preview/export evidence until a separate bounded plan is
+     approved.
    - production readiness remains false without future authority.
 
 8. **Cross-Project And Family-Readable Inspection**
@@ -251,6 +254,8 @@ approves them:
 - full byte/materialization backend promotion.
 - causal-substrate adapter implementation.
 - `assetId` descriptor-id migration.
+- real video editor behavior, including multi-clip timeline stitching,
+  transition handling, audio mixing, or production-grade video assembly.
 
 ## Next Safe Studio Work
 
