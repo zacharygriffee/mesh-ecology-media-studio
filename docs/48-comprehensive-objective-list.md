@@ -92,6 +92,9 @@ storage decisions into Studio.
    - operator and Edge-compatible proof summaries report `proofFreshness`;
      stale proof records are local attention that asks for `proof:local`
      refresh, not malformed state.
+   - operator and Edge-compatible compact proof summaries name
+     `proofStaleReasons` so the refresh trigger is visible without opening
+     raw JSON.
    - `proof:local --drill` checks local inspection/operator/Edge-compatible
      surface coherence and reports `proofDrill` without claiming family runtime
      activation.

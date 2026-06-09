@@ -77,8 +77,8 @@ text is not the durable contract.
 | `npm run inspect:venice-loop` | yes | no | `--print` | reads provider-loop status/request/decision refs | no output mutation; prints retry path, live-provider-called posture, and production blockers |
 | `npm run export:inspection-bundle` | yes | yes | `--print` | yes | bundle manifest uses fresh timestamp |
 | `npm run control:surface` | yes | yes | `--print` | yes | runtime projection uses fresh timestamp |
-| `npm run edge:compat` | yes | yes | `--print` | yes | runtime bundle uses fresh timestamp; includes production-capsule, production-bundle, rough-cut, render/export candidate, authority-prereq, local package posture, local proof rehearsal posture, swarm seam posture, and Layer interop source refs/attention when present; compact output uses `proofFreshness`, `proofDrill`, `adjacentStaleReasons`, one selected `nextAction`, plus `packageNextAction`, `proofNextAction`, and `swarmNextAction`; no Edge queue, dispatch, approval, swarm activation, or runtime verification |
-| `npm run operator:index` | yes | yes | `--print` | yes | runtime index uses fresh timestamp; includes provider-loop, production-capsule, production-bundle, rough-cut, local package posture, local proof rehearsal posture, swarm seam posture, and Layer interop refs/attention when present; compact output uses `proofFreshness`, `proofDrill`, `adjacentStaleReasons`, one selected `nextAction`, plus `packageNextAction`, `proofNextAction`, and `swarmNextAction` |
+| `npm run edge:compat` | yes | yes | `--print` | yes | runtime bundle uses fresh timestamp; includes production-capsule, production-bundle, rough-cut, render/export candidate, authority-prereq, local package posture, local proof rehearsal posture, swarm seam posture, and Layer interop source refs/attention when present; compact output uses `proofFreshness`, `proofStaleReasons`, `proofDrill`, `adjacentStaleReasons`, one selected `nextAction`, plus `packageNextAction`, `proofNextAction`, and `swarmNextAction`; no Edge queue, dispatch, approval, swarm activation, or runtime verification |
+| `npm run operator:index` | yes | yes | `--print` | yes | runtime index uses fresh timestamp; includes provider-loop, production-capsule, production-bundle, rough-cut, local package posture, local proof rehearsal posture, swarm seam posture, and Layer interop refs/attention when present; compact output uses `proofFreshness`, `proofStaleReasons`, `proofDrill`, `adjacentStaleReasons`, one selected `nextAction`, plus `packageNextAction`, `proofNextAction`, and `swarmNextAction` |
 | `npm run handoff:edge` | yes | yes | `--print` | yes | runtime handoff uses fresh timestamp |
 | `npm run operator:decision-request` | yes | yes | `--print` | yes | runtime request uses fresh timestamp |
 | `npm run operator:provider-loop-request` | yes | yes | `--print` | yes | runtime request uses fresh timestamp; retry is request-only |
@@ -213,9 +213,10 @@ kind and proof summary on the same run. With `--drill`, the proof record also
 gets a local `drillSummary` that checks inspection, operator index, and
 Edge-compatible surface coherence. Later `operator:index` and `edge:compat`
 runs compare the proof record against current local package, swarm seam, and
-adapter posture. If those inputs drift, `proofFreshness=stale` is local
-attention; if a drill check fails, `proofDrill=attention` is local attention.
-Both paths ask for a local proof refresh, not family runtime activation.
+adapter posture. If those inputs drift, `proofFreshness=stale` and
+`proofStaleReasons` name the mismatch as local attention; if a drill check
+fails, `proofDrill=attention` is local attention. Both paths ask for a local
+proof refresh, not family runtime activation.
 
 After a fresh `proof:local --drill`, run `npm run seam:needs -- --project-dir
 examples/card-to-candidate` when Studio needs to declare adjacent repo
