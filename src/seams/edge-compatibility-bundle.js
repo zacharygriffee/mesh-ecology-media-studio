@@ -166,7 +166,9 @@ export async function writeEdgeCompatibilityBundle({
     swarmSeamPosture,
     adapterSummary: studioSourcePressureAdapterSummary
   })
-  const adjacentSeamNeedsSummary = summarizeAdjacentSeamNeeds(sources)
+  const adjacentSeamNeedsSummary = summarizeAdjacentSeamNeeds(sources, {
+    proofSummary: localProofRehearsalSummary
+  })
   const createdAt = nowIso()
   const reviewEvidence = createStudioEdgeReviewEvidence({
     projectId,
@@ -294,6 +296,7 @@ export async function writeEdgeCompatibilityBundle({
       `adjacentNeeds=${bundle.adjacentSeamNeedsSummary.adjacentNeeds}`,
       `adjacentReady=${bundle.adjacentSeamNeedsSummary.adjacentReady}`,
       `adjacentAttention=${bundle.adjacentSeamNeedsSummary.adjacentAttention}`,
+      `adjacentFreshness=${bundle.adjacentSeamNeedsSummary.needsFreshness}`,
       `spineDiscussion=${bundle.adjacentSeamNeedsSummary.spineDiscussion}`,
       `packageNextAction=${bundle.localPackagePosture.safeNextAction}`,
       `proofNextAction=${bundle.localProofRehearsalSummary.safeNextAction}`,

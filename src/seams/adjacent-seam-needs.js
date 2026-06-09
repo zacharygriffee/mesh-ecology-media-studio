@@ -166,25 +166,45 @@ export function createAdjacentSeamNeedsPacket({
   }
 }
 
-export function summarizeAdjacentSeamNeeds(recordsOrSources = []) {
-  const entries = normalizeEntries(recordsOrSources)
+export function summarizeAdjacentSeamNeeds(recordsOrSources = [], {
+  proofSummary = null
+} = {}) {
+  const allEntries = normalizeEntries(recordsOrSources)
+  const entries = allEntries
     .filter((entry) => entry.record.schema === artifactKinds.mediaStudioAdjacentSeamNeedsPacketLocal)
     .sort(sortNewestRecordFirst)
   const latest = entries[0]
   const packet = latest?.record
+  const currentProofSummary = proofSummary ?? currentProofSummaryFromEntries(allEntries)
+  const staleReasons = packet ? adjacentNeedsStaleReasons(packet, currentProofSummary) : []
+  const needsFreshness = packet
+    ? staleReasons.length > 0 ? 'stale' : 'fresh'
+    : 'absent'
+  const packetAdjacentNeeds = packet?.summary?.adjacentNeeds ?? packet?.adjacentDiscussionRows?.length ?? 0
+  const packetAdjacentReady = packet?.summary?.adjacentReady ?? packet?.adjacentDiscussionRows?.filter((row) => row.discussionStatus === 'ready_for_discussion').length ?? 0
+  const packetAdjacentAttention = packet?.summary?.adjacentAttention ?? packet?.adjacentDiscussionRows?.filter((row) => row.discussionStatus !== 'ready_for_discussion').length ?? 0
+  const stale = needsFreshness === 'stale'
+  const declarationStatus = stale ? 'local_attention' : packet?.declarationStatus ?? 'absent'
+  const spineDiscussion = stale ? 'not-ready' : packet?.spineDiscussion ?? 'absent'
 
   return {
     summaryKind: 'studio-adjacent-seam-needs-summary',
     packets: entries.length,
     latestPacketRef: latest ? localRecordRef(latest) : null,
-    declarationStatus: packet?.declarationStatus ?? 'absent',
-    spineDiscussion: packet?.spineDiscussion ?? 'absent',
-    adjacentNeeds: packet?.summary?.adjacentNeeds ?? packet?.adjacentDiscussionRows?.length ?? 0,
-    adjacentReady: packet?.summary?.adjacentReady ?? packet?.adjacentDiscussionRows?.filter((row) => row.discussionStatus === 'ready_for_discussion').length ?? 0,
-    adjacentAttention: packet?.summary?.adjacentAttention ?? packet?.adjacentDiscussionRows?.filter((row) => row.discussionStatus !== 'ready_for_discussion').length ?? 0,
+    declarationStatus,
+    originalDeclarationStatus: packet?.declarationStatus ?? 'absent',
+    spineDiscussion,
+    originalSpineDiscussion: packet?.spineDiscussion ?? 'absent',
+    needsFreshness,
+    staleReasons,
+    adjacentNeeds: packetAdjacentNeeds,
+    adjacentReady: stale ? 0 : packetAdjacentReady,
+    adjacentAttention: stale ? packetAdjacentNeeds : packetAdjacentAttention,
     ownerRepos: packet?.summary?.ownerRepos ?? [],
-    safeNextAction: packet?.safeNextAction ?? 'Run npm run seam:needs after proof:local -- --drill to declare adjacent repo discussion needs.',
-    attentionRows: packet && packet.declarationStatus !== 'ready_for_spine_discussion' ? 1 : 0,
+    safeNextAction: stale
+      ? 'Run npm run seam:needs after refreshing local proof surfaces; the adjacent seam needs packet is stale.'
+      : packet?.safeNextAction ?? 'Run npm run seam:needs after proof:local -- --drill to declare adjacent repo discussion needs.',
+    attentionRows: packet && (declarationStatus !== 'ready_for_spine_discussion' || stale) ? 1 : 0,
     adjacentRepoWrite: false,
     layerAdmission: false,
     edgeDispatch: false,
@@ -196,6 +216,45 @@ export function summarizeAdjacentSeamNeeds(recordsOrSources = []) {
     distributedProof: false,
     ratifiedSharedState: false
   }
+}
+
+function currentProofSummaryFromEntries(entries) {
+  return latestOperatorProofSummary(entries) ??
+    latestEdgeProofSummary(entries) ??
+    summarizeLocalProofRehearsal(entries)
+}
+
+function adjacentNeedsStaleReasons(packet, proofSummary) {
+  const reasons = []
+  if (!proofSummary || proofSummary.proofs === 0 || proofSummary.latestProofState === 'absent') {
+    reasons.push('local_proof_absent')
+    return reasons
+  }
+
+  const summary = packet.summary ?? {}
+  const comparisons = [
+    ['proof_state_changed', summary.proofState, proofSummary.latestProofState],
+    ['proof_freshness_changed', summary.proofFreshness, proofSummary.proofFreshness],
+    ['proof_drill_changed', summary.proofDrill, proofSummary.drillStatus],
+    ['adapter_decision_changed', summary.adapterDecisionStatus, proofSummary.adapterDecisionStatus],
+    ['observation_status_changed', summary.observationStatus, proofSummary.observationStatus],
+    ['local_package_changed', summary.localPackageState, proofSummary.localPackageState],
+    ['swarm_seam_changed', summary.swarmSeamState, proofSummary.swarmSeamState]
+  ]
+
+  for (const [reason, recorded, current] of comparisons) {
+    if (recorded && current && recorded !== current) {
+      reasons.push(reason)
+    }
+  }
+
+  const recordedProofId = summary.latestProofRef?.id
+  const currentProofId = proofSummary.latestProofRef?.id
+  if (recordedProofId && currentProofId && recordedProofId !== currentProofId) {
+    reasons.push('local_proof_ref_changed')
+  }
+
+  return reasons
 }
 
 function classifyDeclarationStatus(proofSummary) {

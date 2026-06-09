@@ -98,6 +98,9 @@ storage decisions into Studio.
    - `seam:needs` turns a fresh local proof drill into an adjacent-repo
      discussion packet for the operator and Spine repo agent, without writing
      adjacent repos or routing implementation.
+   - stale adjacent seam needs packets are local attention in operator, Edge,
+     and cross-project surfaces; they ask for a `seam:needs` refresh instead
+     of being treated as current Spine discussion readiness.
 
 4. **Example And Fixture Discipline**
 

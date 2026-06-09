@@ -75,7 +75,7 @@ swarm-seam posture, plus local proof rehearsal posture when present. Compact
 output reports:
 
 ```text
-localPackageComplete=<n> | localPackageAttention=<n> | localProofReady=<n> | localProofAttention=<n> | localProofFresh=<n> | localProofStale=<n> | localProofDrillPassed=<n> | localProofDrillAttention=<n> | adjacentNeeds=<n> | adjacentReady=<n> | adjacentAttention=<n> | spineDiscussion=<n> | swarmReady=<n> | swarmAttention=<n> | swarmProof=false | activation=false
+localPackageComplete=<n> | localPackageAttention=<n> | localProofReady=<n> | localProofAttention=<n> | localProofFresh=<n> | localProofStale=<n> | localProofDrillPassed=<n> | localProofDrillAttention=<n> | adjacentNeeds=<n> | adjacentReady=<n> | adjacentAttention=<n> | adjacentFresh=<n> | adjacentStale=<n> | spineDiscussion=<n> | swarmReady=<n> | swarmAttention=<n> | swarmProof=false | activation=false
 ```
 
 Rejected source-pressure adapter decisions are counted as swarm attention and
@@ -88,7 +88,9 @@ Proof drill failures from `proof:local --drill` are counted as
 `localProofDrillAttention` and also select a local proof drill refresh.
 Adjacent seam needs packets are counted only when explicit input refs include
 them; `spineDiscussion` counts packets ready for operator and Spine repo agent
-discussion before any adjacent implementation.
+discussion before any adjacent implementation. Stale adjacent seam packets are
+counted as `adjacentStale` and local attention; the selected safe action is to
+refresh `seam:needs` after current proof surfaces are refreshed.
 Missing or drifted local delivery bytes are counted as `integrityBlocked`.
 These are local attention signals only. They do not activate swarm runtime,
 dispatch Edge work, approve Layer admission, prove public swarm state, or mark a

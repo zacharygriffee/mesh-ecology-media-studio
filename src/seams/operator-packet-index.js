@@ -197,7 +197,9 @@ export async function writeOperatorPacketIndex({
     swarmSeamPosture,
     adapterSummary: studioSourcePressureAdapterSummary
   })
-  const adjacentSeamNeedsSummary = summarizeAdjacentSeamNeeds(records)
+  const adjacentSeamNeedsSummary = summarizeAdjacentSeamNeeds(records, {
+    proofSummary: localProofRehearsalSummary
+  })
   const productionApprovalLane = summarizeProductionApprovalLane({
     assetRecords: records
       .filter((entry) => entry.record.schema === artifactKinds.mediaAssetDescriptor)
@@ -344,6 +346,8 @@ export async function writeOperatorPacketIndex({
       adjacentSeamNeedsAttention: adjacentSeamNeedsSummary.adjacentAttention,
       adjacentSeamNeedsDeclarationStatus: adjacentSeamNeedsSummary.declarationStatus,
       adjacentSeamNeedsSpineDiscussion: adjacentSeamNeedsSummary.spineDiscussion,
+      adjacentSeamNeedsFreshness: adjacentSeamNeedsSummary.needsFreshness,
+      adjacentSeamNeedsStaleReasons: adjacentSeamNeedsSummary.staleReasons,
       adjacentSeamNeedsNextAction: adjacentSeamNeedsSummary.safeNextAction,
       swarmSeamState: swarmSeamPosture.state,
       swarmProof: false,
@@ -515,6 +519,7 @@ function formatOperatorPacketIndexSummary(index, output) {
     `adjacentNeeds=${summary.adjacentSeamNeeds ?? 0}`,
     `adjacentReady=${summary.adjacentSeamNeedsReady ?? 0}`,
     `adjacentAttention=${summary.adjacentSeamNeedsAttention ?? 0}`,
+    `adjacentFreshness=${summary.adjacentSeamNeedsFreshness ?? 'absent'}`,
     `spineDiscussion=${summary.adjacentSeamNeedsSpineDiscussion ?? 'absent'}`,
     `packageNextAction=${summary.localPackageNextAction ?? 'Inspect local package posture.'}`,
     `proofNextAction=${summary.localProofNextAction ?? 'Run npm run proof:local to create local proof rehearsal evidence.'}`,
@@ -567,6 +572,7 @@ function formatAdjacentSeamNeedsSummary(summary) {
     `studio adjacent seam needs: packets=${summary.packets}`,
     `declaration=${summary.declarationStatus}`,
     `spineDiscussion=${summary.spineDiscussion}`,
+    `freshness=${summary.needsFreshness}`,
     `adjacentNeeds=${summary.adjacentNeeds}`,
     `adjacentReady=${summary.adjacentReady}`,
     `adjacentAttention=${summary.adjacentAttention}`,

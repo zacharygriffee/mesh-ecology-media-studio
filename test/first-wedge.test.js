@@ -4752,12 +4752,16 @@ test('adjacent seam needs surface through operator Edge and cross-project views'
 
   assert.equal(operatorResult.index.adjacentSeamNeedsRefs.length, 1)
   assert.equal(operatorResult.index.adjacentSeamNeedsSummary.declarationStatus, 'ready_for_spine_discussion')
+  assert.equal(operatorResult.index.adjacentSeamNeedsSummary.needsFreshness, 'fresh')
   assert.equal(operatorResult.index.summary.adjacentSeamNeeds, 5)
   assert.ok(operatorLines.find((entry) => entry.startsWith('operator packet index:')).includes('adjacentNeeds=5'))
+  assert.ok(operatorLines.find((entry) => entry.startsWith('operator packet index:')).includes('adjacentFreshness=fresh'))
   assert.equal(edgeResult.bundle.adjacentSeamNeedsSummary.adjacentNeeds, 5)
   assert.equal(edgeResult.bundle.adjacentSeamNeedsSummary.spineDiscussion, 'required')
+  assert.equal(edgeResult.bundle.adjacentSeamNeedsSummary.needsFreshness, 'fresh')
   assert.equal(edgeResult.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.studio_adjacent_seam_needs_packet.local.v1'), true)
   assert.ok(edgeLines.find((entry) => entry.startsWith('edge source refs:')).includes('adjacentNeeds=5'))
+  assert.ok(edgeLines.find((entry) => entry.startsWith('edge source refs:')).includes('adjacentFreshness=fresh'))
 
   const baseDir = path.dirname(dir)
   const inputList = createCrossProjectInputListWithArtifactRefs([
@@ -4766,6 +4770,7 @@ test('adjacent seam needs surface through operator Edge and cross-project views'
       label: 'Adjacent seam project',
       rootPath: path.basename(dir),
       artifactRefs: {
+        operatorPacketIndex: crossProjectArtifactRef('operatorPacketIndex'),
         adjacentSeamNeeds: adjacentSeamNeedsArtifactRef(needsResult.packet)
       }
     }
@@ -4782,9 +4787,88 @@ test('adjacent seam needs surface through operator Edge and cross-project views'
   assert.equal(crossProjectResult.index.summary.adjacentNeeds, 5)
   assert.equal(crossProjectResult.index.summary.adjacentReady, 5)
   assert.equal(crossProjectResult.index.summary.adjacentAttention, 0)
+  assert.equal(crossProjectResult.index.summary.adjacentFresh, 1)
+  assert.equal(crossProjectResult.index.summary.adjacentStale, 0)
   assert.equal(crossProjectResult.index.summary.spineDiscussionRequired, 1)
   assert.equal(crossProjectResult.index.projectSummaries[0].adjacentSeamNeedsSummary.declarationStatus, 'ready_for_spine_discussion')
   assert.ok(crossProjectLines[0].includes('adjacentNeeds=5'))
+  assert.ok(crossProjectLines[0].includes('adjacentFresh=1'))
+  assert.equal(validateRequiredRecord(crossProjectResult.index), true)
+})
+
+test('adjacent seam needs surfaces stale after local proof posture changes', async () => {
+  const dir = await createLocalProofFixtureProject()
+  await captureConsole(() => runLocalProofRehearsal({
+    projectDir: dir,
+    drill: true,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const { result: needsResult } = await captureConsole(() => writeAdjacentSeamNeedsPacket({
+    projectDir: dir,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+
+  await captureConsole(() => runLocalProofRehearsal({
+    projectDir: dir,
+    adapterDecision: 'rejected',
+    drill: true,
+    createdAt: '2026-05-19T00:00:01.000Z'
+  }))
+
+  const { result: operatorResult, lines: operatorLines } = await captureConsole(() =>
+    writeOperatorPacketIndex({ projectDir: dir })
+  )
+  const { result: edgeResult, lines: edgeLines } = await captureConsole(() =>
+    writeEdgeCompatibilityBundle({ projectDir: dir })
+  )
+  const operatorAdjacent = operatorResult.index.adjacentSeamNeedsSummary
+  const operatorCompact = operatorLines.find((entry) => entry.startsWith('operator packet index:'))
+  const edgeCompact = edgeLines.find((entry) => entry.startsWith('edge source refs:'))
+
+  assert.equal(operatorAdjacent.originalDeclarationStatus, 'ready_for_spine_discussion')
+  assert.equal(operatorAdjacent.declarationStatus, 'local_attention')
+  assert.equal(operatorAdjacent.needsFreshness, 'stale')
+  assert.equal(operatorAdjacent.spineDiscussion, 'not-ready')
+  assert.equal(operatorAdjacent.adjacentReady, 0)
+  assert.equal(operatorAdjacent.adjacentAttention, 5)
+  assert.ok(operatorAdjacent.staleReasons.includes('proof_state_changed'))
+  assert.ok(operatorAdjacent.staleReasons.includes('adapter_decision_changed'))
+  assert.match(operatorAdjacent.safeNextAction, /seam:needs/)
+  assert.ok(operatorCompact.includes('adjacentReady=0'))
+  assert.ok(operatorCompact.includes('adjacentAttention=5'))
+  assert.ok(operatorCompact.includes('adjacentFreshness=stale'))
+  assert.equal(edgeResult.bundle.adjacentSeamNeedsSummary.needsFreshness, 'stale')
+  assert.equal(edgeResult.bundle.adjacentSeamNeedsSummary.spineDiscussion, 'not-ready')
+  assert.ok(edgeCompact.includes('adjacentFreshness=stale'))
+
+  const baseDir = path.dirname(dir)
+  const inputList = createCrossProjectInputListWithArtifactRefs([
+    {
+      projectId: 'project-test',
+      label: 'Adjacent seam stale project',
+      rootPath: path.basename(dir),
+      artifactRefs: {
+        operatorPacketIndex: crossProjectArtifactRef('operatorPacketIndex'),
+        adjacentSeamNeeds: adjacentSeamNeedsArtifactRef(needsResult.packet)
+      }
+    }
+  ], { inputListId: 'adjacent-seam-stale-cross-project-fixture' })
+  await writeFile(path.join(baseDir, 'input-list.local.json'), `${JSON.stringify(inputList, null, 2)}\n`)
+  const { result: crossProjectResult, lines: crossProjectLines } = await captureConsole(() =>
+    writeCrossProjectOperatorIndex({
+      baseDir,
+      inputList: 'input-list.local.json',
+      output: 'cross-project-adjacent-stale.local.json'
+    })
+  )
+
+  assert.equal(crossProjectResult.index.summary.adjacentReady, 0)
+  assert.equal(crossProjectResult.index.summary.adjacentAttention, 5)
+  assert.equal(crossProjectResult.index.summary.adjacentFresh, 0)
+  assert.equal(crossProjectResult.index.summary.adjacentStale, 1)
+  assert.equal(crossProjectResult.index.summary.spineDiscussionRequired, 0)
+  assert.equal(crossProjectResult.index.projectSummaries[0].adjacentSeamNeedsSummary.needsFreshness, 'stale')
+  assert.ok(crossProjectLines[0].includes('adjacentStale=1'))
   assert.equal(validateRequiredRecord(crossProjectResult.index), true)
 })
 
