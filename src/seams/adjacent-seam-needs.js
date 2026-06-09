@@ -372,6 +372,10 @@ function adjacentNeedsStaleReasons(packet, proofSummary) {
     }
   }
 
+  if (!sameStringSet(summary.proofDrillAttentionReasons, proofSummary.drillAttentionReasons)) {
+    reasons.push('proof_drill_attention_reasons_changed')
+  }
+
   const recordedProofId = summary.latestProofRef?.id
   const currentProofId = proofSummary.latestProofRef?.id
   if (recordedProofId && currentProofId && recordedProofId !== currentProofId) {
@@ -379,6 +383,13 @@ function adjacentNeedsStaleReasons(packet, proofSummary) {
   }
 
   return reasons
+}
+
+function sameStringSet(left = [], right = []) {
+  const normalizedLeft = Array.from(new Set((left ?? []).filter((item) => typeof item === 'string'))).sort()
+  const normalizedRight = Array.from(new Set((right ?? []).filter((item) => typeof item === 'string'))).sort()
+  if (normalizedLeft.length !== normalizedRight.length) return false
+  return normalizedLeft.every((item, index) => item === normalizedRight[index])
 }
 
 function classifyDeclarationStatus(proofSummary) {

@@ -111,6 +111,8 @@ storage decisions into Studio.
      drill posture before the adjacent seam discussion counts.
    - `seam:needs` compact output names proof drill attention reasons when the
      discussion packet is blocked by drill attention.
+   - changed proof drill attention reasons make older adjacent seam needs
+     packets stale local attention.
    - `seam:ready` reads existing proof and seam-needs records to report Spine
      discussion readiness without writing another artifact or activating swarm
      runtime.

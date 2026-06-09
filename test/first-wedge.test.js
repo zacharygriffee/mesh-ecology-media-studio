@@ -86,7 +86,7 @@ import { writeEdgeCompatibilityBundle } from '../src/seams/edge-compatibility-bu
 import { writeStudioPressureArtifacts } from '../src/seams/studio-pressure-artifacts.js'
 import { createLocalProofDrillSummary, runLocalProofRehearsal } from '../src/seams/local-proof-rehearsal.js'
 import { summarizeLocalProofRehearsal } from '../src/seams/local-proof-summary.js'
-import { readAdjacentSeamReadiness, writeAdjacentSeamNeedsPacket } from '../src/seams/adjacent-seam-needs.js'
+import { readAdjacentSeamReadiness, summarizeAdjacentSeamNeeds, writeAdjacentSeamNeedsPacket } from '../src/seams/adjacent-seam-needs.js'
 import { inspectAdjacentSeamReadiness } from '../src/seams/adjacent-seam-readiness.js'
 import { writeEdgeHandoffCandidate } from '../src/seams/edge-handoff-candidate.js'
 import { writeOperatorPacketIndex } from '../src/seams/operator-packet-index.js'
@@ -4782,6 +4782,64 @@ test('adjacent seam needs packet names proof drill attention reasons', async () 
   assert.ok(line.includes('drillAttentionReasons=operator_adapter_decision_mismatch'))
   assert.match(packet.safeNextAction, /proof:local -- --drill/)
   assert.equal(validateRequiredRecord(packet), true)
+})
+
+test('adjacent seam needs freshness detects changed proof drill attention reasons', () => {
+  const packet = {
+    schema: 'media.studio_adjacent_seam_needs_packet.local.v1',
+    needsPacketId: 'studio-adjacent-seam-needs-drill-reasons',
+    projectId: 'project-test',
+    createdAt: '2026-05-19T00:00:00.000Z',
+    mode: 'standalone-local',
+    declarationStatus: 'local_attention',
+    spineDiscussion: 'not-ready',
+    sourceRefs: [],
+    adjacentDiscussionRows: [],
+    summary: {
+      adjacentNeeds: 5,
+      adjacentReady: 0,
+      adjacentAttention: 5,
+      proofState: 'ready',
+      proofFreshness: 'fresh',
+      proofDrill: 'attention',
+      proofDrillAttentionReasons: ['operator_adapter_decision_mismatch'],
+      adapterDecisionStatus: 'approved_bounded_studio_source_pressure_observation',
+      observationStatus: 'emitted',
+      localPackageState: 'complete_review_only_authority_missing',
+      swarmSeamState: 'ready_for_review_only_swarm_pressure'
+    },
+    safeNextAction: 'Run npm run proof:local -- --drill to refresh local proof rehearsal evidence and drill surfaces.',
+    warnings: [],
+    nonClaims: {},
+    operatorGuidanceOnly: true,
+    localOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    providerTruth: false,
+    edgeRuntimeBuilt: false,
+    edgeRuntimeVerified: false,
+    localTruthLabel: 'local adjacent seam needs declaration',
+    truthStatus: 'not mesh truth; not distributed proof; not ratified shared state'
+  }
+  const summary = summarizeAdjacentSeamNeeds([{ record: packet }], {
+    proofSummary: {
+      proofs: 1,
+      latestProofState: 'ready',
+      proofFreshness: 'fresh',
+      drillStatus: 'attention',
+      drillAttentionReasons: ['surface_non_claim_mismatch'],
+      adapterDecisionStatus: 'approved_bounded_studio_source_pressure_observation',
+      observationStatus: 'emitted',
+      localPackageState: 'complete_review_only_authority_missing',
+      swarmSeamState: 'ready_for_review_only_swarm_pressure'
+    }
+  })
+
+  assert.equal(summary.needsFreshness, 'stale')
+  assert.ok(summary.staleReasons.includes('proof_drill_attention_reasons_changed'))
+  assert.equal(summary.declarationStatus, 'local_attention')
+  assert.match(summary.safeNextAction, /seam:needs/)
 })
 
 test('adjacent seam needs packet preserves rejected adapter hold as discussion-only attention', async () => {
