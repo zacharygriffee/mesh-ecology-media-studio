@@ -19,6 +19,7 @@ import { summarizeAdjacentSeamNeeds, summarizeAdjacentSeamReadiness } from './ad
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
 const defaultOutput = 'records/exports/media-edge-compatibility-bundle.local.json'
+const currentOperationSummaryPath = 'records/exports/media-current-operational-runbook.local.json'
 const truthStatus = 'not mesh truth; not distributed proof; not ratified shared state'
 
 const edgeDoctrineRefs = Object.freeze([
@@ -140,12 +141,16 @@ export async function writeEdgeCompatibilityBundle({
     sources.controlSurfaceProjection?.record.projectId ??
     sources.localRunManifest?.record.inputCardRef?.id ??
     path.basename(root)
-  const studioSourceRefs = Object.values(sources).map(({ record, relativePath }) => localRecordRef({
-    kind: kindForSchema(record.schema),
-    id: idForRecord(record),
-    schema: record.schema,
-    relativePath
-  }))
+  const currentOperationSummary = await readCurrentOperationSummary(root, projectId)
+  const studioSourceRefs = [
+    ...Object.values(sources).map(({ record, relativePath }) => localRecordRef({
+      kind: kindForSchema(record.schema),
+      id: idForRecord(record),
+      schema: record.schema,
+      relativePath
+    })),
+    ...(currentOperationSummary.ref ? [currentOperationSummary.ref] : [])
+  ]
   const readinessResourceSummary = createReadinessResourceSummary({ sources })
   const exportDeliverySummary = createExportDeliverySummary({ sources })
   const localPackagePosture = createLocalPackagePostureSummary({ sources })
@@ -184,6 +189,7 @@ export async function writeEdgeCompatibilityBundle({
     layerInteropSummary,
     swarmSeamPosture,
     localProofRehearsalSummary,
+    currentOperationSummary,
     createdAt
   })
   const sourceRefStrings = studioSourceRefs.map((ref) => `${ref.kind}:${ref.id}`)
@@ -246,6 +252,7 @@ export async function writeEdgeCompatibilityBundle({
     localProofRehearsalSummary,
     adjacentSeamNeedsSummary,
     adjacentSeamReadiness,
+    currentOperationSummary,
     studioReviewEvidence: reviewEvidence,
     edgeWorkPacketCandidate: workPacketCandidate,
     edgeEvidenceImportCandidate: evidenceImportCandidate,
@@ -254,6 +261,7 @@ export async function writeEdgeCompatibilityBundle({
     warnings: [
       'Compatibility bundle is Studio-built, not Edge-built.',
       'Edge shape candidates target documented Edge review artifacts but are not Edge runtime verification.',
+      'Current operation summaries are local operator review summaries and do not add Edge action.',
       'Studio source-pressure adapter records are source evidence for Layer review only, not Edge action or Layer admission.',
       'No Edge process, REPL command, browser endpoint, repo mutation, live discovery, mesh publication, scheduler, or runner is called.',
       'Operator decisions remain review-only records; this bundle does not authorize execution or publication.'
@@ -314,6 +322,12 @@ export async function writeEdgeCompatibilityBundle({
       `spineEdgeRuntimeVerified=${bundle.adjacentSeamReadiness.edgeRuntimeVerified === true}`,
       `spinePublicationAuthorization=${bundle.adjacentSeamReadiness.publicationAuthorization === true}`,
       `spineProductionReady=${bundle.adjacentSeamReadiness.productionReady === true}`,
+      `currentOperation=${bundle.currentOperationSummary.operationState}`,
+      `currentOperationSummaries=${bundle.currentOperationSummary.summaries}`,
+      `currentOperationProof=${bundle.currentOperationSummary.proofState}`,
+      `currentOperationDrill=${bundle.currentOperationSummary.proofDrill}`,
+      `currentOperationCrossProject=${bundle.currentOperationSummary.crossProjectIndexed === true}`,
+      `currentOperationPath=${bundle.currentOperationSummary.path}`,
       `packageNextAction=${bundle.localPackagePosture.safeNextAction}`,
       `proofNextAction=${bundle.localProofRehearsalSummary.safeNextAction}`,
       formatSwarmSeamPostureFields(bundle.swarmSeamPosture, { nextActionField: 'swarmNextAction' }),
@@ -401,6 +415,7 @@ function createStudioEdgeReviewEvidence({
   layerInteropSummary,
   swarmSeamPosture,
   localProofRehearsalSummary,
+  currentOperationSummary,
   createdAt
 }) {
   const reviewEvidence = {
@@ -429,6 +444,7 @@ function createStudioEdgeReviewEvidence({
     layerInteropSummary,
     swarmSeamPosture,
     localProofRehearsalSummary,
+    currentOperationSummary,
     summary: 'Studio local inspection artifacts are ready for Edge-style operator review as local evidence only.',
     reasonCodes: [
       'studio_local_wedge_complete',
@@ -844,6 +860,89 @@ async function readOptionalJson(root, relativePath) {
 
   const readResult = await readJsonFileTolerant(root, relativePath)
   return readResult.ok ? readResult.value : undefined
+}
+
+async function readCurrentOperationSummary(root, projectId) {
+  const readResult = await readJsonFileTolerant(root, currentOperationSummaryPath)
+  if (readResult.missing) {
+    return {
+      summaries: 0,
+      readState: 'absent',
+      operationState: 'absent',
+      proofState: 'absent',
+      proofDrill: 'absent',
+      adjacentReadiness: 'absent',
+      crossProjectIndexed: false,
+      path: currentOperationSummaryPath,
+      ref: null,
+      localOnly: true,
+      operatorGuidanceOnly: true,
+      adjacentRepoWrite: false,
+      layerAdmission: false,
+      edgeDispatch: false,
+      publicationAuthorization: false,
+      productionReady: false,
+      swarmRuntimeActivated: false
+    }
+  }
+  if (!readResult.ok) {
+    return {
+      summaries: 0,
+      readState: 'unreadable',
+      operationState: 'local_attention',
+      proofState: 'unknown',
+      proofDrill: 'unknown',
+      adjacentReadiness: 'unknown',
+      crossProjectIndexed: false,
+      path: currentOperationSummaryPath,
+      issueCode: readResult.diagnostic.issueCode,
+      nextAction: `Repair or regenerate ${currentOperationSummaryPath} with npm run operation:studio.`,
+      ref: null,
+      localOnly: true,
+      operatorGuidanceOnly: true,
+      adjacentRepoWrite: false,
+      layerAdmission: false,
+      edgeDispatch: false,
+      publicationAuthorization: false,
+      productionReady: false,
+      swarmRuntimeActivated: false
+    }
+  }
+
+  const summary = readResult.value
+  const summaryProjectId = summary.projectId ?? projectId
+  const ref = {
+    kind: 'media-current-operational-runbook',
+    id: `current-operation-${summaryProjectId}`,
+    schema: summary.summaryKind ?? 'studio-current-operational-runbook',
+    path: currentOperationSummaryPath,
+    localOnly: true
+  }
+
+  return {
+    summaries: 1,
+    readState: 'present',
+    operationState: summary.operationState ?? 'unknown',
+    proofState: summary.proofState ?? 'unknown',
+    proofFreshness: summary.proofFreshness ?? 'unknown',
+    proofDrill: summary.proofDrill ?? 'unknown',
+    localPackageState: summary.localPackageState ?? 'unknown',
+    swarmSeamState: summary.swarmSeamState ?? 'unknown',
+    adjacentReadiness: summary.adjacentReadiness ?? 'unknown',
+    adjacentFreshness: summary.adjacentFreshness ?? 'unknown',
+    crossProjectIndexed: summary.crossProjectIndexed === true,
+    safeNextAction: summary.safeNextAction ?? 'Review the current operation summary locally.',
+    path: currentOperationSummaryPath,
+    ref,
+    localOnly: summary.localOnly !== false,
+    operatorGuidanceOnly: summary.operatorGuidanceOnly !== false,
+    adjacentRepoWrite: summary.adjacentRepoWrite === true,
+    layerAdmission: summary.layerAdmission === true,
+    edgeDispatch: summary.edgeDispatch === true,
+    publicationAuthorization: summary.publicationAuthorization === true,
+    productionReady: summary.productionReady === true,
+    swarmRuntimeActivated: summary.swarmRuntimeActivated === true
+  }
 }
 
 function localRecordRef({ kind, id, schema, relativePath }) {

@@ -99,11 +99,11 @@ export async function runCurrentOperationalRunbook({
     projectDir,
     quiet: true
   })
-  const operatorIndex = await writeOperatorPacketIndex({
+  let operatorIndex = await writeOperatorPacketIndex({
     projectDir,
     quiet: true
   })
-  const edgeCompatibility = await writeEdgeCompatibilityBundle({
+  let edgeCompatibility = await writeEdgeCompatibilityBundle({
     projectDir,
     quiet: true
   })
@@ -131,6 +131,14 @@ export async function runCurrentOperationalRunbook({
   })
 
   await writeJsonAtomic(path.resolve(projectDir), output, operation)
+  operatorIndex = await writeOperatorPacketIndex({
+    projectDir,
+    quiet: true
+  })
+  edgeCompatibility = await writeEdgeCompatibilityBundle({
+    projectDir,
+    quiet: true
+  })
 
   if (print) {
     console.log(JSON.stringify(operation, null, 2))

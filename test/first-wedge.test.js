@@ -4666,7 +4666,20 @@ test('current operational command completes local proof through review surfaces'
   assert.equal(output.result.operation.layerAdmission, false)
   assert.equal(output.result.operation.edgeDispatch, false)
   assert.equal(output.result.operatorIndex.index.localProofRehearsalSummary.latestProofState, 'ready')
+  assert.equal(output.result.operatorIndex.index.currentOperationSummary.summaries, 1)
+  assert.equal(output.result.operatorIndex.index.currentOperationSummary.operationState, 'ready_for_spine_discussion')
+  assert.equal(output.result.operatorIndex.index.summary.currentOperationSummaries, 1)
+  assert.equal(output.result.operatorIndex.index.summary.currentOperationState, 'ready_for_spine_discussion')
+  assert.equal(output.result.operatorIndex.index.summary.currentOperationCrossProjectIndexed, true)
+  assert.equal(output.result.operatorIndex.index.currentOperationSummaryRefs[0].path, 'records/exports/media-current-operational-runbook.local.json')
   assert.equal(output.result.edgeCompatibility.bundle.localProofRehearsalSummary.latestProofState, 'ready')
+  assert.equal(output.result.edgeCompatibility.bundle.currentOperationSummary.summaries, 1)
+  assert.equal(output.result.edgeCompatibility.bundle.currentOperationSummary.operationState, 'ready_for_spine_discussion')
+  assert.ok(output.result.edgeCompatibility.bundle.studioSourceRefs.some((ref) =>
+    ref.kind === 'media-current-operational-runbook' &&
+    ref.path === 'records/exports/media-current-operational-runbook.local.json'
+  ))
+  assert.equal(output.result.edgeCompatibility.bundle.studioReviewEvidence.currentOperationSummary.summaries, 1)
   assert.equal(output.result.crossProject.index.summary.localProofReady, 1)
   assert.equal(output.result.crossProject.index.summary.spineReadinessReady, 1)
   assert.equal(output.result.crossProject.index.summary.swarmReady, 1)

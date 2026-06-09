@@ -28,6 +28,7 @@ import {
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
 const defaultOutput = 'records/exports/media-operator-packet-index.local.json'
+const currentOperationSummaryPath = 'records/exports/media-current-operational-runbook.local.json'
 const truthStatus = 'not mesh truth; not distributed proof; not ratified shared state'
 
 function parseArgs(argv) {
@@ -70,6 +71,10 @@ export async function writeOperatorPacketIndex({
   const records = await readIndexableRecords(root)
   const recordReadDiagnostics = summarizeRecordReadDiagnostics(records)
   const projectId = inferProjectId(records, path.basename(root))
+  const currentOperationSummary = await readCurrentOperationSummary(root, projectId)
+  const currentOperationSummaryRefs = currentOperationSummary.ref
+    ? [currentOperationSummary.ref]
+    : []
   const packetRefs = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaEdgeInspectionPacketLocal)
     .map(toInspectionRef)
@@ -251,10 +256,12 @@ export async function writeOperatorPacketIndex({
     studioSourcePressureObservationRefs,
     localProofRehearsalRefs,
     adjacentSeamNeedsRefs,
+    currentOperationSummaryRefs,
     studioSourcePressureAdapterSummary,
     localProofRehearsalSummary,
     adjacentSeamNeedsSummary,
     adjacentSeamReadiness,
+    currentOperationSummary,
     providerLoopStatuses,
     providerLoopDecisions,
     roughCutReviewDecisions,
@@ -358,6 +365,14 @@ export async function writeOperatorPacketIndex({
       adjacentSeamNeedsNextAction: adjacentSeamNeedsSummary.safeNextAction,
       adjacentSeamReadiness: adjacentSeamReadiness.readiness,
       adjacentSeamReadinessNextAction: adjacentSeamReadiness.safeNextAction,
+      currentOperationSummaries: currentOperationSummary.summaries,
+      currentOperationReadState: currentOperationSummary.readState,
+      currentOperationState: currentOperationSummary.operationState,
+      currentOperationProofState: currentOperationSummary.proofState,
+      currentOperationProofDrill: currentOperationSummary.proofDrill,
+      currentOperationAdjacentReadiness: currentOperationSummary.adjacentReadiness,
+      currentOperationCrossProjectIndexed: currentOperationSummary.crossProjectIndexed,
+      currentOperationSummaryPath: currentOperationSummary.path,
       swarmSeamState: swarmSeamPosture.state,
       swarmProof: false,
       swarmActivation: false,
@@ -389,6 +404,7 @@ export async function writeOperatorPacketIndex({
     warnings: [
       'Operator packet index is a local scanning aid, not a UI contract.',
       'Indexed records are local-only artifacts and not mesh truth.',
+      'Current operation summaries are local operator review summaries and do not add authority.',
       'Provider-loop decisions are local operator guidance and do not execute retries or grant authority.',
       'Render receipts are local preview evidence only and do not authorize export or publication.',
       'Export receipts are local delivery evidence only and do not authorize publication or production readiness.',
@@ -540,6 +556,12 @@ function formatOperatorPacketIndexSummary(index, output) {
     `spineEdgeRuntimeVerified=${index.adjacentSeamReadiness?.edgeRuntimeVerified === true}`,
     `spinePublicationAuthorization=${index.adjacentSeamReadiness?.publicationAuthorization === true}`,
     `spineProductionReady=${index.adjacentSeamReadiness?.productionReady === true}`,
+    `currentOperation=${summary.currentOperationState ?? 'absent'}`,
+    `currentOperationSummaries=${summary.currentOperationSummaries ?? 0}`,
+    `currentOperationProof=${summary.currentOperationProofState ?? 'absent'}`,
+    `currentOperationDrill=${summary.currentOperationProofDrill ?? 'absent'}`,
+    `currentOperationCrossProject=${summary.currentOperationCrossProjectIndexed === true}`,
+    `currentOperationPath=${summary.currentOperationSummaryPath ?? currentOperationSummaryPath}`,
     `packageNextAction=${summary.localPackageNextAction ?? 'Inspect local package posture.'}`,
     `proofNextAction=${summary.localProofNextAction ?? 'Run npm run proof:local to create local proof rehearsal evidence.'}`,
     formatSwarmSeamPostureFields(index.swarmSeamPosture, { nextActionField: 'swarmNextAction' }),
@@ -825,6 +847,89 @@ async function readIndexableRecords(root) {
   }
 
   return entries
+}
+
+async function readCurrentOperationSummary(root, projectId) {
+  const readResult = await readJsonFileTolerant(root, currentOperationSummaryPath)
+  if (readResult.missing) {
+    return {
+      summaries: 0,
+      readState: 'absent',
+      operationState: 'absent',
+      proofState: 'absent',
+      proofDrill: 'absent',
+      adjacentReadiness: 'absent',
+      crossProjectIndexed: false,
+      path: currentOperationSummaryPath,
+      ref: null,
+      localOnly: true,
+      operatorGuidanceOnly: true,
+      adjacentRepoWrite: false,
+      layerAdmission: false,
+      edgeDispatch: false,
+      publicationAuthorization: false,
+      productionReady: false,
+      swarmRuntimeActivated: false
+    }
+  }
+  if (!readResult.ok) {
+    return {
+      summaries: 0,
+      readState: 'unreadable',
+      operationState: 'local_attention',
+      proofState: 'unknown',
+      proofDrill: 'unknown',
+      adjacentReadiness: 'unknown',
+      crossProjectIndexed: false,
+      path: currentOperationSummaryPath,
+      issueCode: readResult.diagnostic.issueCode,
+      nextAction: `Repair or regenerate ${currentOperationSummaryPath} with npm run operation:studio.`,
+      ref: null,
+      localOnly: true,
+      operatorGuidanceOnly: true,
+      adjacentRepoWrite: false,
+      layerAdmission: false,
+      edgeDispatch: false,
+      publicationAuthorization: false,
+      productionReady: false,
+      swarmRuntimeActivated: false
+    }
+  }
+
+  const summary = readResult.value
+  const summaryProjectId = summary.projectId ?? projectId
+  const ref = {
+    kind: 'media-current-operational-runbook',
+    id: `current-operation-${summaryProjectId}`,
+    schema: summary.summaryKind ?? 'studio-current-operational-runbook',
+    path: currentOperationSummaryPath,
+    localOnly: true
+  }
+
+  return {
+    summaries: 1,
+    readState: 'present',
+    operationState: summary.operationState ?? 'unknown',
+    proofState: summary.proofState ?? 'unknown',
+    proofFreshness: summary.proofFreshness ?? 'unknown',
+    proofDrill: summary.proofDrill ?? 'unknown',
+    localPackageState: summary.localPackageState ?? 'unknown',
+    swarmSeamState: summary.swarmSeamState ?? 'unknown',
+    adjacentReadiness: summary.adjacentReadiness ?? 'unknown',
+    adjacentFreshness: summary.adjacentFreshness ?? 'unknown',
+    crossProjectIndexed: summary.crossProjectIndexed === true,
+    safeNextAction: summary.safeNextAction ?? 'Review the current operation summary locally.',
+    path: currentOperationSummaryPath,
+    ref,
+    localOnly: summary.localOnly !== false,
+    operatorGuidanceOnly: summary.operatorGuidanceOnly !== false,
+    adjacentRepoWrite: summary.adjacentRepoWrite === true,
+    layerAdmission: summary.layerAdmission === true,
+    edgeDispatch: summary.edgeDispatch === true,
+    publicationAuthorization: summary.publicationAuthorization === true,
+    productionReady: summary.productionReady === true,
+    swarmRuntimeActivated: summary.swarmRuntimeActivated === true
+  }
 }
 
 const indexableSchemas = new Set([
