@@ -200,6 +200,10 @@ function formatCrossProjectSummary(index, output) {
     `inferenceSourceEvidence=${summary.inferenceSourceEvidence ?? 0}`,
     `veniceEvidence=${summary.inferenceSourceVeniceEvidence ?? 0}`,
     `inferenceFamilyAsks=${summary.inferenceSourceFamilyAsks ?? 0}`,
+    `agentBridgeCanonical=${summary.inferenceSourceAgentBridgeCanonical ?? 0}`,
+    `studioFrontier=${summary.inferenceSourceStudioFrontier ?? 0}`,
+    `llmFrontier=${summary.inferenceSourceGeneralLlmProviderFrontier ?? 0}`,
+    `providerFlex=${summary.inferenceSourceProviderFlexibilityStrategy ?? 'absent'}`,
     `familyBuildout=${summary.familyBuildoutRequired ?? summary.spineDiscussionRequired ?? 0}`,
     `familyReady=${summary.familyBuildoutReadinessReady ?? summary.spineReadinessReady ?? 0}`,
     `familyAttention=${summary.familyBuildoutReadinessAttention ?? summary.spineReadinessAttention ?? 0}`,
@@ -579,6 +583,12 @@ function normalizeInferenceSourcePostureSource(value, ref) {
           veniceEvidencePresent: value.summary?.veniceEvidencePresent === true,
           veniceGeneratedAssets: value.summary?.veniceGeneratedAssets ?? 0,
           pendingFamilySeams: value.summary?.pendingFamilySeams ?? value.familyBuildoutAsks?.length ?? 0,
+          canonicalProviderOwner: value.canonicalProviderOwner ?? value.summary?.canonicalProviderOwner,
+          studioRole: value.studioRole ?? value.summary?.studioRole,
+          generalLlmProviderFrontier: value.generalLlmProviderFrontier ?? value.summary?.generalLlmProviderFrontier,
+          providerFlexibilityStrategy: value.providerFlexibilityPosture?.strategy ?? value.summary?.providerFlexibilityStrategy,
+          providerLowestCommonDenominator: value.providerFlexibilityPosture?.lowestCommonDenominator ?? value.summary?.providerLowestCommonDenominator,
+          mediaSpecificFrontier: value.providerFlexibilityPosture?.mediaSpecificFrontier ?? value.summary?.mediaSpecificFrontier,
           safeNextAction: value.safeNextAction
         }
       : null
@@ -601,6 +611,21 @@ function normalizeInferenceSourcePostureSource(value, ref) {
     familyAsks,
     pendingFamilySeams: latest?.pendingFamilySeams ?? value.summary?.pendingFamilySeams ?? familyAsks,
     familyAskOwners: Array.from(new Set((value.familyBuildoutAsks ?? []).map((ask) => ask.ownerRepo).filter(Boolean))),
+    canonicalProviderOwner: latest?.canonicalProviderOwner ?? value.canonicalProviderOwner ?? value.summary?.canonicalProviderOwner ?? 'agent_bridge_byo_ai',
+    studioRole: latest?.studioRole ?? value.studioRole ?? value.summary?.studioRole ?? 'media_inference_frontier_evidence',
+    generalLlmProviderFrontier: latest?.generalLlmProviderFrontier ?? value.generalLlmProviderFrontier ?? value.summary?.generalLlmProviderFrontier ?? false,
+    providerFlexibilityStrategy: latest?.providerFlexibilityStrategy ??
+      value.providerFlexibilityPosture?.strategy ??
+      value.summary?.providerFlexibilityStrategy ??
+      'stable_common_envelope_with_provider_specific_config',
+    providerLowestCommonDenominator: latest?.providerLowestCommonDenominator ??
+      value.providerFlexibilityPosture?.lowestCommonDenominator ??
+      value.summary?.providerLowestCommonDenominator ??
+      false,
+    mediaSpecificFrontier: latest?.mediaSpecificFrontier ??
+      value.providerFlexibilityPosture?.mediaSpecificFrontier ??
+      value.summary?.mediaSpecificFrontier ??
+      true,
     sourceRef: ref,
     postureRef: latest?.postureRef ?? ref,
     safeNextAction: latest?.safeNextAction ?? value.safeNextAction ?? 'Use local inference-source posture as readiness evidence while family seams mature.',
@@ -999,6 +1024,21 @@ function summarizeProjects(projectSummaries) {
     sum + (project.inferenceSourcePosture?.pendingFamilySeams ?? 0), 0)
   const inferenceSourceFamilyAskOwners = Array.from(new Set(projectSummaries
     .flatMap((project) => project.inferenceSourcePosture?.familyAskOwners ?? [])))
+  const inferenceSourceAgentBridgeCanonical = projectSummaries.filter((project) =>
+    project.inferenceSourcePosture?.canonicalProviderOwner === 'agent_bridge_byo_ai'
+  ).length
+  const inferenceSourceStudioFrontier = projectSummaries.filter((project) =>
+    project.inferenceSourcePosture?.studioRole === 'media_inference_frontier_evidence'
+  ).length
+  const inferenceSourceGeneralLlmProviderFrontier = projectSummaries.filter((project) =>
+    project.inferenceSourcePosture?.generalLlmProviderFrontier === true
+  ).length
+  const inferenceSourceProviderLowestCommonDenominator = projectSummaries.filter((project) =>
+    project.inferenceSourcePosture?.providerLowestCommonDenominator === true
+  ).length
+  const inferenceSourceProviderFlexibilityStrategy = Array.from(new Set(projectSummaries
+    .map((project) => project.inferenceSourcePosture?.providerFlexibilityStrategy)
+    .filter(Boolean)))[0] ?? 'absent'
   const spineDiscussionRequired = projectSummaries.filter((project) =>
     project.adjacentSeamNeedsSummary?.spineDiscussion === 'required'
   ).length
@@ -1088,6 +1128,11 @@ function summarizeProjects(projectSummaries) {
     inferenceSourceFamilyAsks,
     inferenceSourcePendingFamilySeams,
     inferenceSourceFamilyAskOwners,
+    inferenceSourceAgentBridgeCanonical,
+    inferenceSourceStudioFrontier,
+    inferenceSourceGeneralLlmProviderFrontier,
+    inferenceSourceProviderLowestCommonDenominator,
+    inferenceSourceProviderFlexibilityStrategy,
     inferenceSourceProviderTruth: false,
     inferenceSourceMeshTruth: false,
     inferenceSourceEdgeDispatch: false,

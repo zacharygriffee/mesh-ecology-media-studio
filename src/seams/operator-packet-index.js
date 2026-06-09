@@ -382,6 +382,18 @@ export async function writeOperatorPacketIndex({
       inferenceSourceVeniceProviderResults: inferenceSourcePosture.veniceProviderAdapterEvidence.providerResults,
       inferenceSourceVeniceAdapterRuns: inferenceSourcePosture.veniceProviderAdapterEvidence.adapterRuns,
       inferenceSourceFamilySeams: inferenceSourcePosture.latestInferenceSourcePosture?.pendingFamilySeams ?? 0,
+      inferenceSourceCanonicalProviderOwner: inferenceSourcePosture.latestInferenceSourcePosture?.canonicalProviderOwner ??
+        inferenceSourcePosture.canonicalProviderOwner,
+      inferenceSourceStudioRole: inferenceSourcePosture.latestInferenceSourcePosture?.studioRole ??
+        inferenceSourcePosture.studioRole,
+      inferenceSourceGeneralLlmProviderFrontier: inferenceSourcePosture.latestInferenceSourcePosture?.generalLlmProviderFrontier ??
+        inferenceSourcePosture.generalLlmProviderFrontier,
+      inferenceSourceProviderFlexibilityStrategy: inferenceSourcePosture.latestInferenceSourcePosture?.providerFlexibilityStrategy ??
+        inferenceSourcePosture.providerFlexibilityPosture?.strategy,
+      inferenceSourceProviderLowestCommonDenominator: inferenceSourcePosture.latestInferenceSourcePosture?.providerLowestCommonDenominator ??
+        inferenceSourcePosture.providerFlexibilityPosture?.lowestCommonDenominator,
+      inferenceSourceMediaSpecificFrontier: inferenceSourcePosture.latestInferenceSourcePosture?.mediaSpecificFrontier ??
+        inferenceSourcePosture.providerFlexibilityPosture?.mediaSpecificFrontier,
       inferenceSourceProviderTruth: false,
       inferenceSourceMeshTruth: false,
       inferenceSourceEdgeDispatch: false,
@@ -585,6 +597,10 @@ function formatOperatorPacketIndexSummary(index, output) {
     `veniceEvidence=${summary.inferenceSourceVeniceEvidence === true}`,
     `veniceAssets=${summary.inferenceSourceVeniceGeneratedAssets ?? 0}`,
     `inferenceFamilySeams=${summary.inferenceSourceFamilySeams ?? 0}`,
+    `agentBridgeCanonical=${summary.inferenceSourceCanonicalProviderOwner === 'agent_bridge_byo_ai'}`,
+    `studioFrontier=${summary.inferenceSourceStudioRole ?? 'media_inference_frontier_evidence'}`,
+    `llmFrontier=${summary.inferenceSourceGeneralLlmProviderFrontier === true}`,
+    `providerFlex=${summary.inferenceSourceProviderFlexibilityStrategy ?? 'stable_common_envelope_with_provider_specific_config'}`,
     `spineDiscussion=${summary.adjacentSeamNeedsSpineDiscussion ?? 'absent'}`,
     `spineReadiness=${summary.adjacentSeamReadiness ?? 'blocked_missing_proof'}`,
     `spineNextAction=${summary.adjacentSeamReadinessNextAction ?? 'Run npm run seam:ready to inspect adjacent seam readiness.'}`,

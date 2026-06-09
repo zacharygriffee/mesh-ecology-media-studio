@@ -21,6 +21,15 @@ const sourceLaneOrder = Object.freeze([
   'agent_bridge_byo_ai',
   'mesh_v0_2_pub_rat'
 ])
+const canonicalProviderOwner = 'agent_bridge_byo_ai'
+const studioRole = 'media_inference_frontier_evidence'
+const generalLlmProviderFrontier = false
+const providerFlexibilityPosture = Object.freeze({
+  strategy: 'stable_common_envelope_with_provider_specific_config',
+  lowestCommonDenominator: false,
+  mediaSpecificFrontier: true,
+  summary: 'Studio expects a stable common provider envelope plus provider-specific config blocks for media inference adapters.'
+})
 
 function parseArgs(argv) {
   const args = {
@@ -102,6 +111,10 @@ export function createInferenceSourcePosture({
     projectId,
     createdAt,
     mode: 'standalone-local',
+    canonicalProviderOwner,
+    studioRole,
+    generalLlmProviderFrontier,
+    providerFlexibilityPosture,
     sourceLanes,
     veniceProviderAdapterEvidence: evidence.veniceProviderAdapterEvidence,
     familyBuildoutAsks,
@@ -116,6 +129,12 @@ export function createInferenceSourcePosture({
       veniceProviderLoopStatuses: evidence.veniceProviderAdapterEvidence.providerLoopStatuses,
       inspectionOutputs: evidence.veniceProviderAdapterEvidence.inspectionPackets,
       pendingFamilySeams,
+      canonicalProviderOwner,
+      studioRole,
+      generalLlmProviderFrontier,
+      providerFlexibilityStrategy: providerFlexibilityPosture.strategy,
+      providerLowestCommonDenominator: providerFlexibilityPosture.lowestCommonDenominator,
+      mediaSpecificFrontier: providerFlexibilityPosture.mediaSpecificFrontier,
       localEvidenceOnly: true,
       seamProof: false,
       familySeamSuccess: false,
@@ -130,6 +149,8 @@ export function createInferenceSourcePosture({
     warnings: [
       'Inference-source posture is local review evidence only.',
       'Venice evidence is Studio provider-adapter evidence, not provider truth or family seam proof.',
+      'Studio is frontiering media-inference evidence only; Agent Bridge/BYO-AI remains the future canonical provider-normalization owner.',
+      'Studio does not frontier general LLM or non-media provider provision.',
       'Edge agent seats, Agent Bridge/BYO-AI, Bytes, Causal, Layer, and mesh-v0-2 remain owning seams for their domains.',
       'This record does not call providers, dispatch Edge work, publish to mesh, materialize Bytes, claim Causal truth, or mark production readiness.'
     ],
@@ -145,6 +166,8 @@ export function createInferenceSourcePosture({
       meshPublication: false,
       seamProof: false,
       familySeamSuccess: false,
+      agentBridgeCanonicalized: false,
+      generalLlmProviderFrontier: false,
       liveProviderCalledByPosture: false
     },
     operatorGuidanceOnly: true,
@@ -186,6 +209,10 @@ export function summarizeInferenceSourcePosture(records = []) {
   return {
     inferenceSourcePostures: entries.filter((entry) => entry.record.schema === artifactKinds.mediaStudioInferenceSourcePostureLocal).length,
     latestInferenceSourcePosture: latestPostureSummary(entries),
+    canonicalProviderOwner,
+    studioRole,
+    generalLlmProviderFrontier,
+    providerFlexibilityPosture,
     veniceProviderAdapterEvidence: {
       present: refs.length > 0,
       providerId: 'venice',
@@ -220,6 +247,10 @@ export function formatInferenceSourcePostureFields(summary) {
     `veniceEvidence=${venice?.present === true}`,
     `veniceAssets=${venice?.generatedAssets ?? posture?.veniceGeneratedAssets ?? 0}`,
     `familySeams=${posture?.pendingFamilySeams ?? 0}`,
+    `agentBridgeCanonical=${(posture?.canonicalProviderOwner ?? summary?.canonicalProviderOwner) === canonicalProviderOwner}`,
+    `studioFrontier=${posture?.studioRole ?? summary?.studioRole ?? studioRole}`,
+    `llmFrontier=${posture?.generalLlmProviderFrontier ?? summary?.generalLlmProviderFrontier ?? false}`,
+    `providerFlex=${posture?.providerFlexibilityStrategy ?? summary?.providerFlexibilityPosture?.strategy ?? providerFlexibilityPosture.strategy}`,
     'providerTruth=false',
     'meshTruth=false',
     'edgeDispatch=false',
@@ -279,42 +310,42 @@ function createFamilyBuildoutAsks(evidence) {
       askId: 'edge-agent-seat-dispatch-needed',
       ownerRepo: 'mesh-ecology-edge',
       seam: 'edge-agent-seat-dispatch',
-      summary: 'Edge agent-seat dispatch is needed before Studio can initiate specialized media inference seats through the runtime seam.',
+      summary: 'Edge agent-seat dispatch is needed before Studio can initiate specialized media inference seats with flexible provider config through the runtime seam.',
       sourceRefs
     }),
     familyAsk({
       askId: 'agent-bridge-byo-ai-provider-normalization-needed',
       ownerRepo: 'agent-bridge-byo-ai-planned',
       seam: 'provider-normalization',
-      summary: 'Agent Bridge/BYO-AI provider normalization is needed for non-Studio provider seats such as image, video, audio, or local inference adapters.',
+      summary: 'Agent Bridge/BYO-AI should become canonical provider normalization for media inference adapters, shaped by Studio frontier evidence for image, video, audio, and local inference.',
       sourceRefs
     }),
     familyAsk({
       askId: 'bytes-materialization-posture-needed',
       ownerRepo: 'mesh-ecology-bytes',
       seam: 'byte-materialization',
-      summary: 'Bytes materialization posture is needed before generated media bytes can become family-owned durable byte evidence.',
+      summary: 'Bytes materialization posture is needed before generated media bytes, large outputs, previews, proxies, or export payloads can become family-owned durable byte evidence.',
       sourceRefs
     }),
     familyAsk({
       askId: 'causal-continuity-review-needed',
       ownerRepo: 'causal-substrate',
       seam: 'continuity-review',
-      summary: 'Causal continuity review is needed before generated media lineage or character continuity can be treated as accepted continuity.',
+      summary: 'Causal continuity review is needed before character identity, shot lineage, generated media lineage, or accepted sequence evidence can be treated as continuity truth.',
       sourceRefs
     }),
     familyAsk({
       askId: 'layer-source-review-needed',
       ownerRepo: 'mesh-ecology-layer',
       seam: 'layer-source-pressure-review',
-      summary: 'Layer source review is needed before Studio local source evidence can be evaluated as a Layer-facing handoff.',
+      summary: 'Layer generic source review is needed before Studio local media-inference source evidence can be evaluated as a Layer-facing handoff.',
       sourceRefs
     }),
     familyAsk({
       askId: 'mesh-v0-2-pub-rat-source-lane-needed',
       ownerRepo: 'mesh-v0-2',
       seam: 'pub-rat-source-lane',
-      summary: 'mesh-v0-2 pub/rat source lanes are needed before mesh ecology can answer media source work in plurality.',
+      summary: 'mesh-v0-2 pub/rat media source lanes are needed before mesh ecology can answer media source work in plurality.',
       sourceRefs
     })
   ]
@@ -328,6 +359,9 @@ function familyAsk({ askId, ownerRepo, seam, summary, sourceRefs }) {
     status: 'needed',
     summary,
     sourceRefs,
+    canonicalProviderOwner,
+    studioRole,
+    providerFlexibilityStrategy: providerFlexibilityPosture.strategy,
     coordinationPressureOnly: true,
     adjacentRepoWrite: false,
     edgeDispatch: false,
@@ -358,6 +392,18 @@ function latestPostureSummary(entries) {
     veniceEvidencePresent: posture.record.summary?.veniceEvidencePresent === true,
     veniceGeneratedAssets: posture.record.summary?.veniceGeneratedAssets ?? 0,
     pendingFamilySeams: posture.record.summary?.pendingFamilySeams ?? 0,
+    canonicalProviderOwner: posture.record.canonicalProviderOwner ?? posture.record.summary?.canonicalProviderOwner ?? canonicalProviderOwner,
+    studioRole: posture.record.studioRole ?? posture.record.summary?.studioRole ?? studioRole,
+    generalLlmProviderFrontier: posture.record.generalLlmProviderFrontier ?? posture.record.summary?.generalLlmProviderFrontier ?? false,
+    providerFlexibilityStrategy: posture.record.providerFlexibilityPosture?.strategy ??
+      posture.record.summary?.providerFlexibilityStrategy ??
+      providerFlexibilityPosture.strategy,
+    providerLowestCommonDenominator: posture.record.providerFlexibilityPosture?.lowestCommonDenominator ??
+      posture.record.summary?.providerLowestCommonDenominator ??
+      false,
+    mediaSpecificFrontier: posture.record.providerFlexibilityPosture?.mediaSpecificFrontier ??
+      posture.record.summary?.mediaSpecificFrontier ??
+      true,
     safeNextAction: posture.record.safeNextAction,
     providerTruth: false,
     meshTruth: false,

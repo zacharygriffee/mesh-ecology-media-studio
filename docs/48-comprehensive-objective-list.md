@@ -146,6 +146,13 @@ seam.
      adapter, Edge agent-seat, local inference, Agent Bridge/BYO-AI, and
      mesh-v0-2 pub/rat lanes with Venice as local Studio provider-adapter
      evidence when present.
+   - `inference:source-posture` records Agent Bridge/BYO-AI as the future
+     canonical provider-normalization owner while keeping Studio limited to
+     media-inference frontier evidence.
+   - provider posture uses a stable common envelope plus provider-specific
+     config blocks; Studio does not collapse media providers into a
+     lowest-common-denominator model.
+   - Studio does not frontier general LLM or non-media provider provision.
    - `seam:needs` carries inference-source family asks as separate coordination
      pressure, without increasing adjacent attention or claiming runtime
      routing.

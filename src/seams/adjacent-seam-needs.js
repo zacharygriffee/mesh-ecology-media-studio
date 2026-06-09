@@ -150,6 +150,21 @@ export function createAdjacentSeamNeedsPacket({
       inferenceSourceState: inferenceSourcePosture
         ? inferenceSourcePosture.summary?.studioProviderAdapterEvidence === true ? 'local_evidence_present' : 'not_evidenced'
         : 'absent',
+      inferenceSourceCanonicalProviderOwner: inferenceSourcePosture?.canonicalProviderOwner ??
+        inferenceSourcePosture?.summary?.canonicalProviderOwner ??
+        'absent',
+      inferenceSourceStudioRole: inferenceSourcePosture?.studioRole ??
+        inferenceSourcePosture?.summary?.studioRole ??
+        'absent',
+      inferenceSourceGeneralLlmProviderFrontier: inferenceSourcePosture?.generalLlmProviderFrontier ??
+        inferenceSourcePosture?.summary?.generalLlmProviderFrontier ??
+        false,
+      inferenceSourceProviderFlexibilityStrategy: inferenceSourcePosture?.providerFlexibilityPosture?.strategy ??
+        inferenceSourcePosture?.summary?.providerFlexibilityStrategy ??
+        'absent',
+      inferenceSourceProviderLowestCommonDenominator: inferenceSourcePosture?.providerFlexibilityPosture?.lowestCommonDenominator ??
+        inferenceSourcePosture?.summary?.providerLowestCommonDenominator ??
+        false,
       latestInferenceSourcePostureRef: inferenceSourcePosture
         ? sourceRefs.find((ref) => ref.schema === artifactKinds.mediaStudioInferenceSourcePostureLocal) ?? null
         : null,
@@ -233,6 +248,11 @@ export function summarizeAdjacentSeamNeeds(recordsOrSources = [], {
     inferenceSourceFamilyAskOwners: packet?.summary?.inferenceSourceFamilyAskOwners ?? [],
     inferenceSourceVeniceEvidence: packet?.summary?.inferenceSourceVeniceEvidence === true,
     inferenceSourceState: packet?.summary?.inferenceSourceState ?? 'absent',
+    inferenceSourceCanonicalProviderOwner: packet?.summary?.inferenceSourceCanonicalProviderOwner ?? 'absent',
+    inferenceSourceStudioRole: packet?.summary?.inferenceSourceStudioRole ?? 'absent',
+    inferenceSourceGeneralLlmProviderFrontier: packet?.summary?.inferenceSourceGeneralLlmProviderFrontier === true,
+    inferenceSourceProviderFlexibilityStrategy: packet?.summary?.inferenceSourceProviderFlexibilityStrategy ?? 'absent',
+    inferenceSourceProviderLowestCommonDenominator: packet?.summary?.inferenceSourceProviderLowestCommonDenominator === true,
     latestInferenceSourcePostureRef: packet?.summary?.latestInferenceSourcePostureRef ?? null,
     safeNextAction: stale
       ? 'Run npm run seam:needs after refreshing local proof surfaces; the adjacent seam needs packet is stale.'
@@ -317,6 +337,11 @@ export function summarizeAdjacentSeamReadiness({
     inferenceSourcePendingFamilySeams: adjacentSummary.inferenceSourcePendingFamilySeams ?? 0,
     inferenceSourceVeniceEvidence: adjacentSummary.inferenceSourceVeniceEvidence === true,
     inferenceSourceState: adjacentSummary.inferenceSourceState ?? 'absent',
+    inferenceSourceCanonicalProviderOwner: adjacentSummary.inferenceSourceCanonicalProviderOwner ?? 'absent',
+    inferenceSourceStudioRole: adjacentSummary.inferenceSourceStudioRole ?? 'absent',
+    inferenceSourceGeneralLlmProviderFrontier: adjacentSummary.inferenceSourceGeneralLlmProviderFrontier === true,
+    inferenceSourceProviderFlexibilityStrategy: adjacentSummary.inferenceSourceProviderFlexibilityStrategy ?? 'absent',
+    inferenceSourceProviderLowestCommonDenominator: adjacentSummary.inferenceSourceProviderLowestCommonDenominator === true,
     declarationStatus: adjacentSummary.declarationStatus,
     spineDiscussion: adjacentSummary.spineDiscussion,
     familyBuildoutCoordination: adjacentSummary.familyBuildoutCoordination ?? adjacentSummary.spineDiscussion,
@@ -600,6 +625,9 @@ function createInferenceSourceFamilyAskRows({
       discussionKind: `inference-source-${ask.seam}`,
       requestedReview: ask.summary,
       status: ask.status ?? 'needed',
+      canonicalProviderOwner: ask.canonicalProviderOwner ?? 'agent_bridge_byo_ai',
+      studioRole: ask.studioRole ?? 'media_inference_frontier_evidence',
+      providerFlexibilityStrategy: ask.providerFlexibilityStrategy ?? 'stable_common_envelope_with_provider_specific_config',
       discussionStatus,
       evidenceRefs,
       stopConditions: [
@@ -819,6 +847,10 @@ function formatAdjacentSeamNeedsPacket(packet, output) {
     `inferenceSourceFamilyAsks=${packet.summary.inferenceSourceFamilyAsks ?? 0}`,
     `inferenceSourcePendingFamilySeams=${packet.summary.inferenceSourcePendingFamilySeams ?? 0}`,
     `inferenceSourceVeniceEvidence=${packet.summary.inferenceSourceVeniceEvidence === true}`,
+    `agentBridgeCanonical=${packet.summary.inferenceSourceCanonicalProviderOwner === 'agent_bridge_byo_ai'}`,
+    `studioFrontier=${packet.summary.inferenceSourceStudioRole ?? 'absent'}`,
+    `llmFrontier=${packet.summary.inferenceSourceGeneralLlmProviderFrontier === true}`,
+    `providerFlex=${packet.summary.inferenceSourceProviderFlexibilityStrategy ?? 'absent'}`,
     'adjacentRepoWrite=false',
     'layerAdmission=false',
     'edgeDispatch=false',
