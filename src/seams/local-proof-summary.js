@@ -40,6 +40,19 @@ export function summarizeLocalProofRehearsal(recordsOrSources = [], {
     : record?.safeNextAction ??
       record?.summary?.safeNextAction ??
       'Run npm run proof:local to create local proof rehearsal evidence.'
+  const drillStatus = record
+    ? record?.drillSummary?.drillStatus ?? record?.summary?.drillStatus ?? 'skipped'
+    : 'absent'
+  const drillChecks = record?.drillSummary?.checks ?? record?.summary?.drillChecks ?? 0
+  const drillAttention = record?.drillSummary?.attentionChecks ?? record?.summary?.drillAttention ?? 0
+  const drillNextAction = record?.drillSummary?.safeNextAction ??
+    record?.summary?.drillNextAction ??
+    'Run npm run proof:local -- --drill to create local proof drill evidence.'
+  const safeNextAction = proofFreshness === 'stale'
+    ? proofNextAction
+    : drillStatus === 'attention'
+      ? drillNextAction
+      : proofNextAction
 
   return {
     summaryKind: 'studio-local-proof-rehearsal-summary',
@@ -49,19 +62,25 @@ export function summarizeLocalProofRehearsal(recordsOrSources = [], {
     proofFreshness,
     staleReasons,
     proofNextAction,
+    drillStatus,
+    drillChecks,
+    drillAttention,
+    drillNextAction,
     localPackageState,
     swarmSeamState,
     adapterDecisionStatus,
     observationStatus,
     targetGenericEnvelope,
-    safeNextAction: proofNextAction,
+    safeNextAction,
     surfaced: record?.summary?.surfaced === true || Boolean(record?.surfaceRefs),
     surfaceRefs: record?.surfaceRefs ?? null,
-    attentionRows: state === 'attention' || proofFreshness === 'stale' ? 1 : 0,
+    attentionRows: state === 'attention' || proofFreshness === 'stale' || drillStatus === 'attention' ? 1 : 0,
     readyProofs: entries.filter((entry) => entry.record.proofState === 'ready').length,
     attentionProofs: entries.filter((entry) => entry.record.proofState === 'attention').length,
     freshProofs: proofFreshness === 'fresh' ? 1 : 0,
     staleProofs: proofFreshness === 'stale' ? 1 : 0,
+    drillPassedProofs: drillStatus === 'passed' ? 1 : 0,
+    drillAttentionProofs: drillStatus === 'attention' ? 1 : 0,
     publicSwarmProof: false,
     swarmRuntimeActivated: false,
     edgeDispatch: false,

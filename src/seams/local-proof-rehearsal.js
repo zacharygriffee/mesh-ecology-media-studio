@@ -25,6 +25,7 @@ function parseArgs(argv) {
     projectDir: defaultProjectDir,
     output: defaultOutput,
     adapterDecision: 'approved',
+    drill: false,
     disableFfmpeg: false,
     print: false,
     quiet: false
@@ -43,6 +44,8 @@ function parseArgs(argv) {
     } else if (arg === '--adapter-decision') {
       args.adapterDecision = next
       i += 1
+    } else if (arg === '--drill') {
+      args.drill = true
     } else if (arg === '--disable-ffmpeg') {
       args.disableFfmpeg = true
     } else if (arg === '--print') {
@@ -59,6 +62,7 @@ export async function runLocalProofRehearsal({
   projectDir = defaultProjectDir,
   output = defaultOutput,
   adapterDecision = 'approved',
+  drill = false,
   disableFfmpeg = false,
   createdAt = nowIso(),
   print = false,
@@ -275,6 +279,40 @@ export async function runLocalProofRehearsal({
   proof.summary.surfaceOperatorIndex = operatorIndex.output
   proof.summary.surfaceEdgeCompatibilityBundle = edgeCompatibility.output
 
+  if (drill) {
+    proof.drillSummary = createLocalProofDrillSummary({
+      proof,
+      inspection,
+      operatorIndex,
+      edgeCompatibility
+    })
+    proof.summary.drillStatus = proof.drillSummary.drillStatus
+    proof.summary.drillChecks = proof.drillSummary.checks
+    proof.summary.drillAttention = proof.drillSummary.attentionChecks
+    proof.summary.drillNextAction = proof.drillSummary.safeNextAction
+    proof.safeNextAction = proof.drillSummary.drillStatus === 'attention'
+      ? proof.drillSummary.safeNextAction
+      : proof.safeNextAction
+
+    validateRequiredRecord(proof)
+    await writeJsonAtomic(projectDir, output, proof)
+
+    inspection = await runStep('drill-surface-inspect-local-run', () =>
+      inspectLocalRun({ projectDir })
+    )
+    operatorIndex = await runStep('drill-surface-operator-index', () =>
+      writeOperatorPacketIndex({ projectDir, quiet: true })
+    )
+    edgeCompatibility = await runStep('drill-surface-edge-compatibility-bundle', () =>
+      writeEdgeCompatibilityBundle({ projectDir, quiet: true })
+    )
+  } else {
+    proof.summary.drillStatus = 'skipped'
+    proof.summary.drillChecks = 0
+    proof.summary.drillAttention = 0
+    proof.summary.drillNextAction = 'Run npm run proof:local -- --drill to create local proof drill evidence.'
+  }
+
   validateRequiredRecord(proof)
   await writeJsonAtomic(projectDir, output, proof)
 
@@ -302,6 +340,9 @@ export function formatLocalProofRehearsal(proof, output = defaultOutput) {
   return [
     `studio local proof: project=${proof.projectId}`,
     `proof=${proof.proofState}`,
+    `drill=${proof.summary.drillStatus ?? 'skipped'}`,
+    `drillChecks=${proof.summary.drillChecks ?? 0}`,
+    `drillAttention=${proof.summary.drillAttention ?? 0}`,
     `localPackage=${proof.localPackagePosture.packageState}`,
     `swarmSeam=${proof.swarmSeamPosture.state}`,
     `adapter=${proof.studioSourcePressureAdapterSummary.latestDecisionStatus}`,
@@ -312,6 +353,143 @@ export function formatLocalProofRehearsal(proof, output = defaultOutput) {
     `nextAction=${proof.safeNextAction}`,
     `output=${output}`
   ].join(' | ')
+}
+
+export function createLocalProofDrillSummary({
+  proof,
+  inspection,
+  operatorIndex,
+  edgeCompatibility
+}) {
+  const rows = []
+  const operatorSummary = operatorIndex?.index?.localProofRehearsalSummary ?? {}
+  const operatorIndexSummary = operatorIndex?.index?.summary ?? {}
+  const edgeSummary = edgeCompatibility?.bundle?.localProofRehearsalSummary ?? {}
+  const edgeAdapterSummary = edgeCompatibility?.bundle?.studioSourcePressureAdapterSummary ?? {}
+  const expectedObservationCount = proof.refs.adapterObservationRef ? 1 : 0
+
+  addCheck(rows, {
+    check: 'inspection-artifact-kind',
+    passed: inspection?.packet?.artifactKinds?.includes(artifactKinds.mediaStudioLocalProofRehearsalLocal),
+    issueCode: 'proof_missing_from_inspection_artifact_kinds',
+    expected: artifactKinds.mediaStudioLocalProofRehearsalLocal,
+    actual: (inspection?.packet?.artifactKinds ?? []).join(',')
+  })
+  addCheck(rows, {
+    check: 'inspection-record-ref',
+    passed: Object.values(inspection?.packet?.recordRefs ?? {}).some((ref) =>
+      ref.schema === artifactKinds.mediaStudioLocalProofRehearsalLocal
+    ),
+    issueCode: 'proof_missing_from_inspection_record_refs',
+    expected: artifactKinds.mediaStudioLocalProofRehearsalLocal,
+    actual: Object.values(inspection?.packet?.recordRefs ?? {}).map((ref) => ref.schema).join(',')
+  })
+  addEqualCheck(rows, 'operator-proof-state', proof.proofState, operatorSummary.latestProofState)
+  addEqualCheck(rows, 'operator-proof-freshness', 'fresh', operatorSummary.proofFreshness)
+  addEqualCheck(rows, 'operator-local-package', proof.localPackagePosture.packageState, operatorSummary.localPackageState)
+  addEqualCheck(rows, 'operator-swarm-seam', proof.swarmSeamPosture.state, operatorSummary.swarmSeamState)
+  addEqualCheck(rows, 'operator-adapter-decision', proof.studioSourcePressureAdapterSummary.latestDecisionStatus, operatorSummary.adapterDecisionStatus)
+  addEqualCheck(rows, 'operator-observation', proof.studioSourcePressureAdapterSummary.observationStatus, operatorSummary.observationStatus)
+  addEqualCheck(rows, 'operator-target-envelope', proof.studioSourcePressureAdapterSummary.targetGenericEnvelope, operatorSummary.targetGenericEnvelope)
+  addEqualCheck(rows, 'operator-proof-next-action', proof.safeNextAction, operatorSummary.safeNextAction)
+  addEqualCheck(rows, 'edge-proof-state', proof.proofState, edgeSummary.latestProofState)
+  addEqualCheck(rows, 'edge-proof-freshness', 'fresh', edgeSummary.proofFreshness)
+  addEqualCheck(rows, 'edge-local-package', proof.localPackagePosture.packageState, edgeSummary.localPackageState)
+  addEqualCheck(rows, 'edge-swarm-seam', proof.swarmSeamPosture.state, edgeSummary.swarmSeamState)
+  addEqualCheck(rows, 'edge-adapter-decision', proof.studioSourcePressureAdapterSummary.latestDecisionStatus, edgeSummary.adapterDecisionStatus)
+  addEqualCheck(rows, 'edge-observation', proof.studioSourcePressureAdapterSummary.observationStatus, edgeSummary.observationStatus)
+  addEqualCheck(rows, 'edge-target-envelope', proof.studioSourcePressureAdapterSummary.targetGenericEnvelope, edgeSummary.targetGenericEnvelope)
+  addEqualCheck(rows, 'edge-proof-next-action', proof.safeNextAction, edgeSummary.safeNextAction)
+  addEqualCheck(rows, 'operator-adapter-candidates', 1, operatorIndexSummary.studioSourcePressureAdapterCandidates ?? 0)
+  addEqualCheck(rows, 'operator-adapter-decisions', 1, operatorIndexSummary.studioSourcePressureAdapterDecisions ?? 0)
+  addEqualCheck(rows, 'operator-adapter-observations', expectedObservationCount, operatorIndexSummary.studioSourcePressureObservations ?? 0)
+  addEqualCheck(rows, 'edge-adapter-candidates', 1, edgeAdapterSummary.candidates ?? 0)
+  addEqualCheck(rows, 'edge-adapter-decisions', 1, edgeAdapterSummary.decisions ?? 0)
+  addEqualCheck(rows, 'edge-adapter-observations', expectedObservationCount, edgeAdapterSummary.observations ?? 0)
+  addFalseCheck(rows, 'proof-edge-dispatch', proof.nonClaims?.edgeDispatch)
+  addFalseCheck(rows, 'proof-edge-queue-action', proof.nonClaims?.edgeQueueAction)
+  addFalseCheck(rows, 'proof-layer-admission', proof.nonClaims?.layerAdmission)
+  addFalseCheck(rows, 'proof-durable-append', proof.nonClaims?.durableAppend)
+  addFalseCheck(rows, 'proof-publication-authorization', proof.nonClaims?.publicationAuthorization)
+  addFalseCheck(rows, 'proof-production-ready', proof.nonClaims?.productionReady)
+  addFalseCheck(rows, 'proof-public-swarm-proof', proof.nonClaims?.publicSwarmProof)
+  addFalseCheck(rows, 'proof-swarm-runtime-activated', proof.nonClaims?.swarmRuntimeActivated)
+  addFalseCheck(rows, 'proof-mesh-truth', proof.nonClaims?.meshTruth)
+  addFalseCheck(rows, 'operator-swarm-proof', operatorIndexSummary.swarmProof)
+  addFalseCheck(rows, 'operator-swarm-activation', operatorIndexSummary.swarmActivation)
+  addFalseCheck(rows, 'operator-proof-edge-dispatch', operatorSummary.edgeDispatch)
+  addFalseCheck(rows, 'operator-proof-layer-admission', operatorSummary.layerAdmission)
+  addFalseCheck(rows, 'edge-proof-edge-dispatch', edgeSummary.edgeDispatch)
+  addFalseCheck(rows, 'edge-proof-layer-admission', edgeSummary.layerAdmission)
+
+  const attentionRows = rows.filter((row) => row.status === 'attention')
+  const drillStatus = attentionRows.length > 0 ? 'attention' : 'passed'
+  const safeNextAction = drillStatus === 'attention'
+    ? 'Run npm run proof:local -- --drill to refresh local proof rehearsal evidence and drill surfaces.'
+    : 'Local proof drill passed; carry Studio evidence to future family swarm-seam review only.'
+
+  return {
+    summaryKind: 'studio-local-proof-drill-summary',
+    drillStatus,
+    checks: rows.length,
+    passedChecks: rows.length - attentionRows.length,
+    attentionChecks: attentionRows.length,
+    rows,
+    attentionRows,
+    safeNextAction,
+    publicSwarmProof: false,
+    swarmRuntimeActivated: false,
+    edgeDispatch: false,
+    layerAdmission: false,
+    publicationAuthorization: false,
+    productionReady: false,
+    localOnly: true,
+    operatorGuidanceOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false
+  }
+}
+
+function addEqualCheck(rows, check, expected, actual) {
+  addCheck(rows, {
+    check,
+    passed: expected === actual,
+    issueCode: `${check.replaceAll('-', '_')}_mismatch`,
+    expected,
+    actual
+  })
+}
+
+function addFalseCheck(rows, check, actual) {
+  addCheck(rows, {
+    check,
+    passed: actual === false,
+    issueCode: `${check.replaceAll('-', '_')}_overclaim`,
+    expected: false,
+    actual
+  })
+}
+
+function addCheck(rows, {
+  check,
+  passed,
+  issueCode,
+  expected,
+  actual
+}) {
+  rows.push({
+    check,
+    status: passed ? 'passed' : 'attention',
+    issueCode: passed ? null : issueCode,
+    expected,
+    actual,
+    nextAction: passed
+      ? 'No local proof drill action required.'
+      : 'Run npm run proof:local -- --drill to refresh local proof rehearsal evidence and drill surfaces.',
+    localOnly: true,
+    operatorGuidanceOnly: true
+  })
 }
 
 function proofStateFor({

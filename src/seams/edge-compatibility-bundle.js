@@ -284,6 +284,8 @@ export async function writeEdgeCompatibilityBundle({
       `localProof=${bundle.localProofRehearsalSummary.latestProofState}`,
       `localProofs=${bundle.localProofRehearsalSummary.proofs}`,
       `proofFreshness=${bundle.localProofRehearsalSummary.proofFreshness}`,
+      `proofDrill=${bundle.localProofRehearsalSummary.drillStatus}`,
+      `drillAttention=${bundle.localProofRehearsalSummary.drillAttention}`,
       `packageNextAction=${bundle.localPackagePosture.safeNextAction}`,
       `proofNextAction=${bundle.localProofRehearsalSummary.safeNextAction}`,
       formatSwarmSeamPostureFields(bundle.swarmSeamPosture, { nextActionField: 'swarmNextAction' }),

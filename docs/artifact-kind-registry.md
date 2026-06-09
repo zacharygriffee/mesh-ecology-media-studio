@@ -98,9 +98,11 @@ swarm runtime, prove public swarm transport, or make Edge authority.
 
 `media.studio_local_proof_rehearsal.local.v1` records Studio's local proof
 order across local output, source pressure, inspection, operator index, and
-Edge-compatible review surfaces. It is review-only evidence and does not
-activate swarm runtime, prove public swarm transport, dispatch Edge work, admit
-Layer refs, authorize publication, or make Studio production-ready.
+Edge-compatible review surfaces. Its optional local drill summary checks that
+the surfaced inspection, operator, and Edge-compatible views agree with the
+proof record. It is review-only evidence and does not activate swarm runtime,
+prove public swarm transport, dispatch Edge work, admit Layer refs, authorize
+publication, or make Studio production-ready.
 
 `media.authority_handoff_candidate.local.v1` packages local production bundle,
 approval proposal, capsule, situated identity, and prerequisite refs for a

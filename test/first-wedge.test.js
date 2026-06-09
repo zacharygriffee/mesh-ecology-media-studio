@@ -84,7 +84,7 @@ import { writeEdgeReadinessGuidance } from '../src/seams/edge-readiness-guidance
 import { writeControlSurfaceProjection } from '../src/seams/control-surface-projection.js'
 import { writeEdgeCompatibilityBundle } from '../src/seams/edge-compatibility-bundle.js'
 import { writeStudioPressureArtifacts } from '../src/seams/studio-pressure-artifacts.js'
-import { runLocalProofRehearsal } from '../src/seams/local-proof-rehearsal.js'
+import { createLocalProofDrillSummary, runLocalProofRehearsal } from '../src/seams/local-proof-rehearsal.js'
 import { summarizeLocalProofRehearsal } from '../src/seams/local-proof-summary.js'
 import { writeEdgeHandoffCandidate } from '../src/seams/edge-handoff-candidate.js'
 import { writeOperatorPacketIndex } from '../src/seams/operator-packet-index.js'
@@ -604,6 +604,93 @@ function crossProjectArtifactRef(name) {
 
 function selectedNextActionFields(line) {
   return line.match(/(^| \| )nextAction=/g)?.length ?? 0
+}
+
+function createSyntheticDrillProof() {
+  return {
+    schema: 'media.studio_local_proof_rehearsal.local.v1',
+    proofRehearsalId: 'studio-local-proof-rehearsal-drill-fixture',
+    projectId: 'project-test',
+    proofState: 'ready',
+    refs: {
+      adapterObservationRef: ref(
+        'media-studio-source-pressure-observation-result',
+        'observation-test',
+        'media.studio_source_pressure_observation_result.local.v1'
+      )
+    },
+    localPackagePosture: {
+      packageState: 'complete_review_only_authority_missing'
+    },
+    swarmSeamPosture: {
+      state: 'ready_for_review_only_swarm_pressure'
+    },
+    studioSourcePressureAdapterSummary: {
+      latestDecisionStatus: 'approved_bounded_studio_source_pressure_observation',
+      observationStatus: 'studio_source_pressure_routed_through_generic_layer_seam',
+      targetGenericEnvelope: 'layer_source_pressure_review.v0'
+    },
+    safeNextAction: 'Carry Studio evidence to future family swarm-seam review only; do not activate swarm runtime locally.',
+    nonClaims: {
+      edgeDispatch: false,
+      edgeQueueAction: false,
+      layerAdmission: false,
+      durableAppend: false,
+      publicationAuthorization: false,
+      productionReady: false,
+      publicSwarmProof: false,
+      swarmRuntimeActivated: false,
+      meshTruth: false
+    }
+  }
+}
+
+function createSyntheticDrillOperatorSurface(proof) {
+  return {
+    index: {
+      summary: {
+        studioSourcePressureAdapterCandidates: 1,
+        studioSourcePressureAdapterDecisions: 1,
+        studioSourcePressureObservations: proof.refs.adapterObservationRef ? 1 : 0,
+        swarmProof: false,
+        swarmActivation: false
+      },
+      localProofRehearsalSummary: createSyntheticDrillProofSummary(proof),
+      studioSourcePressureAdapterSummary: {
+        candidates: 1,
+        decisions: 1,
+        observations: proof.refs.adapterObservationRef ? 1 : 0
+      }
+    }
+  }
+}
+
+function createSyntheticDrillEdgeSurface(proof) {
+  return {
+    bundle: {
+      localProofRehearsalSummary: createSyntheticDrillProofSummary(proof),
+      studioSourcePressureAdapterSummary: {
+        candidates: 1,
+        decisions: 1,
+        observations: proof.refs.adapterObservationRef ? 1 : 0
+      }
+    }
+  }
+}
+
+function createSyntheticDrillProofSummary(proof) {
+  return {
+    latestProofState: proof.proofState,
+    proofFreshness: 'fresh',
+    localPackageState: proof.localPackagePosture.packageState,
+    swarmSeamState: proof.swarmSeamPosture.state,
+    adapterDecisionStatus: proof.studioSourcePressureAdapterSummary.latestDecisionStatus,
+    observationStatus: proof.studioSourcePressureAdapterSummary.observationStatus,
+    targetGenericEnvelope: proof.studioSourcePressureAdapterSummary.targetGenericEnvelope,
+    safeNextAction: proof.safeNextAction,
+    edgeDispatch: false,
+    layerAdmission: false
+  }
 }
 
 test('first wedge creates local records without claiming mesh truth', async () => {
@@ -4423,6 +4510,100 @@ test('local proof rehearsal print mode emits parseable JSON with non-claims', as
   assert.equal(proof.nonClaims.activation, false)
   assert.equal(proof.nonClaims.publicationAuthorization, false)
   assert.equal(validateRequiredRecord(proof), true)
+})
+
+test('local proof drill passes ready proof and surfaces drill posture', async () => {
+  const dir = await createLocalProofFixtureProject()
+
+  const output = await captureConsole(() => runLocalProofRehearsal({
+    projectDir: dir,
+    drill: true,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const proof = output.result.proof
+  const line = output.lines.find((entry) => entry.startsWith('studio local proof:'))
+
+  assert.equal(proof.proofState, 'ready')
+  assert.equal(proof.drillSummary.drillStatus, 'passed')
+  assert.equal(proof.summary.drillStatus, 'passed')
+  assert.equal(proof.summary.drillAttention, 0)
+  assert.equal(proof.drillSummary.attentionRows.length, 0)
+  assert.ok(proof.drillSummary.checks > 20)
+  assert.ok(line.includes('drill=passed'))
+  assert.ok(line.includes('drillAttention=0'))
+  assert.equal(output.result.operatorIndex.index.localProofRehearsalSummary.drillStatus, 'passed')
+  assert.equal(output.result.operatorIndex.index.summary.localProofDrillStatus, 'passed')
+  assert.equal(output.result.operatorIndex.index.summary.localProofDrillAttention, 0)
+  assert.equal(output.result.edgeCompatibility.bundle.localProofRehearsalSummary.drillStatus, 'passed')
+  assert.equal(output.result.edgeCompatibility.bundle.localProofRehearsalSummary.drillAttention, 0)
+  assert.equal(output.result.operatorIndex.index.localProofRehearsalSummary.edgeDispatch, false)
+  assert.equal(output.result.edgeCompatibility.bundle.localProofRehearsalSummary.layerAdmission, false)
+  assert.equal(validateRequiredRecord(proof), true)
+})
+
+test('local proof drill treats rejected adapter hold as passed surface coherence', async () => {
+  const dir = await createLocalProofFixtureProject()
+
+  const output = await captureConsole(() => runLocalProofRehearsal({
+    projectDir: dir,
+    adapterDecision: 'rejected',
+    drill: true,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const proof = output.result.proof
+
+  assert.equal(proof.proofState, 'attention')
+  assert.equal(proof.swarmSeamPosture.state, 'adapter_hold')
+  assert.equal(proof.studioSourcePressureAdapterSummary.observationStatus, 'skipped')
+  assert.equal(proof.drillSummary.drillStatus, 'passed')
+  assert.equal(proof.summary.drillStatus, 'passed')
+  assert.equal(proof.summary.drillAttention, 0)
+  assert.equal(output.result.operatorIndex.index.localProofRehearsalSummary.latestProofState, 'attention')
+  assert.equal(output.result.operatorIndex.index.localProofRehearsalSummary.drillStatus, 'passed')
+  assert.equal(output.result.edgeCompatibility.bundle.localProofRehearsalSummary.drillStatus, 'passed')
+  assert.equal(output.result.edgeCompatibility.bundle.localProofRehearsalSummary.observationStatus, 'skipped')
+  assert.equal(validateRequiredRecord(proof), true)
+})
+
+test('local proof drill reports mismatched surfaces and non-claim overclaims as attention', () => {
+  const proof = createSyntheticDrillProof()
+  const inspection = {
+    packet: {
+      artifactKinds: ['media.studio_local_proof_rehearsal.local.v1'],
+      recordRefs: {
+        proof: { schema: 'media.studio_local_proof_rehearsal.local.v1' }
+      }
+    }
+  }
+  const operatorIndex = createSyntheticDrillOperatorSurface(proof)
+  const edgeCompatibility = createSyntheticDrillEdgeSurface(proof)
+
+  const passed = createLocalProofDrillSummary({ proof, inspection, operatorIndex, edgeCompatibility })
+  assert.equal(passed.drillStatus, 'passed')
+  assert.equal(passed.attentionChecks, 0)
+
+  const mismatchedOperatorIndex = createSyntheticDrillOperatorSurface(proof)
+  mismatchedOperatorIndex.index.localProofRehearsalSummary.adapterDecisionStatus = 'rejected_bounded_studio_source_pressure_observation'
+  const overclaimProof = {
+    ...proof,
+    nonClaims: {
+      ...proof.nonClaims,
+      edgeDispatch: true
+    }
+  }
+  const attention = createLocalProofDrillSummary({
+    proof: overclaimProof,
+    inspection,
+    operatorIndex: mismatchedOperatorIndex,
+    edgeCompatibility
+  })
+
+  assert.equal(attention.drillStatus, 'attention')
+  assert.ok(attention.attentionRows.some((row) => row.issueCode === 'operator_adapter_decision_mismatch'))
+  assert.ok(attention.attentionRows.some((row) => row.issueCode === 'proof_edge_dispatch_overclaim'))
+  assert.match(attention.safeNextAction, /proof:local -- --drill/)
+  assert.equal(attention.edgeDispatch, false)
+  assert.equal(attention.layerAdmission, false)
 })
 
 test('local proof summary reports freshness against current posture', () => {

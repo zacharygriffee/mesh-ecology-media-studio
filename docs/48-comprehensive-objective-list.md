@@ -92,6 +92,9 @@ storage decisions into Studio.
    - operator and Edge-compatible proof summaries report `proofFreshness`;
      stale proof records are local attention that asks for `proof:local`
      refresh, not malformed state.
+   - `proof:local --drill` checks local inspection/operator/Edge-compatible
+     surface coherence and reports `proofDrill` without claiming family runtime
+     activation.
 
 4. **Example And Fixture Discipline**
 
@@ -227,7 +230,8 @@ pressing the family swarm seams. Preferred order:
    runtime-only review material;
 5. use `proof:local` when a reviewer needs one consolidated local proof summary
    and surfaced proof refs in the operator/Edge-compatible views, then rerun it
-   when `proofFreshness=stale`;
+   when `proofFreshness=stale` or use `proof:local --drill` when surface
+   coherence needs an explicit local check;
 6. refresh docs/tests whenever an operator-visible command surface changes.
 
 Success means a reviewer can run one local project through production evidence,

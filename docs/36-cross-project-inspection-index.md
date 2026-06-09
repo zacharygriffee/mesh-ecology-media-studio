@@ -75,7 +75,7 @@ swarm-seam posture, plus local proof rehearsal posture when present. Compact
 output reports:
 
 ```text
-localPackageComplete=<n> | localPackageAttention=<n> | localProofReady=<n> | localProofAttention=<n> | localProofFresh=<n> | localProofStale=<n> | swarmReady=<n> | swarmAttention=<n> | swarmProof=false | activation=false
+localPackageComplete=<n> | localPackageAttention=<n> | localProofReady=<n> | localProofAttention=<n> | localProofFresh=<n> | localProofStale=<n> | localProofDrillPassed=<n> | localProofDrillAttention=<n> | swarmReady=<n> | swarmAttention=<n> | swarmProof=false | activation=false
 ```
 
 Rejected source-pressure adapter decisions are counted as swarm attention and
@@ -84,6 +84,8 @@ shown as `adapter_hold`; rejected local proof rehearsals are counted as
 previously ready proof whose local package, swarm seam, or adapter posture no
 longer matches the current operator packet is counted as `localProofStale` and
 local proof attention; the selected safe action is to rerun `proof:local`.
+Proof drill failures from `proof:local --drill` are counted as
+`localProofDrillAttention` and also select a local proof drill refresh.
 Missing or drifted local delivery bytes are counted as `integrityBlocked`.
 These are local attention signals only. They do not activate swarm runtime,
 dispatch Edge work, approve Layer admission, prove public swarm state, or mark a
