@@ -96,8 +96,10 @@ an explicit adjacent seam ref, `spineStale` means the explicit ref or current
 proof posture no longer matches, and `spineInherited` means the readiness came
 from an operator index without an explicit adjacent seam ref in the cross-project
 input list. Stale adjacent seam packets are counted as `adjacentStale` and local
-attention; the selected safe action is to refresh `seam:needs` after current
-proof surfaces are refreshed.
+attention; per-project adjacent seam attention lines include `adjacentFreshness`,
+`readinessFreshness`, and `staleReasons` so the operator can see the refresh
+trigger before opening JSON. The selected safe action is to refresh `seam:needs`
+after current proof surfaces are refreshed.
 Missing or drifted local delivery bytes are counted as `integrityBlocked`.
 These are local attention signals only. They do not activate swarm runtime,
 dispatch Edge work, approve Layer admission, prove public swarm state, or mark a

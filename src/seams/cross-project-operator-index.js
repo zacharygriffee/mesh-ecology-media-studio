@@ -134,7 +134,7 @@ export async function writeCrossProjectOperatorIndex({
         console.log(`  local proof: proof=${project.localProofRehearsalSummary.latestProofState} | proofFreshness=${project.localProofRehearsalSummary.proofFreshness ?? 'unknown'} | proofDrill=attention | drillAttention=${project.localProofRehearsalSummary.drillAttention ?? 0} | localPackage=${project.localProofRehearsalSummary.localPackageState} | swarmSeam=${project.localProofRehearsalSummary.swarmSeamState} | adapter=${project.localProofRehearsalSummary.adapterDecisionStatus} | observation=${project.localProofRehearsalSummary.observationStatus} | swarmProof=false | activation=false | nextAction=${project.localProofRehearsalSummary.safeNextAction}`)
       }
       if (project.adjacentSeamNeedsSummary?.packets > 0 && project.adjacentSeamNeedsSummary.declarationStatus !== 'ready_for_spine_discussion') {
-        console.log(`  adjacent seams: declaration=${project.adjacentSeamNeedsSummary.declarationStatus} | spineDiscussion=${project.adjacentSeamNeedsSummary.spineDiscussion} | adjacentNeeds=${project.adjacentSeamNeedsSummary.adjacentNeeds} | adjacentAttention=${project.adjacentSeamNeedsSummary.adjacentAttention} | nextAction=${project.adjacentSeamNeedsSummary.safeNextAction}`)
+        console.log(`  adjacent seams: declaration=${project.adjacentSeamNeedsSummary.declarationStatus} | spineDiscussion=${project.adjacentSeamNeedsSummary.spineDiscussion} | adjacentNeeds=${project.adjacentSeamNeedsSummary.adjacentNeeds} | adjacentAttention=${project.adjacentSeamNeedsSummary.adjacentAttention} | adjacentFreshness=${project.adjacentSeamNeedsSummary.needsFreshness ?? 'absent'} | readinessFreshness=${project.adjacentSeamReadiness?.readinessFreshness ?? 'unknown'} | staleReasons=${formatStaleReasons(project.adjacentSeamReadiness?.staleReasons ?? project.adjacentSeamNeedsSummary.staleReasons)} | nextAction=${project.adjacentSeamNeedsSummary.safeNextAction}`)
       }
       for (const explanation of project.operatorHealthExplanations ?? []) {
         console.log(`  subject: ${explanation.path ?? `${explanation.subjectKind}:${explanation.subjectRef?.id ?? 'unknown'}`} | issues=${(explanation.issueCodes ?? []).join(',') || 'none'} | nextAction=${explanation.nextAction ?? 'none'}`)
@@ -156,6 +156,10 @@ async function existingCreatedAtForOutput(root, output, indexId) {
   if (existing?.schema !== artifactKinds.mediaCrossProjectOperatorIndexLocal) return null
   if (existing.indexId !== indexId) return null
   return typeof existing.createdAt === 'string' ? existing.createdAt : null
+}
+
+function formatStaleReasons(staleReasons = []) {
+  return staleReasons.length > 0 ? staleReasons.join(',') : 'none'
 }
 
 function formatCrossProjectSummary(index, output) {

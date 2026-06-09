@@ -4959,6 +4959,12 @@ test('adjacent seam needs surfaces stale after local proof posture changes', asy
   assert.ok(crossProjectLines[0].includes('spineAttention=1'))
   assert.ok(crossProjectLines[0].includes('spineFresh=0'))
   assert.ok(crossProjectLines[0].includes('spineStale=1'))
+  const crossProjectAdjacentLine = crossProjectLines.find((line) => line.startsWith('  adjacent seams:'))
+  assert.ok(crossProjectAdjacentLine)
+  assert.ok(crossProjectAdjacentLine.includes('adjacentFreshness=stale'))
+  assert.ok(crossProjectAdjacentLine.includes('readinessFreshness=stale'))
+  assert.ok(crossProjectAdjacentLine.includes('staleReasons=proof_state_changed'))
+  assert.ok(crossProjectAdjacentLine.includes('adjacent_seam_needs_stale'))
   assert.equal(validateRequiredRecord(crossProjectResult.index), true)
 })
 

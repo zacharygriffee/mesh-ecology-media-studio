@@ -110,6 +110,9 @@ storage decisions into Studio.
      of being treated as current Spine discussion readiness.
    - `operator:index` and `edge:compat` compact output names adjacent stale
      reasons so the same refresh trigger is visible on the inspection path.
+   - `operator:cross-project-index` per-project adjacent seam attention lines
+     name adjacent freshness, readiness freshness, and stale reasons before
+     any adjacent implementation discussion.
    - `seam:ready` compact output names adjacent packet count and stale reasons
      so operators can see the refresh trigger without opening raw JSON.
 

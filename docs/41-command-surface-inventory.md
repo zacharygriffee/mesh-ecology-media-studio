@@ -83,7 +83,7 @@ text is not the durable contract.
 | `npm run operator:decision-request` | yes | yes | `--print` | yes | runtime request uses fresh timestamp |
 | `npm run operator:provider-loop-request` | yes | yes | `--print` | yes | runtime request uses fresh timestamp; retry is request-only |
 | `npm run operator:provider-loop-decision` | yes | yes | `--print` | yes | local retry/defer decision only; does not execute provider work |
-| `npm run operator:cross-project-index` | yes | yes | `--print` | yes | preserves existing `createdAt` for the same output/index id; can surface provider-loop status/decision refs, Layer interop attention, local package posture, source-pressure adapter summary, local proof rehearsal posture, adjacent seam readiness, and swarm seam posture from explicit operator-index refs, with health fallback for package/swarm fields; compact output includes `localPackageComplete`, `localPackageAttention`, `localProofReady`, `localProofAttention`, `localProofFresh`, `localProofStale`, `spineReady`, `spineAttention`, `spineFresh`, `spineStale`, `spineInherited`, `swarmReady`, `swarmAttention`, `swarmProof=false`, and `activation=false` |
+| `npm run operator:cross-project-index` | yes | yes | `--print` | yes | preserves existing `createdAt` for the same output/index id; can surface provider-loop status/decision refs, Layer interop attention, local package posture, source-pressure adapter summary, local proof rehearsal posture, adjacent seam readiness, and swarm seam posture from explicit operator-index refs, with health fallback for package/swarm fields; compact output includes `localPackageComplete`, `localPackageAttention`, `localProofReady`, `localProofAttention`, `localProofFresh`, `localProofStale`, `spineReady`, `spineAttention`, `spineFresh`, `spineStale`, `spineInherited`, `swarmReady`, `swarmAttention`, `swarmProof=false`, and `activation=false`; per-project adjacent seam attention lines include `adjacentFreshness`, `readinessFreshness`, and `staleReasons` |
 
 ## Provider Commands
 
@@ -232,9 +232,10 @@ opening JSON. `operator:index`, `edge:compat`, and
 `edge:compat` also print `spineReadiness`,
 while `operator:cross-project-index` aggregates `spineReady` and
 `spineAttention` plus `spineFresh`, `spineStale`, and `spineInherited`
-freshness counts. If the packet no longer matches current proof posture, those
-surfaces report it as stale local attention and ask for `seam:needs` to be
-refreshed.
+freshness counts. Its per-project adjacent seam attention line also names
+`adjacentFreshness`, `readinessFreshness`, and `staleReasons`. If the packet no
+longer matches current proof posture, those surfaces report it as stale local
+attention and ask for `seam:needs` to be refreshed.
 
 This posture is review-only source evidence. It does not activate swarm
 runtime, prove public swarm transport, prove a device boundary, dispatch Edge
