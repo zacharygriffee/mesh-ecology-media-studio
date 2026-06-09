@@ -4771,6 +4771,7 @@ test('adjacent seam needs surface through operator Edge and cross-project views'
   assert.ok(operatorLines.find((entry) => entry.startsWith('operator packet index:')).includes('adjacentNeeds=5'))
   assert.ok(operatorLines.find((entry) => entry.startsWith('operator packet index:')).includes('adjacentFreshness=fresh'))
   assert.ok(operatorLines.find((entry) => entry.startsWith('operator packet index:')).includes('spineReadiness=ready_for_spine_discussion'))
+  assert.ok(operatorLines.find((entry) => entry.startsWith('operator packet index:')).includes('spineNextAction=Discuss these adjacent seam needs with the operator and Spine repo agent'))
   assert.equal(edgeResult.bundle.adjacentSeamNeedsSummary.adjacentNeeds, 5)
   assert.equal(edgeResult.bundle.adjacentSeamNeedsSummary.spineDiscussion, 'required')
   assert.equal(edgeResult.bundle.adjacentSeamNeedsSummary.needsFreshness, 'fresh')
@@ -4779,6 +4780,7 @@ test('adjacent seam needs surface through operator Edge and cross-project views'
   assert.ok(edgeLines.find((entry) => entry.startsWith('edge source refs:')).includes('adjacentNeeds=5'))
   assert.ok(edgeLines.find((entry) => entry.startsWith('edge source refs:')).includes('adjacentFreshness=fresh'))
   assert.ok(edgeLines.find((entry) => entry.startsWith('edge source refs:')).includes('spineReadiness=ready_for_spine_discussion'))
+  assert.ok(edgeLines.find((entry) => entry.startsWith('edge source refs:')).includes('spineNextAction=Discuss these adjacent seam needs with the operator and Spine repo agent'))
 
   const baseDir = path.dirname(dir)
   const inputList = createCrossProjectInputListWithArtifactRefs([
@@ -4997,6 +4999,7 @@ test('adjacent seam needs surfaces stale after local proof posture changes', asy
   assert.ok(operatorCompact.includes('adjacentStaleReasons=proof_state_changed'))
   assert.ok(operatorCompact.includes('adapter_decision_changed'))
   assert.ok(operatorCompact.includes('spineReadiness=local_proof_attention'))
+  assert.ok(operatorCompact.includes('spineNextAction=Run npm run proof:local -- --drill'))
   assert.equal(edgeResult.bundle.adjacentSeamNeedsSummary.needsFreshness, 'stale')
   assert.equal(edgeResult.bundle.adjacentSeamNeedsSummary.spineDiscussion, 'not-ready')
   assert.equal(edgeResult.bundle.adjacentSeamReadiness.readiness, 'local_proof_attention')
@@ -5004,6 +5007,7 @@ test('adjacent seam needs surfaces stale after local proof posture changes', asy
   assert.ok(edgeCompact.includes('adjacentStaleReasons=proof_state_changed'))
   assert.ok(edgeCompact.includes('adapter_decision_changed'))
   assert.ok(edgeCompact.includes('spineReadiness=local_proof_attention'))
+  assert.ok(edgeCompact.includes('spineNextAction=Run npm run proof:local -- --drill'))
 
   const baseDir = path.dirname(dir)
   const inputList = createCrossProjectInputListWithArtifactRefs([

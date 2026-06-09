@@ -534,6 +534,7 @@ function formatOperatorPacketIndexSummary(index, output) {
     `adjacentStaleReasons=${formatStaleReasons(summary.adjacentSeamNeedsStaleReasons)}`,
     `spineDiscussion=${summary.adjacentSeamNeedsSpineDiscussion ?? 'absent'}`,
     `spineReadiness=${summary.adjacentSeamReadiness ?? 'blocked_missing_proof'}`,
+    `spineNextAction=${summary.adjacentSeamReadinessNextAction ?? 'Run npm run seam:ready to inspect adjacent seam readiness.'}`,
     `packageNextAction=${summary.localPackageNextAction ?? 'Inspect local package posture.'}`,
     `proofNextAction=${summary.localProofNextAction ?? 'Run npm run proof:local to create local proof rehearsal evidence.'}`,
     formatSwarmSeamPostureFields(index.swarmSeamPosture, { nextActionField: 'swarmNextAction' }),

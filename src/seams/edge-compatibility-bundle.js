@@ -308,6 +308,7 @@ export async function writeEdgeCompatibilityBundle({
       `adjacentStaleReasons=${formatStaleReasons(bundle.adjacentSeamNeedsSummary.staleReasons)}`,
       `spineDiscussion=${bundle.adjacentSeamNeedsSummary.spineDiscussion}`,
       `spineReadiness=${bundle.adjacentSeamReadiness.readiness}`,
+      `spineNextAction=${bundle.adjacentSeamReadiness.safeNextAction}`,
       `packageNextAction=${bundle.localPackagePosture.safeNextAction}`,
       `proofNextAction=${bundle.localProofRehearsalSummary.safeNextAction}`,
       formatSwarmSeamPostureFields(bundle.swarmSeamPosture, { nextActionField: 'swarmNextAction' }),
