@@ -108,6 +108,8 @@ storage decisions into Studio.
    - stale adjacent seam needs packets are local attention in operator, Edge,
      and cross-project surfaces; they ask for a `seam:needs` refresh instead
      of being treated as current Spine discussion readiness.
+   - `operator:index` and `edge:compat` compact output names adjacent stale
+     reasons so the same refresh trigger is visible on the inspection path.
    - `seam:ready` compact output names adjacent packet count and stale reasons
      so operators can see the refresh trigger without opening raw JSON.
 

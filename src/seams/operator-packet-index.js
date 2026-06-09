@@ -528,6 +528,7 @@ function formatOperatorPacketIndexSummary(index, output) {
     `adjacentReady=${summary.adjacentSeamNeedsReady ?? 0}`,
     `adjacentAttention=${summary.adjacentSeamNeedsAttention ?? 0}`,
     `adjacentFreshness=${summary.adjacentSeamNeedsFreshness ?? 'absent'}`,
+    `adjacentStaleReasons=${formatStaleReasons(summary.adjacentSeamNeedsStaleReasons)}`,
     `spineDiscussion=${summary.adjacentSeamNeedsSpineDiscussion ?? 'absent'}`,
     `spineReadiness=${summary.adjacentSeamReadiness ?? 'blocked_missing_proof'}`,
     `packageNextAction=${summary.localPackageNextAction ?? 'Inspect local package posture.'}`,
@@ -541,6 +542,10 @@ function formatOperatorPacketIndexSummary(index, output) {
       : summary.localPackageNextAction ?? 'Inspect local package posture.'}`,
     `output=${output}`
   ].join(' | ')
+}
+
+function formatStaleReasons(staleReasons = []) {
+  return staleReasons.length > 0 ? staleReasons.join(',') : 'none'
 }
 
 function formatStudioSourcePressureAdapterSummary(summary) {

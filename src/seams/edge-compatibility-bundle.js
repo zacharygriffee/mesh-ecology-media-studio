@@ -303,6 +303,7 @@ export async function writeEdgeCompatibilityBundle({
       `adjacentReady=${bundle.adjacentSeamNeedsSummary.adjacentReady}`,
       `adjacentAttention=${bundle.adjacentSeamNeedsSummary.adjacentAttention}`,
       `adjacentFreshness=${bundle.adjacentSeamNeedsSummary.needsFreshness}`,
+      `adjacentStaleReasons=${formatStaleReasons(bundle.adjacentSeamNeedsSummary.staleReasons)}`,
       `spineDiscussion=${bundle.adjacentSeamNeedsSummary.spineDiscussion}`,
       `spineReadiness=${bundle.adjacentSeamReadiness.readiness}`,
       `packageNextAction=${bundle.localPackagePosture.safeNextAction}`,
@@ -318,6 +319,10 @@ export async function writeEdgeCompatibilityBundle({
     bundle,
     output
   }
+}
+
+function formatStaleReasons(staleReasons = []) {
+  return staleReasons.length > 0 ? staleReasons.join(',') : 'none'
 }
 
 function doctrineKindForPath(docPath) {
