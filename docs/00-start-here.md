@@ -72,7 +72,7 @@ npm test
 To check the current bounded operational lane, run:
 
 ```bash
-npm run proof:local -- --project-dir examples/card-to-candidate --drill
+npm run operation:studio -- --project-dir examples/card-to-candidate --prepare-local-fixture
 ```
 
 Then follow [Current Operational Runbook](49-current-operational-runbook.md)

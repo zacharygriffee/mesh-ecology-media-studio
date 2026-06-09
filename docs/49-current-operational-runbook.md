@@ -23,14 +23,22 @@ local package evidence
 
 ## Fast Path
 
-Run the consolidated proof first:
+Run the current operation first:
 
 ```bash
-npm run proof:local -- --project-dir examples/card-to-candidate --drill
+npm run operation:studio -- --project-dir examples/card-to-candidate --prepare-local-fixture
 ```
+
+`--prepare-local-fixture` writes a tiny local PNG candidate for the bundled
+example, runs the accepted first wedge, and seeds the local inspection,
+control-surface, byte/resource, approval, capsule, and bundle records before the
+proof drill. Use it for the bundled example or other raw local fixtures; omit it
+for projects that already have current local package evidence.
 
 Use the compact line as the first decision point:
 
+- `operation=ready_for_spine_discussion` means the local proof, adjacent seam
+  declaration, readiness check, operator index, and Edge-compatible bundle agree.
 - `proof=ready`, `proofFreshness=fresh`, and `proofDrill=passed` mean Studio's
   local proof surfaces agree.
 - `localPackage=complete_review_only_authority_missing` means the local package
@@ -39,29 +47,19 @@ Use the compact line as the first decision point:
 - any `proofFreshness=stale`, `proofDrill=attention`, or `localPackage=*attention`
   means refresh or repair local Studio evidence before seam discussion.
 
-When proof passes and an adjacent discussion is needed, declare the discussion
-packet:
+The expanded command sequence is:
 
 ```bash
+npm run proof:local -- --project-dir examples/card-to-candidate --drill
 npm run seam:needs -- --project-dir examples/card-to-candidate
-```
-
-Then inspect readiness without writing another artifact:
-
-```bash
 npm run seam:ready -- --project-dir examples/card-to-candidate
+npm run operator:index -- --project-dir examples/card-to-candidate
+npm run edge:compat -- --project-dir examples/card-to-candidate
 ```
 
 `readiness=ready_for_spine_discussion` means the packet is ready to discuss with
 the operator and Spine repo agent. It does not mean Layer, Edge, Bytes, Causal,
 or any other repo should implement work without that discussion.
-
-Finally refresh the review surfaces that other operators inspect:
-
-```bash
-npm run operator:index -- --project-dir examples/card-to-candidate
-npm run edge:compat -- --project-dir examples/card-to-candidate
-```
 
 ## If Blocked
 
@@ -91,6 +89,7 @@ review package:
 - source-pressure adapter candidate, decision, and observation posture;
 - local proof rehearsal and drill status;
 - adjacent seam needs for operator and Spine repo-agent discussion;
+- read-only adjacent seam readiness;
 - operator-index and Edge-compatible views over the same local evidence.
 
 ## What It Does Not Prove

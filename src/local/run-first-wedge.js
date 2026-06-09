@@ -34,6 +34,7 @@ const modulePath = fileURLToPath(import.meta.url)
 function parseArgs(argv) {
   const args = {
     projectDir: 'examples/card-to-candidate',
+    candidateFilename: 'candidate.txt',
     decision: 'accepted',
     operatorRef: 'local-operator',
     providerName: 'local-placeholder-provider'
@@ -45,6 +46,9 @@ function parseArgs(argv) {
 
     if (arg === '--project-dir') {
       args.projectDir = next
+      i += 1
+    } else if (arg === '--candidate-filename') {
+      args.candidateFilename = next
       i += 1
     } else if (arg === '--decision') {
       args.decision = next
@@ -97,6 +101,7 @@ async function writeJson(filePath, value) {
 
 export async function runFirstWedge(options = {}) {
   const projectDir = path.resolve(options.projectDir ?? 'examples/card-to-candidate')
+  const candidateFilename = options.candidateFilename ?? 'candidate.txt'
   const decision = options.decision ?? 'accepted'
   const operatorRef = options.operatorRef ?? 'local-operator'
   const providerId = options.providerName ?? 'local-placeholder-provider'
@@ -111,8 +116,8 @@ export async function runFirstWedge(options = {}) {
   const finalPlacementClass = accepted ? placementClasses.mediaAccepted : placementClasses.mediaRejected
   const finalMediaDir = path.join(projectDir, placementDirectory(finalPlacementClass))
   const cardPath = path.join(cardsDir, 'card.json')
-  const sourceCandidatePath = path.join(generatedDir, 'candidate.txt')
-  const ingestedCandidateRelativePath = projectRelativePath(finalPlacementClass, 'candidate.txt')
+  const sourceCandidatePath = path.join(generatedDir, candidateFilename)
+  const ingestedCandidateRelativePath = projectRelativePath(finalPlacementClass, candidateFilename)
   const ingestedCandidatePath = path.join(projectDir, ingestedCandidateRelativePath)
 
   await mkdir(finalMediaDir, { recursive: true })
@@ -125,7 +130,7 @@ export async function runFirstWedge(options = {}) {
   const fileStat = await stat(ingestedCandidatePath)
   const hash = await sha256File(ingestedCandidatePath)
   const localPath = ingestedCandidateRelativePath
-  const candidateInputPath = projectRelativePath(placementClasses.mediaGenerated, 'candidate.txt')
+  const candidateInputPath = projectRelativePath(placementClasses.mediaGenerated, candidateFilename)
   const contentType = contentTypeFor(ingestedCandidatePath)
   const projectLayout = createProjectLayout(card.projectId)
   const localRef = createLocalRef({

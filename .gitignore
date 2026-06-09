@@ -6,6 +6,7 @@ examples/**/media/accepted/
 examples/**/media/rejected/
 examples/**/media/source/
 examples/**/media/generated/provider-smoke/
+examples/**/media/generated/current-operation-candidate.png
 examples/**/media/references/
 examples/**/media/proxies/
 examples/**/media/thumbnails/

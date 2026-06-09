@@ -27,6 +27,7 @@
     "edge:compat": "node src/seams/edge-compatibility-bundle.js",
     "pressure:studio": "node src/seams/studio-pressure-artifacts.js",
     "proof:local": "node src/seams/local-proof-rehearsal.js",
+    "operation:studio": "node src/seams/current-operational-runbook.js",
     "seam:needs": "node src/seams/adjacent-seam-needs.js",
     "seam:ready": "node src/seams/adjacent-seam-readiness.js",
     "continuity:draft": "node src/seams/continuity-evidence.js",
