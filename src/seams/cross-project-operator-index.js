@@ -187,6 +187,10 @@ function formatCrossProjectSummary(index, output) {
     `localProofStale=${summary.localProofStale ?? 0}`,
     `localProofDrillPassed=${summary.localProofDrillPassed ?? 0}`,
     `localProofDrillAttention=${summary.localProofDrillAttention ?? 0}`,
+    `currentOperations=${summary.currentOperations ?? 0}`,
+    `currentOperationReady=${summary.currentOperationReady ?? 0}`,
+    `currentOperationAttention=${summary.currentOperationAttention ?? 0}`,
+    `currentOperationCrossProject=${summary.currentOperationCrossProjectIndexed ?? 0}`,
     `adjacentNeeds=${summary.adjacentNeeds ?? 0}`,
     `adjacentReady=${summary.adjacentReady ?? 0}`,
     `adjacentAttention=${summary.adjacentAttention ?? 0}`,
@@ -270,10 +274,12 @@ async function summarizeProject(root, projectInput) {
   const swarmSeamPosture = summarizeProjectSwarmSeamPosture(loaded, refs)
   const studioSourcePressureAdapterSummary = summarizeProjectStudioSourcePressureAdapterSummary(loaded, refs)
   const localProofRehearsalSummary = summarizeProjectLocalProofRehearsalSummary(loaded, refs)
+  const currentOperationSummary = summarizeProjectCurrentOperationSummary(loaded, refs)
   const adjacentSeamNeedsSummary = summarizeProjectAdjacentSeamNeeds(loaded, refs, localProofRehearsalSummary)
   const adjacentSeamReadiness = summarizeProjectAdjacentSeamReadiness(loaded, refs, {
     projectId: projectInput.projectId,
     localProofRehearsalSummary,
+    currentOperationSummary,
     adjacentSeamNeedsSummary
   })
   const outputDeliverySummary = summarizeProjectOutputDelivery(health)
@@ -346,6 +352,9 @@ async function summarizeProject(root, projectInput) {
   if (localProofRehearsalSummary) {
     summary.localProofRehearsalSummary = localProofRehearsalSummary
   }
+  if (currentOperationSummary) {
+    summary.currentOperationSummary = currentOperationSummary
+  }
   if (adjacentSeamNeedsSummary) {
     summary.adjacentSeamNeedsSummary = adjacentSeamNeedsSummary
   }
@@ -386,6 +395,7 @@ function summarizeProjectSafeNextAction({
   layerInterop,
   swarmSeamPosture,
   localProofRehearsalSummary,
+  currentOperationSummary,
   adjacentSeamNeedsSummary
 }) {
   if (missingArtifactRefs.length > 0) return missingArtifactRefs[0].nextAction
@@ -402,6 +412,7 @@ function summarizeProjectSafeNextAction({
       localProofRehearsalSummary?.drillStatus === 'attention') {
     return localProofRehearsalSummary.safeNextAction
   }
+  if (currentOperationSummary?.operationState === 'local_attention') return currentOperationSummary.safeNextAction
   if (adjacentSeamNeedsSummary?.declarationStatus === 'local_attention' ||
       adjacentSeamNeedsSummary?.declarationStatus === 'blocked_missing_proof' ||
       adjacentSeamNeedsSummary?.needsFreshness === 'stale') {
@@ -423,6 +434,7 @@ function summarizeCrossProjectSafeNextAction(projectSummaries) {
     (project) => project.localProofRehearsalSummary?.latestProofState === 'attention' ||
       project.localProofRehearsalSummary?.proofFreshness === 'stale' ||
       project.localProofRehearsalSummary?.drillStatus === 'attention',
+    (project) => project.currentOperationSummary?.operationState === 'local_attention',
     (project) => project.adjacentSeamNeedsSummary?.declarationStatus === 'local_attention' ||
       project.adjacentSeamNeedsSummary?.declarationStatus === 'blocked_missing_proof' ||
       project.adjacentSeamNeedsSummary?.needsFreshness === 'stale',
@@ -507,6 +519,23 @@ function summarizeProjectLocalProofRehearsalSummary(loaded, refs) {
     layerAdmission: false,
     publicationAuthorization: false,
     productionReady: false,
+    localOnly: true,
+    operatorGuidanceOnly: true
+  }
+}
+
+function summarizeProjectCurrentOperationSummary(loaded, refs) {
+  const source = postureSource(loaded, refs, 'currentOperationSummary')
+  if (!source) return null
+  return {
+    ...source.value,
+    sourceRef: source.ref,
+    adjacentRepoWrite: false,
+    layerAdmission: false,
+    edgeDispatch: false,
+    publicationAuthorization: false,
+    productionReady: false,
+    swarmRuntimeActivated: false,
     localOnly: true,
     operatorGuidanceOnly: true
   }
@@ -858,6 +887,17 @@ function summarizeProjects(projectSummaries) {
   const localProofDrillAttention = projectSummaries.filter((project) =>
     project.localProofRehearsalSummary?.drillStatus === 'attention'
   ).length
+  const currentOperations = projectSummaries.reduce((sum, project) =>
+    sum + (project.currentOperationSummary?.summaries ?? 0), 0)
+  const currentOperationReady = projectSummaries.filter((project) =>
+    project.currentOperationSummary?.operationState === 'ready_for_spine_discussion'
+  ).length
+  const currentOperationAttention = projectSummaries.filter((project) =>
+    project.currentOperationSummary?.operationState === 'local_attention'
+  ).length
+  const currentOperationCrossProjectIndexed = projectSummaries.filter((project) =>
+    project.currentOperationSummary?.crossProjectIndexed === true
+  ).length
   const adjacentNeeds = projectSummaries.reduce((sum, project) =>
     sum + (project.adjacentSeamNeedsSummary?.adjacentNeeds ?? 0), 0)
   const adjacentReady = projectSummaries.reduce((sum, project) =>
@@ -899,6 +939,7 @@ function summarizeProjects(projectSummaries) {
     project.localProofRehearsalSummary?.latestProofState === 'attention' ||
     project.localProofRehearsalSummary?.proofFreshness === 'stale' ||
     project.localProofRehearsalSummary?.drillStatus === 'attention' ||
+    project.currentOperationSummary?.operationState === 'local_attention' ||
     project.adjacentSeamNeedsSummary?.declarationStatus === 'local_attention' ||
     project.adjacentSeamNeedsSummary?.declarationStatus === 'blocked_missing_proof' ||
     project.adjacentSeamNeedsSummary?.needsFreshness === 'stale' ||
@@ -936,6 +977,10 @@ function summarizeProjects(projectSummaries) {
     localProofStale,
     localProofDrillPassed,
     localProofDrillAttention,
+    currentOperations,
+    currentOperationReady,
+    currentOperationAttention,
+    currentOperationCrossProjectIndexed,
     adjacentNeeds,
     adjacentReady,
     adjacentAttention,

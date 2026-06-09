@@ -34,7 +34,9 @@ The command writes its operator review summary to
 `--output <relative-json-path>` only when a different local summary path is
 needed. After writing that summary, the command refreshes `operator:index` and
 `edge:compat` so both surfaces carry `currentOperation`, `currentOperationPath`,
-and the local summary ref.
+and the local summary ref. When `--cross-project-index` is present, the command
+also refreshes the cross-project index after those surfaces exist, so the
+aggregate summary carries `currentOperations` and `currentOperationReady`.
 
 `--prepare-local-fixture` writes a tiny local PNG candidate for the bundled
 example, runs the accepted first wedge, and seeds the local inspection,
@@ -53,6 +55,8 @@ Use the compact line as the first decision point:
   declaration, readiness check, operator index, and Edge-compatible bundle agree.
 - `crossProjectIndexed=true` means the same local evidence is also visible
   through the cross-project operator index.
+- `crossProjectCurrentOperations=1` means the cross-project index picked up the
+  persisted current operation summary through the refreshed operator index.
 - `output=records/exports/media-current-operational-runbook.local.json` is the
   persisted summary for operator review after the command exits.
 - `proof=ready`, `proofFreshness=fresh`, and `proofDrill=passed` mean Studio's

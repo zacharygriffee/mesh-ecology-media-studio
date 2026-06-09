@@ -107,7 +107,7 @@ export async function runCurrentOperationalRunbook({
     projectDir,
     quiet: true
   })
-  const crossProject = crossProjectIndex
+  let crossProject = crossProjectIndex
     ? await writeCurrentOperationCrossProjectIndex({
       projectDir,
       proof,
@@ -139,6 +139,30 @@ export async function runCurrentOperationalRunbook({
     projectDir,
     quiet: true
   })
+  if (crossProjectIndex) {
+    crossProject = await writeCurrentOperationCrossProjectIndex({
+      projectDir,
+      proof,
+      adjacentNeeds,
+      operatorIndex,
+      createdAt
+    })
+    operation.crossProjectSummary = {
+      projects: crossProject.index.summary.projects,
+      localProofReady: crossProject.index.summary.localProofReady,
+      adjacentReady: crossProject.index.summary.adjacentReady,
+      spineReady: crossProject.index.summary.spineReadinessReady,
+      swarmReady: crossProject.index.summary.swarmReady,
+      currentOperations: crossProject.index.summary.currentOperations,
+      currentOperationReady: crossProject.index.summary.currentOperationReady,
+      currentOperationCrossProjectIndexed: crossProject.index.summary.currentOperationCrossProjectIndexed,
+      swarmProof: false,
+      activation: false,
+      localOnly: true,
+      operatorGuidanceOnly: true
+    }
+    await writeJsonAtomic(path.resolve(projectDir), output, operation)
+  }
 
   if (print) {
     console.log(JSON.stringify(operation, null, 2))
@@ -217,6 +241,9 @@ export function createCurrentOperationalRunbookSummary({
         adjacentReady: crossProject.index.summary.adjacentReady,
         spineReady: crossProject.index.summary.spineReadinessReady,
         swarmReady: crossProject.index.summary.swarmReady,
+        currentOperations: crossProject.index.summary.currentOperations ?? 0,
+        currentOperationReady: crossProject.index.summary.currentOperationReady ?? 0,
+        currentOperationCrossProjectIndexed: crossProject.index.summary.currentOperationCrossProjectIndexed ?? 0,
         swarmProof: false,
         activation: false,
         localOnly: true,
@@ -278,6 +305,7 @@ export function formatCurrentOperationalRunbook(operation) {
     `crossProjectIndexed=${operation.crossProjectIndexed}`,
     `crossProjectLocalProofReady=${operation.crossProjectSummary?.localProofReady ?? 0}`,
     `crossProjectSpineReady=${operation.crossProjectSummary?.spineReady ?? 0}`,
+    `crossProjectCurrentOperations=${operation.crossProjectSummary?.currentOperations ?? 0}`,
     `output=${operation.outputs.currentOperationSummary}`,
     'adjacentRepoWrite=false',
     'layerAdmission=false',
