@@ -8,7 +8,7 @@ import { validateRequiredRecord } from '../contracts/schemas.js'
 import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
 import { assertSafeLocalPath } from '../local/project-layout.js'
 import { readJsonFileTolerant, writeJsonAtomic } from '../local/atomic-json.js'
-import { summarizeAdjacentSeamNeeds } from './adjacent-seam-needs.js'
+import { summarizeAdjacentSeamNeeds, summarizeAdjacentSeamReadiness } from './adjacent-seam-needs.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultInputList = 'examples/inspection-fixtures/cross-project/input-list.local.json'
@@ -189,6 +189,8 @@ function formatCrossProjectSummary(index, output) {
     `adjacentFresh=${summary.adjacentFresh ?? 0}`,
     `adjacentStale=${summary.adjacentStale ?? 0}`,
     `spineDiscussion=${summary.spineDiscussionRequired ?? 0}`,
+    `spineReady=${summary.spineReadinessReady ?? 0}`,
+    `spineAttention=${summary.spineReadinessAttention ?? 0}`,
     `swarmReady=${summary.swarmReady ?? 0}`,
     `swarmAttention=${summary.swarmAttention ?? 0}`,
     `swarmProof=false`,
@@ -262,6 +264,11 @@ async function summarizeProject(root, projectInput) {
   const studioSourcePressureAdapterSummary = summarizeProjectStudioSourcePressureAdapterSummary(loaded, refs)
   const localProofRehearsalSummary = summarizeProjectLocalProofRehearsalSummary(loaded, refs)
   const adjacentSeamNeedsSummary = summarizeProjectAdjacentSeamNeeds(loaded, refs, localProofRehearsalSummary)
+  const adjacentSeamReadiness = summarizeProjectAdjacentSeamReadiness(loaded, refs, {
+    projectId: projectInput.projectId,
+    localProofRehearsalSummary,
+    adjacentSeamNeedsSummary
+  })
   const outputDeliverySummary = summarizeProjectOutputDelivery(health)
   const blockingIssues = health?.blockingIssues ?? []
   const operatorHealthExplanations = health?.operatorHealthExplanations ??
@@ -334,6 +341,9 @@ async function summarizeProject(root, projectInput) {
   }
   if (adjacentSeamNeedsSummary) {
     summary.adjacentSeamNeedsSummary = adjacentSeamNeedsSummary
+  }
+  if (adjacentSeamReadiness) {
+    summary.adjacentSeamReadiness = adjacentSeamReadiness
   }
 
   return summary
@@ -513,6 +523,46 @@ function summarizeProjectAdjacentSeamNeeds(loaded, refs, localProofRehearsalSumm
     edgeDispatch: false,
     bytesMaterialization: false,
     causalTruth: false,
+    localOnly: true,
+    operatorGuidanceOnly: true
+  }
+}
+
+function summarizeProjectAdjacentSeamReadiness(loaded, refs, {
+  projectId,
+  localProofRehearsalSummary = null,
+  adjacentSeamNeedsSummary = null
+} = {}) {
+  const source = postureSource(loaded, refs, 'adjacentSeamReadiness')
+  if (source) {
+    return {
+      ...source.value,
+      sourceRef: source.ref,
+      adjacentRepoWrite: false,
+      layerAdmission: false,
+      edgeDispatch: false,
+      bytesMaterialization: false,
+      causalTruth: false,
+      swarmRuntimeActivated: false,
+      localOnly: true,
+      operatorGuidanceOnly: true
+    }
+  }
+  if (!adjacentSeamNeedsSummary) return null
+
+  return {
+    ...summarizeAdjacentSeamReadiness({
+      projectId,
+      proofSummary: localProofRehearsalSummary,
+      adjacentSeamNeedsSummary
+    }),
+    sourceRef: adjacentSeamNeedsSummary.sourceRef,
+    adjacentRepoWrite: false,
+    layerAdmission: false,
+    edgeDispatch: false,
+    bytesMaterialization: false,
+    causalTruth: false,
+    swarmRuntimeActivated: false,
     localOnly: true,
     operatorGuidanceOnly: true
   }
@@ -781,6 +831,13 @@ function summarizeProjects(projectSummaries) {
   const spineDiscussionRequired = projectSummaries.filter((project) =>
     project.adjacentSeamNeedsSummary?.spineDiscussion === 'required'
   ).length
+  const spineReadinessReady = projectSummaries.filter((project) =>
+    project.adjacentSeamReadiness?.readiness === 'ready_for_spine_discussion'
+  ).length
+  const spineReadinessAttention = projectSummaries.filter((project) =>
+    project.adjacentSeamReadiness &&
+    project.adjacentSeamReadiness.readiness !== 'ready_for_spine_discussion'
+  ).length
   const attentionRows = projectSummaries.filter((project) => (
     project.handoffState === 'needs-local-attention' ||
     project.providerLoopStatus?.needsOperatorAttention === true ||
@@ -834,6 +891,8 @@ function summarizeProjects(projectSummaries) {
     adjacentFresh,
     adjacentStale,
     spineDiscussionRequired,
+    spineReadinessReady,
+    spineReadinessAttention,
     attentionRows,
     blockingIssues: projectSummaries.reduce((sum, project) => sum + project.blockingIssues.length, 0),
     missingArtifacts,

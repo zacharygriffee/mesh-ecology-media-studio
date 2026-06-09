@@ -101,6 +101,8 @@ storage decisions into Studio.
    - `seam:ready` reads existing proof and seam-needs records to report Spine
      discussion readiness without writing another artifact or activating swarm
      runtime.
+   - `operator:index`, `edge:compat`, and `operator:cross-project-index`
+     surface adjacent seam readiness without treating it as routing authority.
    - stale adjacent seam needs packets are local attention in operator, Edge,
      and cross-project surfaces; they ask for a `seam:needs` refresh instead
      of being treated as current Spine discussion readiness.

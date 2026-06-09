@@ -83,7 +83,7 @@ text is not the durable contract.
 | `npm run operator:decision-request` | yes | yes | `--print` | yes | runtime request uses fresh timestamp |
 | `npm run operator:provider-loop-request` | yes | yes | `--print` | yes | runtime request uses fresh timestamp; retry is request-only |
 | `npm run operator:provider-loop-decision` | yes | yes | `--print` | yes | local retry/defer decision only; does not execute provider work |
-| `npm run operator:cross-project-index` | yes | yes | `--print` | yes | preserves existing `createdAt` for the same output/index id; can surface provider-loop status/decision refs, Layer interop attention, local package posture, source-pressure adapter summary, local proof rehearsal posture, and swarm seam posture from explicit operator-index refs, with health fallback for package/swarm fields; compact output includes `localPackageComplete`, `localPackageAttention`, `localProofReady`, `localProofAttention`, `localProofFresh`, `localProofStale`, `swarmReady`, `swarmAttention`, `swarmProof=false`, and `activation=false` |
+| `npm run operator:cross-project-index` | yes | yes | `--print` | yes | preserves existing `createdAt` for the same output/index id; can surface provider-loop status/decision refs, Layer interop attention, local package posture, source-pressure adapter summary, local proof rehearsal posture, adjacent seam readiness, and swarm seam posture from explicit operator-index refs, with health fallback for package/swarm fields; compact output includes `localPackageComplete`, `localPackageAttention`, `localProofReady`, `localProofAttention`, `localProofFresh`, `localProofStale`, `spineReady`, `spineAttention`, `swarmReady`, `swarmAttention`, `swarmProof=false`, and `activation=false` |
 
 ## Provider Commands
 
@@ -226,8 +226,9 @@ operator and Spine repo agent before any Layer, Edge, Bytes, Causal, or other
 family implementation. `operator:index`, `edge:compat`, and
 `operator:cross-project-index` surface `adjacentNeeds`, `adjacentReady`,
 `adjacentAttention`, `adjacentFreshness`, and `spineDiscussion` when the packet
-is present; `operator:index` and `edge:compat` also print
-`spineReadiness`. If the packet no longer matches current proof posture, those
+is present; `operator:index` and `edge:compat` also print `spineReadiness`,
+while `operator:cross-project-index` aggregates `spineReady` and
+`spineAttention`. If the packet no longer matches current proof posture, those
 surfaces report it as stale local attention and ask for `seam:needs` to be
 refreshed.
 
