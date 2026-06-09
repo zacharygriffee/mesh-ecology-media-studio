@@ -236,9 +236,10 @@ attention name the local mismatch without opening JSON. `operator:index`,
 while `operator:cross-project-index` aggregates `spineReady` and
 `spineAttention` plus `spineFresh`, `spineStale`, and `spineInherited`
 freshness counts. Its per-project adjacent seam attention line also names
-`adjacentFreshness`, `readinessFreshness`, and `staleReasons`. If the packet no
-longer matches current proof posture, those surfaces report it as stale local
-attention and ask for `seam:needs` to be refreshed.
+`adjacentFreshness`, `readinessFreshness`, `staleReasons`, and
+`drillAttentionReasons`. If the packet no longer matches current proof posture,
+those surfaces report it as stale local attention and ask for `seam:needs` to be
+refreshed.
 
 This posture is review-only source evidence. It does not activate swarm
 runtime, prove public swarm transport, prove a device boundary, dispatch Edge

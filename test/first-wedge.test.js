@@ -4941,6 +4941,34 @@ test('adjacent seam needs surfaces stale after local proof posture changes', asy
     drill: true,
     createdAt: '2026-05-19T00:00:01.000Z'
   }))
+  const proofPath = path.join(dir, 'records/exports/media-studio-local-proof-rehearsal.local.json')
+  const proof = JSON.parse(await readFile(proofPath, 'utf8'))
+  proof.drillSummary = {
+    ...proof.drillSummary,
+    drillStatus: 'attention',
+    checks: proof.drillSummary?.checks ?? 1,
+    passedChecks: Math.max((proof.drillSummary?.checks ?? 1) - 1, 0),
+    attentionChecks: 1,
+    attentionRows: [
+      {
+        check: 'operator-adapter-decision',
+        status: 'attention',
+        issueCode: 'operator_adapter_decision_mismatch',
+        expected: 'approved_bounded_studio_source_pressure_observation',
+        actual: 'rejected_bounded_studio_source_pressure_observation',
+        localOnly: true,
+        operatorGuidanceOnly: true
+      }
+    ],
+    safeNextAction: 'Run npm run proof:local -- --drill to refresh local proof rehearsal evidence and drill surfaces.'
+  }
+  proof.summary = {
+    ...proof.summary,
+    drillStatus: 'attention',
+    drillChecks: proof.drillSummary.checks,
+    drillAttention: 1
+  }
+  await writeFile(proofPath, `${JSON.stringify(proof, null, 2)}\n`)
 
   const { result: operatorResult, lines: operatorLines } = await captureConsole(() =>
     writeOperatorPacketIndex({ projectDir: dir })
@@ -5012,6 +5040,9 @@ test('adjacent seam needs surfaces stale after local proof posture changes', asy
   assert.equal(crossProjectResult.index.projectSummaries[0].adjacentSeamReadiness.readiness, 'local_proof_attention')
   assert.equal(crossProjectResult.index.projectSummaries[0].adjacentSeamReadiness.readinessFreshness, 'stale')
   assert.ok(crossProjectResult.index.projectSummaries[0].adjacentSeamReadiness.staleReasons.includes('adjacent_seam_needs_stale'))
+  assert.deepEqual(crossProjectResult.index.projectSummaries[0].adjacentSeamReadiness.proofDrillAttentionReasons, [
+    'operator_adapter_decision_mismatch'
+  ])
   assert.ok(crossProjectLines[0].includes('adjacentStale=1'))
   assert.ok(crossProjectLines[0].includes('spineReady=0'))
   assert.ok(crossProjectLines[0].includes('spineAttention=1'))
@@ -5023,6 +5054,7 @@ test('adjacent seam needs surfaces stale after local proof posture changes', asy
   assert.ok(crossProjectAdjacentLine.includes('readinessFreshness=stale'))
   assert.ok(crossProjectAdjacentLine.includes('staleReasons=proof_state_changed'))
   assert.ok(crossProjectAdjacentLine.includes('adjacent_seam_needs_stale'))
+  assert.ok(crossProjectAdjacentLine.includes('drillAttentionReasons=operator_adapter_decision_mismatch'))
   assert.equal(validateRequiredRecord(crossProjectResult.index), true)
 })
 
