@@ -282,3 +282,8 @@ Success means a reviewer can run one local project through production evidence,
 source-pressure evidence, inspection, operator index, and Edge-compatible review
 without needing any family repo to accept, admit, dispatch, append, publish, or
 ratify the result.
+
+For the short operator path, use
+[`Current Operational Runbook`](49-current-operational-runbook.md). It is the
+preferred entry point when the goal is to prove Studio's current local operation
+rather than inspect every command contract.

@@ -51,6 +51,7 @@ Read in this order:
 43. [Production Asset Capsule](46-production-asset-capsule.md)
 44. [Studio Source-Pressure Adapter](47-studio-source-pressure-adapter.md)
 45. [Comprehensive Objective List](48-comprehensive-objective-list.md)
+46. [Current Operational Runbook](49-current-operational-runbook.md)
 
 Spine now uses Rulebook Cascade (RBC) as the family-wide vocabulary for
 effective rule-book posture. Studio docs align to RBC as a policy-domain
@@ -67,6 +68,16 @@ Run tests with:
 ```bash
 npm test
 ```
+
+To check the current bounded operational lane, run:
+
+```bash
+npm run proof:local -- --project-dir examples/card-to-candidate --drill
+```
+
+Then follow [Current Operational Runbook](49-current-operational-runbook.md)
+for when to declare adjacent seam needs and when to involve the operator and
+Spine repo agent.
 
 Studio JSON records are local emitted artifacts and receipts, not durable Spine
 truth. Critical production/status writers use atomic local file replacement, and
