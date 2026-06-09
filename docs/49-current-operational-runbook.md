@@ -26,7 +26,7 @@ local package evidence
 Run the current operation first:
 
 ```bash
-npm run operation:studio -- --project-dir examples/card-to-candidate --prepare-local-fixture
+npm run operation:studio -- --project-dir examples/card-to-candidate --prepare-local-fixture --cross-project-index
 ```
 
 `--prepare-local-fixture` writes a tiny local PNG candidate for the bundled
@@ -35,10 +35,17 @@ control-surface, byte/resource, approval, capsule, and bundle records before the
 proof drill. Use it for the bundled example or other raw local fixtures; omit it
 for projects that already have current local package evidence.
 
+`--cross-project-index` writes a one-project explicit input list and refreshes a
+local cross-project operator index for the same evidence package. It is still a
+local scan only: no project discovery, Edge call, adjacent repo write, or swarm
+runtime activation.
+
 Use the compact line as the first decision point:
 
 - `operation=ready_for_spine_discussion` means the local proof, adjacent seam
   declaration, readiness check, operator index, and Edge-compatible bundle agree.
+- `crossProjectIndexed=true` means the same local evidence is also visible
+  through the cross-project operator index.
 - `proof=ready`, `proofFreshness=fresh`, and `proofDrill=passed` mean Studio's
   local proof surfaces agree.
 - `localPackage=complete_review_only_authority_missing` means the local package
@@ -55,6 +62,7 @@ npm run seam:needs -- --project-dir examples/card-to-candidate
 npm run seam:ready -- --project-dir examples/card-to-candidate
 npm run operator:index -- --project-dir examples/card-to-candidate
 npm run edge:compat -- --project-dir examples/card-to-candidate
+npm run operator:cross-project-index -- --base-dir examples --input-list card-to-candidate/records/exports/media-current-operation-cross-project-input-list.local.json --output card-to-candidate/records/exports/media-current-operation-cross-project-index.local.json
 ```
 
 `readiness=ready_for_spine_discussion` means the packet is ready to discuss with

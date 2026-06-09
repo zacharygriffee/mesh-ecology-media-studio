@@ -4636,6 +4636,7 @@ test('current operational command completes local proof through review surfaces'
   const output = await captureConsole(() => runCurrentOperationalRunbook({
     projectDir: dir,
     prepareLocalFixture: true,
+    crossProjectIndex: true,
     createdAt: '2026-05-19T00:00:00.000Z'
   }))
   const line = output.lines.find((entry) => entry.startsWith('studio current operation:'))
@@ -4653,11 +4654,24 @@ test('current operational command completes local proof through review surfaces'
   assert.equal(output.result.operation.adjacentFreshness, 'fresh')
   assert.equal(output.result.operation.adjacentReady, 5)
   assert.equal(output.result.operation.adjacentAttention, 0)
+  assert.equal(output.result.operation.crossProjectIndexed, true)
+  assert.equal(output.result.operation.crossProjectSummary.projects, 1)
+  assert.equal(output.result.operation.crossProjectSummary.localProofReady, 1)
+  assert.equal(output.result.operation.crossProjectSummary.adjacentReady, 5)
+  assert.equal(output.result.operation.crossProjectSummary.spineReady, 1)
+  assert.equal(output.result.operation.crossProjectSummary.swarmReady, 1)
+  assert.equal(output.result.operation.crossProjectSummary.swarmProof, false)
+  assert.equal(output.result.operation.crossProjectSummary.activation, false)
   assert.equal(output.result.operation.adjacentRepoWrite, false)
   assert.equal(output.result.operation.layerAdmission, false)
   assert.equal(output.result.operation.edgeDispatch, false)
   assert.equal(output.result.operatorIndex.index.localProofRehearsalSummary.latestProofState, 'ready')
   assert.equal(output.result.edgeCompatibility.bundle.localProofRehearsalSummary.latestProofState, 'ready')
+  assert.equal(output.result.crossProject.index.summary.localProofReady, 1)
+  assert.equal(output.result.crossProject.index.summary.spineReadinessReady, 1)
+  assert.equal(output.result.crossProject.index.summary.swarmReady, 1)
+  assert.equal(output.result.crossProject.output, 'records/exports/media-current-operation-cross-project-index.local.json')
+  assert.equal(output.result.crossProject.inputListOutput, 'records/exports/media-current-operation-cross-project-input-list.local.json')
   assert.ok(line.includes('operation=ready_for_spine_discussion'))
   assert.ok(line.includes('preparedLocalFixture=true'))
   assert.ok(line.includes('proof=ready'))
@@ -4665,6 +4679,9 @@ test('current operational command completes local proof through review surfaces'
   assert.ok(line.includes('localPackage=complete_review_only_authority_missing'))
   assert.ok(line.includes('spineReadiness=ready_for_spine_discussion'))
   assert.ok(line.includes('adjacentFreshness=fresh'))
+  assert.ok(line.includes('crossProjectIndexed=true'))
+  assert.ok(line.includes('crossProjectLocalProofReady=1'))
+  assert.ok(line.includes('crossProjectSpineReady=1'))
   assert.ok(line.includes('swarmRuntimeActivated=false'))
 })
 

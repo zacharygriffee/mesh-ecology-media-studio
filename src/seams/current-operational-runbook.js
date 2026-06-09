@@ -3,7 +3,10 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { writeByteDescriptorProposals } from '../assets/byte-descriptor-proposal.js'
+import { artifactKinds } from '../contracts/artifact-kinds.js'
 import { nowIso } from '../contracts/constructors.js'
+import { validateRequiredRecord } from '../contracts/schemas.js'
+import { writeJsonAtomic } from '../local/atomic-json.js'
 import { runFirstWedge } from '../local/run-first-wedge.js'
 import { writeLocalLayerResourceRefCandidates } from '../local/resource-ref-candidates.js'
 import { writeProductionAssetCapsule } from '../production/asset-capsule.js'
@@ -16,6 +19,7 @@ import { writeEdgeCompatibilityBundle } from './edge-compatibility-bundle.js'
 import { inspectLocalRun } from './inspect-local-run.js'
 import { runLocalProofRehearsal } from './local-proof-rehearsal.js'
 import { writeOperatorPacketIndex } from './operator-packet-index.js'
+import { writeCrossProjectOperatorIndex } from './cross-project-operator-index.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
@@ -27,6 +31,7 @@ function parseArgs(argv) {
     projectDir: defaultProjectDir,
     adapterDecision: 'approved',
     prepareLocalFixture: false,
+    crossProjectIndex: false,
     disableFfmpeg: false,
     print: false,
     quiet: false
@@ -44,6 +49,8 @@ function parseArgs(argv) {
       i += 1
     } else if (arg === '--prepare-local-fixture') {
       args.prepareLocalFixture = true
+    } else if (arg === '--cross-project-index') {
+      args.crossProjectIndex = true
     } else if (arg === '--disable-ffmpeg') {
       args.disableFfmpeg = true
     } else if (arg === '--print') {
@@ -60,6 +67,7 @@ export async function runCurrentOperationalRunbook({
   projectDir = defaultProjectDir,
   adapterDecision = 'approved',
   prepareLocalFixture = false,
+  crossProjectIndex = false,
   disableFfmpeg = false,
   createdAt = nowIso(),
   print = false,
@@ -93,6 +101,15 @@ export async function runCurrentOperationalRunbook({
     projectDir,
     quiet: true
   })
+  const crossProject = crossProjectIndex
+    ? await writeCurrentOperationCrossProjectIndex({
+      projectDir,
+      proof,
+      adjacentNeeds,
+      operatorIndex,
+      createdAt
+    })
+    : null
 
   const operation = createCurrentOperationalRunbookSummary({
     projectDir,
@@ -102,7 +119,8 @@ export async function runCurrentOperationalRunbook({
     adjacentNeeds,
     readiness,
     operatorIndex,
-    edgeCompatibility
+    edgeCompatibility,
+    crossProject
   })
 
   if (print) {
@@ -118,7 +136,8 @@ export async function runCurrentOperationalRunbook({
     adjacentNeeds,
     readiness,
     operatorIndex,
-    edgeCompatibility
+    edgeCompatibility,
+    crossProject
   }
 }
 
@@ -130,7 +149,8 @@ export function createCurrentOperationalRunbookSummary({
   adjacentNeeds,
   readiness,
   operatorIndex,
-  edgeCompatibility
+  edgeCompatibility,
+  crossProject
 }) {
   const proofRecord = proof.proof
   const readinessRecord = readiness.readiness
@@ -170,6 +190,20 @@ export function createCurrentOperationalRunbookSummary({
     operatorProofDrill: operatorProof.drillStatus,
     edgeProofState: edgeProof.latestProofState,
     edgeProofDrill: edgeProof.drillStatus,
+    crossProjectIndexed: crossProject !== null,
+    crossProjectSummary: crossProject
+      ? {
+        projects: crossProject.index.summary.projects,
+        localProofReady: crossProject.index.summary.localProofReady,
+        adjacentReady: crossProject.index.summary.adjacentReady,
+        spineReady: crossProject.index.summary.spineReadinessReady,
+        swarmReady: crossProject.index.summary.swarmReady,
+        swarmProof: false,
+        activation: false,
+        localOnly: true,
+        operatorGuidanceOnly: true
+      }
+      : null,
     safeNextAction: readinessRecord.safeNextAction,
     outputs: {
       preparation: preparation
@@ -188,7 +222,9 @@ export function createCurrentOperationalRunbookSummary({
       proof: proof.output,
       adjacentNeeds: adjacentNeeds.output,
       operatorIndex: operatorIndex.output,
-      edgeCompatibility: edgeCompatibility.output
+      edgeCompatibility: edgeCompatibility.output,
+      crossProjectInputList: crossProject?.inputListOutput ?? null,
+      crossProjectIndex: crossProject?.output ?? null
     },
     adjacentRepoWrite: false,
     layerAdmission: false,
@@ -219,6 +255,9 @@ export function formatCurrentOperationalRunbook(operation) {
     `adjacentFreshness=${operation.adjacentFreshness}`,
     `adjacentReady=${operation.adjacentReady}`,
     `adjacentAttention=${operation.adjacentAttention}`,
+    `crossProjectIndexed=${operation.crossProjectIndexed}`,
+    `crossProjectLocalProofReady=${operation.crossProjectSummary?.localProofReady ?? 0}`,
+    `crossProjectSpineReady=${operation.crossProjectSummary?.spineReady ?? 0}`,
     'adjacentRepoWrite=false',
     'layerAdmission=false',
     'edgeDispatch=false',
@@ -227,6 +266,112 @@ export function formatCurrentOperationalRunbook(operation) {
     'swarmRuntimeActivated=false',
     `nextAction=${operation.safeNextAction}`
   ].join(' | ')
+}
+
+async function writeCurrentOperationCrossProjectIndex({
+  projectDir,
+  proof,
+  adjacentNeeds,
+  operatorIndex,
+  createdAt
+}) {
+  const projectRoot = path.resolve(projectDir)
+  const baseDir = path.dirname(projectRoot)
+  const rootPath = path.basename(projectRoot)
+  const inputListProjectPath = 'records/exports/media-current-operation-cross-project-input-list.local.json'
+  const outputProjectPath = 'records/exports/media-current-operation-cross-project-index.local.json'
+  const inputListOutput = path.posix.join(rootPath, inputListProjectPath)
+  const output = path.posix.join(rootPath, outputProjectPath)
+  const projectId = proof.proof.projectId
+  const inputList = createCurrentOperationCrossProjectInputList({
+    projectId,
+    rootPath,
+    healthRef: proof.proof.refs.healthRef,
+    operatorIndex,
+    adjacentNeeds,
+    createdAt
+  })
+
+  validateRequiredRecord(inputList, artifactKinds.mediaCrossProjectInspectionInputListLocal)
+  await writeJsonAtomic(baseDir, inputListOutput, inputList)
+
+  const crossProject = await withQuietConsole(() => writeCrossProjectOperatorIndex({
+    baseDir,
+    inputList: inputListOutput,
+    output
+  }))
+
+  return {
+    ...crossProject,
+    inputList,
+    inputListOutput: inputListProjectPath,
+    output: outputProjectPath,
+    localOnly: true,
+    operatorGuidanceOnly: true
+  }
+}
+
+function createCurrentOperationCrossProjectInputList({
+  projectId,
+  rootPath,
+  healthRef,
+  operatorIndex,
+  adjacentNeeds,
+  createdAt
+}) {
+  return {
+    schema: artifactKinds.mediaCrossProjectInspectionInputListLocal,
+    inputListId: `current-operation-${projectId}`,
+    createdAt,
+    mode: 'standalone-local',
+    projects: [
+      {
+        projectId,
+        label: 'Current Studio operation',
+        rootRef: {
+          kind: 'local-directory',
+          id: projectId,
+          schema: 'media.local_ref.v1',
+          path: rootPath,
+          localOnly: true
+        },
+        artifactRefs: {
+          projectHealth: {
+            ...healthRef,
+            localOnly: true
+          },
+          operatorPacketIndex: {
+            kind: 'media-operator-packet-index',
+            id: operatorIndex.index.indexId,
+            schema: operatorIndex.index.schema,
+            path: operatorIndex.output,
+            localOnly: true
+          },
+          adjacentSeamNeeds: {
+            kind: 'media-studio-adjacent-seam-needs-packet',
+            id: adjacentNeeds.packet.needsPacketId,
+            schema: adjacentNeeds.packet.schema,
+            path: adjacentNeeds.output,
+            localOnly: true
+          }
+        }
+      }
+    ],
+    warnings: [
+      'Current Studio operation input list is a local explicit project scan.',
+      'It does not discover projects, write adjacent repos, call Edge, or activate swarm runtime.'
+    ],
+    operatorGuidanceOnly: true,
+    localOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false,
+    providerTruth: false,
+    edgeRuntimeBuilt: false,
+    edgeRuntimeVerified: false,
+    localTruthLabel: 'local draft',
+    truthStatus: 'not mesh truth; not distributed proof; not ratified shared state'
+  }
 }
 
 async function prepareLocalOperationFixture({ projectDir }) {
