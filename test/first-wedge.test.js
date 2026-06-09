@@ -4672,6 +4672,12 @@ test('current operational command completes local proof through review surfaces'
   assert.equal(output.result.crossProject.index.summary.swarmReady, 1)
   assert.equal(output.result.crossProject.output, 'records/exports/media-current-operation-cross-project-index.local.json')
   assert.equal(output.result.crossProject.inputListOutput, 'records/exports/media-current-operation-cross-project-input-list.local.json')
+  assert.equal(output.result.output, 'records/exports/media-current-operational-runbook.local.json')
+  assert.equal(output.result.operation.outputs.currentOperationSummary, 'records/exports/media-current-operational-runbook.local.json')
+  assert.deepEqual(
+    await readJsonFile(dir, 'records/exports/media-current-operational-runbook.local.json'),
+    output.result.operation
+  )
   assert.ok(line.includes('operation=ready_for_spine_discussion'))
   assert.ok(line.includes('preparedLocalFixture=true'))
   assert.ok(line.includes('proof=ready'))
@@ -4682,6 +4688,7 @@ test('current operational command completes local proof through review surfaces'
   assert.ok(line.includes('crossProjectIndexed=true'))
   assert.ok(line.includes('crossProjectLocalProofReady=1'))
   assert.ok(line.includes('crossProjectSpineReady=1'))
+  assert.ok(line.includes('output=records/exports/media-current-operational-runbook.local.json'))
   assert.ok(line.includes('swarmRuntimeActivated=false'))
 })
 

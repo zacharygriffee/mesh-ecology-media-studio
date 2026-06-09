@@ -29,6 +29,11 @@ Run the current operation first:
 npm run operation:studio -- --project-dir examples/card-to-candidate --prepare-local-fixture --cross-project-index
 ```
 
+The command writes its operator review summary to
+`records/exports/media-current-operational-runbook.local.json` by default. Use
+`--output <relative-json-path>` only when a different local summary path is
+needed.
+
 `--prepare-local-fixture` writes a tiny local PNG candidate for the bundled
 example, runs the accepted first wedge, and seeds the local inspection,
 control-surface, byte/resource, approval, capsule, and bundle records before the
@@ -46,6 +51,8 @@ Use the compact line as the first decision point:
   declaration, readiness check, operator index, and Edge-compatible bundle agree.
 - `crossProjectIndexed=true` means the same local evidence is also visible
   through the cross-project operator index.
+- `output=records/exports/media-current-operational-runbook.local.json` is the
+  persisted summary for operator review after the command exits.
 - `proof=ready`, `proofFreshness=fresh`, and `proofDrill=passed` mean Studio's
   local proof surfaces agree.
 - `localPackage=complete_review_only_authority_missing` means the local package

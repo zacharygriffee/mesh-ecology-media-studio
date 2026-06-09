@@ -23,12 +23,14 @@ import { writeCrossProjectOperatorIndex } from './cross-project-operator-index.j
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
+const defaultOutput = 'records/exports/media-current-operational-runbook.local.json'
 const preparedCandidateFilename = 'current-operation-candidate.png'
 const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 
 function parseArgs(argv) {
   const args = {
     projectDir: defaultProjectDir,
+    output: defaultOutput,
     adapterDecision: 'approved',
     prepareLocalFixture: false,
     crossProjectIndex: false,
@@ -43,6 +45,9 @@ function parseArgs(argv) {
 
     if (arg === '--project-dir') {
       args.projectDir = next
+      i += 1
+    } else if (arg === '--output') {
+      args.output = next
       i += 1
     } else if (arg === '--adapter-decision') {
       args.adapterDecision = next
@@ -65,6 +70,7 @@ function parseArgs(argv) {
 
 export async function runCurrentOperationalRunbook({
   projectDir = defaultProjectDir,
+  output = defaultOutput,
   adapterDecision = 'approved',
   prepareLocalFixture = false,
   crossProjectIndex = false,
@@ -120,8 +126,11 @@ export async function runCurrentOperationalRunbook({
     readiness,
     operatorIndex,
     edgeCompatibility,
-    crossProject
+    crossProject,
+    output
   })
+
+  await writeJsonAtomic(path.resolve(projectDir), output, operation)
 
   if (print) {
     console.log(JSON.stringify(operation, null, 2))
@@ -131,6 +140,7 @@ export async function runCurrentOperationalRunbook({
 
   return {
     operation,
+    output,
     preparation,
     proof,
     adjacentNeeds,
@@ -150,7 +160,8 @@ export function createCurrentOperationalRunbookSummary({
   readiness,
   operatorIndex,
   edgeCompatibility,
-  crossProject
+  crossProject,
+  output = defaultOutput
 }) {
   const proofRecord = proof.proof
   const readinessRecord = readiness.readiness
@@ -224,7 +235,8 @@ export function createCurrentOperationalRunbookSummary({
       operatorIndex: operatorIndex.output,
       edgeCompatibility: edgeCompatibility.output,
       crossProjectInputList: crossProject?.inputListOutput ?? null,
-      crossProjectIndex: crossProject?.output ?? null
+      crossProjectIndex: crossProject?.output ?? null,
+      currentOperationSummary: output
     },
     adjacentRepoWrite: false,
     layerAdmission: false,
@@ -258,6 +270,7 @@ export function formatCurrentOperationalRunbook(operation) {
     `crossProjectIndexed=${operation.crossProjectIndexed}`,
     `crossProjectLocalProofReady=${operation.crossProjectSummary?.localProofReady ?? 0}`,
     `crossProjectSpineReady=${operation.crossProjectSummary?.spineReady ?? 0}`,
+    `output=${operation.outputs.currentOperationSummary}`,
     'adjacentRepoWrite=false',
     'layerAdmission=false',
     'edgeDispatch=false',
