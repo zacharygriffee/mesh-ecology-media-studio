@@ -26,6 +26,7 @@ const relevantSchemas = new Set([
   artifactKinds.mediaProductionAuthorityPrerequisitesLocal,
   artifactKinds.mediaAuthorityHandoffCandidateLocal,
   artifactKinds.mediaPublicationAuthorityRequestCandidateLocal,
+  artifactKinds.mediaStudioInferenceSourcePostureLocal,
   artifactKinds.mediaStudioAdjacentSeamNeedsPacketLocal
 ])
 
@@ -114,8 +115,15 @@ export function createAdjacentSeamNeedsPacket({
     declarationStatus,
     sourceRefs
   })
+  const inferenceSourcePosture = latestRecord(normalized, artifactKinds.mediaStudioInferenceSourcePostureLocal)?.record ?? null
+  const inferenceSourceFamilyAskRows = createInferenceSourceFamilyAskRows({
+    inferenceSourcePosture,
+    declarationStatus,
+    sourceRefs
+  })
   const adjacentReady = adjacentDiscussionRows.filter((row) => row.discussionStatus === 'ready_for_discussion').length
   const adjacentAttention = adjacentDiscussionRows.filter((row) => row.discussionStatus !== 'ready_for_discussion').length
+  const inferenceSourcePendingFamilySeams = inferenceSourceFamilyAskRows.filter((row) => row.status === 'needed').length
   const safeNextAction = safeNextActionForDeclaration(declarationStatus, proofSummary)
 
   return {
@@ -129,11 +137,22 @@ export function createAdjacentSeamNeedsPacket({
     familyBuildoutCoordination: spineDiscussion,
     sourceRefs,
     adjacentDiscussionRows,
+    inferenceSourceFamilyAskRows,
     summary: {
       adjacentNeeds: adjacentDiscussionRows.length,
       adjacentReady,
       adjacentAttention,
       ownerRepos: adjacentDiscussionRows.map((row) => row.ownerRepo),
+      inferenceSourceFamilyAsks: inferenceSourceFamilyAskRows.length,
+      inferenceSourcePendingFamilySeams,
+      inferenceSourceFamilyAskOwners: Array.from(new Set(inferenceSourceFamilyAskRows.map((row) => row.ownerRepo))),
+      inferenceSourceVeniceEvidence: inferenceSourcePosture?.summary?.veniceEvidencePresent === true,
+      inferenceSourceState: inferenceSourcePosture
+        ? inferenceSourcePosture.summary?.studioProviderAdapterEvidence === true ? 'local_evidence_present' : 'not_evidenced'
+        : 'absent',
+      latestInferenceSourcePostureRef: inferenceSourcePosture
+        ? sourceRefs.find((ref) => ref.schema === artifactKinds.mediaStudioInferenceSourcePostureLocal) ?? null
+        : null,
       proofState: proofSummary.latestProofState,
       proofFreshness: proofSummary.proofFreshness,
       proofDrill: proofSummary.drillStatus,
@@ -186,6 +205,9 @@ export function summarizeAdjacentSeamNeeds(recordsOrSources = [], {
   const packetAdjacentNeeds = packet?.summary?.adjacentNeeds ?? packet?.adjacentDiscussionRows?.length ?? 0
   const packetAdjacentReady = packet?.summary?.adjacentReady ?? packet?.adjacentDiscussionRows?.filter((row) => row.discussionStatus === 'ready_for_discussion').length ?? 0
   const packetAdjacentAttention = packet?.summary?.adjacentAttention ?? packet?.adjacentDiscussionRows?.filter((row) => row.discussionStatus !== 'ready_for_discussion').length ?? 0
+  const packetInferenceSourceFamilyAsks = packet?.summary?.inferenceSourceFamilyAsks ?? packet?.inferenceSourceFamilyAskRows?.length ?? 0
+  const packetInferenceSourcePendingFamilySeams = packet?.summary?.inferenceSourcePendingFamilySeams ??
+    packet?.inferenceSourceFamilyAskRows?.filter((row) => row.status === 'needed').length ?? 0
   const stale = needsFreshness === 'stale'
   const declarationStatus = stale ? 'local_attention' : packet?.declarationStatus ?? 'absent'
   const spineDiscussion = stale ? 'not-ready' : packet?.spineDiscussion ?? 'absent'
@@ -206,6 +228,12 @@ export function summarizeAdjacentSeamNeeds(recordsOrSources = [], {
     adjacentReady: stale ? 0 : packetAdjacentReady,
     adjacentAttention: stale ? packetAdjacentNeeds : packetAdjacentAttention,
     ownerRepos: packet?.summary?.ownerRepos ?? [],
+    inferenceSourceFamilyAsks: packetInferenceSourceFamilyAsks,
+    inferenceSourcePendingFamilySeams: packetInferenceSourcePendingFamilySeams,
+    inferenceSourceFamilyAskOwners: packet?.summary?.inferenceSourceFamilyAskOwners ?? [],
+    inferenceSourceVeniceEvidence: packet?.summary?.inferenceSourceVeniceEvidence === true,
+    inferenceSourceState: packet?.summary?.inferenceSourceState ?? 'absent',
+    latestInferenceSourcePostureRef: packet?.summary?.latestInferenceSourcePostureRef ?? null,
     safeNextAction: stale
       ? 'Run npm run seam:needs after refreshing local proof surfaces; the adjacent seam needs packet is stale.'
       : packet?.safeNextAction ?? 'Run npm run seam:needs after proof:local -- --drill to declare adjacent repo discussion needs.',
@@ -285,6 +313,10 @@ export function summarizeAdjacentSeamReadiness({
     adjacentNeeds: adjacentSummary.adjacentNeeds,
     adjacentReady: adjacentSummary.adjacentReady,
     adjacentAttention: adjacentSummary.adjacentAttention,
+    inferenceSourceFamilyAsks: adjacentSummary.inferenceSourceFamilyAsks ?? 0,
+    inferenceSourcePendingFamilySeams: adjacentSummary.inferenceSourcePendingFamilySeams ?? 0,
+    inferenceSourceVeniceEvidence: adjacentSummary.inferenceSourceVeniceEvidence === true,
+    inferenceSourceState: adjacentSummary.inferenceSourceState ?? 'absent',
     declarationStatus: adjacentSummary.declarationStatus,
     spineDiscussion: adjacentSummary.spineDiscussion,
     familyBuildoutCoordination: adjacentSummary.familyBuildoutCoordination ?? adjacentSummary.spineDiscussion,
@@ -543,6 +575,48 @@ function createAdjacentDiscussionRows({
   ]
 }
 
+function createInferenceSourceFamilyAskRows({
+  inferenceSourcePosture,
+  declarationStatus,
+  sourceRefs
+}) {
+  if (!inferenceSourcePosture) return []
+
+  const discussionStatus = declarationStatus === 'ready_for_spine_discussion'
+    ? 'ready_for_discussion'
+    : declarationStatus
+  const postureRef = sourceRefs.find((ref) => ref.schema === artifactKinds.mediaStudioInferenceSourcePostureLocal)
+
+  return (inferenceSourcePosture.familyBuildoutAsks ?? []).map((ask) => {
+    const evidenceRefs = compactRefs([
+      ...(postureRef ? [postureRef] : []),
+      ...(ask.sourceRefs ?? [])
+    ])
+
+    return {
+      askId: ask.askId,
+      ownerRepo: ask.ownerRepo,
+      seam: ask.seam,
+      discussionKind: `inference-source-${ask.seam}`,
+      requestedReview: ask.summary,
+      status: ask.status ?? 'needed',
+      discussionStatus,
+      evidenceRefs,
+      stopConditions: [
+        'Stop before adjacent repo implementation without operator approval.',
+        'Stop before treating Studio local provider evidence as family seam success.',
+        'Stop before Edge dispatch, Bytes materialization, Causal truth, Layer admission, mesh publication, or production authority.'
+      ],
+      nextAction: ask.summary,
+      coordinationPressureOnly: true,
+      nonClaims: adjacentNonClaims(),
+      localOnly: true,
+      operatorGuidanceOnly: true,
+      meshTruth: false
+    }
+  })
+}
+
 function adjacentRow({
   ownerRepo,
   discussionKind,
@@ -676,6 +750,7 @@ function kindForSchema(schema) {
     [artifactKinds.mediaProductionAuthorityPrerequisitesLocal]: 'media-production-authority-prerequisites',
     [artifactKinds.mediaAuthorityHandoffCandidateLocal]: 'media-authority-handoff-candidate',
     [artifactKinds.mediaPublicationAuthorityRequestCandidateLocal]: 'media-publication-authority-request-candidate',
+    [artifactKinds.mediaStudioInferenceSourcePostureLocal]: 'media-studio-inference-source-posture',
     [artifactKinds.mediaStudioAdjacentSeamNeedsPacketLocal]: 'media-studio-adjacent-seam-needs'
   }[schema] ?? schema
 }
@@ -692,6 +767,7 @@ function idForRecord(record) {
     record.reportId ??
     record.handoffCandidateId ??
     record.requestCandidateId ??
+    record.postureId ??
     record.schema
 }
 
@@ -740,6 +816,9 @@ function formatAdjacentSeamNeedsPacket(packet, output) {
     `adjacentNeeds=${packet.summary.adjacentNeeds}`,
     `adjacentReady=${packet.summary.adjacentReady}`,
     `adjacentAttention=${packet.summary.adjacentAttention}`,
+    `inferenceSourceFamilyAsks=${packet.summary.inferenceSourceFamilyAsks ?? 0}`,
+    `inferenceSourcePendingFamilySeams=${packet.summary.inferenceSourcePendingFamilySeams ?? 0}`,
+    `inferenceSourceVeniceEvidence=${packet.summary.inferenceSourceVeniceEvidence === true}`,
     'adjacentRepoWrite=false',
     'layerAdmission=false',
     'edgeDispatch=false',

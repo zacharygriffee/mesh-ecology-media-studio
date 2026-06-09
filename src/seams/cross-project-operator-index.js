@@ -196,6 +196,10 @@ function formatCrossProjectSummary(index, output) {
     `adjacentAttention=${summary.adjacentAttention ?? 0}`,
     `adjacentFresh=${summary.adjacentFresh ?? 0}`,
     `adjacentStale=${summary.adjacentStale ?? 0}`,
+    `inferenceSourceProjects=${summary.inferenceSourceProjects ?? 0}`,
+    `inferenceSourceEvidence=${summary.inferenceSourceEvidence ?? 0}`,
+    `veniceEvidence=${summary.inferenceSourceVeniceEvidence ?? 0}`,
+    `inferenceFamilyAsks=${summary.inferenceSourceFamilyAsks ?? 0}`,
     `familyBuildout=${summary.familyBuildoutRequired ?? summary.spineDiscussionRequired ?? 0}`,
     `familyReady=${summary.familyBuildoutReadinessReady ?? summary.spineReadinessReady ?? 0}`,
     `familyAttention=${summary.familyBuildoutReadinessAttention ?? summary.spineReadinessAttention ?? 0}`,
@@ -281,6 +285,7 @@ async function summarizeProject(root, projectInput) {
   const studioSourcePressureAdapterSummary = summarizeProjectStudioSourcePressureAdapterSummary(loaded, refs)
   const localProofRehearsalSummary = summarizeProjectLocalProofRehearsalSummary(loaded, refs)
   const currentOperationSummary = summarizeProjectCurrentOperationSummary(loaded, refs)
+  const inferenceSourcePosture = summarizeProjectInferenceSourcePosture(loaded, refs)
   const adjacentSeamNeedsSummary = summarizeProjectAdjacentSeamNeeds(loaded, refs, localProofRehearsalSummary)
   const adjacentSeamReadiness = summarizeProjectAdjacentSeamReadiness(loaded, refs, {
     projectId: projectInput.projectId,
@@ -360,6 +365,9 @@ async function summarizeProject(root, projectInput) {
   }
   if (currentOperationSummary) {
     summary.currentOperationSummary = currentOperationSummary
+  }
+  if (inferenceSourcePosture) {
+    summary.inferenceSourcePosture = inferenceSourcePosture
   }
   if (adjacentSeamNeedsSummary) {
     summary.adjacentSeamNeedsSummary = adjacentSeamNeedsSummary
@@ -542,6 +550,65 @@ function summarizeProjectCurrentOperationSummary(loaded, refs) {
     publicationAuthorization: false,
     productionReady: false,
     swarmRuntimeActivated: false,
+    localOnly: true,
+    operatorGuidanceOnly: true
+  }
+}
+
+function summarizeProjectInferenceSourcePosture(loaded, refs) {
+  const source = postureSource(loaded, refs, 'inferenceSourcePosture') ??
+    (loaded.inferenceSourcePosture
+      ? {
+          value: loaded.inferenceSourcePosture,
+          ref: refs.inferenceSourcePosture
+        }
+      : null)
+  if (!source) return null
+
+  return normalizeInferenceSourcePostureSource(source.value, source.ref)
+}
+
+function normalizeInferenceSourcePostureSource(value, ref) {
+  const latest = value.latestInferenceSourcePosture ?? (
+    value.schema === artifactKinds.mediaStudioInferenceSourcePostureLocal
+      ? {
+          postureRef: ref,
+          state: value.summary?.studioProviderAdapterEvidence === true ? 'local_evidence_present' : 'not_evidenced',
+          sourceLanes: value.summary?.sourceLanes ?? value.sourceLanes?.length ?? 0,
+          evidencedLanes: value.summary?.evidencedLanes ?? 0,
+          veniceEvidencePresent: value.summary?.veniceEvidencePresent === true,
+          veniceGeneratedAssets: value.summary?.veniceGeneratedAssets ?? 0,
+          pendingFamilySeams: value.summary?.pendingFamilySeams ?? value.familyBuildoutAsks?.length ?? 0,
+          safeNextAction: value.safeNextAction
+        }
+      : null
+  )
+  const venice = value.veniceProviderAdapterEvidence ?? {}
+  const familyAsks = value.familyBuildoutAsks?.length ??
+    latest?.pendingFamilySeams ??
+    value.summary?.pendingFamilySeams ??
+    0
+
+  return {
+    state: latest?.state ?? (venice.present === true ? 'local_evidence_present' : 'not_evidenced'),
+    postures: value.inferenceSourcePostures ?? (value.schema === artifactKinds.mediaStudioInferenceSourcePostureLocal ? 1 : 0),
+    sourceLanes: latest?.sourceLanes ?? value.summary?.sourceLanes ?? value.sourceLanes?.length ?? 0,
+    evidencedLanes: latest?.evidencedLanes ?? value.summary?.evidencedLanes ?? 0,
+    veniceEvidence: venice.present === true || latest?.veniceEvidencePresent === true || value.summary?.veniceEvidencePresent === true,
+    veniceGeneratedAssets: venice.generatedAssets ?? latest?.veniceGeneratedAssets ?? value.summary?.veniceGeneratedAssets ?? 0,
+    veniceProviderResults: venice.providerResults ?? value.summary?.veniceProviderResults ?? 0,
+    veniceAdapterRuns: venice.adapterRuns ?? value.summary?.veniceAdapterRuns ?? 0,
+    familyAsks,
+    pendingFamilySeams: latest?.pendingFamilySeams ?? value.summary?.pendingFamilySeams ?? familyAsks,
+    familyAskOwners: Array.from(new Set((value.familyBuildoutAsks ?? []).map((ask) => ask.ownerRepo).filter(Boolean))),
+    sourceRef: ref,
+    postureRef: latest?.postureRef ?? ref,
+    safeNextAction: latest?.safeNextAction ?? value.safeNextAction ?? 'Use local inference-source posture as readiness evidence while family seams mature.',
+    providerTruth: false,
+    meshTruth: false,
+    edgeDispatch: false,
+    productionReady: false,
+    familySeamSuccess: false,
     localOnly: true,
     operatorGuidanceOnly: true
   }
@@ -916,6 +983,22 @@ function summarizeProjects(projectSummaries) {
   const adjacentStale = projectSummaries.filter((project) =>
     project.adjacentSeamNeedsSummary?.needsFreshness === 'stale'
   ).length
+  const inferenceSourceProjects = projectSummaries.filter((project) => project.inferenceSourcePosture).length
+  const inferenceSourceEvidence = projectSummaries.filter((project) =>
+    project.inferenceSourcePosture?.state === 'local_evidence_present' ||
+    project.inferenceSourcePosture?.veniceEvidence === true
+  ).length
+  const inferenceSourceVeniceEvidence = projectSummaries.filter((project) =>
+    project.inferenceSourcePosture?.veniceEvidence === true
+  ).length
+  const inferenceSourceVeniceGeneratedAssets = projectSummaries.reduce((sum, project) =>
+    sum + (project.inferenceSourcePosture?.veniceGeneratedAssets ?? 0), 0)
+  const inferenceSourceFamilyAsks = projectSummaries.reduce((sum, project) =>
+    sum + (project.inferenceSourcePosture?.familyAsks ?? 0), 0)
+  const inferenceSourcePendingFamilySeams = projectSummaries.reduce((sum, project) =>
+    sum + (project.inferenceSourcePosture?.pendingFamilySeams ?? 0), 0)
+  const inferenceSourceFamilyAskOwners = Array.from(new Set(projectSummaries
+    .flatMap((project) => project.inferenceSourcePosture?.familyAskOwners ?? [])))
   const spineDiscussionRequired = projectSummaries.filter((project) =>
     project.adjacentSeamNeedsSummary?.spineDiscussion === 'required'
   ).length
@@ -998,6 +1081,18 @@ function summarizeProjects(projectSummaries) {
     adjacentAttention,
     adjacentFresh,
     adjacentStale,
+    inferenceSourceProjects,
+    inferenceSourceEvidence,
+    inferenceSourceVeniceEvidence,
+    inferenceSourceVeniceGeneratedAssets,
+    inferenceSourceFamilyAsks,
+    inferenceSourcePendingFamilySeams,
+    inferenceSourceFamilyAskOwners,
+    inferenceSourceProviderTruth: false,
+    inferenceSourceMeshTruth: false,
+    inferenceSourceEdgeDispatch: false,
+    inferenceSourceProductionReady: false,
+    inferenceSourceFamilySeamSuccess: false,
     familyBuildoutRequired,
     familyBuildoutReadinessReady,
     familyBuildoutReadinessAttention,
@@ -1036,7 +1131,8 @@ function idForRecord(record) {
     record.needsPacketId ??
     record.statusId ??
     record.packetId ??
-    record.bundleId
+    record.bundleId ??
+    record.postureId
 }
 
 if (process.argv[1] === modulePath) {

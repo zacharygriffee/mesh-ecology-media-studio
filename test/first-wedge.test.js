@@ -622,6 +622,13 @@ function crossProjectArtifactRef(name) {
       schema: 'media.operator_packet_index.local.v1',
       path: 'records/exports/media-operator-packet-index.local.json',
       localOnly: true
+    },
+    inferenceSourcePosture: {
+      kind: 'media-studio-inference-source-posture',
+      id: 'studio-inference-source-posture-venice-smoke-project',
+      schema: 'media.studio_inference_source_posture.local.v1',
+      path: 'records/exports/media-studio-inference-source-posture.local.json',
+      localOnly: true
     }
   }[name]
 }
@@ -1711,6 +1718,43 @@ test('operator and Edge-compatible surfaces carry inference-source posture refs 
   assert.equal(bundle.edgeRuntimeVerified, false)
   assert.equal(bundle.providerTruth, false)
   assert.equal(bundle.studioReviewEvidence.providerTruth, false)
+
+  const baseDir = path.dirname(dir)
+  const inputList = createCrossProjectInputListWithArtifactRefs([
+    {
+      projectId: 'venice-inference-project',
+      label: 'Venice inference posture project',
+      rootPath: path.basename(dir),
+      artifactRefs: {
+        operatorPacketIndex: crossProjectArtifactRef('operatorPacketIndex')
+      }
+    }
+  ], { inputListId: 'venice-inference-cross-project-fixture' })
+  await writeFile(path.join(baseDir, 'input-list.local.json'), `${JSON.stringify(inputList, null, 2)}\n`)
+
+  const { result: crossProjectResult, lines: crossProjectLines } = await captureConsole(() =>
+    writeCrossProjectOperatorIndex({
+      baseDir,
+      inputList: 'input-list.local.json',
+      output: 'cross-project-inference.local.json'
+    })
+  )
+
+  assert.equal(crossProjectResult.index.summary.inferenceSourceProjects, 1)
+  assert.equal(crossProjectResult.index.summary.inferenceSourceEvidence, 1)
+  assert.equal(crossProjectResult.index.summary.inferenceSourceVeniceEvidence, 1)
+  assert.equal(crossProjectResult.index.summary.inferenceSourceVeniceGeneratedAssets, 1)
+  assert.equal(crossProjectResult.index.summary.inferenceSourceFamilyAsks, 6)
+  assert.equal(crossProjectResult.index.summary.inferenceSourceProviderTruth, false)
+  assert.equal(crossProjectResult.index.summary.inferenceSourceEdgeDispatch, false)
+  assert.equal(crossProjectResult.index.projectSummaries[0].inferenceSourcePosture.state, 'local_evidence_present')
+  assert.equal(crossProjectResult.index.projectSummaries[0].inferenceSourcePosture.veniceEvidence, true)
+  assert.equal(crossProjectResult.index.projectSummaries[0].inferenceSourcePosture.providerTruth, false)
+  assert.equal(crossProjectResult.index.projectSummaries[0].inferenceSourcePosture.familySeamSuccess, false)
+  assert.ok(crossProjectLines[0].includes('inferenceSourceProjects=1'))
+  assert.ok(crossProjectLines[0].includes('veniceEvidence=1'))
+  assert.ok(crossProjectLines[0].includes('inferenceFamilyAsks=6'))
+  assert.equal(validateRequiredRecord(crossProjectResult.index), true)
 })
 
 test('Venice operational loop selects latest generated provider candidate', async () => {
@@ -5159,6 +5203,45 @@ test('adjacent seam needs packet blocks missing proof without adjacent authority
   assert.ok(line.includes('proofDrill=absent'))
   assert.equal(packet.nonClaims.adjacentRepoWrite, false)
   assert.equal(packet.nonClaims.resultAcceptance, false)
+  assert.equal(validateRequiredRecord(packet), true)
+})
+
+test('adjacent seam needs packet carries inference-source family asks as coordination pressure', async () => {
+  const dir = await createLocalProofFixtureProject()
+  await captureConsole(() => runLocalProofRehearsal({
+    projectDir: dir,
+    drill: true,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  await captureConsole(() => writeInferenceSourcePosture({ projectDir: dir }))
+
+  const { result, lines } = await captureConsole(() => writeAdjacentSeamNeedsPacket({
+    projectDir: dir,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const packet = result.packet
+  const line = lines.find((entry) => entry.startsWith('studio adjacent seam needs:'))
+
+  assert.equal(packet.declarationStatus, 'ready_for_spine_discussion')
+  assert.equal(packet.summary.adjacentNeeds, 5)
+  assert.equal(packet.summary.adjacentReady, 5)
+  assert.equal(packet.summary.adjacentAttention, 0)
+  assert.equal(packet.summary.inferenceSourceFamilyAsks, 6)
+  assert.equal(packet.summary.inferenceSourcePendingFamilySeams, 6)
+  assert.equal(packet.summary.inferenceSourceVeniceEvidence, true)
+  assert.equal(packet.summary.inferenceSourceState, 'local_evidence_present')
+  assert.equal(packet.inferenceSourceFamilyAskRows.length, 6)
+  assert.equal(packet.inferenceSourceFamilyAskRows.every((row) => row.discussionStatus === 'ready_for_discussion'), true)
+  assert.equal(packet.inferenceSourceFamilyAskRows.every((row) => row.coordinationPressureOnly === true), true)
+  assert.equal(packet.inferenceSourceFamilyAskRows.every((row) => row.nonClaims.edgeDispatch === false), true)
+  assert.equal(packet.inferenceSourceFamilyAskRows.every((row) => row.nonClaims.productionReady === false), true)
+  assert.ok(packet.inferenceSourceFamilyAskRows.some((row) => row.ownerRepo === 'mesh-ecology-edge' && row.seam === 'edge-agent-seat-dispatch'))
+  assert.ok(packet.inferenceSourceFamilyAskRows.some((row) => row.ownerRepo === 'agent-bridge-byo-ai-planned' && row.seam === 'provider-normalization'))
+  assert.ok(packet.inferenceSourceFamilyAskRows[0].evidenceRefs.some((ref) => ref.schema === 'media.studio_inference_source_posture.local.v1'))
+  assert.ok(line.includes('adjacentAttention=0'))
+  assert.ok(line.includes('inferenceSourceFamilyAsks=6'))
+  assert.ok(line.includes('inferenceSourcePendingFamilySeams=6'))
+  assert.ok(line.includes('inferenceSourceVeniceEvidence=true'))
   assert.equal(validateRequiredRecord(packet), true)
 })
 

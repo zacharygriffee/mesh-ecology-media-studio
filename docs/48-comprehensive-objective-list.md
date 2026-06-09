@@ -142,6 +142,17 @@ seam.
      drill attention reasons before any adjacent implementation discussion.
    - `seam:ready` compact output names adjacent packet count and stale reasons
      so operators can see the refresh trigger without opening raw JSON.
+   - `inference:source-posture` classifies operator-supplied, Studio provider
+     adapter, Edge agent-seat, local inference, Agent Bridge/BYO-AI, and
+     mesh-v0-2 pub/rat lanes with Venice as local Studio provider-adapter
+     evidence when present.
+   - `seam:needs` carries inference-source family asks as separate coordination
+     pressure, without increasing adjacent attention or claiming runtime
+     routing.
+   - `operator:cross-project-index` aggregates inference-source projects,
+     Venice evidence, generated asset counts, and pending family asks from
+     explicit project refs without claiming provider truth, Edge dispatch,
+     family seam success, or production readiness.
 
 4. **Example And Fixture Discipline**
 
