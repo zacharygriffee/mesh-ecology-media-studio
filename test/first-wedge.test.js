@@ -4897,6 +4897,11 @@ test('adjacent seam needs surface through operator Edge and cross-project views'
   assert.ok(operatorLines.find((entry) => entry.startsWith('operator packet index:')).includes('adjacentFreshness=fresh'))
   assert.ok(operatorLines.find((entry) => entry.startsWith('operator packet index:')).includes('spineReadiness=ready_for_spine_discussion'))
   assert.ok(operatorLines.find((entry) => entry.startsWith('operator packet index:')).includes('spineNextAction=Discuss these adjacent seam needs with the operator and Spine repo agent'))
+  assert.ok(operatorLines.find((entry) => entry.startsWith('operator packet index:')).includes('spineDurableAppend=false'))
+  assert.ok(operatorLines.find((entry) => entry.startsWith('operator packet index:')).includes('spineEdgeQueueAction=false'))
+  assert.ok(operatorLines.find((entry) => entry.startsWith('operator packet index:')).includes('spineEdgeRuntimeVerified=false'))
+  assert.ok(operatorLines.find((entry) => entry.startsWith('operator packet index:')).includes('spinePublicationAuthorization=false'))
+  assert.ok(operatorLines.find((entry) => entry.startsWith('operator packet index:')).includes('spineProductionReady=false'))
   assert.equal(edgeResult.bundle.adjacentSeamNeedsSummary.adjacentNeeds, 5)
   assert.equal(edgeResult.bundle.adjacentSeamNeedsSummary.spineDiscussion, 'required')
   assert.equal(edgeResult.bundle.adjacentSeamNeedsSummary.needsFreshness, 'fresh')
@@ -4906,6 +4911,11 @@ test('adjacent seam needs surface through operator Edge and cross-project views'
   assert.ok(edgeLines.find((entry) => entry.startsWith('edge source refs:')).includes('adjacentFreshness=fresh'))
   assert.ok(edgeLines.find((entry) => entry.startsWith('edge source refs:')).includes('spineReadiness=ready_for_spine_discussion'))
   assert.ok(edgeLines.find((entry) => entry.startsWith('edge source refs:')).includes('spineNextAction=Discuss these adjacent seam needs with the operator and Spine repo agent'))
+  assert.ok(edgeLines.find((entry) => entry.startsWith('edge source refs:')).includes('spineDurableAppend=false'))
+  assert.ok(edgeLines.find((entry) => entry.startsWith('edge source refs:')).includes('spineEdgeQueueAction=false'))
+  assert.ok(edgeLines.find((entry) => entry.startsWith('edge source refs:')).includes('spineEdgeRuntimeVerified=false'))
+  assert.ok(edgeLines.find((entry) => entry.startsWith('edge source refs:')).includes('spinePublicationAuthorization=false'))
+  assert.ok(edgeLines.find((entry) => entry.startsWith('edge source refs:')).includes('spineProductionReady=false'))
 
   const baseDir = path.dirname(dir)
   const inputList = createCrossProjectInputListWithArtifactRefs([

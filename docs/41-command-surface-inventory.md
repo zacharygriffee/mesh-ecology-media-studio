@@ -77,8 +77,8 @@ text is not the durable contract.
 | `npm run inspect:venice-loop` | yes | no | `--print` | reads provider-loop status/request/decision refs | no output mutation; prints retry path, live-provider-called posture, and production blockers |
 | `npm run export:inspection-bundle` | yes | yes | `--print` | yes | bundle manifest uses fresh timestamp |
 | `npm run control:surface` | yes | yes | `--print` | yes | runtime projection uses fresh timestamp |
-| `npm run edge:compat` | yes | yes | `--print` | yes | runtime bundle uses fresh timestamp; includes production-capsule, production-bundle, rough-cut, render/export candidate, authority-prereq, local package posture, local proof rehearsal posture, swarm seam posture, and Layer interop source refs/attention when present; compact output uses `proofFreshness`, `proofStaleReasons`, `proofDrill`, `drillAttentionReasons`, `adjacentStaleReasons`, one selected `nextAction`, plus `packageNextAction`, `proofNextAction`, `spineNextAction`, and `swarmNextAction`; no Edge queue, dispatch, approval, swarm activation, or runtime verification |
-| `npm run operator:index` | yes | yes | `--print` | yes | runtime index uses fresh timestamp; includes provider-loop, production-capsule, production-bundle, rough-cut, local package posture, local proof rehearsal posture, swarm seam posture, and Layer interop refs/attention when present; compact output uses `proofFreshness`, `proofStaleReasons`, `proofDrill`, `drillAttentionReasons`, `adjacentStaleReasons`, one selected `nextAction`, plus `packageNextAction`, `proofNextAction`, `spineNextAction`, and `swarmNextAction` |
+| `npm run edge:compat` | yes | yes | `--print` | yes | runtime bundle uses fresh timestamp; includes production-capsule, production-bundle, rough-cut, render/export candidate, authority-prereq, local package posture, local proof rehearsal posture, swarm seam posture, and Layer interop source refs/attention when present; compact output uses `proofFreshness`, `proofStaleReasons`, `proofDrill`, `drillAttentionReasons`, `adjacentStaleReasons`, one selected `nextAction`, plus `packageNextAction`, `proofNextAction`, `spineNextAction`, `swarmNextAction`, and `spine*` no-authority/no-production flags; no Edge queue, dispatch, approval, swarm activation, or runtime verification |
+| `npm run operator:index` | yes | yes | `--print` | yes | runtime index uses fresh timestamp; includes provider-loop, production-capsule, production-bundle, rough-cut, local package posture, local proof rehearsal posture, swarm seam posture, and Layer interop refs/attention when present; compact output uses `proofFreshness`, `proofStaleReasons`, `proofDrill`, `drillAttentionReasons`, `adjacentStaleReasons`, one selected `nextAction`, plus `packageNextAction`, `proofNextAction`, `spineNextAction`, `swarmNextAction`, and `spine*` no-authority/no-production flags |
 | `npm run handoff:edge` | yes | yes | `--print` | yes | runtime handoff uses fresh timestamp |
 | `npm run operator:decision-request` | yes | yes | `--print` | yes | runtime request uses fresh timestamp |
 | `npm run operator:provider-loop-request` | yes | yes | `--print` | yes | runtime request uses fresh timestamp; retry is request-only |
@@ -232,7 +232,8 @@ attention name the local mismatch without opening JSON. `operator:index`,
 `operator:cross-project-index` surface `adjacentNeeds`, `adjacentReady`,
 `adjacentAttention`, `adjacentFreshness`, `adjacentStaleReasons`, and
 `spineDiscussion` when the packet is present; `operator:index` and
-`edge:compat` also print `spineReadiness` and `spineNextAction`,
+`edge:compat` also print `spineReadiness`, `spineNextAction`, and `spine*`
+no-authority/no-production flags,
 while `operator:cross-project-index` aggregates `spineReady` and
 `spineAttention` plus `spineFresh`, `spineStale`, and `spineInherited`
 freshness counts. Its per-project adjacent seam attention line also names
