@@ -103,6 +103,8 @@ storage decisions into Studio.
      runtime.
    - `operator:index`, `edge:compat`, and `operator:cross-project-index`
      surface adjacent seam readiness without treating it as routing authority.
+   - cross-project adjacent seam readiness reports whether readiness is fresh,
+     stale, or inherited from an operator index without an explicit seam ref.
    - stale adjacent seam needs packets are local attention in operator, Edge,
      and cross-project surfaces; they ask for a `seam:needs` refresh instead
      of being treated as current Spine discussion readiness.

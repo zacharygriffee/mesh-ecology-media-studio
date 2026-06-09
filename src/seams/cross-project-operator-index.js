@@ -191,6 +191,9 @@ function formatCrossProjectSummary(index, output) {
     `spineDiscussion=${summary.spineDiscussionRequired ?? 0}`,
     `spineReady=${summary.spineReadinessReady ?? 0}`,
     `spineAttention=${summary.spineReadinessAttention ?? 0}`,
+    `spineFresh=${summary.spineReadinessFresh ?? 0}`,
+    `spineStale=${summary.spineReadinessStale ?? 0}`,
+    `spineInherited=${summary.spineReadinessInherited ?? 0}`,
     `swarmReady=${summary.swarmReady ?? 0}`,
     `swarmAttention=${summary.swarmAttention ?? 0}`,
     `swarmProof=false`,
@@ -534,10 +537,28 @@ function summarizeProjectAdjacentSeamReadiness(loaded, refs, {
   adjacentSeamNeedsSummary = null
 } = {}) {
   const source = postureSource(loaded, refs, 'adjacentSeamReadiness')
+  const computed = adjacentSeamNeedsSummary
+    ? summarizeAdjacentSeamReadiness({
+        projectId,
+        proofSummary: localProofRehearsalSummary,
+        adjacentSeamNeedsSummary
+      })
+    : null
+
   if (source) {
+    const readinessFreshness = classifyCrossProjectAdjacentReadinessFreshness(source.value, computed)
     return {
       ...source.value,
       sourceRef: source.ref,
+      readinessSource: computed
+        ? 'operator-index-checked-against-adjacent-seam-needs'
+        : 'operator-index-inherited',
+      readinessFreshness,
+      currentReadiness: computed?.readiness ?? source.value.readiness,
+      currentAdjacentFreshness: computed?.adjacentFreshness ?? source.value.adjacentFreshness ?? 'absent',
+      staleReasons: readinessFreshness === 'stale'
+        ? crossProjectAdjacentReadinessStaleReasons(source.value, computed)
+        : source.value.staleReasons ?? [],
       adjacentRepoWrite: false,
       layerAdmission: false,
       edgeDispatch: false,
@@ -551,12 +572,12 @@ function summarizeProjectAdjacentSeamReadiness(loaded, refs, {
   if (!adjacentSeamNeedsSummary) return null
 
   return {
-    ...summarizeAdjacentSeamReadiness({
-      projectId,
-      proofSummary: localProofRehearsalSummary,
-      adjacentSeamNeedsSummary
-    }),
+    ...computed,
     sourceRef: adjacentSeamNeedsSummary.sourceRef,
+    readinessSource: 'adjacent-seam-needs-derived',
+    readinessFreshness: computed.adjacentFreshness === 'stale' ? 'stale' : 'fresh',
+    currentReadiness: computed.readiness,
+    currentAdjacentFreshness: computed.adjacentFreshness,
     adjacentRepoWrite: false,
     layerAdmission: false,
     edgeDispatch: false,
@@ -566,6 +587,22 @@ function summarizeProjectAdjacentSeamReadiness(loaded, refs, {
     localOnly: true,
     operatorGuidanceOnly: true
   }
+}
+
+function classifyCrossProjectAdjacentReadinessFreshness(readiness, computed) {
+  if (!computed) return 'inherited'
+  if (computed.adjacentFreshness === 'stale') return 'stale'
+  return readiness.readiness === computed.readiness ? 'fresh' : 'stale'
+}
+
+function crossProjectAdjacentReadinessStaleReasons(readiness, computed) {
+  const reasons = new Set([
+    ...(readiness.staleReasons ?? []),
+    ...(computed?.staleReasons ?? [])
+  ])
+  if (computed?.adjacentFreshness === 'stale') reasons.add('adjacent_seam_needs_stale')
+  if (computed && readiness.readiness !== computed.readiness) reasons.add('readiness_changed')
+  return Array.from(reasons)
 }
 
 function postureSource(loaded, refs, field) {
@@ -838,6 +875,15 @@ function summarizeProjects(projectSummaries) {
     project.adjacentSeamReadiness &&
     project.adjacentSeamReadiness.readiness !== 'ready_for_spine_discussion'
   ).length
+  const spineReadinessFresh = projectSummaries.filter((project) =>
+    project.adjacentSeamReadiness?.readinessFreshness === 'fresh'
+  ).length
+  const spineReadinessStale = projectSummaries.filter((project) =>
+    project.adjacentSeamReadiness?.readinessFreshness === 'stale'
+  ).length
+  const spineReadinessInherited = projectSummaries.filter((project) =>
+    project.adjacentSeamReadiness?.readinessFreshness === 'inherited'
+  ).length
   const attentionRows = projectSummaries.filter((project) => (
     project.handoffState === 'needs-local-attention' ||
     project.providerLoopStatus?.needsOperatorAttention === true ||
@@ -893,6 +939,9 @@ function summarizeProjects(projectSummaries) {
     spineDiscussionRequired,
     spineReadinessReady,
     spineReadinessAttention,
+    spineReadinessFresh,
+    spineReadinessStale,
+    spineReadinessInherited,
     attentionRows,
     blockingIssues: projectSummaries.reduce((sum, project) => sum + project.blockingIssues.length, 0),
     missingArtifacts,
