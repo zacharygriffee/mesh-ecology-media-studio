@@ -15,6 +15,7 @@ import { summarizeSwarmSeamPosture, formatSwarmSeamPostureFields } from './swarm
 import { summarizeStudioSourcePressure } from './studio-source-pressure-summary.js'
 import { summarizeLocalProofRehearsal } from './local-proof-summary.js'
 import { summarizeAdjacentSeamNeeds, summarizeAdjacentSeamReadiness } from './adjacent-seam-needs.js'
+import { summarizeInferenceSourcePosture, formatInferenceSourcePostureFields } from './inference-source-posture.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
@@ -52,6 +53,7 @@ const optionalSourceRecordPaths = Object.freeze({
   studioSourcePressureAdapterCandidate: 'records/exports/media-studio-source-pressure-adapter-candidate.local.json',
   studioSourcePressureAdapterDecision: 'records/exports/media-studio-source-pressure-adapter-operator-decision.local.json',
   studioSourcePressureObservation: 'records/exports/media-studio-source-pressure-observation-result.local.json',
+  inferenceSourcePosture: 'records/exports/media-studio-inference-source-posture.local.json',
   localProofRehearsal: 'records/exports/media-studio-local-proof-rehearsal.local.json',
   adjacentSeamNeeds: 'records/exports/media-studio-adjacent-seam-needs.local.json'
 })
@@ -74,6 +76,7 @@ const optionalSourceSchemas = new Set([
   artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal,
   artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal,
   artifactKinds.mediaStudioSourcePressureObservationResultLocal,
+  artifactKinds.mediaStudioInferenceSourcePostureLocal,
   artifactKinds.mediaStudioLocalProofRehearsalLocal,
   artifactKinds.mediaStudioAdjacentSeamNeedsPacketLocal
 ])
@@ -157,6 +160,7 @@ export async function writeEdgeCompatibilityBundle({
   const layerInteropSummary = createLayerInteropSummary({ sources })
   const studioSourcePressureSummary = summarizeStudioSourcePressure(sources)
   const studioSourcePressureAdapterSummary = studioSourcePressureSummary.studioSourcePressureAdapterSummary
+  const inferenceSourcePosture = summarizeInferenceSourcePosture(Object.values(sources))
   const swarmSeamPosture = summarizeSwarmSeamPosture({
     localPackagePosture,
     adapterSummary: studioSourcePressureAdapterSummary,
@@ -189,6 +193,7 @@ export async function writeEdgeCompatibilityBundle({
     layerInteropSummary,
     swarmSeamPosture,
     localProofRehearsalSummary,
+    inferenceSourcePosture,
     currentOperationSummary,
     createdAt
   })
@@ -252,6 +257,7 @@ export async function writeEdgeCompatibilityBundle({
     localProofRehearsalSummary,
     adjacentSeamNeedsSummary,
     adjacentSeamReadiness,
+    inferenceSourcePosture,
     currentOperationSummary,
     studioReviewEvidence: reviewEvidence,
     edgeWorkPacketCandidate: workPacketCandidate,
@@ -263,6 +269,7 @@ export async function writeEdgeCompatibilityBundle({
       'Edge shape candidates target documented Edge review artifacts but are not Edge runtime verification.',
       'Current operation summaries are local operator review summaries and do not add Edge action.',
       'Studio source-pressure adapter records are source evidence for Layer review only, not Edge action or Layer admission.',
+      'Studio inference-source posture records are local provider/source readiness evidence only, not provider truth or Edge dispatch.',
       'No Edge process, REPL command, browser endpoint, repo mutation, live discovery, mesh publication, scheduler, or runner is called.',
       'Operator decisions remain review-only records; this bundle does not authorize execution or publication.'
     ],
@@ -317,6 +324,7 @@ export async function writeEdgeCompatibilityBundle({
       `familyBuildout=${bundle.adjacentSeamNeedsSummary.familyBuildoutCoordination ?? bundle.adjacentSeamNeedsSummary.spineDiscussion}`,
       `familyReadiness=${bundle.adjacentSeamReadiness.familyBuildoutReadiness ?? bundle.adjacentSeamReadiness.readiness}`,
       `familyNextAction=${bundle.adjacentSeamReadiness.familyBuildoutNextAction ?? bundle.adjacentSeamReadiness.safeNextAction}`,
+      formatInferenceSourcePostureFields(bundle.inferenceSourcePosture),
       `spineDiscussion=${bundle.adjacentSeamNeedsSummary.spineDiscussion}`,
       `spineReadiness=${bundle.adjacentSeamReadiness.readiness}`,
       `spineNextAction=${bundle.adjacentSeamReadiness.safeNextAction}`,
@@ -420,6 +428,7 @@ function createStudioEdgeReviewEvidence({
   layerInteropSummary,
   swarmSeamPosture,
   localProofRehearsalSummary,
+  inferenceSourcePosture,
   currentOperationSummary,
   createdAt
 }) {
@@ -449,6 +458,7 @@ function createStudioEdgeReviewEvidence({
     layerInteropSummary,
     swarmSeamPosture,
     localProofRehearsalSummary,
+    inferenceSourcePosture,
     currentOperationSummary,
     summary: 'Studio local inspection artifacts are ready for Edge-style operator review as local evidence only.',
     reasonCodes: [
@@ -1023,6 +1033,7 @@ function kindForSchema(schema) {
     [artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal]: 'media-studio-source-pressure-adapter-candidate',
     [artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal]: 'media-studio-source-pressure-adapter-operator-decision',
     [artifactKinds.mediaStudioSourcePressureObservationResultLocal]: 'media-studio-source-pressure-observation-result',
+    [artifactKinds.mediaStudioInferenceSourcePostureLocal]: 'media-studio-inference-source-posture',
     [artifactKinds.mediaStudioLocalProofRehearsalLocal]: 'media-studio-local-proof-rehearsal',
     [artifactKinds.mediaStudioAdjacentSeamNeedsPacketLocal]: 'media-studio-adjacent-seam-needs'
   }
@@ -1063,6 +1074,7 @@ function idForRecord(record) {
     record.resourceRefCandidateId ??
     record.adapterCandidateId ??
     record.observationId ??
+    record.postureId ??
     record.proofRehearsalId ??
     record.needsPacketId ??
     record.operationId ??

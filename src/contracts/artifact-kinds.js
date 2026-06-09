@@ -40,6 +40,7 @@ export const artifactKinds = Object.freeze({
   mediaStudioSourcePressureAdapterCandidateLocal: 'media.studio_source_pressure_adapter_candidate.local.v1',
   mediaStudioSourcePressureAdapterOperatorDecisionLocal: 'media.studio_source_pressure_adapter_operator_decision.local.v1',
   mediaStudioSourcePressureObservationResultLocal: 'media.studio_source_pressure_observation_result.local.v1',
+  mediaStudioInferenceSourcePostureLocal: 'media.studio_inference_source_posture.local.v1',
   mediaStudioLocalProofRehearsalLocal: 'media.studio_local_proof_rehearsal.local.v1',
   mediaStudioAdjacentSeamNeedsPacketLocal: 'media.studio_adjacent_seam_needs_packet.local.v1',
   mediaOperatorPacketIndexLocal: 'media.operator_packet_index.local.v1',

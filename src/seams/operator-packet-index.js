@@ -18,6 +18,7 @@ import { summarizeSwarmSeamPosture, formatSwarmSeamPostureFields } from './swarm
 import { summarizeStudioSourcePressure } from './studio-source-pressure-summary.js'
 import { summarizeLocalProofRehearsal } from './local-proof-summary.js'
 import { summarizeAdjacentSeamNeeds, summarizeAdjacentSeamReadiness } from './adjacent-seam-needs.js'
+import { summarizeInferenceSourcePosture, formatInferenceSourcePostureFields } from './inference-source-posture.js'
 import {
   isDiscoverableJsonPath,
   readJsonFileTolerant,
@@ -141,8 +142,12 @@ export async function writeOperatorPacketIndex({
   const adjacentSeamNeedsRefs = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaStudioAdjacentSeamNeedsPacketLocal)
     .map(toInspectionRef)
+  const inferenceSourcePostureRefs = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaStudioInferenceSourcePostureLocal)
+    .map(toInspectionRef)
   const studioSourcePressureSummary = summarizeStudioSourcePressure(records)
   const studioSourcePressureAdapterSummary = studioSourcePressureSummary.studioSourcePressureAdapterSummary
+  const inferenceSourcePosture = summarizeInferenceSourcePosture(records)
   const providerLoopStatuses = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaProviderLoopStatusLocal)
     .map((entry) => summarizeProviderLoopStatus(entry.record, entry.relativePath))
@@ -256,11 +261,13 @@ export async function writeOperatorPacketIndex({
     studioSourcePressureObservationRefs,
     localProofRehearsalRefs,
     adjacentSeamNeedsRefs,
+    inferenceSourcePostureRefs,
     currentOperationSummaryRefs,
     studioSourcePressureAdapterSummary,
     localProofRehearsalSummary,
     adjacentSeamNeedsSummary,
     adjacentSeamReadiness,
+    inferenceSourcePosture,
     currentOperationSummary,
     providerLoopStatuses,
     providerLoopDecisions,
@@ -368,6 +375,17 @@ export async function writeOperatorPacketIndex({
       adjacentSeamReadinessFamilyBuildoutReadiness: adjacentSeamReadiness.familyBuildoutReadiness ?? adjacentSeamReadiness.readiness,
       adjacentSeamReadinessFamilyBuildoutNextAction: adjacentSeamReadiness.familyBuildoutNextAction ?? adjacentSeamReadiness.safeNextAction,
       adjacentSeamReadinessNextAction: adjacentSeamReadiness.safeNextAction,
+      inferenceSourcePostures: inferenceSourcePostureRefs.length,
+      inferenceSourceState: inferenceSourcePosture.latestInferenceSourcePosture?.state ?? (inferenceSourcePosture.veniceProviderAdapterEvidence.present ? 'local_evidence_present' : 'not_evidenced'),
+      inferenceSourceVeniceEvidence: inferenceSourcePosture.veniceProviderAdapterEvidence.present,
+      inferenceSourceVeniceGeneratedAssets: inferenceSourcePosture.veniceProviderAdapterEvidence.generatedAssets,
+      inferenceSourceVeniceProviderResults: inferenceSourcePosture.veniceProviderAdapterEvidence.providerResults,
+      inferenceSourceVeniceAdapterRuns: inferenceSourcePosture.veniceProviderAdapterEvidence.adapterRuns,
+      inferenceSourceFamilySeams: inferenceSourcePosture.latestInferenceSourcePosture?.pendingFamilySeams ?? 0,
+      inferenceSourceProviderTruth: false,
+      inferenceSourceMeshTruth: false,
+      inferenceSourceEdgeDispatch: false,
+      inferenceSourceProductionReady: false,
       currentOperationSummaries: currentOperationSummary.summaries,
       currentOperationReadState: currentOperationSummary.readState,
       currentOperationState: currentOperationSummary.operationState,
@@ -416,6 +434,7 @@ export async function writeOperatorPacketIndex({
       'Render receipts are local preview evidence only and do not authorize export or publication.',
       'Export receipts are local delivery evidence only and do not authorize publication or production readiness.',
       'Studio source-pressure adapter records are local review-only source evidence for the generic Layer seam.',
+      'Studio inference-source posture records are local provider/source readiness evidence and not provider truth or family seam success.',
       'Studio local proof rehearsal records are local review evidence only and do not activate swarm runtime.',
       'Studio adjacent seam needs records are discussion declarations only and do not write adjacent repos.',
       'Edge may inspect these refs later, but this index does not call or verify Edge.'
@@ -493,6 +512,10 @@ export async function writeOperatorPacketIndex({
     if (index.adjacentSeamNeedsSummary.packets > 0) {
       console.log(formatAdjacentSeamNeedsSummary(index.adjacentSeamNeedsSummary))
     }
+    if (index.inferenceSourcePosture.inferenceSourcePostures > 0 ||
+        index.inferenceSourcePosture.veniceProviderAdapterEvidence.present) {
+      console.log(`inference source posture: ${formatInferenceSourcePostureFields(index.inferenceSourcePosture)}`)
+    }
     if (index.productionApprovalLane.candidates > 0) {
       console.log(formatProductionApprovalLaneSummary(index.productionApprovalLane))
     }
@@ -558,6 +581,10 @@ function formatOperatorPacketIndexSummary(index, output) {
     `familyBuildout=${summary.adjacentSeamNeedsFamilyBuildoutCoordination ?? summary.adjacentSeamNeedsSpineDiscussion ?? 'absent'}`,
     `familyReadiness=${summary.adjacentSeamReadinessFamilyBuildoutReadiness ?? summary.adjacentSeamReadiness ?? 'blocked_missing_proof'}`,
     `familyNextAction=${summary.adjacentSeamReadinessFamilyBuildoutNextAction ?? summary.adjacentSeamReadinessNextAction ?? 'Run npm run seam:ready to inspect adjacent seam readiness.'}`,
+    `inferenceSource=${summary.inferenceSourceState ?? 'not_evidenced'}`,
+    `veniceEvidence=${summary.inferenceSourceVeniceEvidence === true}`,
+    `veniceAssets=${summary.inferenceSourceVeniceGeneratedAssets ?? 0}`,
+    `inferenceFamilySeams=${summary.inferenceSourceFamilySeams ?? 0}`,
     `spineDiscussion=${summary.adjacentSeamNeedsSpineDiscussion ?? 'absent'}`,
     `spineReadiness=${summary.adjacentSeamReadiness ?? 'blocked_missing_proof'}`,
     `spineNextAction=${summary.adjacentSeamReadinessNextAction ?? 'Run npm run seam:ready to inspect adjacent seam readiness.'}`,
@@ -986,6 +1013,7 @@ const indexableSchemas = new Set([
   artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal,
   artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal,
   artifactKinds.mediaStudioSourcePressureObservationResultLocal,
+  artifactKinds.mediaStudioInferenceSourcePostureLocal,
   artifactKinds.mediaStudioLocalProofRehearsalLocal,
   artifactKinds.mediaStudioAdjacentSeamNeedsPacketLocal
 ])
@@ -1327,6 +1355,7 @@ function kindForSchema(schema) {
     [artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal]: 'media-studio-source-pressure-adapter-candidate',
     [artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal]: 'media-studio-source-pressure-adapter-operator-decision',
     [artifactKinds.mediaStudioSourcePressureObservationResultLocal]: 'media-studio-source-pressure-observation-result',
+    [artifactKinds.mediaStudioInferenceSourcePostureLocal]: 'media-studio-inference-source-posture',
     [artifactKinds.mediaStudioLocalProofRehearsalLocal]: 'media-studio-local-proof-rehearsal',
     [artifactKinds.mediaStudioAdjacentSeamNeedsPacketLocal]: 'media-studio-adjacent-seam-needs'
   }[schema] ?? schema
@@ -1353,6 +1382,7 @@ function idForRecord(record) {
     record.bundleId ??
     record.adapterCandidateId ??
     record.observationId ??
+    record.postureId ??
     record.proofRehearsalId ??
     record.needsPacketId ??
     record.traceId

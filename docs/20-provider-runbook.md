@@ -79,6 +79,21 @@ Index provider attempts in a project:
 npm run inspect:provider-runs -- --project-dir examples/card-to-candidate
 ```
 
+Write local inference-source posture after a Venice loop:
+
+```bash
+npm run provider:venice:loop -- --project-dir examples/venice-smoke
+npm run inference:source-posture -- --project-dir examples/venice-smoke
+```
+
+This writes `media.studio_inference_source_posture.local.v1`. It classifies
+operator-supplied, Studio provider-adapter, Edge agent-seat, local inference,
+Agent Bridge/BYO-AI, and mesh-v0-2 pub/rat source lanes. Existing Venice records
+count as local `studio_provider_adapter` evidence only. The posture writer does
+not call Venice, read provider keys, dispatch Edge work, prove provider truth,
+materialize Bytes, claim Causal continuity, admit Layer refs, publish to mesh,
+or mark production readiness.
+
 Promote an existing local candidate without rerunning provider work:
 
 ```bash

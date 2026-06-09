@@ -20,7 +20,7 @@ text is not the durable contract.
 | `npm run promote:candidate` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
 | `npm run reference:ingest` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
 | `npm run media:import` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
-| `npm run media:summary` | yes | no | `--print` | reads local refs | refreshes project status snapshot; includes provider-loop, approval-lane, production-capsule, package-authority freshness, shared local package posture, swarm seam posture, Layer interop attention, and safe-next posture |
+| `npm run media:summary` | yes | no | `--print` | reads local refs | refreshes project status snapshot; includes provider-loop, approval-lane, production-capsule, package-authority freshness, shared local package posture, inference-source posture, swarm seam posture, Layer interop attention, and safe-next posture |
 | `npm run health:summary` | yes | yes | `--print` | yes | runtime health uses fresh timestamp; reports shared local package posture and swarm seam posture without adding package-only or swarm-readiness health blockers |
 | `npm run derivatives:thumbnail` | yes | yes | no | yes | runtime thumbnails and records use fresh timestamps |
 | `npm run review:candidates` | yes | yes | no | yes | runtime records use fresh ids/timestamps |
@@ -54,6 +54,7 @@ text is not the durable contract.
 | `npm run proof:local` | yes | yes | `--print` | yes | runs the local proof order over one project: local output, Studio pressure adapter chain, media summary, health summary, local-run inspection, operator index, and Edge-compatible bundle; writes `media.studio_local_proof_rehearsal.local.v1`, then refreshes inspection/operator/Edge-compatible surfaces so they include the proof ref; `--drill` adds local surface-coherence checks and reruns surfaces so operator/Edge-compatible outputs carry `proofDrill`; compact output shows `proof`, `drill`, `drillChecks`, `drillAttention`, `localPackage`, `swarmSeam`, adapter/observation posture, `surfaced=true`, `swarmProof=false`, and `activation=false`; no Edge dispatch, Layer admission, publication authorization, production readiness, or swarm activation |
 | `npm run seam:needs` | yes | yes | `--print` | yes | reads the latest local proof, operator index, Edge-compatible bundle, and source-pressure evidence; writes `media.studio_adjacent_seam_needs_packet.local.v1` as a discussion-only declaration for the operator and Spine repo agent as family seam buildout coordination; compact output shows `declaration`, canonical `familyBuildout`, legacy `spineDiscussion`, `proof`, `proofFreshness`, `proofDrill`, `drillAttentionReasons`, `adjacentNeeds`, `adjacentReady`, and `adjacentAttention`; operator/Edge/cross-project summaries also report `adjacentFreshness` and treat stale packets, including changed proof drill attention reasons, as local attention; no adjacent repo writes, Layer admission, Edge queue/dispatch, Bytes materialization, Causal truth, result acceptance, storage selection, publication, or authority |
 | `npm run seam:ready` | yes | no | `--print` | no | read-only readiness check for family seam buildout coordination; derives `readiness`, canonical `familyBuildout`, `familyReadiness`, `familyNextAction`, proof state/freshness/drill posture, `drillAttentionReasons`, `adjacentPackets`, adjacent seam freshness, `staleReasons`, legacy `spineDiscussion`, safe next action, and explicit no-authority/no-production flags from existing local records; writes no artifacts and preserves no adjacent repo writes, Layer admission, Edge dispatch, Bytes materialization, Causal truth, swarm runtime activation, publication, or authority |
+| `npm run inference:source-posture` | yes | yes | `--print` | yes | writes `media.studio_inference_source_posture.local.v1` from existing local records; classifies operator-supplied, Studio provider-adapter, Edge agent-seat, local inference, Agent Bridge/BYO-AI, and mesh-v0-2 pub/rat lanes; Venice is local `studio_provider_adapter` evidence when present; no provider call, provider truth, Edge dispatch, Bytes materialization, Causal truth, Layer admission, mesh publication, family seam proof, or production readiness |
 | `npm run provider:venice:rehearse-production` | yes | yes | `--print` | yes | composes the local Venice loop, approval proposal, capsule, bundle, inspection, operator index, and Edge-compatible bundle; no live provider unless explicitly requested |
 
 ## Byte And Resource Posture
@@ -192,6 +193,25 @@ action. Valid states are
 `operator:cross-project-index` aggregates those local summaries across explicit
 project refs as review-only posture with the same non-claims; it does not
 activate swarm runtime or prove public swarm state.
+
+`inference:source-posture` is the local provider/source readiness lane before
+family seam maturation. The safe Venice-backed order is:
+
+```bash
+npm run provider:venice:loop -- --project-dir examples/venice-smoke
+npm run inference:source-posture -- --project-dir examples/venice-smoke
+npm run media:summary -- --project-dir examples/venice-smoke
+npm run status:project -- --project-dir examples/venice-smoke
+npm run control:surface -- --project-dir examples/venice-smoke
+npm run operator:index -- --project-dir examples/venice-smoke
+npm run edge:compat -- --project-dir examples/venice-smoke
+```
+
+`operator:index`, `edge:compat`, and `operation:studio` surface compact
+`inferenceSource`, `veniceEvidence`, `veniceAssets`, and family seam counts when
+the posture record exists. These fields are readiness evidence only; they do
+not prove provider truth, Edge dispatch, Bytes materialization, Causal truth,
+Layer admission, mesh publication, or production readiness.
 
 The safe local order is:
 

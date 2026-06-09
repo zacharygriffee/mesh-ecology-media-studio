@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-studio-inference-source-posture-local.schema.json",
+  "title": "media.studio_inference_source_posture.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "postureId",
+    "projectId",
+    "createdAt",
+    "mode",
+    "sourceLanes",
+    "veniceProviderAdapterEvidence",
+    "familyBuildoutAsks",
+    "summary",
+    "safeNextAction",
+    "warnings",
+    "nonClaims",
+    "operatorGuidanceOnly",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "providerTruth",
+    "edgeDispatch",
+    "productionReady",
+    "localTruthLabel",
+    "truthStatus"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.studio_inference_source_posture.local.v1"
+    },
+    "postureId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "sourceLanes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["lane", "state", "evidenceRefs", "localOnly", "operatorGuidanceOnly"],
+        "properties": {
+          "lane": {
+            "enum": [
+              "operator_supplied",
+              "studio_provider_adapter",
+              "edge_agent_seat",
+              "local_inference",
+              "agent_bridge_byo_ai",
+              "mesh_v0_2_pub_rat"
+            ]
+          },
+          "evidenceRefs": {
+            "type": "array"
+          },
+          "localOnly": {
+            "const": true
+          },
+          "operatorGuidanceOnly": {
+            "const": true
+          }
+        }
+      }
+    },
+    "veniceProviderAdapterEvidence": {
+      "type": "object"
+    },
+    "familyBuildoutAsks": {
+      "type": "array"
+    },
+    "summary": {
+      "type": "object"
+    },
+    "operatorGuidanceOnly": {
+      "const": true
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    },
+    "providerTruth": {
+      "const": false
+    },
+    "edgeDispatch": {
+      "const": false
+    },
+    "productionReady": {
+      "const": false
+    }
+  }
+}

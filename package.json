@@ -30,6 +30,7 @@
     "operation:studio": "node src/seams/current-operational-runbook.js",
     "seam:needs": "node src/seams/adjacent-seam-needs.js",
     "seam:ready": "node src/seams/adjacent-seam-readiness.js",
+    "inference:source-posture": "node src/seams/inference-source-posture.js",
     "continuity:draft": "node src/seams/continuity-evidence.js",
     "export:inspection-bundle": "node src/seams/export-inspection-bundle.js",
     "provider:venice:smoke": "node src/providers/venice-live-smoke.js",

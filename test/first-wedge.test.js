@@ -78,6 +78,7 @@ import { indexProviderRuns } from '../src/seams/index-provider-runs.js'
 import { inspectProviderFailure } from '../src/seams/inspect-provider-failure.js'
 import { inspectVeniceSmoke } from '../src/seams/inspect-venice-smoke.js'
 import { inspectVeniceLoop } from '../src/seams/inspect-venice-loop.js'
+import { writeInferenceSourcePosture } from '../src/seams/inference-source-posture.js'
 import { readProjectRecords, writeProjectStatus } from '../src/seams/project-status.js'
 import { writeProjectHealth } from '../src/seams/project-health.js'
 import { writeEdgeReadinessGuidance } from '../src/seams/edge-readiness-guidance.js'
@@ -1614,6 +1615,102 @@ test('Venice operational loop completes locally without live provider by default
     'production_review_or_authority_not_granted'
   ])
   assert.equal(mediaSummary.providerLoops.providerTruth, false)
+})
+
+test('inference-source posture classifies Venice dry-run evidence without live provider', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-inference-source-'))
+
+  await runVeniceOperationalLoop({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+
+  const { posture, output } = await writeInferenceSourcePosture({ projectDir: dir })
+
+  assert.equal(posture.schema, 'media.studio_inference_source_posture.local.v1')
+  assert.equal(validateRequiredRecord(posture), true)
+  assert.equal(output, 'records/exports/media-studio-inference-source-posture.local.json')
+  assert.deepEqual(posture.sourceLanes.map((lane) => lane.lane), [
+    'operator_supplied',
+    'studio_provider_adapter',
+    'edge_agent_seat',
+    'local_inference',
+    'agent_bridge_byo_ai',
+    'mesh_v0_2_pub_rat'
+  ])
+  const studioProviderLane = posture.sourceLanes.find((lane) => lane.lane === 'studio_provider_adapter')
+  assert.equal(studioProviderLane.state, 'evidence_present')
+  assert.equal(studioProviderLane.providerId, 'venice')
+  assert.ok(studioProviderLane.evidenceRefs.some((ref) => ref.schema === 'media.provider_result.v1'))
+  assert.ok(studioProviderLane.evidenceRefs.some((ref) => ref.schema === 'media.provider_adapter_run.local.v1'))
+  assert.ok(studioProviderLane.evidenceRefs.some((ref) => ref.schema === 'media.provider_loop_status.local.v1'))
+  assert.ok(studioProviderLane.evidenceRefs.some((ref) => ref.schema === 'media.edge_inspection_packet.local.v1'))
+  assert.equal(posture.veniceProviderAdapterEvidence.present, true)
+  assert.equal(posture.veniceProviderAdapterEvidence.providerId, 'venice')
+  assert.equal(posture.veniceProviderAdapterEvidence.generatedAssets, 1)
+  assert.equal(posture.veniceProviderAdapterEvidence.latestLoopLiveProviderCalled, false)
+  assert.equal(posture.familyBuildoutAsks.length, 6)
+  assert.equal(posture.familyBuildoutAsks.every((ask) => ask.status === 'needed'), true)
+  assert.equal(posture.summary.seamProof, false)
+  assert.equal(posture.summary.familySeamSuccess, false)
+  assert.equal(posture.nonClaims.liveProviderCalledByPosture, false)
+  assert.equal(posture.providerTruth, false)
+  assert.equal(posture.meshTruth, false)
+  assert.equal(posture.edgeDispatch, false)
+  assert.equal(posture.productionReady, false)
+})
+
+test('inference-source posture remains safe without Venice live mode or local evidence', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-inference-empty-'))
+
+  const { posture } = await writeInferenceSourcePosture({ projectDir: dir })
+
+  assert.equal(validateRequiredRecord(posture), true)
+  assert.equal(posture.veniceProviderAdapterEvidence.present, false)
+  assert.equal(posture.sourceLanes.find((lane) => lane.lane === 'studio_provider_adapter').state, 'not_evidenced')
+  assert.match(posture.safeNextAction, /provider:venice:loop/)
+  assert.equal(posture.nonClaims.liveProviderCalledByPosture, false)
+  assert.equal(posture.providerTruth, false)
+  assert.equal(posture.edgeDispatch, false)
+})
+
+test('operator and Edge-compatible surfaces carry inference-source posture refs without authority claims', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-inference-surfaces-'))
+
+  await runVeniceOperationalLoop({
+    projectDir: dir,
+    decision: 'accepted',
+    operatorRef: 'operator-test'
+  })
+  await writeInferenceSourcePosture({ projectDir: dir })
+  await writeProjectStatus({ projectDir: dir })
+  await writeControlSurfaceProjection({ projectDir: dir })
+
+  const { index } = await writeOperatorPacketIndex({ projectDir: dir })
+
+  assert.equal(validateRequiredRecord(index), true)
+  assert.equal(index.inferenceSourcePostureRefs.length, 1)
+  assert.equal(index.inferenceSourcePostureRefs[0].schema, 'media.studio_inference_source_posture.local.v1')
+  assert.equal(index.summary.inferenceSourceState, 'local_evidence_present')
+  assert.equal(index.summary.inferenceSourceVeniceEvidence, true)
+  assert.equal(index.summary.inferenceSourceVeniceGeneratedAssets, 1)
+  assert.equal(index.summary.inferenceSourceProviderTruth, false)
+  assert.equal(index.summary.inferenceSourceMeshTruth, false)
+  assert.equal(index.summary.inferenceSourceEdgeDispatch, false)
+  assert.equal(index.summary.inferenceSourceProductionReady, false)
+
+  const { bundle } = await writeEdgeCompatibilityBundle({ projectDir: dir })
+
+  assert.equal(validateRequiredRecord(bundle), true)
+  assert.ok(bundle.studioSourceRefs.some((ref) => ref.schema === 'media.studio_inference_source_posture.local.v1'))
+  assert.equal(bundle.inferenceSourcePosture.latestInferenceSourcePosture.state, 'local_evidence_present')
+  assert.equal(bundle.inferenceSourcePosture.veniceProviderAdapterEvidence.present, true)
+  assert.equal(bundle.studioReviewEvidence.inferenceSourcePosture.veniceProviderAdapterEvidence.present, true)
+  assert.equal(bundle.edgeRuntimeBuilt, false)
+  assert.equal(bundle.edgeRuntimeVerified, false)
+  assert.equal(bundle.providerTruth, false)
+  assert.equal(bundle.studioReviewEvidence.providerTruth, false)
 })
 
 test('Venice operational loop selects latest generated provider candidate', async () => {

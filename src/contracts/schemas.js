@@ -75,6 +75,7 @@ export const schemaFiles = {
   'media.studio_source_pressure_adapter_candidate.local.v1': 'schemas/media-studio-source-pressure-adapter-candidate-local.schema.json',
   'media.studio_source_pressure_adapter_operator_decision.local.v1': 'schemas/media-studio-source-pressure-adapter-operator-decision-local.schema.json',
   'media.studio_source_pressure_observation_result.local.v1': 'schemas/media-studio-source-pressure-observation-result-local.schema.json',
+  'media.studio_inference_source_posture.local.v1': 'schemas/media-studio-inference-source-posture-local.schema.json',
   'media.studio_local_proof_rehearsal.local.v1': 'schemas/media-studio-local-proof-rehearsal-local.schema.json',
   'media.studio_adjacent_seam_needs_packet.local.v1': 'schemas/media-studio-adjacent-seam-needs-packet-local.schema.json',
   'media.operator_packet_index.local.v1': 'schemas/media-operator-packet-index-local.schema.json',
@@ -1567,6 +1568,30 @@ export const requiredFields = {
     'nonClaims',
     'localTruthLabel',
     'truthStatus'
+  ],
+  'media.studio_inference_source_posture.local.v1': [
+    'schema',
+    'postureId',
+    'projectId',
+    'createdAt',
+    'mode',
+    'sourceLanes',
+    'veniceProviderAdapterEvidence',
+    'familyBuildoutAsks',
+    'summary',
+    'safeNextAction',
+    'warnings',
+    'nonClaims',
+    'operatorGuidanceOnly',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'providerTruth',
+    'edgeDispatch',
+    'productionReady',
+    'localTruthLabel',
+    'truthStatus'
   ]
 }
 
@@ -1612,6 +1637,7 @@ const idFields = {
   [artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal]: 'adapterCandidateId',
   [artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal]: 'decisionId',
   [artifactKinds.mediaStudioSourcePressureObservationResultLocal]: 'observationId',
+  [artifactKinds.mediaStudioInferenceSourcePostureLocal]: 'postureId',
   [artifactKinds.mediaStudioLocalProofRehearsalLocal]: 'proofRehearsalId',
   [artifactKinds.mediaStudioAdjacentSeamNeedsPacketLocal]: 'needsPacketId',
   [artifactKinds.mediaOperatorPacketIndexLocal]: 'indexId',
@@ -1669,6 +1695,7 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal,
   artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal,
   artifactKinds.mediaStudioSourcePressureObservationResultLocal,
+  artifactKinds.mediaStudioInferenceSourcePostureLocal,
   artifactKinds.mediaStudioLocalProofRehearsalLocal,
   artifactKinds.mediaStudioAdjacentSeamNeedsPacketLocal,
   artifactKinds.mediaOperatorPacketIndexLocal,
@@ -1727,6 +1754,7 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal,
   artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal,
   artifactKinds.mediaStudioSourcePressureObservationResultLocal,
+  artifactKinds.mediaStudioInferenceSourcePostureLocal,
   artifactKinds.mediaStudioLocalProofRehearsalLocal,
   artifactKinds.mediaStudioAdjacentSeamNeedsPacketLocal,
   artifactKinds.mediaOperatorPacketIndexLocal,
@@ -2447,6 +2475,40 @@ export function validateRecordShape(record, schemaId = record.schema) {
 
   if (schemaId === artifactKinds.mediaStudioSourcePressureObservationResultLocal) {
     validateStudioSourcePressureObservationResult(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaStudioInferenceSourcePostureLocal) {
+    if (record.mode !== 'standalone-local') {
+      throw new Error(`Record ${schemaId} has invalid mode: ${record.mode}`)
+    }
+
+    for (const collection of ['sourceLanes', 'familyBuildoutAsks', 'warnings']) {
+      if (!Array.isArray(record[collection])) {
+        throw new Error(`Record ${schemaId}.${collection} must be an array`)
+      }
+    }
+
+    if (!record.summary || typeof record.summary !== 'object') {
+      throw new Error(`Record ${schemaId}.summary must be an object`)
+    }
+
+    for (const lane of record.sourceLanes) {
+      if (!['operator_supplied', 'studio_provider_adapter', 'edge_agent_seat', 'local_inference', 'agent_bridge_byo_ai', 'mesh_v0_2_pub_rat'].includes(lane.lane)) {
+        throw new Error(`Record ${schemaId} has invalid source lane: ${lane.lane}`)
+      }
+
+      if (!Array.isArray(lane.evidenceRefs)) {
+        throw new Error(`Record ${schemaId}.sourceLanes evidenceRefs must be an array`)
+      }
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+
+    for (const flag of ['providerTruth', 'edgeDispatch', 'productionReady', 'meshTruth', 'distributedProof', 'ratifiedSharedState']) {
+      if (record[flag] !== false) {
+        throw new Error(`Record ${schemaId} must set ${flag}=false`)
+      }
+    }
   }
 
   if (schemaId === artifactKinds.mediaStudioAdjacentSeamNeedsPacketLocal) {

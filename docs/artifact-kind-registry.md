@@ -43,6 +43,7 @@ Known Studio artifact kinds:
 - `media.studio_source_pressure_adapter_candidate.local.v1`
 - `media.studio_source_pressure_adapter_operator_decision.local.v1`
 - `media.studio_source_pressure_observation_result.local.v1`
+- `media.studio_inference_source_posture.local.v1`
 - `media.studio_local_proof_rehearsal.local.v1`
 - `media.operator_packet_index.local.v1`
 - `media.edge_handoff_candidate.local.v1`
@@ -95,6 +96,15 @@ bounded Studio-shaped pressure artifact to the generic
 Layer API, grant Layer admission, approve durable append, create accepted
 continuity, select production storage, mutate writer/reader admission, activate
 swarm runtime, prove public swarm transport, or make Edge authority.
+
+`media.studio_inference_source_posture.local.v1` records Studio's local
+inference-source posture across operator-supplied material, Studio provider
+adapters, Edge agent seats, local inference, Agent Bridge/BYO-AI, and
+mesh-v0-2 pub/rat source lanes. Venice is the first concrete
+`studio_provider_adapter` evidence lane when local provider records exist. The
+record is local evidence only: it does not call providers, claim provider truth,
+dispatch Edge work, materialize Bytes, claim Causal continuity, admit Layer
+refs, publish to mesh, prove family seam success, or mark production readiness.
 
 `media.studio_local_proof_rehearsal.local.v1` records Studio's local proof
 order across local output, source pressure, inspection, operator index, and

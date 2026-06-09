@@ -17,6 +17,7 @@ import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
 import { writeProjectStatus, readProjectRecords } from '../seams/project-status.js'
 import { summarizeSwarmSeamPosture, formatSwarmSeamPostureFields } from '../seams/swarm-seam-posture.js'
 import { summarizeStudioSourcePressure } from '../seams/studio-source-pressure-summary.js'
+import { summarizeInferenceSourcePosture, formatInferenceSourcePostureFields } from '../seams/inference-source-posture.js'
 import { summarizeRecordReadDiagnostics } from '../local/atomic-json.js'
 
 const modulePath = fileURLToPath(import.meta.url)
@@ -79,6 +80,7 @@ export async function createMediaSummary({
   const layerInterop = summarizeLayerInteropFromRecords(records)
   const studioSourcePressureSummary = summarizeStudioSourcePressure(records)
   const studioSourcePressureAdapterSummary = studioSourcePressureSummary.studioSourcePressureAdapterSummary
+  const inferenceSourcePosture = summarizeInferenceSourcePosture(records)
   const swarmSeamPosture = summarizeSwarmSeamPosture({
     localPackagePosture,
     adapterSummary: studioSourcePressureAdapterSummary,
@@ -177,6 +179,7 @@ export async function createMediaSummary({
     packageAuthority,
     localPackagePosture,
     studioSourcePressureAdapterSummary,
+    inferenceSourcePosture,
     swarmSeamPosture,
     layerInterop,
     recordIO,
@@ -338,6 +341,7 @@ function printMediaSummary(summary) {
     `attention=${summary.packageAuthority.attentionRows.length}`
   ].join(' | '))
   console.log(`local package posture: ${formatLocalPackagePostureFields(summary.localPackagePosture)}`)
+  console.log(`inference source posture: ${formatInferenceSourcePostureFields(summary.inferenceSourcePosture)}`)
   console.log(`swarm seam posture: ${formatSwarmSeamPostureFields(summary.swarmSeamPosture)}`)
   console.log([
     `production approval: candidates=${summary.productionApprovalLane.candidates}`,
