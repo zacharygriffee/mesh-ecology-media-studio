@@ -4654,6 +4654,24 @@ test('current operational command completes local proof through review surfaces'
   assert.equal(output.result.operation.adjacentFreshness, 'fresh')
   assert.equal(output.result.operation.adjacentReady, 5)
   assert.equal(output.result.operation.adjacentAttention, 0)
+  assert.equal(output.result.operation.adjacentFamilyAskSummary.state, 'ready_for_spine_discussion')
+  assert.equal(output.result.operation.adjacentFamilyAskSummary.spineDiscussion, 'required')
+  assert.equal(output.result.operation.adjacentFamilyAskSummary.adjacentNeeds, 5)
+  assert.equal(output.result.operation.adjacentFamilyAskSummary.adjacentReady, 5)
+  assert.deepEqual(output.result.operation.adjacentFamilyAskSummary.ownerRepos, [
+    'mesh-ecology-spine',
+    'mesh-ecology-layer',
+    'mesh-ecology-edge',
+    'mesh-ecology-bytes',
+    'causal-substrate'
+  ])
+  assert.equal(output.result.operation.adjacentFamilyAskSummary.askRows.length, 5)
+  assert.ok(output.result.operation.adjacentFamilyAskSummary.askRows.every((row) => row.localOnly === true))
+  assert.equal(output.result.operation.adjacentFamilyAskSummary.adjacentRepoWrite, false)
+  assert.equal(output.result.operation.adjacentFamilyAskSummary.layerAdmission, false)
+  assert.equal(output.result.operation.adjacentFamilyAskSummary.edgeDispatch, false)
+  assert.equal(output.result.operation.adjacentFamilyAskSummary.bytesMaterialization, false)
+  assert.equal(output.result.operation.adjacentFamilyAskSummary.causalTruth, false)
   assert.equal(output.result.operation.crossProjectIndexed, true)
   assert.equal(output.result.operation.inspectionRefreshed, true)
   assert.equal(output.result.operation.controlSurfaceRefreshed, true)
@@ -4743,6 +4761,8 @@ test('current operational command completes local proof through review surfaces'
   assert.ok(line.includes('localPackage=complete_review_only_authority_missing'))
   assert.ok(line.includes('spineReadiness=ready_for_spine_discussion'))
   assert.ok(line.includes('adjacentFreshness=fresh'))
+  assert.ok(line.includes('familyAsks=5'))
+  assert.ok(line.includes('familyAsksReady=5'))
   assert.ok(line.includes('crossProjectIndexed=true'))
   assert.ok(line.includes('crossProjectLocalProofReady=1'))
   assert.ok(line.includes('crossProjectSpineReady=1'))
@@ -4768,6 +4788,9 @@ test('current operational command exposes refreshed inspection without fixture p
 
   assert.equal(output.result.preparation, null)
   assert.equal(output.result.operation.preparedLocalFixture, false)
+  assert.equal(output.result.operation.adjacentFamilyAskSummary.adjacentNeeds, 5)
+  assert.equal(output.result.operation.adjacentFamilyAskSummary.adjacentReady, 5)
+  assert.equal(output.result.operation.adjacentFamilyAskSummary.adjacentRepoWrite, false)
   assert.equal(output.result.operation.inspectionRefreshed, true)
   assert.equal(output.result.operation.controlSurfaceRefreshed, true)
   assert.equal(output.result.operation.surfaceFreshness.state, 'fresh')
@@ -4789,6 +4812,8 @@ test('current operational command exposes refreshed inspection without fixture p
     output.result.operation
   )
   assert.ok(line.includes('preparedLocalFixture=false'))
+  assert.ok(line.includes('familyAsks=5'))
+  assert.ok(line.includes('familyAsksReady=5'))
   assert.ok(line.includes('inspectionRefreshed=true'))
   assert.ok(line.includes('inspectionPacket=records/exports/local-run-edge-inspection-packet.local.json'))
   assert.ok(line.includes('controlSurfaceRefreshed=true'))

@@ -253,6 +253,7 @@ export function createCurrentOperationalRunbookSummary({
     adjacentNeeds: readinessRecord.adjacentNeeds,
     adjacentReady: readinessRecord.adjacentReady,
     adjacentAttention: readinessRecord.adjacentAttention,
+    adjacentFamilyAskSummary: createAdjacentFamilyAskSummary(adjacentNeeds),
     operatorProofState: operatorProof.latestProofState,
     operatorProofDrill: operatorProof.drillStatus,
     edgeProofState: edgeProof.latestProofState,
@@ -337,6 +338,8 @@ export function formatCurrentOperationalRunbook(operation) {
     `adjacentFreshness=${operation.adjacentFreshness}`,
     `adjacentReady=${operation.adjacentReady}`,
     `adjacentAttention=${operation.adjacentAttention}`,
+    `familyAsks=${operation.adjacentFamilyAskSummary?.adjacentNeeds ?? 0}`,
+    `familyAsksReady=${operation.adjacentFamilyAskSummary?.adjacentReady ?? 0}`,
     `crossProjectIndexed=${operation.crossProjectIndexed}`,
     `crossProjectLocalProofReady=${operation.crossProjectSummary?.localProofReady ?? 0}`,
     `crossProjectSpineReady=${operation.crossProjectSummary?.spineReady ?? 0}`,
@@ -356,6 +359,43 @@ export function formatCurrentOperationalRunbook(operation) {
     'swarmRuntimeActivated=false',
     `nextAction=${operation.safeNextAction}`
   ].join(' | ')
+}
+
+function createAdjacentFamilyAskSummary(adjacentNeeds) {
+  const packet = adjacentNeeds.packet
+  const rows = packet.adjacentDiscussionRows ?? []
+
+  return {
+    state: packet.declarationStatus === 'ready_for_spine_discussion'
+      ? 'ready_for_spine_discussion'
+      : 'local_attention',
+    spineDiscussion: packet.spineDiscussion,
+    packetPath: adjacentNeeds.output,
+    adjacentNeeds: rows.length,
+    adjacentReady: rows.filter((row) => row.discussionStatus === 'ready_for_discussion').length,
+    adjacentAttention: rows.filter((row) => row.discussionStatus !== 'ready_for_discussion').length,
+    ownerRepos: rows.map((row) => row.ownerRepo),
+    discussionKinds: rows.map((row) => row.discussionKind),
+    askRows: rows.map((row) => ({
+      ownerRepo: row.ownerRepo,
+      discussionKind: row.discussionKind,
+      discussionStatus: row.discussionStatus,
+      evidenceRefs: row.evidenceRefs?.length ?? 0,
+      stopConditions: row.stopConditions?.length ?? 0,
+      nextAction: row.nextAction,
+      localOnly: true,
+      operatorGuidanceOnly: true
+    })),
+    safeNextAction: packet.safeNextAction,
+    adjacentRepoWrite: false,
+    layerAdmission: false,
+    edgeDispatch: false,
+    bytesMaterialization: false,
+    causalTruth: false,
+    swarmRuntimeActivated: false,
+    localOnly: true,
+    operatorGuidanceOnly: true
+  }
 }
 
 function createCurrentOperationSurfaceFreshness({

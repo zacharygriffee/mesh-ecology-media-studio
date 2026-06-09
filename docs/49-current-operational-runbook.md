@@ -48,6 +48,9 @@ claiming a UI contract or control-plane authority.
 `surfaceFreshness` reports whether the refreshed Studio inspection, control,
 operator, Edge-compatible, and optional cross-project surfaces point back to the
 current operation summary.
+The persisted summary also includes `adjacentFamilyAskSummary`, a compact view
+of the Spine, Layer, Edge, Bytes, and Causal discussion rows from
+`seam:needs`; it is for operator and Spine repo-agent discussion only.
 
 `--prepare-local-fixture` writes a tiny local PNG candidate for the bundled
 example, runs the accepted first wedge, and seeds the local inspection,
@@ -82,6 +85,9 @@ Use the compact line as the first decision point:
 - `surfaceFreshness=fresh` and `surfaceFreshnessIssues=none` mean every expected
   refreshed Studio surface points back to the current operation summary. This is
   local surface coherence only; it is not swarm proof or runtime activation.
+- `familyAsks=5` and `familyAsksReady=5` mean the adjacent-family discussion
+  rows are present and ready for Spine discussion. This does not write adjacent
+  repos, route implementation, or grant authority.
 - `proof=ready`, `proofFreshness=fresh`, and `proofDrill=passed` mean Studio's
   local proof surfaces agree.
 - `localPackage=complete_review_only_authority_missing` means the local package
