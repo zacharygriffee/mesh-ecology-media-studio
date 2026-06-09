@@ -136,6 +136,7 @@ export function createAdjacentSeamNeedsPacket({
       proofState: proofSummary.latestProofState,
       proofFreshness: proofSummary.proofFreshness,
       proofDrill: proofSummary.drillStatus,
+      proofDrillAttentionReasons: proofSummary.drillAttentionReasons ?? [],
       adapterDecisionStatus: proofSummary.adapterDecisionStatus,
       observationStatus: proofSummary.observationStatus,
       localPackageState: proofSummary.localPackageState,
@@ -703,6 +704,7 @@ function formatAdjacentSeamNeedsPacket(packet, output) {
     `proof=${packet.summary.proofState ?? 'absent'}`,
     `proofFreshness=${packet.summary.proofFreshness ?? 'absent'}`,
     `proofDrill=${packet.summary.proofDrill ?? 'absent'}`,
+    `drillAttentionReasons=${formatStaleReasons(packet.summary.proofDrillAttentionReasons)}`,
     `adjacentNeeds=${packet.summary.adjacentNeeds}`,
     `adjacentReady=${packet.summary.adjacentReady}`,
     `adjacentAttention=${packet.summary.adjacentAttention}`,
@@ -724,6 +726,10 @@ function formatAdjacentDiscussionRow(row) {
     `evidence=${row.evidenceRefs.length}`,
     `nextAction=${row.nextAction}`
   ].join(' | ')
+}
+
+function formatStaleReasons(staleReasons = []) {
+  return staleReasons.length > 0 ? staleReasons.join(',') : 'none'
 }
 
 if (process.argv[1] === modulePath) {

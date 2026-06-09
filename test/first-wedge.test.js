@@ -4728,6 +4728,62 @@ test('adjacent seam needs packet treats stale proof as local attention', async (
   assert.equal(validateRequiredRecord(packet), true)
 })
 
+test('adjacent seam needs packet names proof drill attention reasons', async () => {
+  const dir = await createLocalProofFixtureProject()
+  await captureConsole(() => runLocalProofRehearsal({
+    projectDir: dir,
+    drill: true,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const proofPath = path.join(dir, 'records/exports/media-studio-local-proof-rehearsal.local.json')
+  const proof = JSON.parse(await readFile(proofPath, 'utf8'))
+  proof.drillSummary = {
+    ...proof.drillSummary,
+    drillStatus: 'attention',
+    checks: proof.drillSummary?.checks ?? 1,
+    passedChecks: Math.max((proof.drillSummary?.checks ?? 1) - 1, 0),
+    attentionChecks: 1,
+    attentionRows: [
+      {
+        check: 'operator-adapter-decision',
+        status: 'attention',
+        issueCode: 'operator_adapter_decision_mismatch',
+        expected: 'approved_bounded_studio_source_pressure_observation',
+        actual: 'rejected_bounded_studio_source_pressure_observation',
+        localOnly: true,
+        operatorGuidanceOnly: true
+      }
+    ],
+    safeNextAction: 'Run npm run proof:local -- --drill to refresh local proof rehearsal evidence and drill surfaces.'
+  }
+  proof.summary = {
+    ...proof.summary,
+    drillStatus: 'attention',
+    drillChecks: proof.drillSummary.checks,
+    drillAttention: 1
+  }
+  await writeFile(proofPath, `${JSON.stringify(proof, null, 2)}\n`)
+  await writeOperatorPacketIndex({ projectDir: dir, quiet: true })
+
+  const { result, lines } = await captureConsole(() => writeAdjacentSeamNeedsPacket({
+    projectDir: dir,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const packet = result.packet
+  const line = lines.find((entry) => entry.startsWith('studio adjacent seam needs:'))
+
+  assert.equal(packet.declarationStatus, 'local_attention')
+  assert.equal(packet.spineDiscussion, 'not-ready')
+  assert.equal(packet.summary.proofDrill, 'attention')
+  assert.deepEqual(packet.summary.proofDrillAttentionReasons, [
+    'operator_adapter_decision_mismatch'
+  ])
+  assert.ok(line.includes('proofDrill=attention'))
+  assert.ok(line.includes('drillAttentionReasons=operator_adapter_decision_mismatch'))
+  assert.match(packet.safeNextAction, /proof:local -- --drill/)
+  assert.equal(validateRequiredRecord(packet), true)
+})
+
 test('adjacent seam needs packet preserves rejected adapter hold as discussion-only attention', async () => {
   const dir = await createLocalProofFixtureProject()
   await captureConsole(() => runLocalProofRehearsal({
