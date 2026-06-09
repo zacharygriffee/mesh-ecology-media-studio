@@ -107,6 +107,8 @@ storage decisions into Studio.
    - `seam:needs` turns a fresh local proof drill into an adjacent-repo
      discussion packet for the operator and Spine repo agent, without writing
      adjacent repos or routing implementation.
+   - `seam:needs` compact output names proof state, proof freshness, and proof
+     drill posture before the adjacent seam discussion counts.
    - `seam:ready` reads existing proof and seam-needs records to report Spine
      discussion readiness without writing another artifact or activating swarm
      runtime.

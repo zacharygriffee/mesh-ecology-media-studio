@@ -4667,23 +4667,30 @@ test('adjacent seam needs packet declares ready proof for Spine discussion', asy
   assert.equal(packet.nonClaims.causalTruth, false)
   assert.ok(line.includes('adjacentNeeds=5'))
   assert.ok(line.includes('spineDiscussion=required'))
+  assert.ok(line.includes('proof=ready'))
+  assert.ok(line.includes('proofFreshness=fresh'))
+  assert.ok(line.includes('proofDrill=passed'))
   assert.equal(validateRequiredRecord(packet), true)
 })
 
 test('adjacent seam needs packet blocks missing proof without adjacent authority claims', async () => {
   const dir = await createFixtureProject()
 
-  const { result } = await captureConsole(() => writeAdjacentSeamNeedsPacket({
+  const { result, lines } = await captureConsole(() => writeAdjacentSeamNeedsPacket({
     projectDir: dir,
     createdAt: '2026-05-19T00:00:00.000Z'
   }))
   const packet = result.packet
+  const line = lines.find((entry) => entry.startsWith('studio adjacent seam needs:'))
 
   assert.equal(packet.declarationStatus, 'blocked_missing_proof')
   assert.equal(packet.spineDiscussion, 'absent')
   assert.equal(packet.summary.adjacentAttention, 5)
   assert.equal(packet.adjacentDiscussionRows.every((row) => row.discussionStatus === 'blocked_missing_proof'), true)
   assert.match(packet.safeNextAction, /proof:local -- --drill/)
+  assert.ok(line.includes('proof=absent'))
+  assert.ok(line.includes('proofFreshness=absent'))
+  assert.ok(line.includes('proofDrill=absent'))
   assert.equal(packet.nonClaims.adjacentRepoWrite, false)
   assert.equal(packet.nonClaims.resultAcceptance, false)
   assert.equal(validateRequiredRecord(packet), true)
@@ -4703,16 +4710,20 @@ test('adjacent seam needs packet treats stale proof as local attention', async (
   operatorIndex.localProofRehearsalSummary.safeNextAction = 'Run npm run proof:local to refresh local proof rehearsal evidence after local posture changes.'
   await writeFile(operatorPath, `${JSON.stringify(operatorIndex, null, 2)}\n`)
 
-  const { result } = await captureConsole(() => writeAdjacentSeamNeedsPacket({
+  const { result, lines } = await captureConsole(() => writeAdjacentSeamNeedsPacket({
     projectDir: dir,
     createdAt: '2026-05-19T00:00:00.000Z'
   }))
   const packet = result.packet
+  const line = lines.find((entry) => entry.startsWith('studio adjacent seam needs:'))
 
   assert.equal(packet.declarationStatus, 'local_attention')
   assert.equal(packet.spineDiscussion, 'not-ready')
   assert.equal(packet.summary.adjacentAttention, 5)
   assert.equal(packet.summary.proofFreshness, 'stale')
+  assert.ok(line.includes('proof=ready'))
+  assert.ok(line.includes('proofFreshness=stale'))
+  assert.ok(line.includes('proofDrill=passed'))
   assert.match(packet.safeNextAction, /proof:local/)
   assert.equal(validateRequiredRecord(packet), true)
 })
