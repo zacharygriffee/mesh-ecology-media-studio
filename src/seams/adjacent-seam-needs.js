@@ -246,6 +246,7 @@ export function summarizeAdjacentSeamReadiness({
   const proofState = proofSummary?.latestProofState ?? 'absent'
   const proofFreshness = proofSummary?.proofFreshness ?? 'absent'
   const proofDrill = proofSummary?.drillStatus ?? 'absent'
+  const proofDrillAttentionReasons = proofSummary?.drillAttentionReasons ?? []
   const proofReady = proofSummary &&
     proofSummary.proofs > 0 &&
     proofState === 'ready' &&
@@ -273,6 +274,7 @@ export function summarizeAdjacentSeamReadiness({
     proofState,
     proofFreshness,
     proofDrill,
+    proofDrillAttentionReasons,
     adjacentFreshness: adjacentSummary.needsFreshness,
     adjacentPackets: adjacentSummary.packets,
     adjacentNeeds: adjacentSummary.adjacentNeeds,

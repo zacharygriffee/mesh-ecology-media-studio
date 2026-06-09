@@ -54,6 +54,7 @@ export function formatAdjacentSeamReadiness(readiness) {
     `proof=${readiness.proofState}`,
     `proofFreshness=${readiness.proofFreshness}`,
     `proofDrill=${readiness.proofDrill}`,
+    `drillAttentionReasons=${formatStaleReasons(readiness.proofDrillAttentionReasons)}`,
     `adjacentPackets=${readiness.adjacentPackets}`,
     `adjacentFreshness=${readiness.adjacentFreshness}`,
     `staleReasons=${formatStaleReasons(readiness.staleReasons)}`,

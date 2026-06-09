@@ -4874,6 +4874,53 @@ test('adjacent seam readiness command reports ready missing and stale local stat
   assert.ok(staleCompact.includes('readiness=stale_adjacent_seam_needs'))
   assert.ok(staleCompact.includes('adjacentPackets=1'))
   assert.ok(staleCompact.includes('staleReasons=local_package_changed'))
+
+  const drillDir = await createLocalProofFixtureProject()
+  await captureConsole(() => runLocalProofRehearsal({
+    projectDir: drillDir,
+    drill: true,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const proofPath = path.join(drillDir, 'records/exports/media-studio-local-proof-rehearsal.local.json')
+  const proof = JSON.parse(await readFile(proofPath, 'utf8'))
+  proof.drillSummary = {
+    ...proof.drillSummary,
+    drillStatus: 'attention',
+    checks: proof.drillSummary?.checks ?? 1,
+    passedChecks: Math.max((proof.drillSummary?.checks ?? 1) - 1, 0),
+    attentionChecks: 1,
+    attentionRows: [
+      {
+        check: 'operator-adapter-decision',
+        status: 'attention',
+        issueCode: 'operator_adapter_decision_mismatch',
+        expected: 'approved_bounded_studio_source_pressure_observation',
+        actual: 'rejected_bounded_studio_source_pressure_observation',
+        localOnly: true,
+        operatorGuidanceOnly: true
+      }
+    ],
+    safeNextAction: 'Run npm run proof:local -- --drill to refresh local proof rehearsal evidence and drill surfaces.'
+  }
+  proof.summary = {
+    ...proof.summary,
+    drillStatus: 'attention',
+    drillChecks: proof.drillSummary.checks,
+    drillAttention: 1
+  }
+  await writeFile(proofPath, `${JSON.stringify(proof, null, 2)}\n`)
+  await writeOperatorPacketIndex({ projectDir: drillDir, quiet: true })
+
+  const { result: drillResult, lines: drillLines } = await captureConsole(() =>
+    inspectAdjacentSeamReadiness({ projectDir: drillDir })
+  )
+  const drillCompact = drillLines.find((entry) => entry.startsWith('studio adjacent seam readiness:'))
+  assert.equal(drillResult.readiness.readiness, 'local_proof_attention')
+  assert.deepEqual(drillResult.readiness.proofDrillAttentionReasons, [
+    'operator_adapter_decision_mismatch'
+  ])
+  assert.ok(drillCompact.includes('proofDrill=attention'))
+  assert.ok(drillCompact.includes('drillAttentionReasons=operator_adapter_decision_mismatch'))
 })
 
 test('adjacent seam needs surfaces stale after local proof posture changes', async () => {
