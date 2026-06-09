@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesh-ecology.example/schemas/media-studio-adjacent-seam-needs-packet-local.schema.json",
+  "title": "media.studio_adjacent_seam_needs_packet.local.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "needsPacketId",
+    "projectId",
+    "createdAt",
+    "mode",
+    "declarationStatus",
+    "spineDiscussion",
+    "sourceRefs",
+    "adjacentDiscussionRows",
+    "summary",
+    "safeNextAction",
+    "warnings",
+    "nonClaims",
+    "operatorGuidanceOnly",
+    "localOnly",
+    "meshTruth",
+    "distributedProof",
+    "ratifiedSharedState",
+    "providerTruth",
+    "edgeRuntimeBuilt",
+    "edgeRuntimeVerified",
+    "localTruthLabel",
+    "truthStatus"
+  ],
+  "properties": {
+    "schema": {
+      "const": "media.studio_adjacent_seam_needs_packet.local.v1"
+    },
+    "needsPacketId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "const": "standalone-local"
+    },
+    "declarationStatus": {
+      "enum": ["ready_for_spine_discussion", "local_attention", "blocked_missing_proof"]
+    },
+    "spineDiscussion": {
+      "enum": ["required", "not-ready", "absent"]
+    },
+    "sourceRefs": {
+      "type": "array"
+    },
+    "adjacentDiscussionRows": {
+      "type": "array"
+    },
+    "summary": {
+      "type": "object"
+    },
+    "warnings": {
+      "type": "array"
+    },
+    "operatorGuidanceOnly": {
+      "const": true
+    },
+    "localOnly": {
+      "const": true
+    },
+    "meshTruth": {
+      "const": false
+    },
+    "distributedProof": {
+      "const": false
+    },
+    "ratifiedSharedState": {
+      "const": false
+    },
+    "providerTruth": {
+      "const": false
+    },
+    "edgeRuntimeBuilt": {
+      "const": false
+    },
+    "edgeRuntimeVerified": {
+      "const": false
+    }
+  }
+}

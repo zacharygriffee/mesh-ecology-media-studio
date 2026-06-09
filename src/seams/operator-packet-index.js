@@ -17,6 +17,7 @@ import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
 import { summarizeSwarmSeamPosture, formatSwarmSeamPostureFields } from './swarm-seam-posture.js'
 import { summarizeStudioSourcePressure } from './studio-source-pressure-summary.js'
 import { summarizeLocalProofRehearsal } from './local-proof-summary.js'
+import { summarizeAdjacentSeamNeeds } from './adjacent-seam-needs.js'
 import {
   isDiscoverableJsonPath,
   readJsonFileTolerant,
@@ -132,6 +133,9 @@ export async function writeOperatorPacketIndex({
   const localProofRehearsalRefs = records
     .filter((entry) => entry.record.schema === artifactKinds.mediaStudioLocalProofRehearsalLocal)
     .map(toInspectionRef)
+  const adjacentSeamNeedsRefs = records
+    .filter((entry) => entry.record.schema === artifactKinds.mediaStudioAdjacentSeamNeedsPacketLocal)
+    .map(toInspectionRef)
   const studioSourcePressureSummary = summarizeStudioSourcePressure(records)
   const studioSourcePressureAdapterSummary = studioSourcePressureSummary.studioSourcePressureAdapterSummary
   const providerLoopStatuses = records
@@ -193,6 +197,7 @@ export async function writeOperatorPacketIndex({
     swarmSeamPosture,
     adapterSummary: studioSourcePressureAdapterSummary
   })
+  const adjacentSeamNeedsSummary = summarizeAdjacentSeamNeeds(records)
   const productionApprovalLane = summarizeProductionApprovalLane({
     assetRecords: records
       .filter((entry) => entry.record.schema === artifactKinds.mediaAssetDescriptor)
@@ -238,8 +243,10 @@ export async function writeOperatorPacketIndex({
     studioSourcePressureAdapterDecisionRefs,
     studioSourcePressureObservationRefs,
     localProofRehearsalRefs,
+    adjacentSeamNeedsRefs,
     studioSourcePressureAdapterSummary,
     localProofRehearsalSummary,
+    adjacentSeamNeedsSummary,
     providerLoopStatuses,
     providerLoopDecisions,
     roughCutReviewDecisions,
@@ -331,6 +338,13 @@ export async function writeOperatorPacketIndex({
       localProofDrillAttention: localProofRehearsalSummary.drillAttention,
       localProofDrillNextAction: localProofRehearsalSummary.drillNextAction,
       localProofNextAction: localProofRehearsalSummary.safeNextAction,
+      adjacentSeamNeeds: adjacentSeamNeedsSummary.adjacentNeeds,
+      adjacentSeamNeedsPackets: adjacentSeamNeedsSummary.packets,
+      adjacentSeamNeedsReady: adjacentSeamNeedsSummary.adjacentReady,
+      adjacentSeamNeedsAttention: adjacentSeamNeedsSummary.adjacentAttention,
+      adjacentSeamNeedsDeclarationStatus: adjacentSeamNeedsSummary.declarationStatus,
+      adjacentSeamNeedsSpineDiscussion: adjacentSeamNeedsSummary.spineDiscussion,
+      adjacentSeamNeedsNextAction: adjacentSeamNeedsSummary.safeNextAction,
       swarmSeamState: swarmSeamPosture.state,
       swarmProof: false,
       swarmActivation: false,
@@ -353,7 +367,8 @@ export async function writeOperatorPacketIndex({
         recordReadDiagnostics.diagnostics +
         layerInterop.attentionRows.length +
         productionApprovalLane.attentionRows.length +
-        localProofRehearsalSummary.attentionRows,
+        localProofRehearsalSummary.attentionRows +
+        adjacentSeamNeedsSummary.attentionRows,
       newestRecordPath: newestPath(records),
       operatorGuidanceOnly: true
     },
@@ -366,6 +381,7 @@ export async function writeOperatorPacketIndex({
       'Export receipts are local delivery evidence only and do not authorize publication or production readiness.',
       'Studio source-pressure adapter records are local review-only source evidence for the generic Layer seam.',
       'Studio local proof rehearsal records are local review evidence only and do not activate swarm runtime.',
+      'Studio adjacent seam needs records are discussion declarations only and do not write adjacent repos.',
       'Edge may inspect these refs later, but this index does not call or verify Edge.'
     ],
     operatorGuidanceOnly: true,
@@ -438,6 +454,9 @@ export async function writeOperatorPacketIndex({
     if (index.localProofRehearsalSummary.proofs > 0) {
       console.log(formatLocalProofRehearsalSummary(index.localProofRehearsalSummary))
     }
+    if (index.adjacentSeamNeedsSummary.packets > 0) {
+      console.log(formatAdjacentSeamNeedsSummary(index.adjacentSeamNeedsSummary))
+    }
     if (index.productionApprovalLane.candidates > 0) {
       console.log(formatProductionApprovalLaneSummary(index.productionApprovalLane))
     }
@@ -493,6 +512,10 @@ function formatOperatorPacketIndexSummary(index, output) {
     `proofFreshness=${summary.localProofFreshness ?? 'absent'}`,
     `proofDrill=${summary.localProofDrillStatus ?? 'absent'}`,
     `drillAttention=${summary.localProofDrillAttention ?? 0}`,
+    `adjacentNeeds=${summary.adjacentSeamNeeds ?? 0}`,
+    `adjacentReady=${summary.adjacentSeamNeedsReady ?? 0}`,
+    `adjacentAttention=${summary.adjacentSeamNeedsAttention ?? 0}`,
+    `spineDiscussion=${summary.adjacentSeamNeedsSpineDiscussion ?? 'absent'}`,
     `packageNextAction=${summary.localPackageNextAction ?? 'Inspect local package posture.'}`,
     `proofNextAction=${summary.localProofNextAction ?? 'Run npm run proof:local to create local proof rehearsal evidence.'}`,
     formatSwarmSeamPostureFields(index.swarmSeamPosture, { nextActionField: 'swarmNextAction' }),
@@ -535,6 +558,23 @@ function formatLocalProofRehearsalSummary(summary) {
     `surfaced=${summary.surfaced}`,
     'swarmProof=false',
     'activation=false',
+    `nextAction=${summary.safeNextAction}`
+  ].join(' | ')
+}
+
+function formatAdjacentSeamNeedsSummary(summary) {
+  return [
+    `studio adjacent seam needs: packets=${summary.packets}`,
+    `declaration=${summary.declarationStatus}`,
+    `spineDiscussion=${summary.spineDiscussion}`,
+    `adjacentNeeds=${summary.adjacentNeeds}`,
+    `adjacentReady=${summary.adjacentReady}`,
+    `adjacentAttention=${summary.adjacentAttention}`,
+    'adjacentRepoWrite=false',
+    'layerAdmission=false',
+    'edgeDispatch=false',
+    'bytesMaterialization=false',
+    'causalTruth=false',
     `nextAction=${summary.safeNextAction}`
   ].join(' | ')
 }
@@ -786,7 +826,8 @@ const indexableSchemas = new Set([
   artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal,
   artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal,
   artifactKinds.mediaStudioSourcePressureObservationResultLocal,
-  artifactKinds.mediaStudioLocalProofRehearsalLocal
+  artifactKinds.mediaStudioLocalProofRehearsalLocal,
+  artifactKinds.mediaStudioAdjacentSeamNeedsPacketLocal
 ])
 
 function normalizeRecordPaths(records) {
@@ -1126,7 +1167,8 @@ function kindForSchema(schema) {
     [artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal]: 'media-studio-source-pressure-adapter-candidate',
     [artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal]: 'media-studio-source-pressure-adapter-operator-decision',
     [artifactKinds.mediaStudioSourcePressureObservationResultLocal]: 'media-studio-source-pressure-observation-result',
-    [artifactKinds.mediaStudioLocalProofRehearsalLocal]: 'media-studio-local-proof-rehearsal'
+    [artifactKinds.mediaStudioLocalProofRehearsalLocal]: 'media-studio-local-proof-rehearsal',
+    [artifactKinds.mediaStudioAdjacentSeamNeedsPacketLocal]: 'media-studio-adjacent-seam-needs'
   }[schema] ?? schema
 }
 
@@ -1152,6 +1194,7 @@ function idForRecord(record) {
     record.adapterCandidateId ??
     record.observationId ??
     record.proofRehearsalId ??
+    record.needsPacketId ??
     record.traceId
 }
 

@@ -86,6 +86,7 @@ import { writeEdgeCompatibilityBundle } from '../src/seams/edge-compatibility-bu
 import { writeStudioPressureArtifacts } from '../src/seams/studio-pressure-artifacts.js'
 import { createLocalProofDrillSummary, runLocalProofRehearsal } from '../src/seams/local-proof-rehearsal.js'
 import { summarizeLocalProofRehearsal } from '../src/seams/local-proof-summary.js'
+import { writeAdjacentSeamNeedsPacket } from '../src/seams/adjacent-seam-needs.js'
 import { writeEdgeHandoffCandidate } from '../src/seams/edge-handoff-candidate.js'
 import { writeOperatorPacketIndex } from '../src/seams/operator-packet-index.js'
 import { writeCrossProjectOperatorIndex } from '../src/seams/cross-project-operator-index.js'
@@ -600,6 +601,16 @@ function crossProjectArtifactRef(name) {
       localOnly: true
     }
   }[name]
+}
+
+function adjacentSeamNeedsArtifactRef(packet) {
+  return {
+    kind: 'media-studio-adjacent-seam-needs',
+    id: packet.needsPacketId,
+    schema: 'media.studio_adjacent_seam_needs_packet.local.v1',
+    path: 'records/exports/media-studio-adjacent-seam-needs.local.json',
+    localOnly: true
+  }
 }
 
 function selectedNextActionFields(line) {
@@ -4604,6 +4615,177 @@ test('local proof drill reports mismatched surfaces and non-claim overclaims as 
   assert.match(attention.safeNextAction, /proof:local -- --drill/)
   assert.equal(attention.edgeDispatch, false)
   assert.equal(attention.layerAdmission, false)
+})
+
+test('adjacent seam needs packet declares ready proof for Spine discussion', async () => {
+  const dir = await createLocalProofFixtureProject()
+  await captureConsole(() => runLocalProofRehearsal({
+    projectDir: dir,
+    drill: true,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+
+  const output = await captureConsole(() => writeAdjacentSeamNeedsPacket({
+    projectDir: dir,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const packet = output.result.packet
+  const line = output.lines.find((entry) => entry.startsWith('studio adjacent seam needs:'))
+  const schema = JSON.parse(await readFile(path.join(process.cwd(), 'schemas/media-studio-adjacent-seam-needs-packet-local.schema.json'), 'utf8'))
+
+  assert.equal(packet.schema, 'media.studio_adjacent_seam_needs_packet.local.v1')
+  assert.equal(schema.title, 'media.studio_adjacent_seam_needs_packet.local.v1')
+  assert.equal(schema.properties.schema.const, 'media.studio_adjacent_seam_needs_packet.local.v1')
+  assert.equal(packet.declarationStatus, 'ready_for_spine_discussion')
+  assert.equal(packet.spineDiscussion, 'required')
+  assert.equal(packet.summary.adjacentNeeds, 5)
+  assert.equal(packet.summary.adjacentReady, 5)
+  assert.equal(packet.summary.adjacentAttention, 0)
+  assert.deepEqual(packet.summary.ownerRepos, [
+    'mesh-ecology-spine',
+    'mesh-ecology-layer',
+    'mesh-ecology-edge',
+    'mesh-ecology-bytes',
+    'causal-substrate'
+  ])
+  assert.equal(packet.nonClaims.adjacentRepoWrite, false)
+  assert.equal(packet.nonClaims.layerAdmission, false)
+  assert.equal(packet.nonClaims.edgeDispatch, false)
+  assert.equal(packet.nonClaims.bytesMaterialization, false)
+  assert.equal(packet.nonClaims.causalTruth, false)
+  assert.ok(line.includes('adjacentNeeds=5'))
+  assert.ok(line.includes('spineDiscussion=required'))
+  assert.equal(validateRequiredRecord(packet), true)
+})
+
+test('adjacent seam needs packet blocks missing proof without adjacent authority claims', async () => {
+  const dir = await createFixtureProject()
+
+  const { result } = await captureConsole(() => writeAdjacentSeamNeedsPacket({
+    projectDir: dir,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const packet = result.packet
+
+  assert.equal(packet.declarationStatus, 'blocked_missing_proof')
+  assert.equal(packet.spineDiscussion, 'absent')
+  assert.equal(packet.summary.adjacentAttention, 5)
+  assert.equal(packet.adjacentDiscussionRows.every((row) => row.discussionStatus === 'blocked_missing_proof'), true)
+  assert.match(packet.safeNextAction, /proof:local -- --drill/)
+  assert.equal(packet.nonClaims.adjacentRepoWrite, false)
+  assert.equal(packet.nonClaims.resultAcceptance, false)
+  assert.equal(validateRequiredRecord(packet), true)
+})
+
+test('adjacent seam needs packet treats stale proof as local attention', async () => {
+  const dir = await createLocalProofFixtureProject()
+  await captureConsole(() => runLocalProofRehearsal({
+    projectDir: dir,
+    drill: true,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const operatorPath = path.join(dir, 'records/exports/media-operator-packet-index.local.json')
+  const operatorIndex = JSON.parse(await readFile(operatorPath, 'utf8'))
+  operatorIndex.localProofRehearsalSummary.proofFreshness = 'stale'
+  operatorIndex.localProofRehearsalSummary.staleReasons = ['test_stale_local_proof']
+  operatorIndex.localProofRehearsalSummary.safeNextAction = 'Run npm run proof:local to refresh local proof rehearsal evidence after local posture changes.'
+  await writeFile(operatorPath, `${JSON.stringify(operatorIndex, null, 2)}\n`)
+
+  const { result } = await captureConsole(() => writeAdjacentSeamNeedsPacket({
+    projectDir: dir,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const packet = result.packet
+
+  assert.equal(packet.declarationStatus, 'local_attention')
+  assert.equal(packet.spineDiscussion, 'not-ready')
+  assert.equal(packet.summary.adjacentAttention, 5)
+  assert.equal(packet.summary.proofFreshness, 'stale')
+  assert.match(packet.safeNextAction, /proof:local/)
+  assert.equal(validateRequiredRecord(packet), true)
+})
+
+test('adjacent seam needs packet preserves rejected adapter hold as discussion-only attention', async () => {
+  const dir = await createLocalProofFixtureProject()
+  await captureConsole(() => runLocalProofRehearsal({
+    projectDir: dir,
+    adapterDecision: 'rejected',
+    drill: true,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+
+  const { result } = await captureConsole(() => writeAdjacentSeamNeedsPacket({
+    projectDir: dir,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const packet = result.packet
+
+  assert.equal(packet.declarationStatus, 'local_attention')
+  assert.equal(packet.spineDiscussion, 'not-ready')
+  assert.equal(packet.summary.proofState, 'attention')
+  assert.equal(packet.summary.swarmSeamState, 'adapter_hold')
+  assert.equal(packet.summary.observationStatus, 'skipped')
+  assert.equal(packet.summary.adjacentAttention, 5)
+  assert.equal(packet.nonClaims.edgeQueueAction, false)
+  assert.equal(packet.nonClaims.layerAdmission, false)
+  assert.equal(validateRequiredRecord(packet), true)
+})
+
+test('adjacent seam needs surface through operator Edge and cross-project views', async () => {
+  const dir = await createLocalProofFixtureProject()
+  await captureConsole(() => runLocalProofRehearsal({
+    projectDir: dir,
+    drill: true,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const { result: needsResult } = await captureConsole(() => writeAdjacentSeamNeedsPacket({
+    projectDir: dir,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+
+  const { result: operatorResult, lines: operatorLines } = await captureConsole(() =>
+    writeOperatorPacketIndex({ projectDir: dir })
+  )
+  const { result: edgeResult, lines: edgeLines } = await captureConsole(() =>
+    writeEdgeCompatibilityBundle({ projectDir: dir })
+  )
+
+  assert.equal(operatorResult.index.adjacentSeamNeedsRefs.length, 1)
+  assert.equal(operatorResult.index.adjacentSeamNeedsSummary.declarationStatus, 'ready_for_spine_discussion')
+  assert.equal(operatorResult.index.summary.adjacentSeamNeeds, 5)
+  assert.ok(operatorLines.find((entry) => entry.startsWith('operator packet index:')).includes('adjacentNeeds=5'))
+  assert.equal(edgeResult.bundle.adjacentSeamNeedsSummary.adjacentNeeds, 5)
+  assert.equal(edgeResult.bundle.adjacentSeamNeedsSummary.spineDiscussion, 'required')
+  assert.equal(edgeResult.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.studio_adjacent_seam_needs_packet.local.v1'), true)
+  assert.ok(edgeLines.find((entry) => entry.startsWith('edge source refs:')).includes('adjacentNeeds=5'))
+
+  const baseDir = path.dirname(dir)
+  const inputList = createCrossProjectInputListWithArtifactRefs([
+    {
+      projectId: 'project-test',
+      label: 'Adjacent seam project',
+      rootPath: path.basename(dir),
+      artifactRefs: {
+        adjacentSeamNeeds: adjacentSeamNeedsArtifactRef(needsResult.packet)
+      }
+    }
+  ], { inputListId: 'adjacent-seam-cross-project-fixture' })
+  await writeFile(path.join(baseDir, 'input-list.local.json'), `${JSON.stringify(inputList, null, 2)}\n`)
+  const { result: crossProjectResult, lines: crossProjectLines } = await captureConsole(() =>
+    writeCrossProjectOperatorIndex({
+      baseDir,
+      inputList: 'input-list.local.json',
+      output: 'cross-project-adjacent.local.json'
+    })
+  )
+
+  assert.equal(crossProjectResult.index.summary.adjacentNeeds, 5)
+  assert.equal(crossProjectResult.index.summary.adjacentReady, 5)
+  assert.equal(crossProjectResult.index.summary.adjacentAttention, 0)
+  assert.equal(crossProjectResult.index.summary.spineDiscussionRequired, 1)
+  assert.equal(crossProjectResult.index.projectSummaries[0].adjacentSeamNeedsSummary.declarationStatus, 'ready_for_spine_discussion')
+  assert.ok(crossProjectLines[0].includes('adjacentNeeds=5'))
+  assert.equal(validateRequiredRecord(crossProjectResult.index), true)
 })
 
 test('local proof summary reports freshness against current posture', () => {

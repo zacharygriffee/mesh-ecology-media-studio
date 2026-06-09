@@ -104,6 +104,13 @@ proof record. It is review-only evidence and does not activate swarm runtime,
 prove public swarm transport, dispatch Edge work, admit Layer refs, authorize
 publication, or make Studio production-ready.
 
+`media.studio_adjacent_seam_needs_packet.local.v1` declares which adjacent repo
+seams Studio needs to discuss after a local proof drill. It is for the operator
+and Spine repo agent before adjacent work. It does not write adjacent repos,
+route implementation, grant Layer admission, queue or dispatch Edge work,
+materialize Bytes payloads, claim Causal truth, accept results, select storage,
+authorize publication, or grant authority.
+
 `media.authority_handoff_candidate.local.v1` packages local production bundle,
 approval proposal, capsule, situated identity, and prerequisite refs for a
 future authority lane. It is candidate-only and does not grant approval,

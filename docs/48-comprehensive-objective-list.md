@@ -95,6 +95,9 @@ storage decisions into Studio.
    - `proof:local --drill` checks local inspection/operator/Edge-compatible
      surface coherence and reports `proofDrill` without claiming family runtime
      activation.
+   - `seam:needs` turns a fresh local proof drill into an adjacent-repo
+     discussion packet for the operator and Spine repo agent, without writing
+     adjacent repos or routing implementation.
 
 4. **Example And Fixture Discipline**
 
@@ -232,7 +235,9 @@ pressing the family swarm seams. Preferred order:
    and surfaced proof refs in the operator/Edge-compatible views, then rerun it
    when `proofFreshness=stale` or use `proof:local --drill` when surface
    coherence needs an explicit local check;
-6. refresh docs/tests whenever an operator-visible command surface changes.
+6. run `seam:needs` after a fresh proof drill only when Studio needs to declare
+   adjacent Layer, Edge, Bytes, Causal, or Spine discussion needs;
+7. refresh docs/tests whenever an operator-visible command surface changes.
 
 Success means a reviewer can run one local project through production evidence,
 source-pressure evidence, inspection, operator index, and Edge-compatible review

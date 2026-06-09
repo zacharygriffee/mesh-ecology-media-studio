@@ -51,6 +51,7 @@ text is not the durable contract.
 | `npm run record-io:stress` | yes | temp project by default | `--print` | yes | runs a bounded overlap of local output writers and summary/index/prereq readers to verify local JSON atomic-write/tolerant-read posture; ffmpeg is disabled by default; no authority, publication, Edge call, or mesh publication |
 | `npm run pressure:studio` | yes | yes | `--print` | yes | writes Studio-owned Edge and Layer pressure artifacts by default; `--adapter-chain` also writes the bounded Studio source-pressure adapter candidate, operator decision, and approved observation for Layer's generic `layer_source_pressure_review.v0` seam; `--adapter-decision rejected` writes candidate/decision only; emits review-only `swarmSeamPosture`; no Layer admission, durable append, Edge authority, queue action, dispatch, swarm activation, or auto-execute |
 | `npm run proof:local` | yes | yes | `--print` | yes | runs the local proof order over one project: local output, Studio pressure adapter chain, media summary, health summary, local-run inspection, operator index, and Edge-compatible bundle; writes `media.studio_local_proof_rehearsal.local.v1`, then refreshes inspection/operator/Edge-compatible surfaces so they include the proof ref; `--drill` adds local surface-coherence checks and reruns surfaces so operator/Edge-compatible outputs carry `proofDrill`; compact output shows `proof`, `drill`, `drillChecks`, `drillAttention`, `localPackage`, `swarmSeam`, adapter/observation posture, `surfaced=true`, `swarmProof=false`, and `activation=false`; no Edge dispatch, Layer admission, publication authorization, production readiness, or swarm activation |
+| `npm run seam:needs` | yes | yes | `--print` | yes | reads the latest local proof, operator index, Edge-compatible bundle, and source-pressure evidence; writes `media.studio_adjacent_seam_needs_packet.local.v1` as a discussion-only declaration for the operator and Spine repo agent; compact output shows `declaration`, `spineDiscussion`, `adjacentNeeds`, `adjacentReady`, and `adjacentAttention`; no adjacent repo writes, Layer admission, Edge queue/dispatch, Bytes materialization, Causal truth, result acceptance, storage selection, publication, or authority |
 | `npm run provider:venice:rehearse-production` | yes | yes | `--print` | yes | composes the local Venice loop, approval proposal, capsule, bundle, inspection, operator index, and Edge-compatible bundle; no live provider unless explicitly requested |
 
 ## Byte And Resource Posture
@@ -214,6 +215,14 @@ runs compare the proof record against current local package, swarm seam, and
 adapter posture. If those inputs drift, `proofFreshness=stale` is local
 attention; if a drill check fails, `proofDrill=attention` is local attention.
 Both paths ask for a local proof refresh, not family runtime activation.
+
+After a fresh `proof:local --drill`, run `npm run seam:needs -- --project-dir
+examples/card-to-candidate` when Studio needs to declare adjacent repo
+discussion needs. The packet is for the operator and Spine repo agent before
+any Layer, Edge, Bytes, Causal, or other family implementation. `operator:index`,
+`edge:compat`, and `operator:cross-project-index` surface `adjacentNeeds`,
+`adjacentReady`, `adjacentAttention`, and `spineDiscussion` when the packet is
+present.
 
 This posture is review-only source evidence. It does not activate swarm
 runtime, prove public swarm transport, prove a device boundary, dispatch Edge

@@ -14,6 +14,7 @@ import { isDiscoverableJsonPath, readJsonFileTolerant, writeJsonAtomic } from '.
 import { summarizeSwarmSeamPosture, formatSwarmSeamPostureFields } from './swarm-seam-posture.js'
 import { summarizeStudioSourcePressure } from './studio-source-pressure-summary.js'
 import { summarizeLocalProofRehearsal } from './local-proof-summary.js'
+import { summarizeAdjacentSeamNeeds } from './adjacent-seam-needs.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
@@ -50,7 +51,8 @@ const optionalSourceRecordPaths = Object.freeze({
   studioSourcePressureAdapterCandidate: 'records/exports/media-studio-source-pressure-adapter-candidate.local.json',
   studioSourcePressureAdapterDecision: 'records/exports/media-studio-source-pressure-adapter-operator-decision.local.json',
   studioSourcePressureObservation: 'records/exports/media-studio-source-pressure-observation-result.local.json',
-  localProofRehearsal: 'records/exports/media-studio-local-proof-rehearsal.local.json'
+  localProofRehearsal: 'records/exports/media-studio-local-proof-rehearsal.local.json',
+  adjacentSeamNeeds: 'records/exports/media-studio-adjacent-seam-needs.local.json'
 })
 const optionalSourceRoots = Object.freeze([
   'records/approvals',
@@ -71,7 +73,8 @@ const optionalSourceSchemas = new Set([
   artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal,
   artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal,
   artifactKinds.mediaStudioSourcePressureObservationResultLocal,
-  artifactKinds.mediaStudioLocalProofRehearsalLocal
+  artifactKinds.mediaStudioLocalProofRehearsalLocal,
+  artifactKinds.mediaStudioAdjacentSeamNeedsPacketLocal
 ])
 const productionSourceSchemas = new Set([
   artifactKinds.mediaProductionUnit,
@@ -163,6 +166,7 @@ export async function writeEdgeCompatibilityBundle({
     swarmSeamPosture,
     adapterSummary: studioSourcePressureAdapterSummary
   })
+  const adjacentSeamNeedsSummary = summarizeAdjacentSeamNeeds(sources)
   const createdAt = nowIso()
   const reviewEvidence = createStudioEdgeReviewEvidence({
     projectId,
@@ -233,6 +237,7 @@ export async function writeEdgeCompatibilityBundle({
     swarmSeamPosture,
     studioSourcePressureAdapterSummary,
     localProofRehearsalSummary,
+    adjacentSeamNeedsSummary,
     studioReviewEvidence: reviewEvidence,
     edgeWorkPacketCandidate: workPacketCandidate,
     edgeEvidenceImportCandidate: evidenceImportCandidate,
@@ -286,6 +291,10 @@ export async function writeEdgeCompatibilityBundle({
       `proofFreshness=${bundle.localProofRehearsalSummary.proofFreshness}`,
       `proofDrill=${bundle.localProofRehearsalSummary.drillStatus}`,
       `drillAttention=${bundle.localProofRehearsalSummary.drillAttention}`,
+      `adjacentNeeds=${bundle.adjacentSeamNeedsSummary.adjacentNeeds}`,
+      `adjacentReady=${bundle.adjacentSeamNeedsSummary.adjacentReady}`,
+      `adjacentAttention=${bundle.adjacentSeamNeedsSummary.adjacentAttention}`,
+      `spineDiscussion=${bundle.adjacentSeamNeedsSummary.spineDiscussion}`,
       `packageNextAction=${bundle.localPackagePosture.safeNextAction}`,
       `proofNextAction=${bundle.localProofRehearsalSummary.safeNextAction}`,
       formatSwarmSeamPostureFields(bundle.swarmSeamPosture, { nextActionField: 'swarmNextAction' }),
@@ -875,7 +884,8 @@ function kindForSchema(schema) {
     [artifactKinds.mediaStudioSourcePressureAdapterCandidateLocal]: 'media-studio-source-pressure-adapter-candidate',
     [artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal]: 'media-studio-source-pressure-adapter-operator-decision',
     [artifactKinds.mediaStudioSourcePressureObservationResultLocal]: 'media-studio-source-pressure-observation-result',
-    [artifactKinds.mediaStudioLocalProofRehearsalLocal]: 'media-studio-local-proof-rehearsal'
+    [artifactKinds.mediaStudioLocalProofRehearsalLocal]: 'media-studio-local-proof-rehearsal',
+    [artifactKinds.mediaStudioAdjacentSeamNeedsPacketLocal]: 'media-studio-adjacent-seam-needs'
   }
 
   return schemaKinds[schema] ?? schema
@@ -915,6 +925,7 @@ function idForRecord(record) {
     record.adapterCandidateId ??
     record.observationId ??
     record.proofRehearsalId ??
+    record.needsPacketId ??
     record.operationId ??
     record.traceId ??
     record.schema

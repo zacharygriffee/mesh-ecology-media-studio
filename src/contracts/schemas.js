@@ -76,6 +76,7 @@ export const schemaFiles = {
   'media.studio_source_pressure_adapter_operator_decision.local.v1': 'schemas/media-studio-source-pressure-adapter-operator-decision-local.schema.json',
   'media.studio_source_pressure_observation_result.local.v1': 'schemas/media-studio-source-pressure-observation-result-local.schema.json',
   'media.studio_local_proof_rehearsal.local.v1': 'schemas/media-studio-local-proof-rehearsal-local.schema.json',
+  'media.studio_adjacent_seam_needs_packet.local.v1': 'schemas/media-studio-adjacent-seam-needs-packet-local.schema.json',
   'media.operator_packet_index.local.v1': 'schemas/media-operator-packet-index-local.schema.json',
   'media.edge_handoff_candidate.local.v1': 'schemas/media-edge-handoff-candidate-local.schema.json',
   'media.operator_decision_request.local.v1': 'schemas/media-operator-decision-request-local.schema.json',
@@ -982,6 +983,31 @@ export const requiredFields = {
     'localTruthLabel',
     'truthStatus'
   ],
+  'media.studio_adjacent_seam_needs_packet.local.v1': [
+    'schema',
+    'needsPacketId',
+    'projectId',
+    'createdAt',
+    'mode',
+    'declarationStatus',
+    'spineDiscussion',
+    'sourceRefs',
+    'adjacentDiscussionRows',
+    'summary',
+    'safeNextAction',
+    'warnings',
+    'nonClaims',
+    'operatorGuidanceOnly',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'providerTruth',
+    'edgeRuntimeBuilt',
+    'edgeRuntimeVerified',
+    'localTruthLabel',
+    'truthStatus'
+  ],
   'media.operator_packet_index.local.v1': [
     'schema',
     'indexId',
@@ -1587,6 +1613,7 @@ const idFields = {
   [artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal]: 'decisionId',
   [artifactKinds.mediaStudioSourcePressureObservationResultLocal]: 'observationId',
   [artifactKinds.mediaStudioLocalProofRehearsalLocal]: 'proofRehearsalId',
+  [artifactKinds.mediaStudioAdjacentSeamNeedsPacketLocal]: 'needsPacketId',
   [artifactKinds.mediaOperatorPacketIndexLocal]: 'indexId',
   [artifactKinds.mediaEdgeHandoffCandidateLocal]: 'handoffCandidateId',
   [artifactKinds.mediaOperatorDecisionRequestLocal]: 'requestId',
@@ -1643,6 +1670,7 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal,
   artifactKinds.mediaStudioSourcePressureObservationResultLocal,
   artifactKinds.mediaStudioLocalProofRehearsalLocal,
+  artifactKinds.mediaStudioAdjacentSeamNeedsPacketLocal,
   artifactKinds.mediaOperatorPacketIndexLocal,
   artifactKinds.mediaEdgeHandoffCandidateLocal,
   artifactKinds.mediaOperatorDecisionRequestLocal,
@@ -1700,6 +1728,7 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaStudioSourcePressureAdapterOperatorDecisionLocal,
   artifactKinds.mediaStudioSourcePressureObservationResultLocal,
   artifactKinds.mediaStudioLocalProofRehearsalLocal,
+  artifactKinds.mediaStudioAdjacentSeamNeedsPacketLocal,
   artifactKinds.mediaOperatorPacketIndexLocal,
   artifactKinds.mediaEdgeHandoffCandidateLocal,
   artifactKinds.mediaOperatorDecisionRequestLocal,
@@ -2418,6 +2447,10 @@ export function validateRecordShape(record, schemaId = record.schema) {
 
   if (schemaId === artifactKinds.mediaStudioSourcePressureObservationResultLocal) {
     validateStudioSourcePressureObservationResult(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.mediaStudioAdjacentSeamNeedsPacketLocal) {
+    validateStudioAdjacentSeamNeedsPacket(record, schemaId)
   }
 
   if (schemaId === artifactKinds.mediaOperatorPacketIndexLocal) {
@@ -3467,6 +3500,109 @@ function validateStudioSourcePressureObservationResult(record, schemaId) {
 
   if (record.studioSpecificLayerApiCreated !== false || record.layerTruthClaimed !== false || record.edgeActionQueued !== false) {
     throw new Error(`Record ${schemaId} must preserve non-authority false posture`)
+  }
+}
+
+const adjacentSeamDeclarationStatuses = new Set([
+  'ready_for_spine_discussion',
+  'local_attention',
+  'blocked_missing_proof'
+])
+const adjacentDiscussionStatuses = new Set([
+  'ready_for_discussion',
+  'local_attention',
+  'blocked_missing_proof'
+])
+const adjacentOwnerRepos = new Set([
+  'mesh-ecology-spine',
+  'mesh-ecology-layer',
+  'mesh-ecology-edge',
+  'mesh-ecology-bytes',
+  'causal-substrate'
+])
+const adjacentFalseFlags = Object.freeze([
+  'adjacentRepoWrite',
+  'layerAdmission',
+  'durableAppend',
+  'edgeQueueAction',
+  'edgeDispatch',
+  'edgeRuntimeVerified',
+  'bytesMaterialization',
+  'bytesPayloadValidity',
+  'causalTruth',
+  'acceptedContinuity',
+  'resultAcceptance',
+  'storageSelection',
+  'publicationAuthorization',
+  'productionReady',
+  'swarmRuntimeActivated',
+  'meshTruth'
+])
+
+function validateStudioAdjacentSeamNeedsPacket(record, schemaId) {
+  if (record.mode !== 'standalone-local') {
+    throw new Error(`Record ${schemaId} has invalid mode: ${record.mode}`)
+  }
+
+  if (!adjacentSeamDeclarationStatuses.has(record.declarationStatus)) {
+    throw new Error(`Record ${schemaId} has invalid declarationStatus: ${record.declarationStatus}`)
+  }
+
+  if (!['required', 'not-ready', 'absent'].includes(record.spineDiscussion)) {
+    throw new Error(`Record ${schemaId} has invalid spineDiscussion: ${record.spineDiscussion}`)
+  }
+
+  for (const collection of ['sourceRefs', 'adjacentDiscussionRows', 'warnings']) {
+    if (!Array.isArray(record[collection])) {
+      throw new Error(`Record ${schemaId}.${collection} must be an array`)
+    }
+  }
+
+  record.sourceRefs.forEach((ref, index) => validateInspectionRef(ref, `${schemaId}.sourceRefs[${index}]`))
+
+  for (const [index, row] of record.adjacentDiscussionRows.entries()) {
+    if (!row || typeof row !== 'object') {
+      throw new Error(`Record ${schemaId}.adjacentDiscussionRows[${index}] must be an object`)
+    }
+    if (!adjacentOwnerRepos.has(row.ownerRepo)) {
+      throw new Error(`Record ${schemaId}.adjacentDiscussionRows[${index}] has invalid ownerRepo: ${row.ownerRepo}`)
+    }
+    if (!adjacentDiscussionStatuses.has(row.discussionStatus)) {
+      throw new Error(`Record ${schemaId}.adjacentDiscussionRows[${index}] has invalid discussionStatus: ${row.discussionStatus}`)
+    }
+    if (!Array.isArray(row.evidenceRefs) || !Array.isArray(row.stopConditions)) {
+      throw new Error(`Record ${schemaId}.adjacentDiscussionRows[${index}] must include evidenceRefs and stopConditions arrays`)
+    }
+    row.evidenceRefs.forEach((ref, refIndex) => validateInspectionRef(ref, `${schemaId}.adjacentDiscussionRows[${index}].evidenceRefs[${refIndex}]`))
+    if (!row.nonClaims || typeof row.nonClaims !== 'object') {
+      throw new Error(`Record ${schemaId}.adjacentDiscussionRows[${index}] must include nonClaims`)
+    }
+    for (const flag of adjacentFalseFlags) {
+      if (row.nonClaims[flag] !== false) {
+        throw new Error(`Record ${schemaId}.adjacentDiscussionRows[${index}].nonClaims must set ${flag}=false`)
+      }
+    }
+  }
+
+  if (!record.nonClaims || typeof record.nonClaims !== 'object') {
+    throw new Error(`Record ${schemaId} must include nonClaims`)
+  }
+  for (const flag of adjacentFalseFlags) {
+    if (record.nonClaims[flag] !== false) {
+      throw new Error(`Record ${schemaId}.nonClaims must set ${flag}=false`)
+    }
+  }
+
+  if (record.operatorGuidanceOnly !== true) {
+    throw new Error(`Record ${schemaId} must set operatorGuidanceOnly=true`)
+  }
+
+  validateLocalFalseFlags(record, schemaId)
+
+  for (const flag of ['providerTruth', 'edgeRuntimeBuilt', 'edgeRuntimeVerified']) {
+    if (record[flag] !== false) {
+      throw new Error(`Record ${schemaId} must set ${flag}=false`)
+    }
   }
 }
 
