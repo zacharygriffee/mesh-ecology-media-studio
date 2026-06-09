@@ -4841,6 +4841,78 @@ test('current operational command exposes refreshed inspection without fixture p
   assert.ok(line.includes('swarmRuntimeActivated=false'))
 })
 
+test('current operational command preserves rejected adapter hold as local attention', async () => {
+  const dir = await createLocalProofFixtureProject()
+
+  const output = await captureConsole(() => runCurrentOperationalRunbook({
+    projectDir: dir,
+    adapterDecision: 'rejected',
+    crossProjectIndex: true,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const line = output.lines.find((entry) => entry.startsWith('studio current operation:'))
+
+  assert.equal(output.result.operation.operationState, 'local_attention')
+  assert.equal(output.result.operation.proofState, 'attention')
+  assert.equal(output.result.operation.proofFreshness, 'fresh')
+  assert.equal(output.result.operation.proofDrill, 'passed')
+  assert.equal(output.result.operation.swarmSeamState, 'adapter_hold')
+  assert.equal(output.result.operation.adapterDecisionStatus, 'rejected_bounded_studio_source_pressure_observation')
+  assert.equal(output.result.operation.observationStatus, 'skipped')
+  assert.equal(output.result.operation.adjacentDeclaration, 'local_attention')
+  assert.equal(output.result.operation.spineDiscussion, 'not-ready')
+  assert.equal(output.result.operation.adjacentReadiness, 'local_proof_attention')
+  assert.equal(output.result.operation.adjacentFreshness, 'fresh')
+  assert.equal(output.result.operation.adjacentReady, 0)
+  assert.equal(output.result.operation.adjacentAttention, 5)
+  assert.equal(output.result.operation.adjacentFamilyAskSummary.state, 'local_attention')
+  assert.equal(output.result.operation.adjacentFamilyAskSummary.adjacentNeeds, 5)
+  assert.equal(output.result.operation.adjacentFamilyAskSummary.adjacentReady, 0)
+  assert.equal(output.result.operation.adjacentFamilyAskSummary.adjacentAttention, 5)
+  assert.equal(output.result.operation.operatorProofState, 'attention')
+  assert.equal(output.result.operation.operatorProofDrill, 'passed')
+  assert.equal(output.result.operation.edgeProofState, 'attention')
+  assert.equal(output.result.operation.edgeProofDrill, 'passed')
+  assert.equal(output.result.operation.crossProjectSummary.currentOperations, 1)
+  assert.equal(output.result.operation.crossProjectSummary.currentOperationReady, 0)
+  assert.equal(output.result.operation.crossProjectSummary.swarmProof, false)
+  assert.equal(output.result.operation.crossProjectSummary.activation, false)
+  assert.equal(output.result.operation.surfaceFreshness.state, 'fresh')
+  assert.equal(
+    output.result.operation.surfaceFreshness.checks.find((entry) => entry.surface === 'crossProjectIndex').currentOperationAttention,
+    1
+  )
+  assert.equal(output.result.operatorIndex.index.localProofRehearsalSummary.latestProofState, 'attention')
+  assert.equal(output.result.operatorIndex.index.localProofRehearsalSummary.drillStatus, 'passed')
+  assert.equal(output.result.operatorIndex.index.localProofRehearsalSummary.observationStatus, 'skipped')
+  assert.equal(output.result.operatorIndex.index.currentOperationSummary.operationState, 'local_attention')
+  assert.equal(output.result.operatorIndex.index.currentOperationSummary.familyAsks, 5)
+  assert.equal(output.result.operatorIndex.index.currentOperationSummary.familyAsksAttention, 5)
+  assert.equal(output.result.edgeCompatibility.bundle.localProofRehearsalSummary.latestProofState, 'attention')
+  assert.equal(output.result.edgeCompatibility.bundle.localProofRehearsalSummary.drillStatus, 'passed')
+  assert.equal(output.result.edgeCompatibility.bundle.localProofRehearsalSummary.observationStatus, 'skipped')
+  assert.equal(output.result.edgeCompatibility.bundle.currentOperationSummary.operationState, 'local_attention')
+  assert.equal(output.result.edgeCompatibility.bundle.currentOperationSummary.familyAsks, 5)
+  assert.equal(output.result.edgeCompatibility.bundle.currentOperationSummary.familyAsksAttention, 5)
+  assert.equal(output.result.operation.adjacentRepoWrite, false)
+  assert.equal(output.result.operation.layerAdmission, false)
+  assert.equal(output.result.operation.edgeDispatch, false)
+  assert.equal(output.result.operation.publicationAuthorization, false)
+  assert.equal(output.result.operation.productionReady, false)
+  assert.equal(output.result.operation.swarmRuntimeActivated, false)
+  assert.ok(line.includes('operation=local_attention'))
+  assert.ok(line.includes('proof=attention'))
+  assert.ok(line.includes('swarmSeam=adapter_hold'))
+  assert.ok(line.includes('adapter=rejected_bounded_studio_source_pressure_observation'))
+  assert.ok(line.includes('observation=skipped'))
+  assert.ok(line.includes('spineReadiness=local_proof_attention'))
+  assert.ok(line.includes('familyAsks=5'))
+  assert.ok(line.includes('familyAsksReady=0'))
+  assert.ok(line.includes('surfaceFreshness=fresh'))
+  assert.ok(line.includes('edgeDispatch=false'))
+  assert.ok(line.includes('swarmRuntimeActivated=false'))
+})
+
 test('adjacent seam needs packet declares ready proof for Spine discussion', async () => {
   const dir = await createLocalProofFixtureProject()
   await captureConsole(() => runLocalProofRehearsal({

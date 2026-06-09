@@ -32,7 +32,10 @@ npm run operation:studio -- --project-dir examples/card-to-candidate --prepare-l
 The command writes its operator review summary to
 `records/exports/media-current-operational-runbook.local.json` by default. Use
 `--output <relative-json-path>` only when a different local summary path is
-needed. After writing that summary, the command refreshes `inspect:local-run`,
+needed. Use `--adapter-decision rejected` to exercise the same operation path in
+adapter hold posture; Studio should report local attention with skipped
+observation, not malformed state or downstream authority.
+After writing that summary, the command refreshes `inspect:local-run`,
 `control:surface`, `operator:index`, and `edge:compat` so inspection and the
 control projection carry the summary ref, while operator surfaces carry
 `currentOperation` and `currentOperationPath`. When `--cross-project-index` is

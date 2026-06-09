@@ -484,7 +484,6 @@ function currentOperationCrossProjectCheck({
   const sourcePathMatches = sourceRef?.path === operatorIndex?.output ||
     sourceRef?.path?.endsWith(`/${operatorIndex?.output}`)
   const fresh = (crossProject?.index?.summary?.currentOperations ?? 0) > 0 &&
-    (crossProject?.index?.summary?.currentOperationReady ?? 0) > 0 &&
     projectSummary?.operationState === operation.operationState &&
     projectSummary?.path === expectedPath &&
     sourcePathMatches &&
@@ -500,6 +499,7 @@ function currentOperationCrossProjectCheck({
     expectedSourcePath: operatorIndex?.output ?? null,
     currentOperations: crossProject?.index?.summary?.currentOperations ?? 0,
     currentOperationReady: crossProject?.index?.summary?.currentOperationReady ?? 0,
+    currentOperationAttention: crossProject?.index?.summary?.currentOperationAttention ?? 0,
     localOnly: sourceRef?.localOnly !== false
   }
 }
