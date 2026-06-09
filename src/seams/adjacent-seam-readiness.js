@@ -54,7 +54,9 @@ export function formatAdjacentSeamReadiness(readiness) {
     `proof=${readiness.proofState}`,
     `proofFreshness=${readiness.proofFreshness}`,
     `proofDrill=${readiness.proofDrill}`,
+    `adjacentPackets=${readiness.adjacentPackets}`,
     `adjacentFreshness=${readiness.adjacentFreshness}`,
+    `staleReasons=${formatStaleReasons(readiness.staleReasons)}`,
     `declaration=${readiness.declarationStatus}`,
     `spineDiscussion=${readiness.spineDiscussion}`,
     `adjacentNeeds=${readiness.adjacentNeeds}`,
@@ -68,6 +70,10 @@ export function formatAdjacentSeamReadiness(readiness) {
     'swarmRuntimeActivated=false',
     `nextAction=${readiness.safeNextAction}`
   ].join(' | ')
+}
+
+function formatStaleReasons(staleReasons = []) {
+  return staleReasons.length > 0 ? staleReasons.join(',') : 'none'
 }
 
 if (process.argv[1] === modulePath) {

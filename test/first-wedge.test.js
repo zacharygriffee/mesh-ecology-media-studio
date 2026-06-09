@@ -4842,6 +4842,8 @@ test('adjacent seam readiness command reports ready missing and stale local stat
   assert.equal(readyResult.readiness.spineDiscussion, 'required')
   assert.equal(readyResult.readiness.swarmRuntimeActivated, false)
   assert.ok(compact.includes('readiness=ready_for_spine_discussion'))
+  assert.ok(compact.includes('adjacentPackets=1'))
+  assert.ok(compact.includes('staleReasons=none'))
   assert.ok(compact.includes('swarmRuntimeActivated=false'))
 
   const packetPath = path.join(readyDir, 'records/exports/media-studio-adjacent-seam-needs.local.json')
@@ -4854,6 +4856,13 @@ test('adjacent seam readiness command reports ready missing and stale local stat
   assert.equal(staleReadiness.adjacentFreshness, 'stale')
   assert.ok(staleReadiness.staleReasons.includes('local_package_changed'))
   assert.match(staleReadiness.safeNextAction, /seam:needs/)
+  const { lines: staleLines } = await captureConsole(() =>
+    inspectAdjacentSeamReadiness({ projectDir: readyDir })
+  )
+  const staleCompact = staleLines.find((entry) => entry.startsWith('studio adjacent seam readiness:'))
+  assert.ok(staleCompact.includes('readiness=stale_adjacent_seam_needs'))
+  assert.ok(staleCompact.includes('adjacentPackets=1'))
+  assert.ok(staleCompact.includes('staleReasons=local_package_changed'))
 })
 
 test('adjacent seam needs surfaces stale after local proof posture changes', async () => {
