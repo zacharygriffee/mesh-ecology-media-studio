@@ -32,11 +32,12 @@ npm run operation:studio -- --project-dir examples/card-to-candidate --prepare-l
 The command writes its operator review summary to
 `records/exports/media-current-operational-runbook.local.json` by default. Use
 `--output <relative-json-path>` only when a different local summary path is
-needed. After writing that summary, the command refreshes `operator:index` and
-`edge:compat` so both surfaces carry `currentOperation`, `currentOperationPath`,
-and the local summary ref. When `--cross-project-index` is present, the command
-also refreshes the cross-project index after those surfaces exist, so the
-aggregate summary carries `currentOperations` and `currentOperationReady`.
+needed. After writing that summary, the command refreshes `inspect:local-run`,
+`operator:index`, and `edge:compat` so inspection carries the summary ref and
+operator surfaces carry `currentOperation` and `currentOperationPath`. When
+`--cross-project-index` is present, the command also refreshes the cross-project
+index after those surfaces exist, so the aggregate summary carries
+`currentOperations` and `currentOperationReady`.
 
 `--prepare-local-fixture` writes a tiny local PNG candidate for the bundled
 example, runs the accepted first wedge, and seeds the local inspection,

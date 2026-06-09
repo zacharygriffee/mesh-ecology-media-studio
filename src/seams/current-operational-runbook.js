@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises'
+import { access, mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -131,6 +131,10 @@ export async function runCurrentOperationalRunbook({
   })
 
   await writeJsonAtomic(path.resolve(projectDir), output, operation)
+  const refreshedInspection = await refreshInspectionIfPresent({ projectDir })
+  if (preparation && refreshedInspection) {
+    preparation.inspection = refreshedInspection
+  }
   operatorIndex = await writeOperatorPacketIndex({
     projectDir,
     quiet: true
@@ -462,6 +466,20 @@ async function writePreparedImageCandidate({ projectDir }) {
   )
   await mkdir(path.dirname(candidatePath), { recursive: true })
   await writeFile(candidatePath, Buffer.from(onePixelPngBase64, 'base64'))
+}
+
+async function refreshInspectionIfPresent({ projectDir }) {
+  const projectRoot = path.resolve(projectDir)
+  const manifestPath = path.join(projectRoot, 'records', 'manifests', 'media-local-run-manifest.local.json')
+
+  try {
+    await access(manifestPath)
+  } catch (error) {
+    if (error.code === 'ENOENT') return null
+    throw error
+  }
+
+  return withQuietConsole(() => inspectLocalRun({ projectDir }))
 }
 
 async function withQuietConsole(fn) {

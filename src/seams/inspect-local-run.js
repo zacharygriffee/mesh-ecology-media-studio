@@ -17,6 +17,7 @@ const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
 const defaultManifest = 'records/manifests/media-local-run-manifest.local.json'
 const defaultOutput = 'records/exports/local-run-edge-inspection-packet.local.json'
+const currentOperationSummaryPath = 'records/exports/media-current-operational-runbook.local.json'
 const extraInspectionRoots = Object.freeze([
   'records/evidence',
   'records/readiness',
@@ -123,6 +124,14 @@ export async function inspectLocalRun({
     records[name] = extra.record
     recordRefs[name] = localRecordRef(kindForSchema(extra.record.schema), extra.path, extra.record.schema)
   }
+  const currentOperationSummary = await readOptionalCurrentOperationSummary(root)
+  if (currentOperationSummary) {
+    recordRefs.currentOperationSummary = localRecordRef(
+      'media-current-operational-runbook',
+      currentOperationSummaryPath,
+      currentOperationSummary.summaryKind
+    )
+  }
 
   const generatedArtifactRefs = []
   for (const [name, record] of Object.entries(records)) {
@@ -159,14 +168,16 @@ export async function inspectLocalRun({
     artifactKinds: Array.from(new Set([
       manifestRecord.schema,
       ...Object.values(records).map((record) => record.schema),
+      currentOperationSummary?.summaryKind,
       ...generatedArtifactRefs.map((ref) => ref.byteRefPreview?.schema).filter(Boolean),
       'media.edge_inspection_packet.local.v1'
-    ])),
+    ].filter(Boolean))),
     generatedArtifactRefs,
     warnings: [
       'Local inspection packet only; not Edge integration.',
       'All refs are local paths and not mesh truth.',
       'Byte reference fields are previews only and not materialization proof.',
+      'Current operation summaries are local operator review summaries and do not add authority.',
       'Local operator decisions are not ratifier authority.'
     ]
   })
@@ -195,6 +206,17 @@ async function readRequiredJson(root, relativePath) {
       throw new Error(`Missing local run inspection record: ${relativePath}`)
     }
 
+    throw error
+  }
+}
+
+async function readOptionalCurrentOperationSummary(root) {
+  try {
+    const summary = JSON.parse(await readFile(path.join(root, currentOperationSummaryPath), 'utf8'))
+    if (summary?.summaryKind !== 'studio-current-operational-runbook') return null
+    return summary
+  } catch (error) {
+    if (error.code === 'ENOENT') return null
     throw error
   }
 }
