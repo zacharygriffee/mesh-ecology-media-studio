@@ -65,9 +65,17 @@ export function formatAdjacentSeamReadiness(readiness) {
     `adjacentAttention=${readiness.adjacentAttention}`,
     'adjacentRepoWrite=false',
     'layerAdmission=false',
+    'durableAppend=false',
+    'edgeQueueAction=false',
     'edgeDispatch=false',
+    'edgeRuntimeVerified=false',
     'bytesMaterialization=false',
     'causalTruth=false',
+    'acceptedContinuity=false',
+    'resultAcceptance=false',
+    'storageSelection=false',
+    'publicationAuthorization=false',
+    'productionReady=false',
     'swarmRuntimeActivated=false',
     `nextAction=${readiness.safeNextAction}`
   ].join(' | ')
