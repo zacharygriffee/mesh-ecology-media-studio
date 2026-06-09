@@ -70,7 +70,7 @@ text is not the durable contract.
 | Command | compact | artifact | json | refs | churn |
 | --- | --- | --- | --- | --- | --- |
 | `npm run inspect:local-run` | yes | yes | `--print` | yes | runtime packet uses fresh ids/timestamps; includes production-capsule, source-pressure adapter, local proof rehearsal refs, and the current operation summary ref when present |
-| `npm run inspect:summary` | yes | no | no | reads packet refs | no committed output |
+| `npm run inspect:summary` | yes | no | no | reads packet refs | no committed output; reports current operation refs as `operation` family rows with proof/drill/swarm/cross-project posture when present |
 | `npm run inspect:index` | yes | no | `--json` | reads local refs | no committed output |
 | `npm run inspect:provider-runs` | yes | yes | `--print` | yes | runtime ledger uses fresh timestamp |
 | `npm run inspect:provider-failure` | yes | yes | `--print` | yes | runtime packet uses fresh ids/timestamps |

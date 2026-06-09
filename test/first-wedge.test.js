@@ -4671,6 +4671,19 @@ test('current operational command completes local proof through review surfaces'
   assert.equal(output.result.preparation.inspection.packet.recordRefs.currentOperationSummary.path, 'records/exports/media-current-operational-runbook.local.json')
   assert.equal(output.result.preparation.inspection.packet.recordRefs.currentOperationSummary.schema, 'studio-current-operational-runbook')
   assert.ok(output.result.preparation.inspection.packet.artifactKinds.includes('studio-current-operational-runbook'))
+  const inspectionSummary = await captureConsole(() => summarizeInspectionPacket({
+    projectDir: dir,
+    packet: 'records/exports/local-run-edge-inspection-packet.local.json'
+  }))
+  assert.ok(inspectionSummary.result.familyRows.some(([family, count]) => family === 'operation' && count === '1'))
+  assert.ok(inspectionSummary.result.currentOperationRows.some((row) =>
+    row[0] === 'project-test' &&
+    row[1] === 'ready_for_spine_discussion' &&
+    row[2] === 'ready' &&
+    row[3] === 'passed' &&
+    row[5] === 'true' &&
+    row[6] === 'records/exports/media-current-operational-runbook.local.json'
+  ))
   assert.equal(output.result.operatorIndex.index.localProofRehearsalSummary.latestProofState, 'ready')
   assert.equal(output.result.operatorIndex.index.currentOperationSummary.summaries, 1)
   assert.equal(output.result.operatorIndex.index.currentOperationSummary.operationState, 'ready_for_spine_discussion')

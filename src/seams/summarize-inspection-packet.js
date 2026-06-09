@@ -68,6 +68,7 @@ export async function summarizeInspectionPacket({
   const healthRows = await healthRowsForPacket(root, record.recordRefs)
   const healthAttentionRows = await healthAttentionRowsForPacket(root, record.recordRefs)
   const mediationRows = await mediationRowsForPacket(root, record.recordRefs)
+  const currentOperationRows = await currentOperationRowsForPacket(root, record.recordRefs)
 
   printTable(['field', 'value'], rows)
   if (familyRows.length > 0) {
@@ -100,6 +101,11 @@ export async function summarizeInspectionPacket({
     printTable(['operation', 'resolution', 'delivery', 'blockedClaims'], mediationRows)
   }
 
+  if (currentOperationRows.length > 0) {
+    console.log('')
+    printTable(['project', 'operation', 'proof', 'drill', 'swarmSeam', 'crossProject', 'path'], currentOperationRows)
+  }
+
   if (artifactRows.length > 0) {
     console.log('')
     printTable(['artifact', 'contentType', 'path', 'bytePreview'], artifactRows)
@@ -114,6 +120,7 @@ export async function summarizeInspectionPacket({
     healthRows,
     healthAttentionRows,
     mediationRows,
+    currentOperationRows,
     artifactRows
   }
 }
@@ -212,6 +219,29 @@ async function mediationRowsForPacket(root, recordRefs) {
   return rows
 }
 
+async function currentOperationRowsForPacket(root, recordRefs) {
+  const currentOperationRefs = Object.values(recordRefs)
+    .filter((ref) => ref.schema === 'studio-current-operational-runbook' && ref.path)
+    .sort((left, right) => left.path.localeCompare(right.path))
+  const rows = []
+
+  for (const ref of currentOperationRefs) {
+    assertSafeLocalPath(ref.path)
+    const operation = JSON.parse(await readFile(path.join(root, ref.path), 'utf8'))
+    rows.push([
+      operation.projectId ?? 'unknown',
+      operation.operationState ?? 'unknown',
+      operation.proofState ?? 'unknown',
+      operation.proofDrill ?? 'unknown',
+      operation.swarmSeamState ?? 'unknown',
+      String(operation.crossProjectIndexed ?? false),
+      ref.path
+    ])
+  }
+
+  return rows
+}
+
 function resourcePostureLabel(summary) {
   const missingByte = summary.bytePosture?.missingContentIds?.length ??
     summary.missingByteDescriptorProposalContentIds?.length ??
@@ -285,6 +315,7 @@ function countRecordFamilies(recordRefs) {
 
 function familyForSchema(schema) {
   if (schema.includes('approval_proposal')) return 'approvals'
+  if (schema === 'studio-current-operational-runbook') return 'operation'
   if (schema.includes('operation_candidate') || schema.includes('rule_resolution_trace')) return 'mediation'
   if (schema.includes('operator_decision_request')) return 'requests'
   if (schema.includes('byte_descriptor_proposal') || schema.includes('byte_reference')) return 'bytes'
