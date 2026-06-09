@@ -7976,6 +7976,72 @@ test('cross-project operator index carries local proof posture from operator ind
   assert.equal(validateRequiredRecord(result.index), true)
 })
 
+test('cross-project operator index carries proof drill attention reasons from operator refs', async () => {
+  const baseDir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-cross-project-proof-drill-'))
+  const projectDir = path.join(baseDir, 'drill-attention-project')
+  await createLocalProofFixtureProject(projectDir)
+  await runLocalProofRehearsal({ projectDir, drill: true, quiet: true })
+
+  const proofPath = path.join(projectDir, 'records/exports/media-studio-local-proof-rehearsal.local.json')
+  const proof = JSON.parse(await readFile(proofPath, 'utf8'))
+  proof.drillSummary = {
+    ...proof.drillSummary,
+    drillStatus: 'attention',
+    checks: proof.drillSummary?.checks ?? 1,
+    passedChecks: Math.max((proof.drillSummary?.checks ?? 1) - 1, 0),
+    attentionChecks: 1,
+    attentionRows: [
+      {
+        check: 'operator-adapter-decision',
+        status: 'attention',
+        issueCode: 'operator_adapter_decision_mismatch',
+        expected: 'approved_bounded_studio_source_pressure_observation',
+        actual: 'rejected_bounded_studio_source_pressure_observation',
+        localOnly: true,
+        operatorGuidanceOnly: true
+      }
+    ],
+    safeNextAction: 'Run npm run proof:local -- --drill to refresh local proof rehearsal evidence and drill surfaces.'
+  }
+  proof.summary = {
+    ...proof.summary,
+    drillStatus: 'attention',
+    drillChecks: proof.drillSummary.checks,
+    drillAttention: 1
+  }
+  await writeFile(proofPath, `${JSON.stringify(proof, null, 2)}\n`)
+  await writeOperatorPacketIndex({ projectDir, quiet: true })
+
+  const inputList = createCrossProjectInputListWithArtifactRefs([
+    {
+      projectId: 'drill-attention-project',
+      rootPath: 'drill-attention-project',
+      artifactRefs: {
+        operatorPacketIndex: crossProjectArtifactRef('operatorPacketIndex')
+      }
+    }
+  ], { inputListId: 'local-proof-drill-cross-project-fixture' })
+  await writeFile(path.join(baseDir, 'input-list.local.json'), `${JSON.stringify(inputList, null, 2)}\n`)
+
+  const { result, lines } = await captureConsole(() => writeCrossProjectOperatorIndex({
+    baseDir,
+    inputList: 'input-list.local.json',
+    output: 'cross-project-proof-drill.local.json'
+  }))
+
+  assert.equal(result.index.summary.localProofAttention, 1)
+  assert.equal(result.index.summary.localProofDrillAttention, 1)
+  assert.deepEqual(result.index.projectSummaries[0].localProofRehearsalSummary.drillAttentionReasons, [
+    'operator_adapter_decision_mismatch'
+  ])
+  assert.ok(lines.some((line) => line.includes('local proof: proof=ready') &&
+    line.includes('proofDrill=attention') &&
+    line.includes('drillAttention=1') &&
+    line.includes('drillAttentionReasons=operator_adapter_decision_mismatch') &&
+    line.includes('activation=false')))
+  assert.equal(validateRequiredRecord(result.index), true)
+})
+
 test('cross-project operator index falls back to project health for local package and swarm posture', async () => {
   const baseDir = await mkdtemp(path.join(os.tmpdir(), 'media-studio-cross-project-swarm-health-'))
   const projectDir = path.join(baseDir, 'health-only-project')

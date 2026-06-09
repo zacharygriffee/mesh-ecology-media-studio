@@ -85,7 +85,9 @@ previously ready proof whose local package, swarm seam, or adapter posture no
 longer matches the current operator packet is counted as `localProofStale` and
 local proof attention; the selected safe action is to rerun `proof:local`.
 Proof drill failures from `proof:local --drill` are counted as
-`localProofDrillAttention` and also select a local proof drill refresh.
+`localProofDrillAttention`; per-project local proof attention lines include
+`drillAttentionReasons`, and the selected safe action is a local proof drill
+refresh.
 Adjacent seam needs packets are counted only when explicit input refs include
 them; `spineDiscussion` counts packets ready for operator and Spine repo agent
 discussion before any adjacent implementation. `spineReady` and

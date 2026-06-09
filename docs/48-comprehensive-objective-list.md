@@ -100,6 +100,8 @@ storage decisions into Studio.
      activation.
    - operator and Edge-compatible compact proof summaries name
      `drillAttentionReasons` when proof drill checks need a refresh.
+   - `operator:cross-project-index` per-project local proof attention lines
+     preserve drill attention reasons from explicit operator-index refs.
    - `seam:needs` turns a fresh local proof drill into an adjacent-repo
      discussion packet for the operator and Spine repo agent, without writing
      adjacent repos or routing implementation.
