@@ -86,7 +86,8 @@ import { writeEdgeCompatibilityBundle } from '../src/seams/edge-compatibility-bu
 import { writeStudioPressureArtifacts } from '../src/seams/studio-pressure-artifacts.js'
 import { createLocalProofDrillSummary, runLocalProofRehearsal } from '../src/seams/local-proof-rehearsal.js'
 import { summarizeLocalProofRehearsal } from '../src/seams/local-proof-summary.js'
-import { writeAdjacentSeamNeedsPacket } from '../src/seams/adjacent-seam-needs.js'
+import { readAdjacentSeamReadiness, writeAdjacentSeamNeedsPacket } from '../src/seams/adjacent-seam-needs.js'
+import { inspectAdjacentSeamReadiness } from '../src/seams/adjacent-seam-readiness.js'
 import { writeEdgeHandoffCandidate } from '../src/seams/edge-handoff-candidate.js'
 import { writeOperatorPacketIndex } from '../src/seams/operator-packet-index.js'
 import { writeCrossProjectOperatorIndex } from '../src/seams/cross-project-operator-index.js'
@@ -4753,15 +4754,20 @@ test('adjacent seam needs surface through operator Edge and cross-project views'
   assert.equal(operatorResult.index.adjacentSeamNeedsRefs.length, 1)
   assert.equal(operatorResult.index.adjacentSeamNeedsSummary.declarationStatus, 'ready_for_spine_discussion')
   assert.equal(operatorResult.index.adjacentSeamNeedsSummary.needsFreshness, 'fresh')
+  assert.equal(operatorResult.index.adjacentSeamReadiness.readiness, 'ready_for_spine_discussion')
   assert.equal(operatorResult.index.summary.adjacentSeamNeeds, 5)
+  assert.equal(operatorResult.index.summary.adjacentSeamReadiness, 'ready_for_spine_discussion')
   assert.ok(operatorLines.find((entry) => entry.startsWith('operator packet index:')).includes('adjacentNeeds=5'))
   assert.ok(operatorLines.find((entry) => entry.startsWith('operator packet index:')).includes('adjacentFreshness=fresh'))
+  assert.ok(operatorLines.find((entry) => entry.startsWith('operator packet index:')).includes('spineReadiness=ready_for_spine_discussion'))
   assert.equal(edgeResult.bundle.adjacentSeamNeedsSummary.adjacentNeeds, 5)
   assert.equal(edgeResult.bundle.adjacentSeamNeedsSummary.spineDiscussion, 'required')
   assert.equal(edgeResult.bundle.adjacentSeamNeedsSummary.needsFreshness, 'fresh')
+  assert.equal(edgeResult.bundle.adjacentSeamReadiness.readiness, 'ready_for_spine_discussion')
   assert.equal(edgeResult.bundle.studioSourceRefs.some((ref) => ref.schema === 'media.studio_adjacent_seam_needs_packet.local.v1'), true)
   assert.ok(edgeLines.find((entry) => entry.startsWith('edge source refs:')).includes('adjacentNeeds=5'))
   assert.ok(edgeLines.find((entry) => entry.startsWith('edge source refs:')).includes('adjacentFreshness=fresh'))
+  assert.ok(edgeLines.find((entry) => entry.startsWith('edge source refs:')).includes('spineReadiness=ready_for_spine_discussion'))
 
   const baseDir = path.dirname(dir)
   const inputList = createCrossProjectInputListWithArtifactRefs([
@@ -4794,6 +4800,47 @@ test('adjacent seam needs surface through operator Edge and cross-project views'
   assert.ok(crossProjectLines[0].includes('adjacentNeeds=5'))
   assert.ok(crossProjectLines[0].includes('adjacentFresh=1'))
   assert.equal(validateRequiredRecord(crossProjectResult.index), true)
+})
+
+test('adjacent seam readiness command reports ready missing and stale local states', async () => {
+  const readyDir = await createLocalProofFixtureProject()
+  await captureConsole(() => runLocalProofRehearsal({
+    projectDir: readyDir,
+    drill: true,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+
+  const missingReadiness = await readAdjacentSeamReadiness({ projectDir: readyDir })
+  assert.equal(missingReadiness.readiness, 'missing_adjacent_seam_needs')
+  assert.equal(missingReadiness.proofState, 'ready')
+  assert.equal(missingReadiness.adjacentPackets, 0)
+  assert.equal(missingReadiness.adjacentRepoWrite, false)
+
+  await captureConsole(() => writeAdjacentSeamNeedsPacket({
+    projectDir: readyDir,
+    createdAt: '2026-05-19T00:00:00.000Z'
+  }))
+  const { result: readyResult, lines } = await captureConsole(() =>
+    inspectAdjacentSeamReadiness({ projectDir: readyDir })
+  )
+  const compact = lines.find((entry) => entry.startsWith('studio adjacent seam readiness:'))
+  assert.equal(readyResult.readiness.readiness, 'ready_for_spine_discussion')
+  assert.equal(readyResult.readiness.adjacentFreshness, 'fresh')
+  assert.equal(readyResult.readiness.spineDiscussion, 'required')
+  assert.equal(readyResult.readiness.swarmRuntimeActivated, false)
+  assert.ok(compact.includes('readiness=ready_for_spine_discussion'))
+  assert.ok(compact.includes('swarmRuntimeActivated=false'))
+
+  const packetPath = path.join(readyDir, 'records/exports/media-studio-adjacent-seam-needs.local.json')
+  const packet = JSON.parse(await readFile(packetPath, 'utf8'))
+  packet.summary.localPackageState = 'stale-test-package-state'
+  await writeFile(packetPath, `${JSON.stringify(packet, null, 2)}\n`)
+
+  const staleReadiness = await readAdjacentSeamReadiness({ projectDir: readyDir })
+  assert.equal(staleReadiness.readiness, 'stale_adjacent_seam_needs')
+  assert.equal(staleReadiness.adjacentFreshness, 'stale')
+  assert.ok(staleReadiness.staleReasons.includes('local_package_changed'))
+  assert.match(staleReadiness.safeNextAction, /seam:needs/)
 })
 
 test('adjacent seam needs surfaces stale after local proof posture changes', async () => {
@@ -4834,12 +4881,17 @@ test('adjacent seam needs surfaces stale after local proof posture changes', asy
   assert.ok(operatorAdjacent.staleReasons.includes('proof_state_changed'))
   assert.ok(operatorAdjacent.staleReasons.includes('adapter_decision_changed'))
   assert.match(operatorAdjacent.safeNextAction, /seam:needs/)
+  assert.equal(operatorResult.index.adjacentSeamReadiness.readiness, 'local_proof_attention')
+  assert.equal(operatorResult.index.summary.adjacentSeamReadiness, 'local_proof_attention')
   assert.ok(operatorCompact.includes('adjacentReady=0'))
   assert.ok(operatorCompact.includes('adjacentAttention=5'))
   assert.ok(operatorCompact.includes('adjacentFreshness=stale'))
+  assert.ok(operatorCompact.includes('spineReadiness=local_proof_attention'))
   assert.equal(edgeResult.bundle.adjacentSeamNeedsSummary.needsFreshness, 'stale')
   assert.equal(edgeResult.bundle.adjacentSeamNeedsSummary.spineDiscussion, 'not-ready')
+  assert.equal(edgeResult.bundle.adjacentSeamReadiness.readiness, 'local_proof_attention')
   assert.ok(edgeCompact.includes('adjacentFreshness=stale'))
+  assert.ok(edgeCompact.includes('spineReadiness=local_proof_attention'))
 
   const baseDir = path.dirname(dir)
   const inputList = createCrossProjectInputListWithArtifactRefs([

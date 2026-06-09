@@ -218,10 +218,131 @@ export function summarizeAdjacentSeamNeeds(recordsOrSources = [], {
   }
 }
 
+export async function readAdjacentSeamReadiness({
+  projectDir = defaultProjectDir
+} = {}) {
+  const root = path.resolve(projectDir)
+  const records = await readRelevantRecords(root)
+  const proofSummary = currentProofSummaryFromEntries(normalizeEntries(records))
+  const adjacentSeamNeedsSummary = summarizeAdjacentSeamNeeds(records, {
+    proofSummary
+  })
+
+  return summarizeAdjacentSeamReadiness({
+    projectId: inferProjectId(records, path.basename(root)),
+    proofSummary,
+    adjacentSeamNeedsSummary
+  })
+}
+
+export function summarizeAdjacentSeamReadiness({
+  projectId = 'unknown',
+  proofSummary = null,
+  adjacentSeamNeedsSummary = null
+} = {}) {
+  const adjacentSummary = adjacentSeamNeedsSummary ?? summarizeAdjacentSeamNeeds([], {
+    proofSummary
+  })
+  const proofState = proofSummary?.latestProofState ?? 'absent'
+  const proofFreshness = proofSummary?.proofFreshness ?? 'absent'
+  const proofDrill = proofSummary?.drillStatus ?? 'absent'
+  const proofReady = proofSummary &&
+    proofSummary.proofs > 0 &&
+    proofState === 'ready' &&
+    proofFreshness === 'fresh' &&
+    proofDrill === 'passed'
+  const seamReady = adjacentSummary.packets > 0 &&
+    adjacentSummary.needsFreshness === 'fresh' &&
+    adjacentSummary.declarationStatus === 'ready_for_spine_discussion' &&
+    adjacentSummary.spineDiscussion === 'required' &&
+    adjacentSummary.adjacentNeeds > 0 &&
+    adjacentSummary.adjacentReady === adjacentSummary.adjacentNeeds &&
+    adjacentSummary.adjacentAttention === 0
+
+  const readiness = classifyAdjacentSeamReadiness({
+    proofSummary,
+    proofReady,
+    adjacentSummary,
+    seamReady
+  })
+
+  return {
+    summaryKind: 'studio-adjacent-seam-readiness',
+    projectId,
+    readiness,
+    proofState,
+    proofFreshness,
+    proofDrill,
+    adjacentFreshness: adjacentSummary.needsFreshness,
+    adjacentPackets: adjacentSummary.packets,
+    adjacentNeeds: adjacentSummary.adjacentNeeds,
+    adjacentReady: adjacentSummary.adjacentReady,
+    adjacentAttention: adjacentSummary.adjacentAttention,
+    declarationStatus: adjacentSummary.declarationStatus,
+    spineDiscussion: adjacentSummary.spineDiscussion,
+    staleReasons: adjacentSummary.staleReasons ?? [],
+    safeNextAction: safeNextActionForReadiness({
+      readiness,
+      proofSummary,
+      adjacentSummary
+    }),
+    attentionRows: readiness === 'ready_for_spine_discussion' ? 0 : 1,
+    adjacentRepoWrite: false,
+    layerAdmission: false,
+    edgeDispatch: false,
+    bytesMaterialization: false,
+    causalTruth: false,
+    swarmRuntimeActivated: false,
+    localOnly: true,
+    operatorGuidanceOnly: true,
+    meshTruth: false,
+    distributedProof: false,
+    ratifiedSharedState: false
+  }
+}
+
 function currentProofSummaryFromEntries(entries) {
   return latestOperatorProofSummary(entries) ??
     latestEdgeProofSummary(entries) ??
     summarizeLocalProofRehearsal(entries)
+}
+
+function classifyAdjacentSeamReadiness({
+  proofSummary,
+  proofReady,
+  adjacentSummary,
+  seamReady
+}) {
+  if (!proofSummary || proofSummary.proofs === 0 || proofSummary.latestProofState === 'absent') {
+    return 'blocked_missing_proof'
+  }
+  if (!proofReady) return 'local_proof_attention'
+  if (adjacentSummary.packets === 0) return 'missing_adjacent_seam_needs'
+  if (adjacentSummary.needsFreshness === 'stale') return 'stale_adjacent_seam_needs'
+  if (!seamReady) return 'adjacent_seam_attention'
+  return 'ready_for_spine_discussion'
+}
+
+function safeNextActionForReadiness({
+  readiness,
+  proofSummary,
+  adjacentSummary
+}) {
+  if (readiness === 'ready_for_spine_discussion') {
+    return 'Discuss these adjacent seam needs with the operator and Spine repo agent before any adjacent repo implementation.'
+  }
+  if (readiness === 'blocked_missing_proof') {
+    return 'Run npm run proof:local -- --drill before declaring adjacent seam readiness.'
+  }
+  if (readiness === 'local_proof_attention') {
+    return proofSummary?.safeNextAction ??
+      'Resolve local proof attention, then rerun npm run proof:local -- --drill and npm run seam:needs.'
+  }
+  if (readiness === 'missing_adjacent_seam_needs') {
+    return 'Run npm run seam:needs after a fresh proof:local -- --drill before Spine discussion.'
+  }
+  return adjacentSummary?.safeNextAction ??
+    'Refresh adjacent seam needs after local proof posture changes.'
 }
 
 function adjacentNeedsStaleReasons(packet, proofSummary) {

@@ -98,6 +98,9 @@ storage decisions into Studio.
    - `seam:needs` turns a fresh local proof drill into an adjacent-repo
      discussion packet for the operator and Spine repo agent, without writing
      adjacent repos or routing implementation.
+   - `seam:ready` reads existing proof and seam-needs records to report Spine
+     discussion readiness without writing another artifact or activating swarm
+     runtime.
    - stale adjacent seam needs packets are local attention in operator, Edge,
      and cross-project surfaces; they ask for a `seam:needs` refresh instead
      of being treated as current Spine discussion readiness.
@@ -239,7 +242,8 @@ pressing the family swarm seams. Preferred order:
    when `proofFreshness=stale` or use `proof:local --drill` when surface
    coherence needs an explicit local check;
 6. run `seam:needs` after a fresh proof drill only when Studio needs to declare
-   adjacent Layer, Edge, Bytes, Causal, or Spine discussion needs;
+   adjacent Layer, Edge, Bytes, Causal, or Spine discussion needs, then use
+   `seam:ready` as the read-only check before operator/Spine discussion;
 7. refresh docs/tests whenever an operator-visible command surface changes.
 
 Success means a reviewer can run one local project through production evidence,

@@ -17,7 +17,7 @@ import { summarizeLayerInteropFromRecords } from '../layer/layer-interop.js'
 import { summarizeSwarmSeamPosture, formatSwarmSeamPostureFields } from './swarm-seam-posture.js'
 import { summarizeStudioSourcePressure } from './studio-source-pressure-summary.js'
 import { summarizeLocalProofRehearsal } from './local-proof-summary.js'
-import { summarizeAdjacentSeamNeeds } from './adjacent-seam-needs.js'
+import { summarizeAdjacentSeamNeeds, summarizeAdjacentSeamReadiness } from './adjacent-seam-needs.js'
 import {
   isDiscoverableJsonPath,
   readJsonFileTolerant,
@@ -200,6 +200,11 @@ export async function writeOperatorPacketIndex({
   const adjacentSeamNeedsSummary = summarizeAdjacentSeamNeeds(records, {
     proofSummary: localProofRehearsalSummary
   })
+  const adjacentSeamReadiness = summarizeAdjacentSeamReadiness({
+    projectId,
+    proofSummary: localProofRehearsalSummary,
+    adjacentSeamNeedsSummary
+  })
   const productionApprovalLane = summarizeProductionApprovalLane({
     assetRecords: records
       .filter((entry) => entry.record.schema === artifactKinds.mediaAssetDescriptor)
@@ -249,6 +254,7 @@ export async function writeOperatorPacketIndex({
     studioSourcePressureAdapterSummary,
     localProofRehearsalSummary,
     adjacentSeamNeedsSummary,
+    adjacentSeamReadiness,
     providerLoopStatuses,
     providerLoopDecisions,
     roughCutReviewDecisions,
@@ -349,6 +355,8 @@ export async function writeOperatorPacketIndex({
       adjacentSeamNeedsFreshness: adjacentSeamNeedsSummary.needsFreshness,
       adjacentSeamNeedsStaleReasons: adjacentSeamNeedsSummary.staleReasons,
       adjacentSeamNeedsNextAction: adjacentSeamNeedsSummary.safeNextAction,
+      adjacentSeamReadiness: adjacentSeamReadiness.readiness,
+      adjacentSeamReadinessNextAction: adjacentSeamReadiness.safeNextAction,
       swarmSeamState: swarmSeamPosture.state,
       swarmProof: false,
       swarmActivation: false,
@@ -521,6 +529,7 @@ function formatOperatorPacketIndexSummary(index, output) {
     `adjacentAttention=${summary.adjacentSeamNeedsAttention ?? 0}`,
     `adjacentFreshness=${summary.adjacentSeamNeedsFreshness ?? 'absent'}`,
     `spineDiscussion=${summary.adjacentSeamNeedsSpineDiscussion ?? 'absent'}`,
+    `spineReadiness=${summary.adjacentSeamReadiness ?? 'blocked_missing_proof'}`,
     `packageNextAction=${summary.localPackageNextAction ?? 'Inspect local package posture.'}`,
     `proofNextAction=${summary.localProofNextAction ?? 'Run npm run proof:local to create local proof rehearsal evidence.'}`,
     formatSwarmSeamPostureFields(index.swarmSeamPosture, { nextActionField: 'swarmNextAction' }),

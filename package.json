@@ -28,6 +28,7 @@
     "pressure:studio": "node src/seams/studio-pressure-artifacts.js",
     "proof:local": "node src/seams/local-proof-rehearsal.js",
     "seam:needs": "node src/seams/adjacent-seam-needs.js",
+    "seam:ready": "node src/seams/adjacent-seam-readiness.js",
     "continuity:draft": "node src/seams/continuity-evidence.js",
     "export:inspection-bundle": "node src/seams/export-inspection-bundle.js",
     "provider:venice:smoke": "node src/providers/venice-live-smoke.js",

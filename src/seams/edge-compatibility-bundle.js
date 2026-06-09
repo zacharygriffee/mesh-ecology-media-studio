@@ -14,7 +14,7 @@ import { isDiscoverableJsonPath, readJsonFileTolerant, writeJsonAtomic } from '.
 import { summarizeSwarmSeamPosture, formatSwarmSeamPostureFields } from './swarm-seam-posture.js'
 import { summarizeStudioSourcePressure } from './studio-source-pressure-summary.js'
 import { summarizeLocalProofRehearsal } from './local-proof-summary.js'
-import { summarizeAdjacentSeamNeeds } from './adjacent-seam-needs.js'
+import { summarizeAdjacentSeamNeeds, summarizeAdjacentSeamReadiness } from './adjacent-seam-needs.js'
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultProjectDir = 'examples/card-to-candidate'
@@ -169,6 +169,11 @@ export async function writeEdgeCompatibilityBundle({
   const adjacentSeamNeedsSummary = summarizeAdjacentSeamNeeds(sources, {
     proofSummary: localProofRehearsalSummary
   })
+  const adjacentSeamReadiness = summarizeAdjacentSeamReadiness({
+    projectId,
+    proofSummary: localProofRehearsalSummary,
+    adjacentSeamNeedsSummary
+  })
   const createdAt = nowIso()
   const reviewEvidence = createStudioEdgeReviewEvidence({
     projectId,
@@ -240,6 +245,7 @@ export async function writeEdgeCompatibilityBundle({
     studioSourcePressureAdapterSummary,
     localProofRehearsalSummary,
     adjacentSeamNeedsSummary,
+    adjacentSeamReadiness,
     studioReviewEvidence: reviewEvidence,
     edgeWorkPacketCandidate: workPacketCandidate,
     edgeEvidenceImportCandidate: evidenceImportCandidate,
@@ -298,6 +304,7 @@ export async function writeEdgeCompatibilityBundle({
       `adjacentAttention=${bundle.adjacentSeamNeedsSummary.adjacentAttention}`,
       `adjacentFreshness=${bundle.adjacentSeamNeedsSummary.needsFreshness}`,
       `spineDiscussion=${bundle.adjacentSeamNeedsSummary.spineDiscussion}`,
+      `spineReadiness=${bundle.adjacentSeamReadiness.readiness}`,
       `packageNextAction=${bundle.localPackagePosture.safeNextAction}`,
       `proofNextAction=${bundle.localProofRehearsalSummary.safeNextAction}`,
       formatSwarmSeamPostureFields(bundle.swarmSeamPosture, { nextActionField: 'swarmNextAction' }),
