@@ -51,6 +51,8 @@ current operation summary.
 The persisted summary also includes `adjacentFamilyAskSummary`, a compact view
 of the Spine, Layer, Edge, Bytes, and Causal discussion rows from
 `seam:needs`; it is for operator and Spine repo-agent discussion only.
+`operator:index` and `edge:compat` carry the same family ask counts so the
+handoff remains visible from the downstream local review surfaces.
 
 `--prepare-local-fixture` writes a tiny local PNG candidate for the bundled
 example, runs the accepted first wedge, and seeds the local inspection,

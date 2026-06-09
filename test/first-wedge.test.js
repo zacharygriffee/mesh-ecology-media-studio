@@ -4727,13 +4727,23 @@ test('current operational command completes local proof through review surfaces'
   assert.equal(output.result.operatorIndex.index.localProofRehearsalSummary.latestProofState, 'ready')
   assert.equal(output.result.operatorIndex.index.currentOperationSummary.summaries, 1)
   assert.equal(output.result.operatorIndex.index.currentOperationSummary.operationState, 'ready_for_spine_discussion')
+  assert.equal(output.result.operatorIndex.index.currentOperationSummary.familyAskState, 'ready_for_spine_discussion')
+  assert.equal(output.result.operatorIndex.index.currentOperationSummary.familyAsks, 5)
+  assert.equal(output.result.operatorIndex.index.currentOperationSummary.familyAsksReady, 5)
+  assert.equal(output.result.operatorIndex.index.currentOperationSummary.familyAsksAttention, 0)
   assert.equal(output.result.operatorIndex.index.summary.currentOperationSummaries, 1)
   assert.equal(output.result.operatorIndex.index.summary.currentOperationState, 'ready_for_spine_discussion')
+  assert.equal(output.result.operatorIndex.index.summary.currentOperationFamilyAsks, 5)
+  assert.equal(output.result.operatorIndex.index.summary.currentOperationFamilyAsksReady, 5)
   assert.equal(output.result.operatorIndex.index.summary.currentOperationCrossProjectIndexed, true)
   assert.equal(output.result.operatorIndex.index.currentOperationSummaryRefs[0].path, 'records/exports/media-current-operational-runbook.local.json')
   assert.equal(output.result.edgeCompatibility.bundle.localProofRehearsalSummary.latestProofState, 'ready')
   assert.equal(output.result.edgeCompatibility.bundle.currentOperationSummary.summaries, 1)
   assert.equal(output.result.edgeCompatibility.bundle.currentOperationSummary.operationState, 'ready_for_spine_discussion')
+  assert.equal(output.result.edgeCompatibility.bundle.currentOperationSummary.familyAskState, 'ready_for_spine_discussion')
+  assert.equal(output.result.edgeCompatibility.bundle.currentOperationSummary.familyAsks, 5)
+  assert.equal(output.result.edgeCompatibility.bundle.currentOperationSummary.familyAsksReady, 5)
+  assert.equal(output.result.edgeCompatibility.bundle.currentOperationSummary.familyAsksAttention, 0)
   assert.ok(output.result.edgeCompatibility.bundle.studioSourceRefs.some((ref) =>
     ref.kind === 'media-current-operational-runbook' &&
     ref.path === 'records/exports/media-current-operational-runbook.local.json'
@@ -4754,6 +4764,14 @@ test('current operational command completes local proof through review surfaces'
     await readJsonFile(dir, 'records/exports/media-current-operational-runbook.local.json'),
     output.result.operation
   )
+  const operatorLine = (await captureConsole(() => writeOperatorPacketIndex({ projectDir: dir })))
+    .lines.find((entry) => entry.startsWith('operator packet index:'))
+  assert.ok(operatorLine.includes('currentOperationFamilyAsks=5'))
+  assert.ok(operatorLine.includes('currentOperationFamilyAsksReady=5'))
+  const edgeLine = (await captureConsole(() => writeEdgeCompatibilityBundle({ projectDir: dir })))
+    .lines.find((entry) => entry.includes('currentOperationFamilyAsks='))
+  assert.ok(edgeLine.includes('currentOperationFamilyAsks=5'))
+  assert.ok(edgeLine.includes('currentOperationFamilyAsksReady=5'))
   assert.ok(line.includes('operation=ready_for_spine_discussion'))
   assert.ok(line.includes('preparedLocalFixture=true'))
   assert.ok(line.includes('proof=ready'))
