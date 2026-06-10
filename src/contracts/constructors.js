@@ -509,5 +509,6 @@ export function idForRecord(record) {
   if (record.proposalId) return record.proposalId
   if (record.byteDescriptorProposalId) return record.byteDescriptorProposalId
   if (record.resourceRefCandidateId) return record.resourceRefCandidateId
+  if (record.liftSourceCandidateId) return record.liftSourceCandidateId
   return undefined
 }

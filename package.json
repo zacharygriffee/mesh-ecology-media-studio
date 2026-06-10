@@ -44,6 +44,7 @@
     "operator:provider-loop-request": "node src/review/operator-decision-request.js --provider-loop-status records/provider-results/media-provider-loop-status.local.json --output records/requests/media-provider-loop-operator-decision-request.local.json",
     "operator:provider-loop-decision": "node src/review/operator-decision-request.js --provider-loop-request records/requests/media-provider-loop-operator-decision-request.local.json --output records/decisions/media-provider-loop-operator-decision.local.json",
     "bytes:proposal": "node src/assets/byte-descriptor-proposal.js",
+    "lift:source-candidate": "node src/local/file-resource-lift-source-candidate.js",
     "production:from-card": "node src/production/create-production-records.js",
     "production:validate": "node src/production/validate-production-records.js",
     "production:capsule": "node src/production/asset-capsule.js",

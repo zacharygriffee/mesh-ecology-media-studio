@@ -69,6 +69,7 @@ export const artifactKinds = Object.freeze({
   mediaApprovalProposalLocal: 'media.approval_proposal.local.v1',
   mediaByteDescriptorProposalLocal: 'media.byte_descriptor_proposal.local.v1',
   mediaLocalLayerResourceRefCandidateLocal: 'media.local_layer_resource_ref_candidate.local.v1',
+  studioFileResourceLiftSourceCandidateLocal: 'studio_file_resource_lift_source_candidate.local.v0',
   mediaOperationCandidateLocal: 'media.operation_candidate.local.v1',
   mediaRuleResolutionTraceLocal: 'media.rule_resolution_trace.local.v1'
 })

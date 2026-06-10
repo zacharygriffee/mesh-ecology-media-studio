@@ -1515,6 +1515,32 @@ export const requiredFields = {
     'truthStatus',
     'createdAt'
   ],
+  'studio_file_resource_lift_source_candidate.local.v0': [
+    'schema',
+    'liftSourceCandidateId',
+    'projectId',
+    'contentId',
+    'candidateStatus',
+    'sourceLocalAssetRefs',
+    'sourceAssetRecordRefs',
+    'byteDescriptorProposalRefs',
+    'resourceRefCandidateRefs',
+    'situationRefs',
+    'placementRefs',
+    'contentHash',
+    'byteLength',
+    'mediaType',
+    'sourcePosture',
+    'blockedClaims',
+    'nonClaims',
+    'createdAt',
+    'localOnly',
+    'meshTruth',
+    'distributedProof',
+    'ratifiedSharedState',
+    'localTruthLabel',
+    'truthStatus'
+  ],
   'media.operation_candidate.local.v1': [
     'schema',
     'operationId',
@@ -1666,6 +1692,7 @@ const idFields = {
   [artifactKinds.mediaApprovalProposalLocal]: 'proposalId',
   [artifactKinds.mediaByteDescriptorProposalLocal]: 'byteDescriptorProposalId',
   [artifactKinds.mediaLocalLayerResourceRefCandidateLocal]: 'resourceRefCandidateId',
+  [artifactKinds.studioFileResourceLiftSourceCandidateLocal]: 'liftSourceCandidateId',
   [artifactKinds.mediaOperationCandidateLocal]: 'operationId',
   [artifactKinds.mediaRuleResolutionTraceLocal]: 'traceId'
 }
@@ -1722,6 +1749,7 @@ const domainProjectSchemas = new Set([
   artifactKinds.mediaApprovalProposalLocal,
   artifactKinds.mediaByteDescriptorProposalLocal,
   artifactKinds.mediaLocalLayerResourceRefCandidateLocal,
+  artifactKinds.studioFileResourceLiftSourceCandidateLocal,
   artifactKinds.mediaOperationCandidateLocal,
   artifactKinds.mediaRuleResolutionTraceLocal
 ])
@@ -1783,6 +1811,7 @@ const localGeneratedSchemas = new Set([
   artifactKinds.mediaApprovalProposalLocal,
   artifactKinds.mediaByteDescriptorProposalLocal,
   artifactKinds.mediaLocalLayerResourceRefCandidateLocal,
+  artifactKinds.studioFileResourceLiftSourceCandidateLocal,
   artifactKinds.mediaOperationCandidateLocal,
   artifactKinds.mediaRuleResolutionTraceLocal
 ])
@@ -3278,6 +3307,65 @@ export function validateRecordShape(record, schemaId = record.schema) {
     for (const flag of ['resourceAdmission', 'materializationProof', 'promotionAuthority']) {
       if (record[flag] !== undefined && record[flag] !== false) {
         throw new Error(`Record ${schemaId} must set ${flag}=false when present`)
+      }
+    }
+
+    validateLocalFalseFlags(record, schemaId)
+  }
+
+  if (schemaId === artifactKinds.studioFileResourceLiftSourceCandidateLocal) {
+    validateRefArray(record.sourceLocalAssetRefs, `${schemaId}.sourceLocalAssetRefs`)
+    validateRefArray(record.sourceAssetRecordRefs, `${schemaId}.sourceAssetRecordRefs`)
+    validateRefArray(record.byteDescriptorProposalRefs, `${schemaId}.byteDescriptorProposalRefs`)
+    validateRefArray(record.resourceRefCandidateRefs, `${schemaId}.resourceRefCandidateRefs`)
+    validateRefArray(record.situationRefs, `${schemaId}.situationRefs`)
+    validateRefArray(record.placementRefs, `${schemaId}.placementRefs`)
+
+    if (record.candidateStatus !== 'source_candidate_only_not_admitted') {
+      throw new Error(`Record ${schemaId} must stay source_candidate_only_not_admitted`)
+    }
+
+    if (record.byteDescriptorProposalRefs.length === 0) {
+      throw new Error(`Record ${schemaId} requires at least one byte descriptor proposal ref`)
+    }
+
+    if (record.resourceRefCandidateRefs.length === 0) {
+      throw new Error(`Record ${schemaId} requires at least one resource ref candidate ref`)
+    }
+
+    if (!record.contentHash || record.contentHash.algorithm !== 'sha256' || !isNonEmptyString(record.contentHash.value)) {
+      throw new Error(`Record ${schemaId} must include sha256 contentHash`)
+    }
+
+    for (const flag of [
+      'providerCalled',
+      'bytesPublished',
+      'resourceAdmission',
+      'meshTruth',
+      'distributedProof',
+      'ratifiedSharedState',
+      'byteAvailabilityProof',
+      'materializationProof',
+      'acceptedContinuity',
+      'layerAdmission',
+      'authority'
+    ]) {
+      if (record[flag] !== undefined && record[flag] !== false) {
+        throw new Error(`Record ${schemaId} must set ${flag}=false when present`)
+      }
+    }
+
+    for (const flag of [
+      'localPathIsCanon',
+      'externalReferenceIsCanon',
+      'storageRefIsAdmission',
+      'viewIsSourceContinuity',
+      'resourceAdmission',
+      'meshTruth',
+      'authority'
+    ]) {
+      if (record.nonClaims?.[flag] !== false) {
+        throw new Error(`Record ${schemaId}.nonClaims.${flag} must be false`)
       }
     }
 
